@@ -85,7 +85,48 @@ class TransactionsRelationManager extends RelationManager
                     ->sortable(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('type')
+                    ->label('Tipo')
+                    ->options(TransactionType::class)
+                    ->multiple()
+                    ->searchable(),
+                Tables\Filters\Filter::make('scheduled_at')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('Desde')
+                            ->native(false)
+                            ->closeOnDateSelection(),
+                        Forms\Components\DatePicker::make('until')
+                            ->label('Hasta')
+                            ->native(false)
+                            ->closeOnDateSelection(),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('scheduled_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('scheduled_at', '<=', $date),
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+
+                        if ($data['from'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make('Desde ' . Carbon::parse($data['from'])->toFormattedDateString())
+                                ->removeField('from');
+                        }
+
+                        if ($data['until'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make('Hasta ' . Carbon::parse($data['until'])->toFormattedDateString())
+                                ->removeField('until');
+                        }
+
+                        return $indicators;
+                    })
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
