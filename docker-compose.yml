@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+    mysql:
+        container_name: simple_finances_db
+        image: mysql:latest
+        restart: always
+        command: --default-authentication-plugin=mysql_native_password
+        volumes:
+            - debtstb:/var/lib/mysql
+        ports:
+            - ${DB_PORT:-3304}:3306
+        environment:
+            MYSQL_ROOT_HOST: '%'
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_DATABASE: ${DB_DATABASE}
+            TZ: ${DB_TZ:-UTC}
+
+volumes:
+    debtstb:
