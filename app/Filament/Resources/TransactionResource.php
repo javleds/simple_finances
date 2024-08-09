@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Enums\TransactionType;
+use App\Events\TransactionSaved;
 use App\Filament\Resources\TransactionResource\Pages;
 use App\Filament\Resources\TransactionResource\RelationManagers;
 use App\Models\Transaction;
@@ -96,7 +97,10 @@ class TransactionResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->after(function (Transaction $record) {
+                        event(new TransactionSaved($record));
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
