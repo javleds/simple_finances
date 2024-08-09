@@ -3,15 +3,22 @@
 namespace App\Services;
 
 use App\Models\Account;
+use Carbon\Carbon;
 
 class AutomatedAccountUpdater
 {
     public function handle(): void
     {
         $accounts = Account::withoutGlobalScopes()->all();
+        $now = Carbon::now();
 
         foreach ($accounts as $account) {
-            $account->updateBalance();
+            if ($now > $account->next_cutoff_date) {
+                $account->next_cutoff_date = $account->next_cutoff_date->addMonth()->clone();
+                $account->save();
+
+                $account->updateBalance();
+            }
         }
     }
 }
