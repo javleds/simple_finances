@@ -32,4 +32,12 @@ class Account extends Model
 
         return $this->balance;
     }
+
+    public function getBalanceUntilNow(): float
+    {
+        return
+            $this->transactions()->untilNow()->income()->sum('amount')
+            - $this->transactions()->untilNow()->outcome()->sum('amount')
+            ?? 0.0;
+    }
 }

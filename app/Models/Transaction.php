@@ -41,8 +41,8 @@ class Transaction extends Model
         $builder->where('type', TransactionType::Outcome);
     }
 
-    public function scopeAvailable(Builder $builder): void
+    public function scopeUntilNow(Builder $builder): void
     {
-        $builder->whereDate('scheduled_at', '>=', CarbonImmutable::now());
+        $builder->whereDate('scheduled_at', '<=', CarbonImmutable::now());
     }
 }
