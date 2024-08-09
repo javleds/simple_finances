@@ -278,6 +278,7 @@ class TransactionsRelationManager extends RelationManager
                         $livewire->dispatch('refreshAccount');
                     }),
                 Tables\Actions\CreateAction::make()
+                    ->modalHeading('Crear Transacción')
                     ->createAnother(false)
                     ->after(function (Transaction $record, Component $livewire) {
                         event(new TransactionSaved($record));
@@ -287,12 +288,14 @@ class TransactionsRelationManager extends RelationManager
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
+                    ->label('')
                     ->after(function (Transaction $record, Component $livewire) {
                         event(new TransactionSaved($record));
 
                         $livewire->dispatch('refreshAccount');
                     }),
                 Tables\Actions\DeleteAction::make()
+                    ->label('')
                     ->after(function (Transaction $record, Component $livewire) {
                         event(new TransactionSaved($record));
 
