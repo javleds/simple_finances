@@ -192,8 +192,9 @@ class AccountResource extends Resource
                     TextEntry::make('credit_line')
                         ->label('línea de crédito')
                         ->money(locale: 'mx'),
-                    TextEntry::make('cutoff_day')
-                        ->label('Día de corte')
+                    TextEntry::make('next_cutoff_date')
+                        ->label('Fecha de corte')
+                        ->dateTime('F d,Y')
                         ->numeric(),
                     TextEntry::make('scoped_balance')
                         ->label('Balance del periodo')
