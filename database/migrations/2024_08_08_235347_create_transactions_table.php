@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('concept');
             $table->decimal('amount', 10);
             $table->enum('type',  TransactionType::values());
-            $table->datetime('scheduled_at');
+            $table->datetime('scheduled_at')->useCurrent();
             $table->foreignId('account_id');
             $table->foreignId('user_id');
             $table->timestamps();
