@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\ColorEntry;
+use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
@@ -174,7 +175,17 @@ class AccountResource extends Resource
                         ->money(locale: 'mx'),
                     TextEntry::make('description')
                         ->label('Descripción')
+                        ->default('-')
                         ->columnSpanFull(),
+                    TextEntry::make('credit_line')
+                        ->label('línea de crédito')
+                        ->money(locale: 'mx'),
+                    TextEntry::make('cutoff_day')
+                        ->label('Día de corte')
+                        ->numeric(),
+                    TextEntry::make('scoped_balance')
+                        ->label('Balance del periodo')
+                        ->money(locale: 'mx'),
                 ]),
             ]);
     }

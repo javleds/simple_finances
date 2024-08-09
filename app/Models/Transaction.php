@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\TransactionType;
 use App\Traits\BelongsToUser;
+use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -41,8 +42,12 @@ class Transaction extends Model
         $builder->where('type', TransactionType::Outcome);
     }
 
-    public function scopeUntilNow(Builder $builder): void
+    public function scopeBeforeOf(Builder $builder, ?Carbon $date): void
     {
-        $builder->whereDate('scheduled_at', '<=', CarbonImmutable::now());
+        if (!$date) {
+            return;
+       }
+
+        $builder->where('scheduled_at', '<=', $date);
     }
 }

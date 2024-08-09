@@ -21,6 +21,7 @@ class Account extends Model
             'credit_line' => 'float',
             'cutoff_day' => 'int',
             'next_cutoff_date' => 'datetime',
+            'scoped_balance' => 'float',
         ];
     }
 
@@ -31,17 +32,20 @@ class Account extends Model
 
     public function updateBalance(): float
     {
-        if ($this->credit_card) {
-            $this->balance = $this->credit_line
-                - $this->transactions()->income()->sum('amount')
-                - $this->transactions()->outcome()->sum('amount');
-
+        if (!$this->credit_card) {
+            $this->balance = $this->transactions()->income()->sum('amount') - $this->transactions()->outcome()->sum('amount');
             $this->save();
 
             return $this->balance;
         }
 
-        $this->balance = $this->transactions()->income()->sum('amount') - $this->transactions()->outcome()->sum('amount');
+        $this->balance = $this->credit_line
+            - $this->transactions()->income()->sum('amount')
+            - $this->transactions()->outcome()->sum('amount');
+
+        $this->scoped_balance = $this->transactions()->beforeOf($this->next_cutoff_date)->income()->sum('amount')
+            - $this->transactions()->beforeOf($this->next_cutoff_date)->outcome()->sum('amount');
+
         $this->save();
 
         return $this->balance;
