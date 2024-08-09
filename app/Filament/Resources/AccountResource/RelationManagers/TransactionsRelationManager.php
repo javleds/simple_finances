@@ -76,9 +76,6 @@ class TransactionsRelationManager extends RelationManager
                     ->label('Tipo')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('account.name')
-                    ->searchable()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('scheduled_at')
                     ->label('Fecha de compra')
                     ->dateTime('F d, Y')

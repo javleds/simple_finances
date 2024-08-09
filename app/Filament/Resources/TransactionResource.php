@@ -7,6 +7,7 @@ use App\Events\BulkTransactionSaved;
 use App\Events\TransactionSaved;
 use App\Filament\Resources\TransactionResource\Pages;
 use App\Filament\Resources\TransactionResource\RelationManagers;
+use App\Models\Account;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -80,6 +81,7 @@ class TransactionResource extends Resource
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('account.name')
+                    ->label('Cuenta')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('scheduled_at')
@@ -96,6 +98,11 @@ class TransactionResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('account_id')
+                    ->label('Cuenta')
+                    ->options(fn () => Account::all()->pluck('name', 'id'))
+                    ->multiple()
+                    ->searchable(),
                 Tables\Filters\SelectFilter::make('type')
                     ->label('Tipo')
                     ->options(TransactionType::class)
