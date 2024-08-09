@@ -8,4 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 class Account extends Model
 {
     use HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'user_id' => 'integer',
+            'balance' => 'float',
+        ];
+    }
 }
