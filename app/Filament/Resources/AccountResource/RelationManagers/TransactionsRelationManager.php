@@ -131,6 +131,7 @@ class TransactionsRelationManager extends RelationManager
             ])
             ->headerActions([
                 Tables\Actions\Action::make('add_differed_transaction')
+                    ->hidden(fn () => !$this->getOwnerRecord()->isCreditCard())
                     ->label('Crear Egreso Diferido')
                     ->color(Color::Blue)
                     ->form([

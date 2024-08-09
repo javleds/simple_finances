@@ -20,12 +20,14 @@ class CreateAccount extends CreateRecord
 
     public function mutateFormDataBeforeCreate(array $data): array
     {
-        $today = CarbonImmutable::now();
-        $cutoffDay = intval($data['cutoff_day']);
+        if ($data['credit_card']) {
+            $today = CarbonImmutable::now();
+            $cutoffDay = intval($data['cutoff_day']);
 
-        $data['next_cutoff_date'] = $today->day < $cutoffDay
-            ? $today->setDay($cutoffDay)->addMonth()
-            : $today->setDay($cutoffDay);
+            $data['next_cutoff_date'] = $today->day < $cutoffDay
+                ? $today->setDay($cutoffDay)->addMonth()
+                : $today->setDay($cutoffDay);
+        }
 
         return $data;
     }
