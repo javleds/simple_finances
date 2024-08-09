@@ -27,7 +27,7 @@ class Account extends Model
 
     public function updateBalance(): float
     {
-        $this->balance = Transaction::income()->sum('amount') - Transaction::outcome()->sum('amount');
+        $this->balance = $this->transactions()->income()->sum('amount') - $this->transactions()->outcome()->sum('amount');
         $this->save();
 
         return $this->balance;
