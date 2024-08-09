@@ -72,7 +72,8 @@ class TransactionResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Cantidad')
-                    ->numeric()
+                    ->alignRight()
+                    ->money(locale: 'mx')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo')
