@@ -37,8 +37,8 @@ class EditAccount extends EditRecord
             $cutoffDay = intval($data['cutoff_day']);
 
             $data['next_cutoff_date'] = $today->day < $cutoffDay
-                ? $today->setDay($cutoffDay)->addMonth()
-                : $today->setDay($cutoffDay);
+                ? $today->setDay($cutoffDay)->addMonth()->endOfDay()
+                : $today->setDay($cutoffDay)->endOfDay();
         }
 
         return $data;
