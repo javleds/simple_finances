@@ -17,6 +17,10 @@ class Account extends Model
         return [
             'user_id' => 'integer',
             'balance' => 'float',
+            'credit_card' => 'bool',
+            'credit_line' => 'float',
+            'cutoff_day' => 'int',
+            'next_cutoff_date' => 'datetime',
         ];
     }
 
@@ -27,6 +31,16 @@ class Account extends Model
 
     public function updateBalance(): float
     {
+        if ($this->credit_card) {
+            $this->balance = $this->credit_line
+                - $this->transactions()->income()->sum('amount')
+                - $this->transactions()->outcome()->sum('amount');
+
+            $this->save();
+
+            return $this->balance;
+        }
+
         $this->balance = $this->transactions()->income()->sum('amount') - $this->transactions()->outcome()->sum('amount');
         $this->save();
 
@@ -39,5 +53,10 @@ class Account extends Model
             $this->transactions()->untilNow()->income()->sum('amount')
             - $this->transactions()->untilNow()->outcome()->sum('amount')
             ?? 0.0;
+    }
+
+    public function isCreditCard(): bool
+    {
+        return $this->credit_card;
     }
 }

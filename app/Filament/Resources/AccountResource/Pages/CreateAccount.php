@@ -2,7 +2,10 @@
 
 namespace App\Filament\Resources\AccountResource\Pages;
 
+use App\Events\AccountSaved;
 use App\Filament\Resources\AccountResource;
+use App\Models\Account;
+use Carbon\CarbonImmutable;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -13,5 +16,22 @@ class CreateAccount extends CreateRecord
     protected function getRedirectUrl(): string
     {
         return AccountResource::getUrl();
+    }
+
+    public function mutateFormDataBeforeCreate(array $data): array
+    {
+        $today = CarbonImmutable::now();
+        $cutoffDay = intval($data['cutoff_day']);
+
+        $data['next_cutoff_date'] = $today->day < $cutoffDay
+            ? $today->setDay($cutoffDay)->addMonth()
+            : $today->setDay($cutoffDay);
+
+        return $data;
+    }
+
+    public function afterCreate(): void
+    {
+        event(new AccountSaved(Account::find($this->getRecord()->id)));
     }
 }

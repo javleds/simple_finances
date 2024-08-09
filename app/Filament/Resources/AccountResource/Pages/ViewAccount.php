@@ -11,6 +11,13 @@ class ViewAccount extends ViewRecord
 {
     protected static string $resource = AccountResource::class;
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\EditAction::make(),
+        ];
+    }
+
     #[On('refreshAccount')]
     public function refresh(): void
     {

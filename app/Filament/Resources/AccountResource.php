@@ -43,6 +43,29 @@ class AccountResource extends Resource
                 Forms\Components\Textarea::make('description')
                     ->label('Descripción')
                     ->columnSpanFull(),
+                Forms\Components\Toggle::make('credit_card')
+                    ->label('¿Es tarjeta de crédito?')
+                    ->default(false)
+                    ->inline(false)
+                    ->live(),
+                Forms\Components\Group::make()
+                    ->columnSpanFull()
+                    ->hidden(fn (Forms\Get $get) => $get('credit_card') !== true)
+                    ->live()
+                    ->columns()
+                    ->schema([
+                        Forms\Components\TextInput::make('credit_line')
+                            ->label('Línea de crédito')
+                            ->numeric()
+                            ->prefix('$')
+                            ->required(fn (Forms\Get $get) => $get('credit_card') === true),
+                        Forms\Components\TextInput::make('cutoff_day')
+                            ->label('Día de corte')
+                            ->numeric()
+                            ->required(fn (Forms\Get $get) => $get('credit_card') === true)
+                            ->minValue(1)
+                            ->maxValue(31),
+                    ])
             ]);
     }
 
