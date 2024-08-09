@@ -7,7 +7,7 @@ use App\Models\Account;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
-class UpdateAccountsOnNulkTransactionSaved
+class UpdateAccountsOnBulkTransactionSaved
 {
     /**
      * Create the event listener.
