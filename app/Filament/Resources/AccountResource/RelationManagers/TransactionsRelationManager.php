@@ -133,7 +133,7 @@ class TransactionsRelationManager extends RelationManager
                 Tables\Actions\Action::make('add_differed_transaction')
                     ->hidden(fn () => !$this->getOwnerRecord()->isCreditCard())
                     ->label('Crear Egreso Diferido')
-                    ->color(Color::Blue)
+                    ->color(Color::Amber)
                     ->form([
                         Forms\Components\Group::make()
                             ->columns()
@@ -164,6 +164,7 @@ class TransactionsRelationManager extends RelationManager
 
                                         $amount = floatval($get('amount'));
                                         $payments = intval($get('payments'));
+                                        $date = Carbon::make($get('scheduled_at'));
 
                                         if ($payments <= 0) {
                                             return;
@@ -172,7 +173,6 @@ class TransactionsRelationManager extends RelationManager
                                         $paymentSchema = [];
                                         $paymentAmount = round($amount / $payments, 2);
 
-                                        $date = Carbon::now();
                                         $cutoffDay = $account->cutoff_day;
 
                                         $date = $date->day < $cutoffDay
