@@ -48,6 +48,6 @@ class Transaction extends Model
             return;
        }
 
-        $builder->where('scheduled_at', '<=', $date);
+        $builder->whereDate('scheduled_at', '<', $date->toDateString());
     }
 }

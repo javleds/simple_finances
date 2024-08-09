@@ -12,6 +12,7 @@ use Closure;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
+use Filament\Resources\Components\Tab;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Colors\Color;
 use Filament\Tables;
@@ -30,6 +31,21 @@ class TransactionsRelationManager extends RelationManager
     public function isReadOnly(): bool
     {
         return false;
+    }
+
+    public function getTabs(): array
+    {
+        /** @var Account $account */
+        $account = $this->getOwnerRecord();
+
+        if (!$account->isCreditCard()) {
+            return [];
+        }
+
+        return [
+            Tab::make('En peridoo')->modifyQueryUsing(fn (Builder $query) => $query->beforeOf($this->getOwnerRecord()->next_cutoff_date)),
+            Tab::make('Todas'),
+        ];
     }
 
     public function form(Form $form): Form
