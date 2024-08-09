@@ -83,6 +83,15 @@ class AccountResource extends Resource
                     ->alignRight()
                     ->money(locale: 'mx')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('scoped_balance')
+                    ->label('En periodo')
+                    ->alignRight()
+                    ->formatStateUsing(
+                        fn (Account $record) => !$record->isCreditCard()
+                            ? '-'
+                            : sprintf('$ %s', number_format($record->scoped_balance, 2))
+                    )
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -100,9 +109,10 @@ class AccountResource extends Resource
                     ->searchable()
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->label(''),
                 Tables\Actions\Action::make('add_transaction')
-                    ->label('Transacción')
+                    ->label('')
                     ->color(Color::Blue)
                     ->icon('heroicon-o-banknotes')
                     ->form([
@@ -149,8 +159,10 @@ class AccountResource extends Resource
                             ->title('Transacción creada')
                             ->send();
                     }),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->label(''),
+                Tables\Actions\DeleteAction::make()
+                    ->label(''),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
