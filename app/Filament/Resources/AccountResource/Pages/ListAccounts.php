@@ -7,11 +7,13 @@ use App\Events\BulkTransactionSaved;
 use App\Filament\Resources\AccountResource;
 use App\Models\Account;
 use Carbon\Carbon;
+use Closure;
 use Filament\Actions;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Colors\Color;
@@ -34,18 +36,61 @@ class ListAccounts extends ListRecords
                                 ->label('Origen')
                                 ->options(fn () => Account::all()->pluck('name', 'id'))
                                 ->required()
-                                ->searchable(),
+                                ->searchable()
+                                ->rules([
+                                    fn (Get $get) => function (string $attribute, $value, Closure $fail) use ($get) {
+                                        if (empty($get('destination_id')) || empty($get('origin_id'))) {
+                                            return;
+                                        }
+
+                                        if ($get('destination_id') === $get('origin_id')) {
+                                            $fail('Las cuentas no deben ser iguales.');
+                                        }
+                                    }
+                                ]),
                             Select::make('destination_id')
                                 ->label('Destino')
                                 ->options(fn () => Account::all()->pluck('name', 'id'))
                                 ->required()
-                                ->searchable(),
+                                ->searchable()
+                                ->rules([
+                                    fn (Get $get) => function (string $attribute, $value, Closure $fail) use ($get) {
+                                        if (empty($get('destination_id')) || empty($get('origin_id'))) {
+                                            return;
+                                        }
+
+                                        if ($get('destination_id') === $get('origin_id')) {
+                                            $fail('Las cuentas no deben ser iguales.');
+                                        }
+                                    }
+                                ]),
                             TextInput::make('amount')
                                 ->label('Cantidad')
                                 ->prefix('$')
                                 ->numeric()
                                 ->required()
-                                ->minValue(0.01),
+                                ->minValue(0.01)
+                                ->rules([
+                                    fn (Get $get) => function (string $attribute, $value, Closure $fail) use ($get) {
+                                        if (empty($get('destination_id')) || empty($get('origin_id'))) {
+                                            return;
+                                        }
+
+                                        $origin = Account::find($get('origin_id'));
+                                        $amount = $get('amount');
+
+                                        if ($origin->balance < $amount) {
+                                            $fail(
+                                                sprintf(
+                                                    'Se requieren $ %s fondos, pero la cuenta %s solo tiene $ %s',
+                                                    number_format($amount, 2),
+                                                    $origin->name,
+                                                    number_format($origin->balance, 2),
+                                                )
+                                            );
+                                        }
+                                    }
+                                ]),
                             TextInput::make('concept')
                                 ->label('Concepto')
                                 ->placeholder('Transferencia entre cuentas')
@@ -63,23 +108,6 @@ class ListAccounts extends ListRecords
                     $amount = $data['amount'];
                     $concept = $data['concept'] ?? sprintf('Transferencia de %s a %s', $origin->name, $destination->name);
                     $date = $data['scheduled_at'];
-
-                    if ($origin->balance < $amount) {
-                        Notification::make('insufficient_founds')
-                            ->danger()
-                            ->title('Fondos insuficientes')
-                            ->body(
-                                sprintf(
-                                    'Se requieren $ %s fondos, pero la cuenta %s solo tiene $ %s',
-                                    number_format($data['amount'], 2),
-                                    $origin->name,
-                                    number_format($origin->balance, 2),
-                                )
-                            )
-                            ->send();
-
-                        return;
-                    }
 
                     $transactions = collect();
 
