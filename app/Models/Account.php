@@ -24,4 +24,12 @@ class Account extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function updateBalance(): float
+    {
+        $this->balance = Transaction::income()->sum('amount') - Transaction::outcome()->sum('amount');
+        $this->save();
+
+        return $this->balance;
+    }
 }

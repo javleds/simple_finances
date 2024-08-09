@@ -25,7 +25,6 @@ class UpdateAccountOnTransactionSaved
     {
         /** @var Account $account */
         $account = $event->transaction->account;
-        $account->balance = Transaction::income()->sum('amount') - Transaction::outcome()->sum('amount');
-        $account->save();
+        $account->updateBalance();
     }
 }

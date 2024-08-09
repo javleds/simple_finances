@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Enums\TransactionType;
+use App\Events\BulkTransactionSaved;
 use App\Events\TransactionSaved;
 use App\Filament\Resources\TransactionResource\Pages;
 use App\Filament\Resources\TransactionResource\RelationManagers;
@@ -15,6 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Collection;
 
 class TransactionResource extends Resource
 {
@@ -104,7 +106,10 @@ class TransactionResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->after(function (Collection $records) {
+                            event(new BulkTransactionSaved($records));
+                        }),
                 ]),
             ]);
     }
