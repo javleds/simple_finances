@@ -62,6 +62,7 @@ class TransactionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->orderBy('scheduled_at', 'desc')->orderBy('created_at', 'desc'))
             ->columns([
                 Tables\Columns\TextColumn::make('concept')
                     ->label('Concepto')
