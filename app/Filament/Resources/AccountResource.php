@@ -78,11 +78,13 @@ class AccountResource extends Resource
                     ->label('Color'),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('balance')
                     ->alignRight()
                     ->formatStateUsing(fn ($state) => as_money($state))
-                    ->sortable(),
+                    ->sortable(['balance'])
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('scoped_balance')
                     ->label('En periodo')
                     ->alignRight()
@@ -91,7 +93,8 @@ class AccountResource extends Resource
                             ? '-'
                             : sprintf('$ %s', number_format($record->scoped_balance, 2))
                     )
-                    ->sortable(),
+                    ->sortable(['scoped_balance'])
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

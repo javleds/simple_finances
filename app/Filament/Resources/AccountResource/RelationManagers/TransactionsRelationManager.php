@@ -81,24 +81,27 @@ class TransactionsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->orderBy('scheduled_at', 'desc')->orderBy('created_at', 'desc'))
+            ->defaultSort(fn (Builder $query) => $query->orderBy('scheduled_at', 'desc')->orderBy('created_at', 'desc'))
             ->recordTitleAttribute('concept')
             ->columns([
                 Tables\Columns\TextColumn::make('concept')
                     ->label('Concepto')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Cantidad')
                     ->alignRight()
                     ->formatStateUsing(fn ($state) => as_money($state))
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo')
-                    ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('scheduled_at')
                     ->label('Fecha de compra')
                     ->dateTime('F d, Y')
+                    ->searchable()
                     ->sortable(),
             ])
             ->filters([
