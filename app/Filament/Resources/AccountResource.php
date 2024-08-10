@@ -7,6 +7,8 @@ use App\Events\TransactionSaved;
 use App\Filament\Actions\AddTransactionShortcutAction;
 use App\Filament\Actions\CompareAction;
 use App\Filament\Actions\DirectCompareAction;
+use App\Filament\Actions\DirectReceiveTransferAction;
+use App\Filament\Actions\DirectSendTransferAction;
 use App\Filament\Resources\AccountResource\Pages;
 use App\Filament\Resources\AccountResource\RelationManagers;
 use App\Models\Account;
@@ -119,6 +121,8 @@ class AccountResource extends Resource
                     ->label(''),
                 AddTransactionShortcutAction::make(),
                 DirectCompareAction::make(),
+                DirectReceiveTransferAction::make(),
+                DirectSendTransferAction::make(),
                 Tables\Actions\EditAction::make()
                     ->label(''),
                 Tables\Actions\DeleteAction::make()

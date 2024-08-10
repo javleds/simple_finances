@@ -8,7 +8,6 @@ use App\Models\Account;
 use App\Services\TransferCreator;
 use Carbon\Carbon;
 use Closure;
-use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Select;
@@ -16,17 +15,19 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
+use Filament\Tables\Actions\Action;
 
-class CreateTransferAction extends Action
+class DirectReceiveTransferAction extends Action
 {
     protected function setUp(): void
     {
         parent::setUp();
 
         $this
-            ->name('transfer')
-            ->label('Nueva transferencia')
-            ->color(Color::Blue)
+            ->name('transfer_receive')
+            ->label('')
+            ->icon('heroicon-o-arrow-down-on-square')
+            ->color(Color::Teal)
             ->form([
                 Group::make()
                     ->columns()
@@ -62,7 +63,9 @@ class CreateTransferAction extends Action
                                         $fail('Las cuentas no deben ser iguales.');
                                     }
                                 }
-                            ]),
+                            ])
+                            ->disabled()
+                            ->default(fn (Account $record) => $record->id),
                         TextInput::make('amount')
                             ->label('Cantidad')
                             ->prefix('$')
@@ -101,9 +104,9 @@ class CreateTransferAction extends Action
                             ->required(),
                     ])
             ])
-            ->action(function (array $data, TransferCreator $transferCreator) {
+            ->action(function (array $data, Account $record, TransferCreator $transferCreator) {
                 $origin = Account::find($data['origin_id']);
-                $destination = Account::find($data['destination_id']);
+                $destination = $record;
 
                 $transferCreator->handle($origin, $destination, $data);
             });
