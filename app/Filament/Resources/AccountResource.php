@@ -87,16 +87,26 @@ class AccountResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('balance')
                     ->alignRight()
-                    ->formatStateUsing(fn ($state) => as_money($state))
-                    ->sortable(['balance'])
+                    ->formatStateUsing(fn (Account $account) => as_money($account->visible_balance))
+                    ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('scoped_balance')
-                    ->label('En periodo')
+                    ->label('Crédito disponible')
                     ->alignRight()
                     ->formatStateUsing(
                         fn (Account $record) => !$record->isCreditCard()
                             ? '-'
-                            : as_money($record->scoped_balance)
+                            : as_money($record->balance)
+                    )
+                    ->sortable(['scoped_balance'])
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('credit_line')
+                    ->label('Línea de Crédito')
+                    ->alignRight()
+                    ->formatStateUsing(
+                        fn (Account $record) => !$record->isCreditCard()
+                            ? '-'
+                            : as_money($record->credit_line)
                     )
                     ->sortable(['scoped_balance'])
                     ->searchable(),

@@ -59,6 +59,11 @@ class Account extends Model
             ?? 0.0;
     }
 
+    public function isCreditCard(): bool
+    {
+        return $this->credit_card;
+    }
+
     public function getTransferBalanceLabelAttribute(): string
     {
         $balance = $this->credit_card ? $this->scoped_balance : $this->balance;
@@ -71,8 +76,13 @@ class Account extends Model
         );
     }
 
-    public function isCreditCard(): bool
+    public function getVisibleBalanceAttribute(): string
     {
-        return $this->credit_card;
+        return $this->credit_card ? $this->scoped_balance : $this->balance;
+    }
+
+    public function getAvailableCreditAttribute(): string
+    {
+        return $this->credit_card ? $this->scoped_balance : $this->balance;
     }
 }
