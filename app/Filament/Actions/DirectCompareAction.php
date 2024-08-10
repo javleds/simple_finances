@@ -70,7 +70,6 @@ class DirectCompareAction extends Action
                             ->prefix('$')
                             ->numeric()
                             ->required()
-                            ->minValue(0.01)
                             ->readOnly()
                             ->disabled(),
                         TextInput::make('destination_balance')
