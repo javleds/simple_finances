@@ -83,4 +83,6 @@
     <p class="mt-6">Si tiene preguntas o comentarios sobre esta Política de Privacidad, contáctenos en <a href="mailto:contacto@javleds.com">contacto@javleds.com</a>.</p>
 
     <p class="mt-6">Al completar el registro y utilizar nuestra Aplicación, usted acepta la recopilación y uso de su información personal como se describe en esta Política de Privacidad.</p>
+
+    {{ $this->goToHomePage }}
 </x-filament-panels::page.simple>

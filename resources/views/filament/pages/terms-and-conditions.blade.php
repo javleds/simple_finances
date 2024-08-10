@@ -30,4 +30,6 @@
 
     <h2 class="text-2xl mt-6">10. Contacto</h2>
     <p class="mt-6">Si tiene preguntas sobre estos Términos, contáctenos en <a href="mailto:contacto@javleds.com">contacto@javleds.com</a>.</p>
+
+    {{ $this->goToHomePage }}
 </x-filament-panels::page.simple>
