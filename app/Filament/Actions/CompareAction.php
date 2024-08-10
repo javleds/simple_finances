@@ -96,7 +96,6 @@ class CompareAction extends Action
                             ->prefix('$')
                             ->numeric()
                             ->required()
-                            ->minValue(0.01)
                             ->readOnly(),
                         TextInput::make('destination_balance')
                             ->label('Balance en cuenta destino')
