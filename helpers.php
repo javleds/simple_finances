@@ -3,6 +3,10 @@
 if (! function_exists('as_money')) {
     function as_money(mixed $value): string
     {
-        return sprintf('$ %s', number_format($value, 2));
+        return sprintf(
+            '%s$ %s',
+            $value > 0 ? '' : '-',
+            number_format(abs($value), 2)
+        );
     }
 }
