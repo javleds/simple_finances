@@ -5,6 +5,8 @@ namespace App\Filament\Resources;
 use App\Enums\TransactionType;
 use App\Events\TransactionSaved;
 use App\Filament\Actions\AddTransactionShortcutAction;
+use App\Filament\Actions\CompareAction;
+use App\Filament\Actions\DirectCompareAction;
 use App\Filament\Resources\AccountResource\Pages;
 use App\Filament\Resources\AccountResource\RelationManagers;
 use App\Models\Account;
@@ -116,7 +118,7 @@ class AccountResource extends Resource
                 Tables\Actions\ViewAction::make()
                     ->label(''),
                 AddTransactionShortcutAction::make(),
-                AddTransactionShortcutAction::make(),
+                DirectCompareAction::make(),
                 Tables\Actions\EditAction::make()
                     ->label(''),
                 Tables\Actions\DeleteAction::make()
