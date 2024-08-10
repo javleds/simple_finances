@@ -4,6 +4,7 @@ namespace App\Filament\Resources\AccountResource\Pages;
 
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
+use App\Filament\Actions\CompareAction;
 use App\Filament\Actions\CreateTransferAction;
 use App\Filament\Resources\AccountResource;
 use App\Models\Account;
@@ -26,6 +27,7 @@ class ListAccounts extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            CompareAction::make(),
             CreateTransferAction::make(),
             Actions\CreateAction::make(),
         ];

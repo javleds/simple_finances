@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Filament\Forms\Form;
 use Filament\Infolists\Infolist;
+use Filament\Support\View\Components\Modal;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
