@@ -90,7 +90,7 @@ class TransactionsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Cantidad')
                     ->alignRight()
-                    ->formatStateUsing(fn ($state) => sprintf('$ %s', number_format($state, 2)))
+                    ->formatStateUsing(fn ($state) => as_money($state))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo')
