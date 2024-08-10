@@ -74,7 +74,7 @@ class TransactionResource extends Resource
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Cantidad')
                     ->alignRight()
-                    ->money(locale: 'mx')
+                    ->formatStateUsing(fn ($state) => sprintf('$ %s', number_format($state, 2)))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo')

@@ -81,7 +81,7 @@ class AccountResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('balance')
                     ->alignRight()
-                    ->money(locale: 'mx')
+                    ->formatStateUsing(fn ($state) => sprintf('$ %s', number_format($state, 2)))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('scoped_balance')
                     ->label('En periodo')
@@ -184,21 +184,21 @@ class AccountResource extends Resource
                         ->label('Color'),
                     TextEntry::make('balance')
                         ->label('Balance')
-                        ->money(locale: 'mx'),
+                        ->formatStateUsing(fn ($state) => sprintf('$ %s', number_format($state, 2))),
                     TextEntry::make('description')
                         ->label('Descripción')
                         ->default('-')
                         ->columnSpanFull(),
                     TextEntry::make('credit_line')
                         ->label('línea de crédito')
-                        ->money(locale: 'mx'),
+                        ->formatStateUsing(fn ($state) => sprintf('$ %s', number_format($state, 2))),
                     TextEntry::make('next_cutoff_date')
                         ->label('Fecha de corte')
                         ->dateTime('F d,Y')
                         ->numeric(),
                     TextEntry::make('scoped_balance')
                         ->label('Balance del periodo')
-                        ->money(locale: 'mx'),
+                        ->formatStateUsing(fn ($state) => sprintf('$ %s', number_format($state, 2))),
                 ]),
             ]);
     }
