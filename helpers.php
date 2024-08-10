@@ -5,7 +5,7 @@ if (! function_exists('as_money')) {
     {
         return sprintf(
             '%s$ %s',
-            $value > 0 ? '' : '-',
+            $value >= 0 ? '' : '-',
             number_format(abs($value), 2)
         );
     }

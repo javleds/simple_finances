@@ -71,7 +71,7 @@ class Account extends Model
         return sprintf(
             '%s [%s$ %s]',
             $this->name,
-            $balance > 0 ? '' : '-',
+            $balance >= 0 ? '' : '-',
             number_format(abs($balance), 2)
         );
     }
