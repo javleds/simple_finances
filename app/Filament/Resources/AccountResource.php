@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Enums\TransactionType;
 use App\Events\TransactionSaved;
+use App\Filament\Actions\AddTransactionShortcutAction;
 use App\Filament\Resources\AccountResource\Pages;
 use App\Filament\Resources\AccountResource\RelationManagers;
 use App\Models\Account;
@@ -114,54 +115,8 @@ class AccountResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->label(''),
-                Tables\Actions\Action::make('add_transaction')
-                    ->label('')
-                    ->color(Color::Blue)
-                    ->icon('heroicon-o-banknotes')
-                    ->form([
-                        Forms\Components\Group::make()
-                            ->columns()
-                            ->schema([
-                                Forms\Components\TextInput::make('concept')
-                                    ->label('Concepto')
-                                    ->required()
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('amount')
-                                    ->label('Cantidad')
-                                    ->prefix('$')
-                                    ->required()
-                                    ->numeric(),
-                                Forms\Components\ToggleButtons::make('type')
-                                    ->label('Tipo')
-                                    ->inline()
-                                    ->grouped()
-                                    ->options(TransactionType::class)
-                                    ->default(TransactionType::Outcome)
-                                    ->required(),
-                                Forms\Components\DatePicker::make('scheduled_at')
-                                    ->label('Fecha')
-                                    ->prefixIcon('heroicon-o-calendar')
-                                    ->default(Carbon::now())
-                                    ->native(false)
-                                    ->closeOnDateSelection()
-                                    ->required(),
-                            ]),
-                    ])
-                    ->action(function (array $data, Account $record) {
-                        $transaction = $record->transactions()->create([
-                            'concept' => $data['concept'],
-                            'amount' => $data['amount'],
-                            'type' => $data['type'],
-                            'scheduled_at' => $data['scheduled_at'],
-                        ]);
-
-                        event(new TransactionSaved($transaction));
-
-                        Notification::make('transaction_added')
-                            ->success()
-                            ->title('Transacción creada')
-                            ->send();
-                    }),
+                AddTransactionShortcutAction::make(),
+                AddTransactionShortcutAction::make(),
                 Tables\Actions\EditAction::make()
                     ->label(''),
                 Tables\Actions\DeleteAction::make()
