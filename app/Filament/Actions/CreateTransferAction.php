@@ -30,7 +30,7 @@ class CreateTransferAction extends Action
                     ->schema([
                         Select::make('origin_id')
                             ->label('Origen')
-                            ->options(fn () => Account::all()->pluck('name', 'id'))
+                            ->options(fn () => Account::all()->pluck('transfer_balance_label', 'id'))
                             ->required()
                             ->searchable()
                             ->rules([
@@ -46,7 +46,7 @@ class CreateTransferAction extends Action
                             ]),
                         Select::make('destination_id')
                             ->label('Destino')
-                            ->options(fn () => Account::all()->pluck('name', 'id'))
+                            ->options(fn () => Account::all()->pluck('transfer_balance_label', 'id'))
                             ->required()
                             ->searchable()
                             ->rules([

@@ -59,6 +59,18 @@ class Account extends Model
             ?? 0.0;
     }
 
+    public function getTransferBalanceLabelAttribute(): string
+    {
+        $balance = $this->credit_card ? $this->scoped_balance : $this->balance;
+
+        return sprintf(
+            '%s [%s$ %s]',
+            $this->name,
+            $balance > 0 ? '' : '-',
+            number_format(abs($balance), 2)
+        );
+    }
+
     public function isCreditCard(): bool
     {
         return $this->credit_card;
