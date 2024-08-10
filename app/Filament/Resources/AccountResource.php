@@ -96,7 +96,7 @@ class AccountResource extends Resource
                     ->formatStateUsing(
                         fn (Account $record) => !$record->isCreditCard()
                             ? '-'
-                            : sprintf('$ %s', number_format($record->scoped_balance, 2))
+                            : as_money($record->scoped_balance)
                     )
                     ->sortable(['scoped_balance'])
                     ->searchable(),
