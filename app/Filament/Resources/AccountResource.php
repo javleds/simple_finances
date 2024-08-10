@@ -99,7 +99,8 @@ class AccountResource extends Resource
                             : as_money($record->balance)
                     )
                     ->sortable(['scoped_balance'])
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('credit_line')
                     ->label('Línea de Crédito')
                     ->alignRight()
@@ -109,7 +110,8 @@ class AccountResource extends Resource
                             : as_money($record->credit_line)
                     )
                     ->sortable(['scoped_balance'])
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
