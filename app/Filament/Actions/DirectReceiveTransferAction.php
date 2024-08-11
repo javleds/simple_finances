@@ -15,6 +15,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Alignment;
 use Filament\Tables\Actions\Action;
 
 class DirectReceiveTransferAction extends Action
@@ -25,6 +26,7 @@ class DirectReceiveTransferAction extends Action
 
         $this
             ->name('transfer_receive')
+            ->modalFooterActionsAlignment(Alignment::Right)
             ->label('')
             ->icon('heroicon-o-arrow-down-on-square')
             ->color(Color::Teal)

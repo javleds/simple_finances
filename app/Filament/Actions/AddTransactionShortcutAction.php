@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Alignment;
 use Filament\Tables\Actions\Action;
 
 class AddTransactionShortcutAction extends Action
@@ -22,6 +23,7 @@ class AddTransactionShortcutAction extends Action
 
         $this
             ->label('')
+            ->modalFooterActionsAlignment(Alignment::Right)
             ->name('add_transaction')
             ->color(Color::Blue)
             ->icon('heroicon-o-banknotes')

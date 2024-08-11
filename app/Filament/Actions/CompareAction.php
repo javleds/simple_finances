@@ -11,6 +11,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Alignment;
 use Illuminate\Support\Arr;
 
 class CompareAction extends Action
@@ -21,6 +22,7 @@ class CompareAction extends Action
 
         $this
             ->name('compare')
+            ->modalFooterActionsAlignment(Alignment::Right)
             ->label('Comparar cuentas')
             ->color(Color::Slate)
             ->form([

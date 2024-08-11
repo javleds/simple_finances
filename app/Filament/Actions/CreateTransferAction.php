@@ -13,6 +13,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Get;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Alignment;
 
 class CreateTransferAction extends Action
 {
@@ -22,6 +23,7 @@ class CreateTransferAction extends Action
 
         $this
             ->name('transfer')
+            ->modalFooterActionsAlignment(Alignment::Right)
             ->label('Nueva transferencia')
             ->color(Color::Blue)
             ->form([

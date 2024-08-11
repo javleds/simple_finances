@@ -2,31 +2,22 @@
 
 namespace App\Filament\Resources;
 
-use App\Enums\TransactionType;
-use App\Events\TransactionSaved;
 use App\Filament\Actions\AddTransactionShortcutAction;
-use App\Filament\Actions\CompareAction;
 use App\Filament\Actions\DirectCompareAction;
 use App\Filament\Actions\DirectReceiveTransferAction;
 use App\Filament\Actions\DirectSendTransferAction;
 use App\Filament\Resources\AccountResource\Pages;
 use App\Filament\Resources\AccountResource\RelationManagers;
 use App\Models\Account;
-use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\ColorEntry;
-use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Support\Colors\Color;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class AccountResource extends Resource
 {
