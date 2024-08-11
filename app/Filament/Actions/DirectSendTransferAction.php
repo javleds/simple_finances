@@ -12,7 +12,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Get;
 use Filament\Support\Colors\Color;
-use Filament\Support\Enums\Alignment;
 use Filament\Tables\Actions\Action;
 
 class DirectSendTransferAction extends Action
@@ -23,7 +22,6 @@ class DirectSendTransferAction extends Action
 
         $this
             ->name('transfer_send')
-            ->modalFooterActionsAlignment(Alignment::Right)
             ->label('')
             ->icon('heroicon-o-arrow-up-on-square')
             ->color(Color::Amber)

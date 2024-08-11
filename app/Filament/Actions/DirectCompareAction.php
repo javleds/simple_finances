@@ -10,7 +10,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Support\Colors\Color;
-use Filament\Support\Enums\Alignment;
 use Filament\Tables\Actions\Action;
 
 class DirectCompareAction extends Action
@@ -21,7 +20,6 @@ class DirectCompareAction extends Action
 
         $this
             ->name('compare')
-            ->modalFooterActionsAlignment(Alignment::Right)
             ->label('')
             ->icon('heroicon-o-code-bracket-square')
             ->color(Color::Slate)

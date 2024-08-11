@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\AccountResource\RelationManagers;
+namespace App\Filament\Actions;
 
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
@@ -15,7 +15,6 @@ use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
-use Filament\Support\Enums\Alignment;
 use Filament\Tables\Actions\Action;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Component;
@@ -46,7 +45,6 @@ class DeferredTransactionAction extends Action
         parent::setUp();
 
         $this
-            ->modalFooterActionsAlignment(Alignment::Right)
             ->name('add_differed_transaction')
             ->hidden(fn () => !$this->getOwnerRecord()->isCreditCard())
             ->label('Crear Egreso Diferido')
