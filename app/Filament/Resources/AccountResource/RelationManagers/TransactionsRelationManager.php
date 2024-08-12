@@ -96,7 +96,7 @@ class TransactionsRelationManager extends RelationManager
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('scheduled_at')
-                    ->label('Fecha de compra')
+                    ->label('Fecha')
                     ->dateTime('F d, Y')
                     ->searchable()
                     ->sortable(),
