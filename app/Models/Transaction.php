@@ -50,4 +50,13 @@ class Transaction extends Model
 
         $builder->whereDate('scheduled_at', '<', $date->toDateString());
     }
+
+    public function scopeBeforeOrEqualsTo(Builder $builder, ?Carbon $date): void
+    {
+        if (!$date) {
+            return;
+        }
+
+        $builder->whereDate('scheduled_at', '<=', $date->toDateString());
+    }
 }

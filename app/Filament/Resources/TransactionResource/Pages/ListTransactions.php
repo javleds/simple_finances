@@ -3,8 +3,11 @@
 namespace App\Filament\Resources\TransactionResource\Pages;
 
 use App\Filament\Resources\TransactionResource;
+use Carbon\Carbon;
 use Filament\Actions;
+use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Database\Eloquent\Builder;
 
 class ListTransactions extends ListRecords
 {
@@ -14,6 +17,14 @@ class ListTransactions extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+        ];
+    }
+
+    public function getTabs(): array
+    {
+        return [
+            Tab::make('Hasta hoy')->modifyQueryUsing(fn (Builder $query) => $query->beforeOrEqualsTo(Carbon::now())),
+            Tab::make('Todas'),
         ];
     }
 }
