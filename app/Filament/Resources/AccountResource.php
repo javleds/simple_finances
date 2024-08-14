@@ -78,7 +78,7 @@ class AccountResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('balance')
                     ->alignRight()
-                    ->formatStateUsing(fn (Account $account) => as_money($account->visible_balance))
+                    ->formatStateUsing(fn (Account $account) => as_money($account->balance))
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('scoped_balance')
@@ -87,7 +87,7 @@ class AccountResource extends Resource
                     ->formatStateUsing(
                         fn (Account $record) => !$record->isCreditCard()
                             ? '-'
-                            : as_money($record->balance)
+                            : as_money($record->scoped_balance)
                     )
                     ->sortable(['scoped_balance'])
                     ->searchable()
@@ -102,14 +102,6 @@ class AccountResource extends Resource
                     )
                     ->sortable(['scoped_balance'])
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

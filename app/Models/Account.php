@@ -39,11 +39,11 @@ class Account extends Model
             return $this->balance;
         }
 
-        $this->balance = $this->credit_line
+        $this->scoped_balance = $this->credit_line
             - $this->transactions()->income()->sum('amount')
             - $this->transactions()->outcome()->sum('amount');
 
-        $this->scoped_balance = $this->transactions()->beforeOf($this->next_cutoff_date)->income()->sum('amount')
+        $this->balance = $this->transactions()->beforeOf($this->next_cutoff_date)->income()->sum('amount')
             - $this->transactions()->beforeOf($this->next_cutoff_date)->outcome()->sum('amount');
 
         $this->save();
@@ -74,11 +74,6 @@ class Account extends Model
             $balance >= 0 ? '' : '-',
             number_format(abs($balance), 2)
         );
-    }
-
-    public function getVisibleBalanceAttribute(): string
-    {
-        return $this->credit_card ? $this->scoped_balance : $this->balance;
     }
 
     public function getAvailableCreditAttribute(): string
