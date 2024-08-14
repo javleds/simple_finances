@@ -18,19 +18,19 @@ class TransferCreator
         $transactions = collect();
 
         $transactions->add(
-            $origin->transactions()->create([
+            $destination->transactions()->create([
                 'concept' => $concept,
                 'amount' => $amount,
-                'type' => TransactionType::Outcome,
+                'type' => TransactionType::Income,
                 'scheduled_at' => $date,
             ])
         );
 
         $transactions->add(
-            $destination->transactions()->create([
+            $origin->transactions()->create([
                 'concept' => $concept,
                 'amount' => $amount,
-                'type' => TransactionType::Income,
+                'type' => TransactionType::Outcome,
                 'scheduled_at' => $date,
             ])
         );
