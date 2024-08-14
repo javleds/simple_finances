@@ -152,22 +152,24 @@ class AccountResource extends Resource
                         ->label('Nombre'),
                     ColorEntry::make('color')
                         ->label('Color'),
-                    TextEntry::make('balance')
-                        ->label('Balance')
-                        ->formatStateUsing(fn ($state) => as_money($state)),
+                    TextEntry::make('next_cutoff_date')
+                        ->label('Fecha de corte')
+                        ->dateTime('M d,Y'),
                     TextEntry::make('description')
                         ->label('Descripción')
                         ->default('-')
-                        ->columnSpanFull(),
+                        ->columnSpan(2),
                     TextEntry::make('credit_line')
-                        ->label('línea de crédito')
+                        ->label('Línea de crédito')
                         ->formatStateUsing(fn ($state) => as_money($state)),
-                    TextEntry::make('next_cutoff_date')
-                        ->label('Fecha de corte')
-                        ->dateTime('F d,Y')
-                        ->numeric(),
+                    TextEntry::make('balance')
+                        ->label(fn (Account $account) => sprintf('Balance (%s)', $account->next_cutoff_date->translatedFormat('M d, Y')))
+                        ->formatStateUsing(fn ($state) => as_money($state)),
+                    TextEntry::make('spent')
+                        ->label('Total gastado')
+                        ->formatStateUsing(fn ($state) => as_money($state)),
                     TextEntry::make('available_credit')
-                        ->label('Balance del periodo')
+                        ->label('Crédito disponible')
                         ->formatStateUsing(fn ($state) => as_money($state)),
                 ]),
             ]);
