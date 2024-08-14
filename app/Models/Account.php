@@ -21,7 +21,8 @@ class Account extends Model
             'credit_line' => 'float',
             'cutoff_day' => 'int',
             'next_cutoff_date' => 'datetime',
-            'scoped_balance' => 'float',
+            'available_credit' => 'float',
+            'spent' => 'float',
         ];
     }
 
@@ -39,9 +40,10 @@ class Account extends Model
             return $this->balance;
         }
 
-        $this->scoped_balance = $this->credit_line
-            - $this->transactions()->income()->sum('amount')
+        $this->spent = $this->transactions()->income()->sum('amount')
             - $this->transactions()->outcome()->sum('amount');
+
+        $this->available_credit = $this->credit_line - ($this->spent * -1);
 
         $this->balance = $this->transactions()->beforeOf($this->next_cutoff_date)->income()->sum('amount')
             - $this->transactions()->beforeOf($this->next_cutoff_date)->outcome()->sum('amount');
@@ -66,7 +68,7 @@ class Account extends Model
 
     public function getTransferBalanceLabelAttribute(): string
     {
-        $balance = $this->credit_card ? $this->scoped_balance : $this->balance;
+        $balance = $this->credit_card ? $this->available_credit : $this->balance;
 
         return sprintf(
             '%s [%s$ %s]',
@@ -74,10 +76,5 @@ class Account extends Model
             $balance >= 0 ? '' : '-',
             number_format(abs($balance), 2)
         );
-    }
-
-    public function getAvailableCreditAttribute(): string
-    {
-        return $this->credit_card ? $this->scoped_balance : $this->balance;
     }
 }

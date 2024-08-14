@@ -81,15 +81,26 @@ class AccountResource extends Resource
                     ->formatStateUsing(fn (Account $account) => as_money($account->balance))
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('scoped_balance')
+                Tables\Columns\TextColumn::make('spent')
+                    ->label('Total gastado')
+                    ->alignRight()
+                    ->formatStateUsing(
+                        fn (Account $record) => !$record->isCreditCard()
+                            ? '-'
+                            : as_money($record->spent)
+                    )
+                    ->sortable(['spent'])
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('available_credit')
                     ->label('Crédito disponible')
                     ->alignRight()
                     ->formatStateUsing(
                         fn (Account $record) => !$record->isCreditCard()
                             ? '-'
-                            : as_money($record->scoped_balance)
+                            : as_money($record->available_credit)
                     )
-                    ->sortable(['scoped_balance'])
+                    ->sortable(['available_credit'])
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('credit_line')
@@ -100,7 +111,7 @@ class AccountResource extends Resource
                             ? '-'
                             : as_money($record->credit_line)
                     )
-                    ->sortable(['scoped_balance'])
+                    ->sortable(['available_credit'])
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -155,7 +166,7 @@ class AccountResource extends Resource
                         ->label('Fecha de corte')
                         ->dateTime('F d,Y')
                         ->numeric(),
-                    TextEntry::make('scoped_balance')
+                    TextEntry::make('available_credit')
                         ->label('Balance del periodo')
                         ->formatStateUsing(fn ($state) => as_money($state)),
                 ]),

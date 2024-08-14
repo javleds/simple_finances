@@ -58,8 +58,8 @@ class DirectCompareAction extends Action
                                 $origin = Account::find($get('origin_id'));
                                 $destination = Account::find($get('destination_id'));
 
-                                $originBalance = $origin->credit_card ? $origin->scoped_balance : $origin->balance;
-                                $destinationBalance = $destination->credit_card ? $destination->scoped_balance : $destination->balance;
+                                $originBalance = $origin->balance;
+                                $destinationBalance = $destination->balance;
 
                                 $set('origin_balance', $originBalance);
                                 $set('destination_balance', $destinationBalance);
