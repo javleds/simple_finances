@@ -40,7 +40,7 @@ class TransactionsRelationManager extends RelationManager
         }
 
         return [
-            Tab::make('En peridoo')->modifyQueryUsing(fn (Builder $query) => $query->beforeOf($this->getOwnerRecord()->next_cutoff_date)),
+            Tab::make('Hasta hoy')->modifyQueryUsing(fn (Builder $query) => $query->beforeOrEqualsTo($this->getOwnerRecord()->next_cutoff_date)),
             Tab::make('Todas'),
         ];
     }
