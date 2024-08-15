@@ -56,7 +56,7 @@ class CompareAction extends Action
 
                                 $set('origin_balance', $originBalance);
                                 $set('destination_balance', $destinationBalance);
-                                $set('difference', abs(abs($originBalance) - abs($destinationBalance)));
+                                $set('difference', round(abs(abs($originBalance) - abs($destinationBalance)), 2));
                             }),
                         Select::make('destination_id')
                             ->label('Destino')
@@ -88,7 +88,7 @@ class CompareAction extends Action
 
                                 $set('origin_balance', $originBalance);
                                 $set('destination_balance', $destinationBalance);
-                                $set('difference', abs(abs($originBalance) - abs($destinationBalance)));
+                                $set('difference', round(abs(abs($originBalance) - abs($destinationBalance)), 2));
                             }),
                         TextInput::make('origin_balance')
                             ->label('Balance en cuenta origen')
