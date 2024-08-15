@@ -13,6 +13,10 @@ class AutomatedAccountUpdater
         $now = Carbon::now();
 
         foreach ($accounts as $account) {
+            if (!$account->isCreditCard()) {
+                continue;
+            }
+
             if ($now > $account->next_cutoff_date) {
                 $account->next_cutoff_date = $account->next_cutoff_date->addMonth()->clone();
                 $account->save();
