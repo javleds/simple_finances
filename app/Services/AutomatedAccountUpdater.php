@@ -9,7 +9,7 @@ class AutomatedAccountUpdater
 {
     public function handle(): void
     {
-        $accounts = Account::withoutGlobalScopes()->all();
+        $accounts = Account::withoutGlobalScopes()->get();
         $now = Carbon::now();
 
         foreach ($accounts as $account) {
