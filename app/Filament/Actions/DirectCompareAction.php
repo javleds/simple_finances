@@ -36,6 +36,7 @@ class DirectCompareAction extends Action
                         Select::make('destination_id')
                             ->label('Destino')
                             ->options(fn () => Account::all()->pluck('name', 'id'))
+                            ->default(fn (Account $record) => $record->feed_account_id)
                             ->required()
                             ->searchable()
                             ->rules([

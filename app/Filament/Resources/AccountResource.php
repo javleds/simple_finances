@@ -125,6 +125,7 @@ class AccountResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('feedAccount.name')
+                    ->label('Cuenta de alimentación')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
