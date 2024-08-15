@@ -156,6 +156,7 @@ class AccountResource extends Resource
                         ->label('Color'),
                     TextEntry::make('next_cutoff_date')
                         ->label('Fecha de corte')
+                        ->hidden(fn (Account $record) => !$record->isCreditCard())
                         ->dateTime('M d,Y'),
                     TextEntry::make('description')
                         ->label('Descripción')
@@ -163,15 +164,19 @@ class AccountResource extends Resource
                         ->columnSpan(2),
                     TextEntry::make('credit_line')
                         ->label('Línea de crédito')
+                        ->hidden(fn (Account $record) => !$record->isCreditCard())
                         ->formatStateUsing(fn ($state) => as_money($state)),
                     TextEntry::make('balance')
-                        ->label(fn (Account $account) => sprintf('Balance (%s)', $account->next_cutoff_date->translatedFormat('M d, Y')))
+                        ->label(fn (Account $account) => sprintf('Balance %s', $account->credit_card ? $account->next_cutoff_date->translatedFormat('M d, Y') : ''))
+                        ->hidden(fn (Account $record) => !$record->isCreditCard())
                         ->formatStateUsing(fn ($state) => as_money($state)),
                     TextEntry::make('spent')
                         ->label('Total gastado')
+                        ->hidden(fn (Account $record) => !$record->isCreditCard())
                         ->formatStateUsing(fn ($state) => as_money($state)),
                     TextEntry::make('available_credit')
                         ->label('Crédito disponible')
+                        ->hidden(fn (Account $record) => !$record->isCreditCard())
                         ->formatStateUsing(fn ($state) => as_money($state)),
                 ]),
             ]);
