@@ -23,6 +23,26 @@ class DirectCompareAction extends Action
             ->label('')
             ->icon('heroicon-o-code-bracket-square')
             ->color(Color::Slate)
+            ->fillForm(function (array $data, Account $record) {
+                $data['origin_id'] = $record->id;
+
+                if (!$record->feed_account_id) {
+                    return $data;
+                }
+
+                $origin = $record;
+                $destination = $record->feedAccount;
+
+                $originBalance = $origin->balance;
+                $destinationBalance = $destination->balance;
+
+                $data['destination_id'] = $destination->id;
+                $data['origin_balance'] = $originBalance;
+                $data['destination_balance'] = $destinationBalance;
+                $data['difference'] = round(abs(abs($originBalance) - abs($destinationBalance)), 2);
+
+                return $data;
+            })
             ->form([
                 Group::make()
                     ->columns()
@@ -36,7 +56,6 @@ class DirectCompareAction extends Action
                         Select::make('destination_id')
                             ->label('Destino')
                             ->options(fn () => Account::all()->pluck('name', 'id'))
-                            ->default(fn (Account $record) => $record->feed_account_id)
                             ->required()
                             ->searchable()
                             ->rules([
