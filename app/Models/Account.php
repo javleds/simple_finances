@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\BelongsToUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Account extends Model
@@ -23,12 +24,23 @@ class Account extends Model
             'next_cutoff_date' => 'datetime',
             'available_credit' => 'float',
             'spent' => 'float',
+            'feed_account_id' => 'int',
         ];
     }
 
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function feedAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'feed_account_id', 'id');
+    }
+
+    public function seedAccounts(): HasMany
+    {
+        return $this->hasMany(Account::class, 'feed_account_id', 'id');
     }
 
     public function updateBalance(): float

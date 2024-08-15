@@ -18,6 +18,7 @@ use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class AccountResource extends Resource
 {
@@ -64,7 +65,14 @@ class AccountResource extends Resource
                             ->required(fn (Forms\Get $get) => $get('credit_card') === true)
                             ->minValue(1)
                             ->maxValue(31),
-                    ])
+                    ]),
+                Forms\Components\Select::make('feed_account_id')
+                    ->helperText('Elija una cuenta si desea hacer transferencias rápidas usando como origen la cuenta seleccionada y como destino la cuenta que se está editando.')
+                    ->label('Cuenta de alimentación')
+                    ->relationship('feedAccount', 'name', fn (Builder $query, Account $record) => $query->whereNot('id', $record->id))
+                    ->searchable()
+                    ->preload()
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -160,8 +168,10 @@ class AccountResource extends Resource
                         ->dateTime('M d,Y'),
                     TextEntry::make('description')
                         ->label('Descripción')
-                        ->default('-')
-                        ->columnSpan(2),
+                        ->default('-'),
+                    TextEntry::make('feedAccount.name')
+                        ->label('Cuenta de alimentación')
+                        ->default('-'),
                     TextEntry::make('credit_line')
                         ->label('Línea de crédito')
                         ->hidden(fn (Account $record) => !$record->isCreditCard())
