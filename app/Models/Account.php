@@ -57,8 +57,8 @@ class Account extends Model
 
         $this->available_credit = $this->credit_line - ($this->spent * -1);
 
-        $this->balance = $this->transactions()->beforeOf($this->next_cutoff_date)->income()->sum('amount')
-            - $this->transactions()->beforeOf($this->next_cutoff_date)->outcome()->sum('amount');
+        $this->balance = $this->transactions()->beforeOrEqualsTo($this->next_cutoff_date)->income()->sum('amount')
+            - $this->transactions()->beforeOrEqualsTo($this->next_cutoff_date)->outcome()->sum('amount');
 
         $this->save();
 
