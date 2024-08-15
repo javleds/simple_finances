@@ -34,6 +34,7 @@ class DirectReceiveTransferAction extends Action
                             ->options(fn () => Account::all()->pluck('transfer_balance_label', 'id'))
                             ->required()
                             ->searchable()
+                            ->default(fn (Account $record) => $record->feed_account_id)
                             ->rules([
                                 fn (Get $get) => function (string $attribute, $value, Closure $fail) use ($get) {
                                     if (empty($get('destination_id')) || empty($get('origin_id'))) {
