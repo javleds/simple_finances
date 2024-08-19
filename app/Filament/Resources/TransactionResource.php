@@ -68,6 +68,10 @@ class TransactionResource extends Resource
     {
         return $table
             ->defaultSort(fn (Builder $query) => $query->orderBy('scheduled_at', 'desc')->orderBy('created_at', 'desc'))
+            ->groups([
+                Tables\Grouping\Group::make('account.name')->label('Cuenta'),
+                Tables\Grouping\Group::make('scheduled_at')->label('Fecha'),
+            ])
             ->columns([
                 Tables\Columns\TextColumn::make('concept')
                     ->label('Concepto')
