@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 
 class TransactionResource extends Resource
@@ -77,7 +78,17 @@ class TransactionResource extends Resource
                     ->alignRight()
                     ->formatStateUsing(fn ($state) => as_money($state))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->summarize([
+                        Tables\Columns\Summarizers\Sum::make('income')
+                            ->query(fn (QueryBuilder $query) => $query->where('type', TransactionType::Income))
+                            ->formatStateUsing(fn ($state) => as_money($state))
+                            ->label('Ingresos'),
+                        Tables\Columns\Summarizers\Sum::make('outcome')
+                            ->query(fn (QueryBuilder $query) => $query->where('type', TransactionType::Outcome))
+                            ->formatStateUsing(fn ($state) => as_money($state))
+                            ->label('Egresos'),
+                    ]),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo')
                     ->searchable()
