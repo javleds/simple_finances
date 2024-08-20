@@ -3,8 +3,8 @@
 namespace App\Filament\Resources;
 
 use App\Enums\Frequency;
+use App\Filament\Actions\CreateSubscriptionPaymentAction;
 use App\Filament\Resources\SubscriptionResource\Pages;
-use App\Filament\Resources\SubscriptionResource\RelationManagers;
 use App\Models\Account;
 use App\Models\Subscription;
 use Carbon\Carbon;
@@ -13,8 +13,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class SubscriptionResource extends Resource
 {
@@ -114,6 +112,7 @@ class SubscriptionResource extends Resource
                 //
             ])
             ->actions([
+                CreateSubscriptionPaymentAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
