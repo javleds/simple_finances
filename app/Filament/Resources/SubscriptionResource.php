@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Enums\Frequency;
 use App\Filament\Actions\CreateSubscriptionPaymentAction;
+use App\Filament\Filters\DateRangeFilter;
 use App\Filament\Resources\SubscriptionResource\Pages;
 use App\Models\Account;
 use App\Models\Subscription;
@@ -13,6 +14,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class SubscriptionResource extends Resource
 {
@@ -20,7 +22,7 @@ class SubscriptionResource extends Resource
     protected static ?string $label = 'Subscripción';
     protected static ?string $pluralLabel = 'Subscripciones';
 
-    protected static ?string $navigationIcon = 'heroicon-o-calendar';
+    protected static ?string $navigationIcon = 'heroicon-o-calendar-date-range';
     protected static ?int $navigationSort = 30;
 
     public static function form(Form $form): Form
@@ -81,16 +83,18 @@ class SubscriptionResource extends Resource
                     ->label('Cantidad')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('started_at')
-                    ->label('Fecha de contratación')
+                Tables\Columns\TextColumn::make('next_payment_date')
+                    ->label('Siguiente pago')
                     ->date()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('previous_payment_date')
                     ->label('Pago anterior')
-                    ->date(),
-                Tables\Columns\TextColumn::make('next_payment_date')
-                    ->label('Siguiente pago')
-                    ->date(),
+                    ->date()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('started_at')
+                    ->label('Fecha de contratación')
+                    ->date()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('frequency_unit')
                     ->label('Cada')
                     ->numeric()
@@ -109,7 +113,7 @@ class SubscriptionResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                DateRangeFilter::make('next_payment_date', 'Siguiente pago'),
             ])
             ->actions([
                 CreateSubscriptionPaymentAction::make(),
