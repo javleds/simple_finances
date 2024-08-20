@@ -20,6 +20,8 @@ return new class extends Migration
             $table->integer('frequency_unit');
             $table->date('started_at');
             $table->date('finished_at')->nullable();
+            $table->date('next_payment_date')->nullable();
+            $table->date('previous_payment_date')->nullable();
             $table->string('add_frequency')->virtualAs("CONCAT_WS(' ', '+', frequency_unit, frequency_type)");
             $table->string('sub_frequency')->virtualAs("CONCAT_WS(' ', '-', frequency_unit, frequency_type)");
             $table->foreignId('user_id');
