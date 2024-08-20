@@ -69,7 +69,7 @@ class AccountResource extends Resource
                 Forms\Components\Select::make('feed_account_id')
                     ->helperText('Elija una cuenta si desea hacer transferencias rápidas usando como origen la cuenta seleccionada y como destino la cuenta que se está editando.')
                     ->label('Cuenta de alimentación')
-                    ->relationship('feedAccount', 'name', fn (Builder $query, Account $record) => $query->whereNot('id', $record->id))
+                    ->relationship('feedAccount', 'name', fn (Builder $query, ?Account $record) => $query->when($record !== null, fn (Builder $q) => $q->whereNot('id', $record->id)))
                     ->searchable()
                     ->preload()
                     ->columnSpanFull(),
