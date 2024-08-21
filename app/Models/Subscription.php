@@ -48,8 +48,9 @@ class Subscription extends Model
             return $startedAt;
         }
 
+        $frequency = sprintf('+ %s %s', $this->frequency_unit, $this->frequency_type->value);
         do {
-            $nextDate = $startedAt->clone()->modify($this->add_frequency ?? sprintf('+ %s %s', $this->frequency_unit, $this->frequency_type->value));
+            $nextDate = $startedAt->clone()->modify($frequency);
         } while ($nextDate < $limit);
 
         return $nextDate;
