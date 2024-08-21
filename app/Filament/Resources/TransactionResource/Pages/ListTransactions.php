@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TransactionResource\Pages;
 
 use App\Filament\Actions\CreateTransferAction;
+use App\Filament\Actions\GlobalDeferredTransactionAction;
 use App\Filament\Resources\TransactionResource;
 use Carbon\Carbon;
 use Filament\Actions;
@@ -18,6 +19,7 @@ class ListTransactions extends ListRecords
     {
         return [
             CreateTransferAction::make(),
+            GlobalDeferredTransactionAction::make(),
             Actions\CreateAction::make(),
         ];
     }

@@ -7,52 +7,37 @@ use App\Events\BulkTransactionSaved;
 use App\Models\Account;
 use Carbon\Carbon;
 use Closure;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
-use Filament\Tables\Actions\Action;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Component;
 
-class DeferredTransactionAction extends Action
+class GlobalDeferredTransactionAction extends Action
 {
-    public Model $ownerRecord;
-
-    public static function makeWithOwnerRecord(Model $ownerRecord, ?string $name = null): static
-    {
-        return parent::make($name)->ownerRecord($ownerRecord);
-    }
-
-    public function getOwnerRecord(): Model
-    {
-        return $this->ownerRecord;
-    }
-
-    public function ownerRecord(Model $ownerRecord): static
-    {
-        $this->ownerRecord = $ownerRecord;
-
-        return $this;
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
 
         $this
-            ->name('add_differed_transaction')
-            ->hidden(fn () => !$this->getOwnerRecord()->isCreditCard())
-            ->label('Crear Egreso Diferido')
+            ->name('add_global_differed_transaction')
+            ->label('MSI')
             ->color(Color::Amber)
             ->form([
                 Group::make()
                     ->columns()
                     ->schema([
+                        Select::make('account_id')
+                            ->label('Cuenta')
+                            ->options(fn () => Account::where('credit_card', true)->get()->pluck('transfer_balance_label', 'id'))
+                            ->required(),
                         TextInput::make('concept')
                             ->label('Concepto')
                             ->required()
@@ -75,7 +60,11 @@ class DeferredTransactionAction extends Action
                             ->live(onBlur: true)
                             ->afterStateUpdated(function (Set $set, Get $get) {
                                 /** @var Account $account */
-                                $account = $this->getOwnerRecord();
+                                $account = Account::find($get('account_id'));
+
+                                if (!$account) {
+                                    return;
+                                }
 
                                 $amount = floatval($get('amount'));
                                 $payments = intval($get('payments'));
@@ -163,7 +152,7 @@ class DeferredTransactionAction extends Action
             ])
             ->action(function (array $data, Component $livewire) {
                 /** @var Account $account */
-                $account = $this->getOwnerRecord();
+                $account = Account::find($data['account_id']);
 
                 $concept = $data['concept'];
                 $amount = floatval($data['amount']);

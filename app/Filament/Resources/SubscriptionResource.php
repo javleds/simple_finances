@@ -67,7 +67,7 @@ class SubscriptionResource extends Resource
                     ->closeOnDateSelection(),
                 Forms\Components\Select::make('feed_account_id')
                     ->label('Cuenta de alimentación')
-                    ->options(fn () => Account::all()->map(fn ($a) => [$a->id => $a->transfer_balance_label])->flatten()),
+                    ->options(fn () => Account::all()->pluck('transfer_balance_label', 'id')),
             ]);
     }
 

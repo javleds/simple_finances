@@ -33,7 +33,7 @@ class CreateSubscriptionPaymentAction extends Action
                     ->schema([
                         Select::make('feed_account_id')
                             ->label('Cuenta de origen')
-                            ->options(fn () => Account::all()->map(fn ($a) => [$a->id => $a->transfer_balance_label])->flatten())
+                            ->options(fn () => Account::all()->pluck('transfer_balance_label', 'id'))
                             ->default(fn (Subscription $record) => $record->feed_account_id)
                             ->searchable()
                             ->columnSpanFull()
