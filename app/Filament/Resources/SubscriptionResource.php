@@ -81,7 +81,7 @@ class SubscriptionResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Cantidad')
-                    ->numeric()
+                    ->formatStateUsing(fn ($state) => as_money($state))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('next_payment_date')
                     ->label('Siguiente pago')
