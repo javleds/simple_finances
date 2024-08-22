@@ -74,6 +74,7 @@ class SubscriptionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('next_payment_date')
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
