@@ -39,9 +39,14 @@ class SubscriptionImporter extends Importer
                 ->rules(['required']),
             ImportColumn::make('started_at')
                 ->label('Fecha de contrato')
-                ->exampleHeader('Fecha de contract')
+                ->exampleHeader('Fecha de contrato')
                 ->requiredMapping()
                 ->rules(['required', 'date']),
+            ImportColumn::make('finished_at')
+                ->label('Fecha de cancelación')
+                ->exampleHeader('Fecha de cancelación')
+                ->requiredMapping()
+                ->rules(['nullable', 'date']),
         ];
     }
 
@@ -84,5 +89,6 @@ class SubscriptionImporter extends Importer
         }
 
         $this->data['frequency_type'] = Frequency::Month;
+        $this->data['user_id'] = session('user_id');
     }
 }

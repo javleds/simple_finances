@@ -49,8 +49,14 @@ class Subscription extends Model
         }
 
         $frequency = sprintf('+ %s %s', $this->frequency_unit, $this->frequency_type->value);
+        $nextDate = null;
+
         do {
-            $nextDate = $startedAt->clone()->modify($frequency);
+            if ($nextDate === null) {
+                $nextDate = $startedAt->clone()->modify($frequency);
+            }
+
+            $nextDate = $nextDate->clone()->modify($frequency);
         } while ($nextDate < $limit);
 
         return $nextDate;
@@ -64,6 +70,8 @@ class Subscription extends Model
             return $nextDate;
         }
 
-        return $nextDate->clone()->modify($this->sub_frequency);
+        return $nextDate->clone()->modify(
+            sprintf('+ %s %s', $this->frequency_unit, $this->frequency_type->value)
+        );
     }
 }
