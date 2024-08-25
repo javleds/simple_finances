@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\LoanResource\Pages;
+use App\Filament\Resources\LoanResource\RelationManagers\PaymentsRelationManager;
 use App\Models\Account;
 use App\Models\Loan;
 use Carbon\Carbon;
@@ -179,7 +180,7 @@ class LoanResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            PaymentsRelationManager::class,
         ];
     }
 
