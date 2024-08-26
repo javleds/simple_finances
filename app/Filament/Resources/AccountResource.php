@@ -9,9 +9,11 @@ use App\Filament\Actions\DirectSendTransferAction;
 use App\Filament\Resources\AccountResource\Pages;
 use App\Filament\Resources\AccountResource\RelationManagers;
 use App\Models\Account;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\ColorEntry;
+use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
@@ -19,6 +21,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class AccountResource extends Resource
 {
@@ -193,6 +196,15 @@ class AccountResource extends Resource
                         ->label('Crédito disponible')
                         ->hidden(fn (Account $record) => !$record->isCreditCard())
                         ->formatStateUsing(fn ($state) => as_money($state)),
+                    RepeatableEntry::make('users')
+                        ->columnSpanFull()
+                        ->grid(2)
+                        ->hidden(fn (Account $record) => $record->users()->count() <= 1)
+                        ->label('Comprtido con')
+                        ->schema([
+                            TextEntry::make('name')->label('Nombre'),
+                            TextEntry::make('email')->label('Correo electrónico'),
+                        ])
                 ]),
             ]);
     }
