@@ -3,7 +3,7 @@
 
 {{ $invite->email }} ha {{ $invite->status->getActionLabel() }} tu invitación a la cuenta compartida {{ $account->name }}.
 
-<x-mail::button :url="''">
+<x-mail::button :url="$link">
 Ir a mi cuenta
 </x-mail::button>
 

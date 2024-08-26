@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Account;
 use App\Models\AccountInvite;
+use Filament\Facades\Filament;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -39,6 +40,7 @@ class InviteAccountInteractionEmail extends Notification
         return (new MailMessage)->markdown('mail.accounts.invite.interact', [
             'invite' => $this->invite,
             'account' => Account::withoutGlobalScopes()->find($this->invite->account_id),
+            'link' => Filament::getUrl(),
         ])->subject(sprintf('%s - Respuesta a invitación', config('app.name')));
     }
 
