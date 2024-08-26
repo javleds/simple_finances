@@ -24,7 +24,7 @@ class AccountInviteResource extends Resource
     protected static ?string $label = 'Invitación';
     protected static ?string $pluralLabel = 'Invitaciones';
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-inbox-arrow-down';
 
     protected static ?int $navigationSort = 60;
 
