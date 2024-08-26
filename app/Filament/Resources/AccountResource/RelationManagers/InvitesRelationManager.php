@@ -74,7 +74,7 @@ class InvitesRelationManager extends RelationManager
                     ->requiresConfirmation()
                     ->color(Color::Red)
                     ->label('Dejar de compartir')
-                    ->hidden(fn (AccountInvite $record) => !$record->isAccepted())
+                    ->hidden(fn (AccountInvite $record) => !$record->isAccepted() || !$record->isOwnerAccount())
                     ->action(function (AccountInvite $record) {
                         $user = User::withoutGlobalScopes()->where('email', $record->email)->first();
                         $record->account->users()->detach($user->id);

@@ -60,4 +60,9 @@ class AccountInvite extends Model
     {
         return $this->status === InviteStatus::Declined;
     }
+
+    public function isOwnerAccount(): bool
+    {
+        return $this->user_id === auth()->id();
+    }
 }
