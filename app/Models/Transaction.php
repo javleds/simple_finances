@@ -35,6 +35,11 @@ class Transaction extends Model
         return $this->belongsTo(Account::class);
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function scopeIncome(Builder $builder): void
     {
         $builder->where('type', TransactionType::Income);
