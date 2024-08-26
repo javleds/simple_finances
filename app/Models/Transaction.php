@@ -3,18 +3,21 @@
 namespace App\Models;
 
 use App\Enums\TransactionType;
+use App\Models\Scopes\BelongsToUserScope;
+use App\Models\Scopes\BelongsToUserThroughAccount;
 use App\Traits\BelongsToUser;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[ScopedBy([BelongsToUserThroughAccount::class])]
 class Transaction extends Model
 {
     use HasFactory;
-    use BelongsToUser;
 
     protected function casts(): array
     {
@@ -58,5 +61,14 @@ class Transaction extends Model
         }
 
         $builder->whereDate('scheduled_at', '<=', $date->toDateString());
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Model $model) {
+            if (auth()->check()) {
+                $model->user_id = auth()->id();
+            }
+        });
     }
 }
