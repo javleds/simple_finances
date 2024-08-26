@@ -105,7 +105,7 @@ class TransactionsRelationManager extends RelationManager
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label('Creado por:')
+                    ->label('Creado por')
                     ->sortable()
                     ->searchable(),
             ])

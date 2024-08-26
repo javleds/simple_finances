@@ -199,7 +199,7 @@ class AccountResource extends Resource
                         ->columnSpanFull()
                         ->grid(2)
                         ->hidden(fn (Account $record) => $record->users()->count() <= 1)
-                        ->label('Comprtido con')
+                        ->label('Compartido con')
                         ->schema([
                             TextEntry::make('name')->label('Nombre'),
                             TextEntry::make('email')->label('Correo electrónico'),
