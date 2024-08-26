@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
 use App\Events\TransactionSaved;
+use App\Filament\Exports\TransactionExporter;
 use App\Filament\Filters\DateRangeFilter;
 use App\Filament\Resources\TransactionResource\Pages;
 use App\Models\Account;
@@ -150,6 +151,10 @@ class TransactionResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\ExportBulkAction::make()
+                        ->label('Exportar seleccionados')
+                        ->exporter(TransactionExporter::class)
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make()
                         ->after(function (Collection $records) {
                             event(new BulkTransactionSaved($records));
