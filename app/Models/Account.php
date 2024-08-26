@@ -2,16 +2,25 @@
 
 namespace App\Models;
 
-use App\Traits\BelongsToUser;
+use App\Events\AccountCreated;
+use App\Events\AccountCreationRequested;
+use App\Models\Scopes\BelongsToSharedUsersScope;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[ScopedBy([BelongsToSharedUsersScope::class])]
 class Account extends Model
 {
     use HasFactory;
-    use BelongsToUser;
+
+    protected $dispatchesEvents = [
+        'creating' => AccountCreationRequested::class,
+        'created' => AccountCreated::class,
+    ];
 
     protected function casts(): array
     {
@@ -26,6 +35,11 @@ class Account extends Model
             'spent' => 'float',
             'feed_account_id' => 'int',
         ];
+    }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class);
     }
 
     public function transactions(): HasMany
