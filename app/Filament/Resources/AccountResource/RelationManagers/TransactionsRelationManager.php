@@ -127,7 +127,6 @@ class TransactionsRelationManager extends RelationManager
                 DeferredTransactionAction::makeWithOwnerRecord($this->getOwnerRecord()),
                 Tables\Actions\CreateAction::make()
                     ->modalHeading('Crear Transacción')
-                    ->createAnother(false)
                     ->after(function (Transaction $record, Component $livewire) {
                         event(new TransactionSaved($record));
 
