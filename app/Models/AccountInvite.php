@@ -45,4 +45,19 @@ class AccountInvite extends Model
     {
         return $this->belongsTo(User::class)->withoutGlobalScopes();
     }
+
+    public function isPending(): bool
+    {
+        return $this->status === InviteStatus::Pending;
+    }
+
+    public function isAccepted(): bool
+    {
+        return $this->status === InviteStatus::Accepted;
+    }
+
+    public function isDeclined(): bool
+    {
+        return $this->status === InviteStatus::Declined;
+    }
 }
