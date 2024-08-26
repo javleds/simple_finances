@@ -5,9 +5,11 @@ namespace App\Filament\Resources;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
 use App\Events\TransactionSaved;
+use App\Filament\Filters\DateRangeFilter;
 use App\Filament\Resources\TransactionResource\Pages;
 use App\Models\Account;
 use App\Models\Transaction;
+use App\Models\User;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -17,6 +19,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class TransactionResource extends Resource
 {
@@ -106,12 +109,7 @@ class TransactionResource extends Resource
                     ->dateTime('F d, Y')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
+                Tables\Columns\TextColumn::make('user.name')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -126,43 +124,20 @@ class TransactionResource extends Resource
                     ->options(TransactionType::class)
                     ->multiple()
                     ->searchable(),
-                Tables\Filters\Filter::make('scheduled_at')
-                    ->form([
-                        Forms\Components\DatePicker::make('from')
-                            ->label('Desde')
-                            ->native(false)
-                            ->closeOnDateSelection(),
-                        Forms\Components\DatePicker::make('until')
-                            ->label('Hasta')
-                            ->native(false)
-                            ->closeOnDateSelection(),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['from'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('scheduled_at', '>=', $date),
-                            )
-                            ->when(
-                                $data['until'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('scheduled_at', '<=', $date),
-                            );
+                DateRangeFilter::make('scheduled_at', 'Fecha de pago'),
+                Tables\Filters\SelectFilter::make('user_id')
+                    ->label('Creado por')
+                    ->options(function () {
+                        $accounts = auth()->user()->accounts()->get();
+                        $userIds = DB::table('account_user')->whereIn('account_id', $accounts->pluck('id'))->get()->pluck('user_id');
+
+                        return User::whereIn('id', $userIds)
+                            ->get()
+                            ->pluck('name', 'id');
                     })
-                    ->indicateUsing(function (array $data): array {
-                        $indicators = [];
-
-                        if ($data['from'] ?? null) {
-                            $indicators[] = Tables\Filters\Indicator::make('Desde ' . Carbon::parse($data['from'])->toFormattedDateString())
-                                ->removeField('from');
-                        }
-
-                        if ($data['until'] ?? null) {
-                            $indicators[] = Tables\Filters\Indicator::make('Hasta ' . Carbon::parse($data['until'])->toFormattedDateString())
-                                ->removeField('until');
-                        }
-
-                        return $indicators;
-                    }),
+                    ->preload()
+                    ->searchable()
+                    ->multiple(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
