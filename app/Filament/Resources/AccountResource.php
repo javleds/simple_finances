@@ -186,7 +186,6 @@ class AccountResource extends Resource
                         ->formatStateUsing(fn ($state) => as_money($state)),
                     TextEntry::make('balance')
                         ->label(fn (Account $account) => sprintf('Balance %s', $account->credit_card ? $account->next_cutoff_date->translatedFormat('M d, Y') : ''))
-                        ->hidden(fn (Account $record) => !$record->isCreditCard())
                         ->formatStateUsing(fn ($state) => as_money($state)),
                     TextEntry::make('spent')
                         ->label('Total gastado')
