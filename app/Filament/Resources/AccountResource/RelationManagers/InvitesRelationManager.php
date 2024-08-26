@@ -14,6 +14,7 @@ use Filament\Support\Colors\Color;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class InvitesRelationManager extends RelationManager
@@ -25,6 +26,11 @@ class InvitesRelationManager extends RelationManager
     public function isReadOnly(): bool
     {
         return false;
+    }
+
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        return $ownerRecord->user_id === auth()->id();
     }
 
     public function form(Form $form): Form
@@ -74,7 +80,7 @@ class InvitesRelationManager extends RelationManager
                     ->requiresConfirmation()
                     ->color(Color::Red)
                     ->label('Dejar de compartir')
-                    ->hidden(fn (AccountInvite $record) => !$record->isAccepted() || !$record->isOwnerAccount())
+                    ->hidden(fn (AccountInvite $record) => !$record->isAccepted())
                     ->action(function (AccountInvite $record) {
                         $user = User::withoutGlobalScopes()->where('email', $record->email)->first();
                         $record->account->users()->detach($user->id);
