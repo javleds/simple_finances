@@ -201,6 +201,7 @@ class AccountResource extends Resource
     {
         return [
             RelationManagers\TransactionsRelationManager::class,
+            RelationManagers\InvitesRelationManager::class,
         ];
     }
 

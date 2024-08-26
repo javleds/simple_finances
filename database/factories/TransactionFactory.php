@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -22,9 +23,10 @@ class TransactionFactory extends Factory
         return [
             'concept' => $this->faker->words(3, true),
             'amount' => $this->faker->randomFloat(2, 1.0, 10000.0),
-            'type' => $this->faker->randomElement([TransactionType::values()]),
+            'type' => $this->faker->randomElement(TransactionType::values()),
             'user_id' => User::factory(),
             'account_id' => Account::factory(),
+            'scheduled_at' => Carbon::now()->format('Y-m-d'),
         ];
     }
 }

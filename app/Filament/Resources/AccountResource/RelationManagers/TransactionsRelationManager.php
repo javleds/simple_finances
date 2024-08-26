@@ -24,6 +24,7 @@ class TransactionsRelationManager extends RelationManager
     protected static string $relationship = 'transactions';
 
     protected static ?string $title = 'Transacciones';
+    protected static ?string $label = 'Transacción';
 
     public function isReadOnly(): bool
     {

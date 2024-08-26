@@ -52,6 +52,11 @@ class Account extends Model
         return $this->belongsTo(Account::class, 'feed_account_id', 'id');
     }
 
+    public function invites(): HasMany
+    {
+        return $this->hasMany(AccountInvite::class);
+    }
+
     public function seedAccounts(): HasMany
     {
         return $this->hasMany(Account::class, 'feed_account_id', 'id');
