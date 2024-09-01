@@ -13,6 +13,7 @@ use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\ColorEntry;
+use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
@@ -46,6 +47,11 @@ class AccountResource extends Resource
                 Forms\Components\Textarea::make('description')
                     ->label('Descripción')
                     ->columnSpanFull(),
+                Forms\Components\Toggle::make('virtual')
+                    ->label('¿Es una cuenta virtual?')
+                    ->default(false)
+                    ->inline(false)
+                    ->live(),
                 Forms\Components\Toggle::make('credit_card')
                     ->label('¿Es tarjeta de crédito?')
                     ->default(false)
@@ -177,6 +183,8 @@ class AccountResource extends Resource
                     TextEntry::make('description')
                         ->label('Descripción')
                         ->default('-'),
+                    IconEntry::make('virtual')
+                        ->label('¿Es una cuenta virtual?'),
                     TextEntry::make('feedAccount.name')
                         ->label('Cuenta de alimentación')
                         ->default('-'),

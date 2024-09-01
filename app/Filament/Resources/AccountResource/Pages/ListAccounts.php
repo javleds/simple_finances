@@ -17,8 +17,10 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
+use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Colors\Color;
+use Illuminate\Database\Eloquent\Builder;
 
 class ListAccounts extends ListRecords
 {
@@ -30,6 +32,15 @@ class ListAccounts extends ListRecords
             CompareAction::make(),
             CreateTransferAction::make(),
             Actions\CreateAction::make(),
+        ];
+    }
+
+    public function getTabs(): array
+    {
+        return [
+            Tab::make('Físicas')->modifyQueryUsing(fn (Builder $query) => $query->where('virtual', false)),
+            Tab::make('Virtuales')->modifyQueryUsing(fn (Builder $query) => $query->where('virtual', true)),
+            Tab::make('Todas'),
         ];
     }
 }

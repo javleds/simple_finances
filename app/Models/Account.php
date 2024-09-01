@@ -34,6 +34,7 @@ class Account extends Model
             'available_credit' => 'float',
             'spent' => 'float',
             'feed_account_id' => 'int',
+            'virtual' => 'bool',
         ];
     }
 
