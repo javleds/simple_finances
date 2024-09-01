@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AccountResource\RelationManagers;
 
+use App\Enums\Action;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
 use App\Events\TransactionSaved;
@@ -128,7 +129,7 @@ class TransactionsRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make()
                     ->modalHeading('Crear Transacción')
                     ->after(function (Transaction $record, Component $livewire) {
-                        event(new TransactionSaved($record));
+                        event(new TransactionSaved($record, Action::Created));
 
                         $livewire->dispatch('refreshAccount');
                     }),
@@ -137,14 +138,14 @@ class TransactionsRelationManager extends RelationManager
                 Tables\Actions\EditAction::make()
                     ->label('')
                     ->after(function (Transaction $record, Component $livewire) {
-                        event(new TransactionSaved($record));
+                        event(new TransactionSaved($record, Action::Updated));
 
                         $livewire->dispatch('refreshAccount');
                     }),
                 Tables\Actions\DeleteAction::make()
                     ->label('')
                     ->after(function (Transaction $record, Component $livewire) {
-                        event(new TransactionSaved($record));
+                        event(new TransactionSaved($record, Action::Deleted));
 
                         $livewire->dispatch('refreshAccount');
                     }),

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Actions;
 
+use App\Enums\Action as UserAction;
 use App\Enums\TransactionType;
 use App\Events\TransactionSaved;
 use App\Models\Account;
@@ -62,7 +63,7 @@ class AddTransactionShortcutAction extends Action
                     'scheduled_at' => $data['scheduled_at'],
                 ]);
 
-                event(new TransactionSaved($transaction));
+                event(new TransactionSaved($transaction, UserAction::Created));
 
                 Notification::make('transaction_added')
                     ->success()

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Action;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
 use App\Events\TransactionSaved;
@@ -146,7 +147,7 @@ class TransactionResource extends Resource
                 Tables\Actions\DeleteAction::make()
                     ->label('')
                     ->after(function (Transaction $record) {
-                        event(new TransactionSaved($record));
+                        event(new TransactionSaved($record, Action::Deleted));
                     }),
             ])
             ->bulkActions([

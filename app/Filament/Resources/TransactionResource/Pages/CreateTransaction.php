@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TransactionResource\Pages;
 
+use App\Enums\Action;
 use App\Events\TransactionSaved;
 use App\Filament\Resources\TransactionResource;
 use App\Models\Transaction;
@@ -18,6 +19,6 @@ class CreateTransaction extends CreateRecord
 
     public function afterCreate(): void
     {
-        event(new TransactionSaved(Transaction::find($this->getRecord()->id)));
+        event(new TransactionSaved(Transaction::find($this->getRecord()->id), Action::Deleted));
     }
 }

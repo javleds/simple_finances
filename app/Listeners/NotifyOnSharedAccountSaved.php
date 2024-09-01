@@ -36,7 +36,10 @@ class NotifyOnSharedAccountSaved
                 continue;
             }
 
-            Notification::send($user, new SharedTransactionChangedEmail($user, $event->transaction));
+            Notification::send(
+                $user,
+                new SharedTransactionChangedEmail($user, $event->transaction, $event->action)
+            );
         }
     }
 }

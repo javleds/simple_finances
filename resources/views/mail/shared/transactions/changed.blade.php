@@ -1,7 +1,7 @@
 <x-mail::message>
 # Hola, {{ $user->name }}.
 
-{{ $modifier->name }} ha realizado un movimiento en la cuenta {{ $transaction->account->name }}:
+{{ $modifier->name }} ha {{ $action->getLabel() }} un movimiento en la cuenta {{ $transaction->account->name }}:
 
 
 <x-mail::panel>
@@ -9,7 +9,7 @@
 </x-mail::panel>
 
 <x-mail::panel>
-Balance después del movimiento: `{{ as_money($transaction->account->balance) }}`.
+Balance después del movimiento: `{{ as_money($transaction->account->updateBalance()) }}`.
 </x-mail::panel>
 
 <x-mail::button :url="\App\Filament\Resources\AccountResource\Pages\ViewAccount::getUrl([$transaction->account_id])">

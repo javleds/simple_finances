@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\Action;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -16,7 +17,7 @@ class SharedTransactionChangedEmail extends Notification
     /**
      * Create a new notification instance.
      */
-    public function __construct(public readonly User $user, public readonly Transaction $transaction)
+    public function __construct(public readonly User $user, public readonly Transaction $transaction, public readonly Action $action)
     {
         //
     }
@@ -40,6 +41,7 @@ class SharedTransactionChangedEmail extends Notification
             'modifier' => auth()->user(),
             'user' => $this->user,
             'transaction' => $this->transaction,
+            'action' => $this->action,
         ])->subject(sprintf('%s - Movimiento en cuenta compartida', config('app.name')));
     }
 

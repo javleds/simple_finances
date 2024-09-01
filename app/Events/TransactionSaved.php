@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Enums\Action;
 use App\Models\Transaction;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -18,7 +19,7 @@ class TransactionSaved
     /**
      * Create a new event instance.
      */
-    public function __construct(public readonly Transaction $transaction)
+    public function __construct(public readonly Transaction $transaction, public readonly Action $action)
     {
         //
     }
