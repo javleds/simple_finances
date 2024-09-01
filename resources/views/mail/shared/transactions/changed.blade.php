@@ -9,7 +9,7 @@
 </x-mail::panel>
 
 <x-mail::panel>
-Balance después del movimiento: `{{ $transaction->account->balance }}`.
+Balance después del movimiento: `{{ as_money($transaction->account->balance) }}`.
 </x-mail::panel>
 
 <x-mail::button :url="\App\Filament\Resources\AccountResource\Pages\ViewAccount::getUrl([$transaction->account_id])">
