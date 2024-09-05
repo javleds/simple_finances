@@ -48,7 +48,7 @@ class TransactionResource extends Resource
                     ->numeric(),
                 Forms\Components\Select::make('account_id')
                     ->label('Cuenta')
-                    ->relationship('account', 'name')
+                    ->options(fn () => Account::all()->pluck('transfer_balance_label', 'id'))
                     ->searchable()
                     ->preload()
                     ->required(),
