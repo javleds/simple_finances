@@ -23,6 +23,7 @@ class AddTransactionShortcutAction extends Action
 
         $this
             ->label('')
+            ->modalHeading(fn (Account $record) => sprintf('Transacción en %s', $record->name))
             ->name('add_transaction')
             ->color(Color::Blue)
             ->icon('heroicon-o-banknotes')
