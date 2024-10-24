@@ -10,6 +10,7 @@ use App\Services\GenerateSubscriptionPaymentSchema;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
+use Filament\Resources\Components\Tab;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Colors\Color;
 use Filament\Tables;
@@ -23,6 +24,15 @@ class PaymentsRelationManager extends RelationManager
     protected static string $relationship = 'payments';
     protected static ?string $title = 'Esquema de pagos';
     protected static ?string $modelLabel = 'Pago';
+
+    public function getTabs(): array
+    {
+        return [
+            Tab::make('Pendiente')->modifyQueryUsing(fn (Builder $query) => $query->where('status', PaymentStatus::Pending)),
+            Tab::make('Pagados')->modifyQueryUsing(fn (Builder $query) => $query->where('status', PaymentStatus::Paid)),
+            Tab::make('Todos'),
+        ];
+    }
 
     public function form(Form $form): Form
     {
