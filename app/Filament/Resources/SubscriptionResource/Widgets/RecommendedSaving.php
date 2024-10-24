@@ -11,7 +11,7 @@ class RecommendedSaving extends BaseWidget
 {
     protected function getStats(): array
     {
-        $subscriptions = Subscription::all();
+        $subscriptions = Subscription::whereNull('finished_at')->get();
 
         $amount = 0.0;
         foreach ($subscriptions as $subscription) {
