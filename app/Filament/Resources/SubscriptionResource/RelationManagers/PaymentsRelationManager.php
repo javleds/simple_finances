@@ -2,11 +2,16 @@
 
 namespace App\Filament\Resources\SubscriptionResource\RelationManagers;
 
+use App\Enums\PaymentStatus;
+use App\Enums\TransactionType;
+use App\Models\Account;
+use App\Models\SubscriptionPayment;
 use App\Services\GenerateSubscriptionPaymentSchema;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Colors\Color;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -55,6 +60,7 @@ class PaymentsRelationManager extends RelationManager
                         Forms\Components\Group::make([
                             Forms\Components\DatePicker::make('from')
                                 ->label('Desde')
+                                ->required()
                                 ->default(function () {
                                     $now = Carbon::now();
                                     $startDate = $this->getOwnerRecord()->started_at;
@@ -70,6 +76,7 @@ class PaymentsRelationManager extends RelationManager
                                 ->closeOnDateSelection(),
                             Forms\Components\DatePicker::make('to')
                                 ->label('Hasta')
+                                ->required()
                                 ->default(fn () => Carbon::now()->endOfYear())
                                 ->native(false)
                                 ->closeOnDateSelection()
@@ -91,7 +98,64 @@ class PaymentsRelationManager extends RelationManager
                 })
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('pay')
+                    ->hidden(fn (SubscriptionPayment $record) => $record->isPaid())
+                    ->label('Pagar')
+                    ->color(Color::Teal)
+                    ->form([
+                        Forms\Components\Select::make('account_id')
+                            ->options(fn () => Account::all()->pluck('name', 'id'))
+                            ->default(fn () => $this->getOwnerRecord()->feed_account_id)
+                    ])
+                    ->action(function (array $data, SubscriptionPayment $record) {
+                        $record->status = PaymentStatus::Paid;
+                        $record->save();
+
+                        if ($data['account_id'] === null || $data['account_id'] === '') {
+                            Notification::make('payment_created')
+                                ->success()
+                                ->title('Estatus actualizado.')
+                                ->send();
+
+                            return;
+                        }
+
+                        $account = Account::find($data['account_id']);
+
+                        if (!$account) {
+                            return;
+                        }
+
+                        $account->transactions()->create([
+                            'concept' => sprintf(
+                                'Pago de subscripción "%s" - %s',
+                                $this->getOwnerRecord()->name,
+                                as_money($record->amount)
+                            ),
+                            'amount' => $record->amount,
+                            'scheduled_at' => Carbon::now(),
+                            'type' => TransactionType::Outcome,
+                        ]);
+
+                        Notification::make('payment_created')
+                            ->success()
+                            ->title('Estatus actualizado y registrado en transacciones.')
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('restore')
+                    ->requiresConfirmation()
+                    ->hidden(fn (SubscriptionPayment $record) => $record->isPending())
+                    ->label('Restablecer')
+                    ->color(Color::Amber)
+                    ->action(function (SubscriptionPayment $record) {
+                        $record->status = PaymentStatus::Pending;
+                        $record->save();
+
+                        Notification::make('payment_created')
+                            ->success()
+                            ->title('Estatus actualizado.')
+                            ->send();
+                    }),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([

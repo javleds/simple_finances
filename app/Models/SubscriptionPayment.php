@@ -28,4 +28,14 @@ class SubscriptionPayment extends Model
     {
         return $this->belongsTo(Subscription::class);
     }
+
+    public function isPaid(): bool
+    {
+        return $this->status === PaymentStatus::Paid;
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === PaymentStatus::Pending;
+    }
 }
