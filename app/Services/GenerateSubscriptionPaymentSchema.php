@@ -19,6 +19,10 @@ class GenerateSubscriptionPaymentSchema
             ->where('status', PaymentStatus::Pending)
             ->delete();
 
+        $subscription->payments()
+            ->whereBetween('scheduled_at', [$startDate, $endDate])
+            ->delete();
+
         if ($subscription->isFinished()) {
             return;
         }
