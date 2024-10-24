@@ -6,6 +6,7 @@ use App\Enums\Frequency;
 use App\Filament\Actions\CreateSubscriptionPaymentAction;
 use App\Filament\Filters\DateRangeFilter;
 use App\Filament\Resources\SubscriptionResource\Pages;
+use App\Filament\Resources\SubscriptionResource\RelationManagers\PaymentsRelationManager;
 use App\Models\Account;
 use App\Models\Subscription;
 use Carbon\Carbon;
@@ -131,7 +132,7 @@ class SubscriptionResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            PaymentsRelationManager::class,
         ];
     }
 

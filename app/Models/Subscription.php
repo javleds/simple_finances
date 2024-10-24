@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Enums\Frequency;
+use App\Events\SubscriptionSaved;
 use App\Events\SubscriptionSaving;
 use App\Traits\BelongsToUser;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subscription extends Model
 {
@@ -17,6 +19,7 @@ class Subscription extends Model
 
     protected $dispatchesEvents = [
         'saving' => SubscriptionSaving::class,
+        'saved' => SubscriptionSaved::class,
     ];
 
     protected function casts(): array
@@ -34,6 +37,11 @@ class Subscription extends Model
         ];
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(SubscriptionPayment::class);
+    }
+
     public function feedAccount(): BelongsTo
     {
         return $this->belongsTo(Account::class);
@@ -48,7 +56,7 @@ class Subscription extends Model
             return $startedAt;
         }
 
-        $frequency = sprintf('+ %s %s', $this->frequency_unit, $this->frequency_type->value);
+        $frequency = $this->getAddFrequency();
         $nextDate = null;
 
         do {
@@ -71,7 +79,17 @@ class Subscription extends Model
         }
 
         return $nextDate->clone()->modify(
-            sprintf('+ %s %s', $this->frequency_unit, $this->frequency_type->value)
+            $this->getAddFrequency()
         );
+    }
+
+    public function isFinished(): bool
+    {
+        return $this->finished_at !== null;
+    }
+
+    public function getAddFrequency(): string
+    {
+        return sprintf('+ %s %s', $this->frequency_unit, $this->frequency_type->value);
     }
 }

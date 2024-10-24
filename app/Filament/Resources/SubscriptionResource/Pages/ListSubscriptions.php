@@ -13,6 +13,13 @@ class ListSubscriptions extends ListRecords
 {
     protected static string $resource = SubscriptionResource::class;
 
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            SubscriptionResource\Widgets\RecommendedSaving::class,
+        ];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
