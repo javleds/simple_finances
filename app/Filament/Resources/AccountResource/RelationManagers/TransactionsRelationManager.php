@@ -103,7 +103,17 @@ class TransactionsRelationManager extends RelationManager
                     ->alignRight()
                     ->formatStateUsing(fn ($state) => as_money($state))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->summarize([
+                        Tables\Columns\Summarizers\Sum::make('income')
+                            ->query(fn (\Illuminate\Database\Query\Builder $query) => $query->where('type', TransactionType::Income))
+                            ->formatStateUsing(fn ($state) => as_money($state))
+                            ->label('Ingresos'),
+                        Tables\Columns\Summarizers\Sum::make('outcome')
+                            ->query(fn (\Illuminate\Database\Query\Builder $query) => $query->where('type', TransactionType::Outcome))
+                            ->formatStateUsing(fn ($state) => as_money($state))
+                            ->label('Egresos'),
+                    ]),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo')
                     ->searchable()
@@ -124,6 +134,7 @@ class TransactionsRelationManager extends RelationManager
                     ->searchable(),
             ])
             ->groups([
+                Tables\Grouping\Group::make('scheduled_at')->label('Fecha'),
                 Tables\Grouping\Group::make('user.name')
                     ->label('Usuario'),
                 Tables\Grouping\Group::make('financialGoal.name')
