@@ -59,6 +59,8 @@ class FinancialGoalsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('name')
             ->columns([
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Usuario'),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre'),
                 Tables\Columns\TextColumn::make('amount')
@@ -66,6 +68,9 @@ class FinancialGoalsRelationManager extends RelationManager
                     ->formatStateUsing(fn ($state) => as_money($state)),
                 ProgressColumn::make('progress')
                     ->label('Progreso'),
+                Tables\Columns\TextColumn::make('must_completed_at')
+                    ->label('Fecha límite')
+                    ->date()
             ])
             ->filters([
                 //
@@ -74,8 +79,8 @@ class FinancialGoalsRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()->label(''),
+                Tables\Actions\DeleteAction::make()->label(''),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
