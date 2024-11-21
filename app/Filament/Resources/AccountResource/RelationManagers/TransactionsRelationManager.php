@@ -10,6 +10,7 @@ use App\Filament\Actions\DeferredTransactionAction;
 use App\Filament\Exports\TransactionExporter;
 use App\Filament\Filters\DateRangeFilter;
 use App\Models\Account;
+use App\Models\FinancialGoal;
 use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
@@ -54,6 +55,15 @@ class TransactionsRelationManager extends RelationManager
     {
         return $form
             ->schema([
+                Forms\Components\ToggleButtons::make('type')
+                    ->label('Tipo')
+                    ->inline()
+                    ->grouped()
+                    ->options(TransactionType::class)
+                    ->default(TransactionType::Outcome)
+                    ->required()
+                    ->columnSpanFull()
+                    ->live(),
                 Forms\Components\TextInput::make('concept')
                     ->label('Concepto')
                     ->required()
@@ -63,13 +73,6 @@ class TransactionsRelationManager extends RelationManager
                     ->prefix('$')
                     ->required()
                     ->numeric(),
-                Forms\Components\ToggleButtons::make('type')
-                    ->label('Tipo')
-                    ->inline()
-                    ->grouped()
-                    ->options(TransactionType::class)
-                    ->default(TransactionType::Outcome)
-                    ->required(),
                 Forms\Components\DatePicker::make('scheduled_at')
                     ->label('Fecha')
                     ->prefixIcon('heroicon-o-calendar')
@@ -77,6 +80,10 @@ class TransactionsRelationManager extends RelationManager
                     ->native(false)
                     ->closeOnDateSelection()
                     ->required(),
+                Forms\Components\Select::make('financial_goal_id')
+                    ->options(fn () => FinancialGoal::where('user_id', auth()->id())->where('account_id', $this->getOwnerRecord()->id)->pluck('name', 'id'))
+                    ->label('Meta financiera')
+                    ->disabled(fn (Forms\Get $get) => $get('type') === TransactionType::Outcome),
             ]);
     }
 

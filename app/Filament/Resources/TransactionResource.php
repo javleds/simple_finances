@@ -10,6 +10,7 @@ use App\Filament\Exports\TransactionExporter;
 use App\Filament\Filters\DateRangeFilter;
 use App\Filament\Resources\TransactionResource\Pages;
 use App\Models\Account;
+use App\Models\FinancialGoal;
 use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
@@ -37,6 +38,14 @@ class TransactionResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\ToggleButtons::make('type')
+                    ->label('Tipo')
+                    ->grouped()
+                    ->options(TransactionType::class)
+                    ->default(TransactionType::Outcome)
+                    ->required()
+                    ->live()
+                    ->columnSpanFull(),
                 Forms\Components\TextInput::make('concept')
                     ->label('Concepto')
                     ->required()
@@ -51,13 +60,7 @@ class TransactionResource extends Resource
                     ->options(fn () => Account::all()->pluck('transfer_balance_label', 'id'))
                     ->searchable()
                     ->preload()
-                    ->required(),
-                Forms\Components\ToggleButtons::make('type')
-                    ->label('Tipo')
-                    ->inline()
-                    ->grouped()
-                    ->options(TransactionType::class)
-                    ->default(TransactionType::Outcome)
+                    ->live()
                     ->required(),
                 Forms\Components\DatePicker::make('scheduled_at')
                     ->label('Fecha')
@@ -66,6 +69,12 @@ class TransactionResource extends Resource
                     ->native(false)
                     ->closeOnDateSelection()
                     ->required(),
+                Forms\Components\Select::make('financial_goal_id')
+                    ->options(fn (Forms\Get $get) => FinancialGoal::where('user_id', auth()->id())
+                        ->where('account_id', $get('account_id'))
+                        ->pluck('name', 'id'))
+                    ->label('Meta financiera')
+                    ->disabled(fn (Forms\Get $get) => $get('type') === TransactionType::Outcome || !filled($get('account_id'))),
             ]);
     }
 

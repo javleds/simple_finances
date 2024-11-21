@@ -63,6 +63,11 @@ class Account extends Model
         return $this->hasMany(Account::class, 'feed_account_id', 'id');
     }
 
+    public function financialGoals(): HasMany
+    {
+        return $this->hasMany(FinancialGoal::class);
+    }
+
     public function updateBalance(): float
     {
         if (!$this->credit_card) {

@@ -27,6 +27,7 @@ class Transaction extends Model
             'type' => TransactionType::class,
             'amount' => 'float',
             'scheduled_at' => 'immutable_datetime',
+            'financial_goal_id' => 'integer',
         ];
     }
 
@@ -38,6 +39,11 @@ class Transaction extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function financialGoal(): BelongsTo
+    {
+        return $this->belongsTo(FinancialGoal::class);
     }
 
     public function scopeIncome(Builder $builder): void
