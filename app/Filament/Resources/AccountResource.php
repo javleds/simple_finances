@@ -9,7 +9,6 @@ use App\Filament\Actions\DirectSendTransferAction;
 use App\Filament\Resources\AccountResource\Pages;
 use App\Filament\Resources\AccountResource\RelationManagers;
 use App\Models\Account;
-use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\ColorEntry;
@@ -22,7 +21,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 class AccountResource extends Resource
 {
@@ -221,6 +219,7 @@ class AccountResource extends Resource
         return [
             RelationManagers\TransactionsRelationManager::class,
             RelationManagers\InvitesRelationManager::class,
+            RelationManagers\FinancialGoalsRelationManager::class,
         ];
     }
 

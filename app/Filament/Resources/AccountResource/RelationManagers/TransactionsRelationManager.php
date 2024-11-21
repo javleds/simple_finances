@@ -77,6 +77,9 @@ class TransactionsRelationManager extends RelationManager
                     ->native(false)
                     ->closeOnDateSelection()
                     ->required(),
+                Forms\Components\Select::make('financial_goal_id')
+                    ->relationship('financialGoal', 'name')
+                    ->label('Meta financiera'),
             ]);
     }
 
