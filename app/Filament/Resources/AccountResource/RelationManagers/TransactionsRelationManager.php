@@ -10,6 +10,7 @@ use App\Filament\Actions\DeferredTransactionAction;
 use App\Filament\Exports\TransactionExporter;
 use App\Filament\Filters\DateRangeFilter;
 use App\Models\Account;
+use App\Models\FinancialGoal;
 use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
@@ -80,7 +81,7 @@ class TransactionsRelationManager extends RelationManager
                     ->closeOnDateSelection()
                     ->required(),
                 Forms\Components\Select::make('financial_goal_id')
-                    ->relationship('financialGoal', 'name')
+                    ->options(fn () => FinancialGoal::where('user_id', auth()->id())->where('account_id', $this->getOwnerRecord()->id)->pluck('name', 'id'))
                     ->label('Meta financiera')
                     ->disabled(fn (Forms\Get $get) => $get('type') === TransactionType::Outcome),
             ]);

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\AccountResource\RelationManagers;
 
 use App\Filament\Tables\Columns\ProgressColumn;
 use App\Models\FinancialGoal;
+use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -80,7 +81,8 @@ class FinancialGoalsRelationManager extends RelationManager
             ])
             ->actions([
                 Tables\Actions\EditAction::make()->label(''),
-                Tables\Actions\DeleteAction::make()->label(''),
+                Tables\Actions\DeleteAction::make()->label('')
+                    ->before(fn (FinancialGoal $record) => Transaction::where('financial_goal_id', $record->id)->update(['financial_goal_id' => null])),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
