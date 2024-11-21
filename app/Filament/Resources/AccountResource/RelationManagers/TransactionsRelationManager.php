@@ -22,6 +22,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class TransactionsRelationManager extends RelationManager
@@ -116,6 +117,17 @@ class TransactionsRelationManager extends RelationManager
                     ->label('Creado por')
                     ->sortable()
                     ->searchable(),
+                Tables\Columns\TextColumn::make('financialGoal.name')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->label('Meta financiera')
+                    ->sortable()
+                    ->searchable(),
+            ])
+            ->groups([
+                Tables\Grouping\Group::make('user.name')
+                    ->label('Usuario'),
+                Tables\Grouping\Group::make('financialGoal.name')
+                    ->label('Meta financiera'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
