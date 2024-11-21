@@ -27,10 +27,6 @@ class UpdateFinancialGoalsOnTransactionSaved
      */
     public function handle(TransactionSaved $event): void
     {
-        if ($event->transaction->financial_goal_id === null) {
-            return;
-        }
-
         /** @var FinancialGoal $goal */
         $goal = $event->transaction->financialGoal;
 

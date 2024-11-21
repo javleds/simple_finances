@@ -85,6 +85,7 @@ class TransactionResource extends Resource
             ->groups([
                 Tables\Grouping\Group::make('account.name')->label('Cuenta'),
                 Tables\Grouping\Group::make('scheduled_at')->label('Fecha'),
+                Tables\Grouping\Group::make('financialGoal.name')->label('Meta financiera'),
             ])
             ->columns([
                 Tables\Columns\TextColumn::make('concept')
@@ -123,6 +124,11 @@ class TransactionResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('financialGoal.name')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->label('Meta financiera')
+                    ->sortable()
+                    ->searchable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('account_id')
