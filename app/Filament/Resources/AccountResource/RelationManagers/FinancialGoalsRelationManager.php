@@ -47,11 +47,6 @@ class FinancialGoalsRelationManager extends RelationManager
                     ->prefixIcon('heroicon-o-calendar')
                     ->native(false)
                     ->closeOnDateSelection(),
-                Forms\Components\Select::make('user_id')
-                    ->options(fn () => $this->getOwnerRecord()->users()->get()->pluck('name', 'id'))
-                    ->default(fn () => auth()->id())
-                    ->label('Usuario')
-                    ->required(),
             ]);
     }
 
