@@ -27,15 +27,16 @@ class UpdateFinancialGoalsOnTransactionSaved
      */
     public function handle(TransactionSaved $event): void
     {
-        /** @var FinancialGoal $goal */
-        $goal = $event->transaction->financialGoal;
+        $goals = $event->transaction->account->financialGoals()->where('user_id', auth()->id())->get();
 
-        $savedAmount = Transaction::income()
-            ->where('financial_goal_id', $goal->id)
-            ->where('user_id', auth()->id())
-            ->sum('amount');
+        foreach ($goals as $goal) {
+            $savedAmount = Transaction::income()
+                ->where('financial_goal_id', $goal->id)
+                ->where('user_id', auth()->id())
+                ->sum('amount');
 
-        $goal->progress = min(intval(($savedAmount * 100) / $goal->amount), 100);
-        $goal->save();
+            $goal->progress = min(intval(($savedAmount * 100) / $goal->amount), 100);
+            $goal->save();
+        }
     }
 }
