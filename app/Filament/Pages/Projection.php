@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Dto\SubscriptionProjection;
 use App\Models\Subscription;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
@@ -30,40 +31,46 @@ class Projection extends Page
             ->get()
             ->map(function (Subscription $subscription) use ($type) {
                 if ($type === 'monthly' && $subscription->isMonthly()) {
-                    return $subscription;
+                    $computedAmount = $subscription->amount;
+
+                    return SubscriptionProjection::fromSubscriptionProjection($subscription, $computedAmount)->toArray();
                 }
 
                 if ($type === 'monthly' && $subscription->isYearly()) {
-                    $subscription->amount /= 12;
+                    $computedAmount = $subscription->amount / 12;
 
-                    return $subscription;
+                    return SubscriptionProjection::fromSubscriptionProjection($subscription, $computedAmount)->toArray();
                 }
 
                 if ($type === 'monthly' && $subscription->isDaily()) {
-                    $subscription->amount = ($subscription->amount / $subscription->frequency_unit) * 30.4;
+                    $computedAmount = ($subscription->amount / $subscription->frequency_unit) * 30.4;
 
-                    return $subscription;
+                    return SubscriptionProjection::fromSubscriptionProjection($subscription, $computedAmount)->toArray();
                 }
 
                 if ($type === 'yearly' && $subscription->isMonthly()) {
-                    $subscription->amount *= 12;
+                    $computedAmount = $subscription->amount * 12;
 
-                    return $subscription;
+                    return SubscriptionProjection::fromSubscriptionProjection($subscription, $computedAmount)->toArray();
                 }
 
                 if ($type === 'yearly' && $subscription->isYearly()) {
-                    return $subscription;
+                    $computedAmount = $subscription->amount;
+
+                    return SubscriptionProjection::fromSubscriptionProjection($subscription, $computedAmount)->toArray();
                 }
 
                 if ($type === 'yearly' && $subscription->isDaily()) {
-                    $subscription->amount = ($subscription->amount / $subscription->frequency_unit) * 365;
+                    $computedAmount = ($subscription->amount / $subscription->frequency_unit) * 365;
 
-                    return $subscription;
+                    return SubscriptionProjection::fromSubscriptionProjection($subscription, $computedAmount)->toArray();
                 }
 
-                return $subscription;
+                $computedAmount = $subscription->amount;
+
+                return SubscriptionProjection::fromSubscriptionProjection($subscription, $computedAmount)->toArray();
             })
-            ->sortBy('amount', descending: true);
+            ->sortBy('projectionAmount', descending: true);
 
         $this->total = $this->subscriptions->sum('amount');
     }
