@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\SubscriptionResource\Pages;
 
 use App\Filament\Imports\SubscriptionImporter;
+use App\Filament\Pages\Projection;
 use App\Filament\Resources\SubscriptionResource;
 use Filament\Actions;
 use Filament\Resources\Components\Tab;
@@ -23,6 +24,10 @@ class ListSubscriptions extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Actions\ActionGroup::make([
+                Actions\Action::make('monthly_projection')->label('Proyección mensual')->url(Projection::getUrl(['type' => 'monthly'])),
+                Actions\Action::make('yearly_projection')->label('Proyección anual')->url(Projection::getUrl(['type' => 'yearly'])),
+            ]),
             Actions\ImportAction::make()
                 ->label('Importar')
                 ->importer(SubscriptionImporter::class),

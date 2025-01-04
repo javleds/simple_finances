@@ -22,6 +22,21 @@ class Subscription extends Model
         'saved' => SubscriptionSaved::class,
     ];
 
+    public function isMonthly(): bool
+    {
+        return $this->frequency_type === Frequency::Month;
+    }
+
+    public function isYearly(): bool
+    {
+        return $this->frequency_type === Frequency::Year;
+    }
+
+    public function isDaily(): bool
+    {
+        return $this->frequency_type === Frequency::Day;
+    }
+
     protected function casts(): array
     {
         return [
