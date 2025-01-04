@@ -62,7 +62,8 @@ class Projection extends Page
                 }
 
                 return $subscription;
-            });
+            })
+            ->sortBy('amount', descending: true);
 
         $this->total = $this->subscriptions->sum('amount');
     }
