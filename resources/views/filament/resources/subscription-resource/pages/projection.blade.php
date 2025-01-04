@@ -16,7 +16,7 @@
                         @foreach($subscriptions as $subscription)
                             <tr>
                                 <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-3">{{ $subscription['name'] }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 pr-3 text-sm font-medium text-gray-900 text-right">{{ as_money($subscription['amount']) }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 pr-3 text-sm text-gray-500 text-right">{{ as_money($subscription['amount']) }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ $subscription['frequency'] }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 pr-3 text-sm font-medium text-gray-900 text-right">{{ as_money($subscription['projectionAmount']) }}</td>
                             </tr>
