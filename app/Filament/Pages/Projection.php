@@ -3,7 +3,9 @@
 namespace App\Filament\Pages;
 
 use App\Dto\SubscriptionProjection;
+use App\Filament\Resources\SubscriptionResource;
 use App\Models\Subscription;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
@@ -21,6 +23,16 @@ class Projection extends Page
     public function getTitle(): string|Htmlable
     {
         return sprintf('Proyección %s', $this->pageTitle);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('return')
+                ->color('secondary')
+                ->label('Regresar')
+                ->url(SubscriptionResource::getUrl()),
+        ];
     }
 
     public function mount(): void
