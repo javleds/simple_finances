@@ -5,6 +5,7 @@ namespace App\Filament\Resources\SubscriptionResource\RelationManagers;
 use App\Enums\PaymentStatus;
 use App\Enums\TransactionType;
 use App\Models\Account;
+use App\Models\Subscription;
 use App\Models\SubscriptionPayment;
 use App\Services\GenerateSubscriptionPaymentSchema;
 use Filament\Forms;
@@ -101,6 +102,11 @@ class PaymentsRelationManager extends RelationManager
                         Carbon::make($data['to'])
                     );
 
+                    /** @var Subscription $subscription */
+                    $subscription = $this->getOwnerRecord();
+                    $subscription->next_payment_date = $subscription->payments()->where('status', PaymentStatus::Pending)->first()?->scheduled_at;
+                    $subscription->save();
+
                     Notification::make('payments_created')
                         ->success()
                         ->title('Esquema de pagos generado.')
@@ -120,6 +126,12 @@ class PaymentsRelationManager extends RelationManager
                     ->action(function (array $data, SubscriptionPayment $record) {
                         $record->status = PaymentStatus::Paid;
                         $record->save();
+
+                        /** @var Subscription $subscription */
+                        $subscription = $this->getOwnerRecord();
+                        $subscription->next_payment_date = $subscription->payments()->where('status', PaymentStatus::Pending)->first()?->scheduled_at;
+                        $subscription->previous_payment_date = $subscription->payments()->where('status', PaymentStatus::Paid)->first()?->scheduled_at;
+                        $subscription->save();
 
                         if ($data['account_id'] === null || $data['account_id'] === '') {
                             Notification::make('payment_created')
@@ -161,12 +173,25 @@ class PaymentsRelationManager extends RelationManager
                         $record->status = PaymentStatus::Pending;
                         $record->save();
 
+                        /** @var Subscription $subscription */
+                        $subscription = $this->getOwnerRecord();
+                        $subscription->next_payment_date = $subscription->payments()->where('status', PaymentStatus::Pending)->first()?->scheduled_at;
+                        $subscription->previous_payment_date = $subscription->payments()->where('status', PaymentStatus::Paid)->first()?->scheduled_at;
+                        $subscription->save();
+
                         Notification::make('payment_created')
                             ->success()
                             ->title('Estatus actualizado.')
                             ->send();
                     }),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->after(function () {
+                        /** @var Subscription $subscription */
+                        $subscription = $this->getOwnerRecord();
+                        $subscription->next_payment_date = $subscription->payments()->where('status', PaymentStatus::Pending)->first()?->scheduled_at;
+                        $subscription->previous_payment_date = $subscription->payments()->where('status', PaymentStatus::Paid)->first()?->scheduled_at;
+                        $subscription->save();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
