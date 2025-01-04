@@ -62,6 +62,12 @@ class FinancialGoalsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Objetivo')
                     ->formatStateUsing(fn ($state) => as_money($state)),
+                Tables\Columns\TextColumn::make('achieved')
+                    ->label('Acumulado')
+                    ->getStateUsing(fn (FinancialGoal $record) => as_money($record->getAchievedAmount())),
+                Tables\Columns\TextColumn::make('pending')
+                    ->label('Restante')
+                    ->getStateUsing(fn (FinancialGoal $record) => as_money($record->getRemainingAmount())),
                 ProgressColumn::make('progress')
                     ->label('Progreso'),
                 Tables\Columns\TextColumn::make('must_completed_at')

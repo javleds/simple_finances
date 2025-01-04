@@ -34,4 +34,16 @@ class FinancialGoal extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function getAchievedAmount(): float
+    {
+        return $this->account->transactions()
+            ->where('financial_goal_id', $this->id)
+            ->sum('amount');
+    }
+
+    public function getRemainingAmount(): float
+    {
+        return $this->amount - $this->getAchievedAmount();
+    }
 }
