@@ -2,16 +2,20 @@
 
 namespace App\Filament\Resources\AccountResource\Pages;
 
-use App\Events\AccountSaved;
+use App\Dto\AccountDto;
 use App\Filament\Resources\AccountResource;
-use App\Models\Account;
+use App\Handlers\Accounts\AccountCreator;
 use Carbon\CarbonImmutable;
 use Filament\Resources\Pages\CreateRecord;
-use Filament\Support\Enums\Alignment;
+use Illuminate\Database\Eloquent\Model;
 
 class CreateAccount extends CreateRecord
 {
     protected static string $resource = AccountResource::class;
+
+    public function __construct(
+        private readonly AccountCreator $accountCreator,
+    ) {}
 
     protected function getRedirectUrl(): string
     {
@@ -32,8 +36,8 @@ class CreateAccount extends CreateRecord
         return $data;
     }
 
-    public function afterCreate(): void
+    public function handleRecordCreation(array $data): Model
     {
-        event(new AccountSaved(Account::find($this->getRecord()->id)));
+        return $this->accountCreator->execute(AccountDto::fromFormArray($data));
     }
 }

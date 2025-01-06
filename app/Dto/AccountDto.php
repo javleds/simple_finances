@@ -25,7 +25,7 @@ class AccountDto
         $this->feedAccountId = $feedAccountId;
     }
 
-    public function fromFormArray(array $data): self
+    public static function fromFormArray(array $data): self
     {
         return new static(
             $data['name'],

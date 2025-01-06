@@ -2,16 +2,29 @@
 
 namespace App\Filament\Resources\AccountResource\Pages;
 
-use App\Events\AccountSaved;
+use App\Dto\AccountDto;
 use App\Filament\Resources\AccountResource;
+use App\Handlers\Accounts\AccountEditor;
 use App\Models\Account;
 use Carbon\CarbonImmutable;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class EditAccount extends EditRecord
 {
     protected static string $resource = AccountResource::class;
+
+    public function __construct(
+        private readonly AccountEditor $accountEditor,
+    ) {}
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        $account = Account::find($record->id);
+
+        return $this->accountEditor->execute($account, AccountDto::fromFormArray($data));
+    }
 
     protected function getHeaderActions(): array
     {
@@ -42,10 +55,5 @@ class EditAccount extends EditRecord
         }
 
         return $data;
-    }
-
-    public function afterSave(): void
-    {
-        event(new AccountSaved(Account::find($this->getRecord()->id)));
     }
 }
