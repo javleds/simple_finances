@@ -2,12 +2,12 @@
 
 namespace App\Filament\Resources\AccountResource\Pages;
 
-use App\Events\AccountSaved;
+use App\Dto\AccountDto;
 use App\Filament\Resources\AccountResource;
-use App\Models\Account;
+use App\Handlers\Accounts\AccountCreator;
 use Carbon\CarbonImmutable;
 use Filament\Resources\Pages\CreateRecord;
-use Filament\Support\Enums\Alignment;
+use Illuminate\Database\Eloquent\Model;
 
 class CreateAccount extends CreateRecord
 {
@@ -32,8 +32,8 @@ class CreateAccount extends CreateRecord
         return $data;
     }
 
-    public function afterCreate(): void
+    public function handleRecordCreation(array $data): Model
     {
-        event(new AccountSaved(Account::find($this->getRecord()->id)));
+        return app(AccountCreator::class)->execute(AccountDto::fromFormArray($data));
     }
 }
