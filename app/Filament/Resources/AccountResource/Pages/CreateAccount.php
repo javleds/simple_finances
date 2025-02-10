@@ -13,10 +13,6 @@ class CreateAccount extends CreateRecord
 {
     protected static string $resource = AccountResource::class;
 
-    public function __construct(
-        private readonly AccountCreator $accountCreator,
-    ) {}
-
     protected function getRedirectUrl(): string
     {
         return AccountResource::getUrl();
@@ -38,6 +34,6 @@ class CreateAccount extends CreateRecord
 
     public function handleRecordCreation(array $data): Model
     {
-        return $this->accountCreator->execute(AccountDto::fromFormArray($data));
+        return app(AccountCreator::class)->execute(AccountDto::fromFormArray($data));
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Overrides\InjectableSupportPageComponents;
 use Filament\Actions\Action;
 use Filament\Infolists\Infolist;
 use Filament\Pages\Page;
@@ -11,7 +10,6 @@ use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
-use Livewire\Features\SupportPageComponents\SupportPageComponents;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,7 +18,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-//        $this->app->bind(SupportPageComponents::class, InjectableSupportPageComponents::class);
     }
 
     /**

@@ -15,15 +15,11 @@ class EditAccount extends EditRecord
 {
     protected static string $resource = AccountResource::class;
 
-    public function __construct(
-        private readonly AccountEditor $accountEditor,
-    ) {}
-
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         $account = Account::find($record->id);
 
-        return $this->accountEditor->execute($account, AccountDto::fromFormArray($data));
+        return app(AccountEditor::class)->execute($account, AccountDto::fromFormArray($data));
     }
 
     protected function getHeaderActions(): array
