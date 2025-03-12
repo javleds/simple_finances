@@ -20,7 +20,7 @@ class AccountSummaryCreator
         $csvData = $transactions->map(function (Transaction $transaction) {
             return [
                 'Concepto' => $transaction->concept,
-                'Monto' => $transaction->amount,
+                'Monto' => sprintf('$%s', as_money($transaction->amount)),
                 'Tipo' => $transaction->type->getLabel(),
                 'Usuario' => $transaction->user->name,
                 'Fecha' => $transaction->scheduled_at->format('d-m-Y'),
