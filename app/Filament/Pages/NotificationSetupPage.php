@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\NotificationType;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Livewire\Attributes\Locked;
 
@@ -35,11 +36,15 @@ class NotificationSetupPage extends Page
             $user->notificationTypes()->detach($notificationId);
             $this->refetch();
 
+            Notification::make('notification_setup_saved_off' . $notificationId)->title('Preferencia guardada.')->success()->send();
+
             return;
         }
 
         $user->notificationTypes()->attach($notificationId);
         $this->refetch();
+
+        Notification::make('notification_setup_saved_on' . $notificationId)->title('Preferencia guardada.')->success()->send();
     }
 
     public function refetch(): void
