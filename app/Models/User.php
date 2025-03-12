@@ -62,4 +62,9 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     {
         return true;
     }
+
+    public function canReceiveNotification(string $name): bool
+    {
+        return $this->notificationTypes()->where('name', $name)->exists();
+    }
 }
