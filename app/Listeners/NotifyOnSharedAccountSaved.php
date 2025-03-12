@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\TransactionSaved;
+use App\Models\NotificationType;
 use App\Models\User;
 use App\Notifications\SharedTransactionChangedEmail;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -33,6 +34,10 @@ class NotifyOnSharedAccountSaved
 
         foreach ($users as $user) {
             if ($user->id === auth()->id()) {
+                continue;
+            }
+
+            if ($user->canReceiveNotification(NotificationType::MOVEMENTS_NOTIFICATION)) {
                 continue;
             }
 

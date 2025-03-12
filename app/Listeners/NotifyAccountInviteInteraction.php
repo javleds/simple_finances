@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\AccountInviteInteracted;
 use App\Models\Account;
+use App\Models\NotificationType;
 use App\Models\User;
 use App\Notifications\InviteAccountInteractionEmail;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -25,6 +26,15 @@ class NotifyAccountInviteInteraction
      */
     public function handle(AccountInviteInteracted $event): void
     {
-        Notification::send(User::withoutGlobalScopes()->find($event->invite->user_id), new InviteAccountInteractionEmail($event->invite));
+        $user = User::withoutGlobalScopes()->find($event->invite->user_id);
+
+        if (!$user->canReceiveNotification(NotificationType::INVITATION_INTERACTION)) {
+            return;
+        }
+
+        Notification::send(
+            $user,
+            new InviteAccountInteractionEmail($event->invite)
+        );
     }
 }
