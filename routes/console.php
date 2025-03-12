@@ -15,4 +15,4 @@ Schedule::call(function() {
 
 Schedule::call(function() {
     app(WeeklySummaryProcessor::class)->handle();
-})->everyMinute();
+})->sundays()->at('08:00');
