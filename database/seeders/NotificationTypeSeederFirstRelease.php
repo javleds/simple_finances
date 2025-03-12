@@ -8,6 +8,14 @@ use Illuminate\Database\Seeder;
 
 class NotificationTypeSeederFirstRelease extends Seeder
 {
+    public const INVITATION_NOTIFICATION = 'Invitación a cuentas compartidas';
+    public const MOVEMENTS_NOTIFICATION = 'Movimientos en cuentas compartidas';
+
+    public const DEFAULT_NOTIFICATIONS = [
+        self::INVITATION_NOTIFICATION,
+        self::MOVEMENTS_NOTIFICATION,
+    ];
+
     /**
      * Run the database seeds.
      */
@@ -17,11 +25,11 @@ class NotificationTypeSeederFirstRelease extends Seeder
 
         $notifications = [
             [
-                'name' => 'Invitación a cuentas compartidas',
+                'name' => self::INVITATION_NOTIFICATION,
                 'description' => 'Recibe notificaciones cuando algún usuario te invite a una cuenta compartida.',
             ],
             [
-                'name' => 'Movimientos en cuentas compartidas',
+                'name' => self::MOVEMENTS_NOTIFICATION,
                 'description' => 'Recibe notificaciones cuando un usuario haga transacciones en la cuenta.',
             ],
             [
