@@ -26,10 +26,19 @@ readonly class WeeklySummaryProcessor
             $attachments = [];
             foreach ($user->accounts as $account) {
                 $path = $this->accountSummaryCreator->handle($user, $account);
+
+                if ($path === null) {
+                    continue;
+                }
+
                 $attachments[$path] = [
                     'as' => sprintf('%s_%s.csv', str($account->name)->slug('_'), date('Y_m')),
                     'mime' => 'text/csv'
                 ];
+            }
+
+            if (count($attachments) === 0) {
+                return;
             }
 
             $user->notify(new WeeklySummaryNotification($user, $attachments));

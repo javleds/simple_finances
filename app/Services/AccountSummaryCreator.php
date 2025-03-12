@@ -3,21 +3,33 @@
 namespace App\Services;
 
 use App\Models\Account;
+use App\Models\Transaction;
 use App\Models\User;
 
 class AccountSummaryCreator
 {
-    public function handle(User $user, Account $account): string
+    public function handle(User $user, Account $account): ?string
     {
         $transactions = $account->transactions()
             ->withoutGlobalScopes()
+            ->with('user')
             ->orderBy('scheduled_at', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $csvData = $transactions->map(function ($transaction) {
-            return $transaction->toArray();
+        $csvData = $transactions->map(function (Transaction $transaction) {
+            return [
+                'Concepto' => $transaction->concept,
+                'Monto' => $transaction->amount,
+                'Tipo' => $transaction->type->getLabel(),
+                'Usuario' => $transaction->user->name,
+                'Fecha' => $transaction->scheduled_at->format('d-m-Y'),
+            ];
         })->toArray();
+
+        if (count($csvData) === 0) {
+            return null;
+        }
 
         if (!file_exists(storage_path('app/temp'))) {
             mkdir(storage_path('app/temp'));
