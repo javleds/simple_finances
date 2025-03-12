@@ -13,10 +13,12 @@ class NotificationType extends Model
 
     public const INVITATION_NOTIFICATION = 'Invitación a cuentas compartidas';
     public const MOVEMENTS_NOTIFICATION = 'Movimientos en cuentas compartidas';
+    public const INVITATION_INTERACTION = 'Respuesta a invitación en cuentas compartidas';
     public const WEEKLY_SUMMARY = 'Resumen semanal de cuentas compartidas';
 
     public const DEFAULT_NOTIFICATIONS = [
         self::INVITATION_NOTIFICATION,
+        self::INVITATION_INTERACTION,
         self::MOVEMENTS_NOTIFICATION,
     ];
 

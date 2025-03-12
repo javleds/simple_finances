@@ -28,7 +28,7 @@ class NotifyAccountInviteInteraction
     {
         $user = User::withoutGlobalScopes()->find($event->invite->user_id);
 
-        if (!$user->canReceiveNotification(NotificationType::INVITATION_NOTIFICATION)) {
+        if (!$user->canReceiveNotification(NotificationType::INVITATION_INTERACTION)) {
             return;
         }
 

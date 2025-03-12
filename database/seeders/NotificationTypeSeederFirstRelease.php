@@ -21,6 +21,10 @@ class NotificationTypeSeederFirstRelease extends Seeder
                 'description' => 'Recibe notificaciones cuando algún usuario te invite a una cuenta compartida.',
             ],
             [
+                'name' => NotificationType::INVITATION_INTERACTION,
+                'description' => 'Recibe notificaciones cuando algún usuario responda a una invitación de cuenta compartida.',
+            ],
+            [
                 'name' => NotificationType::MOVEMENTS_NOTIFICATION,
                 'description' => 'Recibe notificaciones cuando un usuario haga transacciones en la cuenta.',
             ],
