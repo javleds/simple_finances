@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Account;
 use App\Models\NotificationType;
 use App\Models\User;
 use App\Notifications\WeeklySummaryNotification;

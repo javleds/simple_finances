@@ -7,6 +7,7 @@ use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -56,6 +57,11 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function notificationTypes(): BelongsToMany
     {
         return $this->belongsToMany(NotificationType::class, 'notification_setups');
+    }
+
+    public function accountUserNotifications(): HasMany
+    {
+        return $this->hasMany(AccountUserNotification::class);
     }
 
     public function canAccessPanel(Panel $panel): bool
