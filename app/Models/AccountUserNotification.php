@@ -22,9 +22,4 @@ class AccountUserNotification extends Model
     {
         return $this->belongsTo(Account::class);
     }
-
-    public function notificationTypes(): BelongsTo
-    {
-        return $this->belongsTo(NotificationType::class);
-    }
 }

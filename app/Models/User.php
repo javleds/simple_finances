@@ -59,9 +59,9 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return $this->belongsToMany(NotificationType::class, 'notification_setups');
     }
 
-    public function accountUserNotifications(): HasMany
+    public function notificableAccounts(): BelongsToMany
     {
-        return $this->hasMany(AccountUserNotification::class);
+        return $this->belongsToMany(Account::class, 'account_user_notifications');
     }
 
     public function canAccessPanel(Panel $panel): bool
