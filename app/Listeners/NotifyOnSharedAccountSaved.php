@@ -32,12 +32,17 @@ class NotifyOnSharedAccountSaved
             return;
         }
 
+        /** @var User $user */
         foreach ($users as $user) {
             if ($user->id === auth()->id()) {
                 continue;
             }
 
             if ($user->canReceiveNotification(NotificationType::MOVEMENTS_NOTIFICATION)) {
+                continue;
+            }
+
+            if (!$user->notificableAccounts()->get()->contains($event->transaction->account)) {
                 continue;
             }
 
