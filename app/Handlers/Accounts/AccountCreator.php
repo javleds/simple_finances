@@ -5,6 +5,7 @@ namespace App\Handlers\Accounts;
 use App\Dto\AccountDto;
 use App\Models\Account;
 use App\Services\Accounts\AttachAccountToSignedInUser;
+use App\Services\Accounts\EnableNotificationsForAccount;
 use App\Services\Accounts\UpdateCreditCardBalance;
 
 readonly class AccountCreator
@@ -12,6 +13,7 @@ readonly class AccountCreator
     public function __construct(
         private AttachAccountToSignedInUser $attachAccountToSignedUser,
         private UpdateCreditCardBalance $updateCreditCardBalance,
+        private EnableNotificationsForAccount $enableNotificationsForAccount,
     ) {}
 
     public function execute(AccountDto $dto): Account
@@ -27,6 +29,8 @@ readonly class AccountCreator
 
         $this->attachAccountToSignedUser->execute($account);
         $this->updateCreditCardBalance->execute($account);
+        $this->updateCreditCardBalance->execute($account);
+        $this->enableNotificationsForAccount->execute($account);
 
         return $account;
     }
