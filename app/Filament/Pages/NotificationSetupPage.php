@@ -3,6 +3,8 @@
 namespace App\Filament\Pages;
 
 use App\Models\NotificationType;
+use App\Services\NotificableAccountSetupBuilder;
+use App\Services\NotificationSetupBuilder;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Livewire\Attributes\Locked;
@@ -17,6 +19,9 @@ class NotificationSetupPage extends Page
 
     #[Locked]
     public array $notificationTypes;
+
+    #[Locked]
+    public array $notificableAccounts;
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -47,19 +52,29 @@ class NotificationSetupPage extends Page
         Notification::make('notification_setup_saved_on' . $notificationId)->title('Preferencia guardada.')->success()->send();
     }
 
-    public function refetch(): void
+    public function handleAccountNotification(int $accountId, int $enabled): void
     {
-        $userNotifications = auth()->user()->notificationTypes()->get()->toArray();
-        $notificationTypes = NotificationType::all()->map(fn (NotificationType $n) => array_merge($n->toArray(), ['checked' => 0]))->toArray();
+        $user = auth()->user();
 
-        foreach ($userNotifications as $userNotification) {
-            foreach ($notificationTypes as $key => $notificationType) {
-                if ($userNotification['id'] === $notificationType['id']) {
-                    $notificationTypes[$key]['checked'] = 1;
-                }
-            }
+        if ($enabled === 1) {
+            $user->notificableAccounts()->detach($accountId);
+            $this->refetch();
+
+            Notification::make('account_notification_saved_off' . $accountId)->title('Preferencia guardada.')->success()->send();
+
+            return;
         }
 
-        $this->notificationTypes = $notificationTypes;
+        $user->notificableAccounts()->attach($accountId);
+        $this->refetch();
+
+        Notification::make('account_notification_saved_on' . $accountId)->title('Preferencia guardada.')->success()->send();
+    }
+
+    public function refetch(): void
+    {
+        $user = auth()->user();
+        $this->notificationTypes = app(NotificationSetupBuilder::class)->handle($user);
+        $this->notificableAccounts = app(NotificableAccountSetupBuilder::class)->handle($user);
     }
 }

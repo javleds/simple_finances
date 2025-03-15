@@ -3,11 +3,11 @@
 namespace App\Filament\Resources;
 
 use App\Enums\InviteStatus;
-use App\Events\AccountInviteInteracted;
 use App\Filament\Resources\AccountInviteResource\Pages;
 use App\Filament\Resources\AccountInviteResource\RelationManagers;
 use App\Models\Account;
 use App\Models\AccountInvite;
+use App\Services\AccountInvites\Respond;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -66,33 +66,25 @@ class AccountInviteResource extends Resource
                 Tables\Actions\Action::make('accept_invite')
                     ->label('Aceptar')
                     ->action(function (AccountInvite $record) {
-                        $record->status = InviteStatus::Accepted;
-                        $record->save();
-
-                        Account::withoutGlobalScopes()
-                            ->find($record->account_id)->users()
-                            ->attach(auth()->id());
-
+                        return app(Respond::class)->execute($record, InviteStatus::Accepted);
+                    })
+                    ->after(function () {
                         Notification::make()
                             ->success()
                             ->title('Guardado.')
                             ->send();
-
-                        event(new AccountInviteInteracted(AccountInvite::withoutGlobalScopes()->find($record->id)));
                     }),
                 Tables\Actions\Action::make('decline_invite')
                     ->color(Color::Red)
                     ->label('Declinar')
                     ->action(function (AccountInvite $record) {
-                        $record->status = InviteStatus::Declined;
-                        $record->save();
-
+                        return app(Respond::class)->execute($record, InviteStatus::Declined);
+                    })
+                    ->after(function () {
                         Notification::make()
                             ->success()
                             ->title('Guardado.')
                             ->send();
-
-                        event(new AccountInviteInteracted(AccountInvite::withoutGlobalScopes()->find($record->id)));
                     }),
             ])
             ->bulkActions([

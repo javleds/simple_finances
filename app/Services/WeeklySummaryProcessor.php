@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Account;
 use App\Models\NotificationType;
 use App\Models\User;
 use App\Notifications\WeeklySummaryNotification;
@@ -23,8 +22,13 @@ readonly class WeeklySummaryProcessor
             ->get();
 
         $users->each(function (User $user) {
+            $notificableAccounts = $user->notificableAccounts()->get();
             $attachments = [];
             foreach ($user->accounts as $account) {
+                if (!$notificableAccounts->contains($account)) {
+                    continue;
+                }
+
                 $path = $this->accountSummaryCreator->handle($user, $account);
 
                 if ($path === null) {
