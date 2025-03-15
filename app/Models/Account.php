@@ -17,11 +17,6 @@ class Account extends Model
 {
     use HasFactory;
 
-    protected $dispatchesEvents = [
-        'creating' => AccountCreationRequested::class,
-        'created' => AccountCreated::class,
-    ];
-
     protected function casts(): array
     {
         return [
