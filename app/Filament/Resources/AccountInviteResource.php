@@ -3,14 +3,14 @@
 namespace App\Filament\Resources;
 
 use App\Enums\InviteStatus;
-use App\Events\AccountInviteInteracted;
 use App\Filament\Resources\AccountInviteResource\Pages;
 use App\Filament\Resources\AccountInviteResource\RelationManagers;
 use App\Models\Account;
 use App\Models\AccountInvite;
+use App\Services\AccountInvites\Accept;
+use App\Services\AccountInvites\Decline;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Colors\Color;
 use Filament\Tables;
@@ -66,33 +66,13 @@ class AccountInviteResource extends Resource
                 Tables\Actions\Action::make('accept_invite')
                     ->label('Aceptar')
                     ->action(function (AccountInvite $record) {
-                        $record->status = InviteStatus::Accepted;
-                        $record->save();
-
-                        Account::withoutGlobalScopes()
-                            ->find($record->account_id)->users()
-                            ->attach(auth()->id());
-
-                        Notification::make()
-                            ->success()
-                            ->title('Guardado.')
-                            ->send();
-
-                        event(new AccountInviteInteracted(AccountInvite::withoutGlobalScopes()->find($record->id)));
+                        return app(Accept::class)->execute($record);
                     }),
                 Tables\Actions\Action::make('decline_invite')
                     ->color(Color::Red)
                     ->label('Declinar')
                     ->action(function (AccountInvite $record) {
-                        $record->status = InviteStatus::Declined;
-                        $record->save();
-
-                        Notification::make()
-                            ->success()
-                            ->title('Guardado.')
-                            ->send();
-
-                        event(new AccountInviteInteracted(AccountInvite::withoutGlobalScopes()->find($record->id)));
+                        return app(Decline::class)->execute($record);
                     }),
             ])
             ->bulkActions([
