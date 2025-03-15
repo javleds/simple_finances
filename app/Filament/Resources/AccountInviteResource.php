@@ -7,8 +7,7 @@ use App\Filament\Resources\AccountInviteResource\Pages;
 use App\Filament\Resources\AccountInviteResource\RelationManagers;
 use App\Models\Account;
 use App\Models\AccountInvite;
-use App\Services\AccountInvites\Accept;
-use App\Services\AccountInvites\Decline;
+use App\Services\AccountInvites\Respond;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -66,13 +65,13 @@ class AccountInviteResource extends Resource
                 Tables\Actions\Action::make('accept_invite')
                     ->label('Aceptar')
                     ->action(function (AccountInvite $record) {
-                        return app(Accept::class)->execute($record);
+                        return app(Respond::class)->execute($record, InviteStatus::Accepted);
                     }),
                 Tables\Actions\Action::make('decline_invite')
                     ->color(Color::Red)
                     ->label('Declinar')
                     ->action(function (AccountInvite $record) {
-                        return app(Decline::class)->execute($record);
+                        return app(Respond::class)->execute($record, InviteStatus::Declined);
                     }),
             ])
             ->bulkActions([
