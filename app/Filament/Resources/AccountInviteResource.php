@@ -10,6 +10,7 @@ use App\Models\AccountInvite;
 use App\Services\AccountInvites\Respond;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Colors\Color;
 use Filament\Tables;
@@ -66,12 +67,24 @@ class AccountInviteResource extends Resource
                     ->label('Aceptar')
                     ->action(function (AccountInvite $record) {
                         return app(Respond::class)->execute($record, InviteStatus::Accepted);
+                    })
+                    ->after(function () {
+                        Notification::make()
+                            ->success()
+                            ->title('Guardado.')
+                            ->send();
                     }),
                 Tables\Actions\Action::make('decline_invite')
                     ->color(Color::Red)
                     ->label('Declinar')
                     ->action(function (AccountInvite $record) {
                         return app(Respond::class)->execute($record, InviteStatus::Declined);
+                    })
+                    ->after(function () {
+                        Notification::make()
+                            ->success()
+                            ->title('Guardado.')
+                            ->send();
                     }),
             ])
             ->bulkActions([

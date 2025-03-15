@@ -3,6 +3,7 @@
 namespace App\Services\AccountInvites;
 
 use App\Enums\InviteStatus;
+use App\Models\Account;
 use App\Models\AccountInvite;
 
 readonly class Respond
@@ -17,8 +18,10 @@ readonly class Respond
                 'status' => $status,
             ]);
 
-            $invite->account->users()->attach(auth()->user()->id);
-
+            Account::withoutGlobalScopes()
+                ->find($invite->account_id)->users()
+                ->attach(auth()->id());
+            
             $this->notifyOnInteract->execute($invite);
 
             return $invite;
