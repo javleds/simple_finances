@@ -38,7 +38,7 @@ class NotifyOnSharedAccountSaved
                 continue;
             }
 
-            if ($user->canReceiveNotification(NotificationType::MOVEMENTS_NOTIFICATION)) {
+            if (!$user->canReceiveNotification(NotificationType::MOVEMENTS_NOTIFICATION)) {
                 continue;
             }
 

@@ -32,6 +32,10 @@ class NotifyAccountInviteInteraction
             return;
         }
 
+        if (!$user->notificableAccounts()->get()->contains($event->invite->account)) {
+            return;
+        }
+
         Notification::send(
             $user,
             new InviteAccountInteractionEmail($event->invite)
