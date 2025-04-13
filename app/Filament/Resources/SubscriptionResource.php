@@ -89,7 +89,7 @@ class SubscriptionResource extends Resource
                     ->label('Siguiente pago')
                     ->date()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('previous_payment_date')
                     ->label('Pago anterior')
                     ->date()
@@ -125,7 +125,6 @@ class SubscriptionResource extends Resource
                     ->options(Frequency::class),
             ])
             ->actions([
-                CreateSubscriptionPaymentAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
