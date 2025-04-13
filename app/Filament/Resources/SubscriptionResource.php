@@ -88,19 +88,23 @@ class SubscriptionResource extends Resource
                 Tables\Columns\TextColumn::make('next_payment_date')
                     ->label('Siguiente pago')
                     ->date()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('previous_payment_date')
                     ->label('Pago anterior')
                     ->date()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('started_at')
                     ->label('Fecha de contratación')
                     ->date()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('frequency_unit')
                     ->label('Cada')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('frequency_type')
                     ->label('Unidad'),
                 Tables\Columns\TextColumn::make('finished_at')
