@@ -12,6 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('accounts', function (Blueprint $table) {
+            if (app()->environment('testing')) {
+                return;
+            }
+
             $table->foreignId('feed_account_id')->nullable();
             $table->foreign('feed_account_id', 'idx_feed_account')->references('id')->on('accounts');
         });

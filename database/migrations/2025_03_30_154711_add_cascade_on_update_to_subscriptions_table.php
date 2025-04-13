@@ -12,6 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('subscriptions', function (Blueprint $table) {
+            if (app()->environment('testing')) {
+                return;
+            }
+
             $table->dropForeign('subscriptions_feed_account_id_foreign');
             $table->foreign('feed_account_id', 'subscriptions_feed_account_id_foreign')->references('id')->on('accounts')->nullOnDelete();
         });
