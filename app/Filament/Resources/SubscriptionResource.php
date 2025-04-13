@@ -120,6 +120,9 @@ class SubscriptionResource extends Resource
             ])
             ->filters([
                 DateRangeFilter::make('next_payment_date', 'Siguiente pago'),
+                Tables\Filters\SelectFilter::make('frequency_type')
+                    ->label('Frecuencia')
+                    ->options(Frequency::class),
             ])
             ->actions([
                 CreateSubscriptionPaymentAction::make(),
