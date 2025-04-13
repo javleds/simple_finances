@@ -16,7 +16,7 @@ class SubscriptionUpdater
             $subscription->previous_payment_date = $subscription->next_payment_date->clone();
             $subscription->next_payment_date = $subscription->getNextPaymentDate();
 
-            $subscription->save();
+            $subscription->saveQuietly();
         }
     }
 }
