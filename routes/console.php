@@ -11,13 +11,8 @@ Schedule::call(function() {
 })->dailyAt('00:01');
 
 Schedule::call(function() {
-    app(SubscriptionUpdater::class)->handle();
+    app(DailyUpdater::class)->handle();
 })->dailyAt('00:30');
-
-// Uncomment the next block if SubscriptionUpdater code is not working
-//Schedule::call(function() {
-//    app(DailyUpdater::class)->handle();
-//})->dailyAt('00:30');
 
 Schedule::call(function() {
     app(WeeklySummaryProcessor::class)->handle();
