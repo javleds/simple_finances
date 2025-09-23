@@ -3,6 +3,7 @@
 namespace App\Services\Telegram\Processors;
 
 use App\Contracts\TelegramMessageProcessorInterface;
+use App\Services\Telegram\Helpers\TelegramMessageHelper;
 
 class DefaultMessageProcessor implements TelegramMessageProcessorInterface
 {
@@ -18,7 +19,7 @@ class DefaultMessageProcessor implements TelegramMessageProcessorInterface
 
     public function process(array $telegramUpdate): string
     {
-        $userName = data_get($telegramUpdate, 'message.from.first_name', 'Usuario');
+        $userName = TelegramMessageHelper::getUserName($telegramUpdate);
 
         return "¡Hola {$userName}! He recibido tu mensaje, pero no tengo un procesador específico para este tipo de contenido. Por favor intenta con un mensaje de texto, foto, video o audio.";
     }

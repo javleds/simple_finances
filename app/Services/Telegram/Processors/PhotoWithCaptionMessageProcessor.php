@@ -3,6 +3,7 @@
 namespace App\Services\Telegram\Processors;
 
 use App\Contracts\TelegramMessageProcessorInterface;
+use App\Services\Telegram\Helpers\TelegramMessageHelper;
 
 class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterface
 {
@@ -13,17 +14,15 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
 
     public function canHandle(array $telegramUpdate): bool
     {
-        $hasPhoto = !empty(data_get($telegramUpdate, 'message.photo'));
-        $hasCaption = !empty(data_get($telegramUpdate, 'message.caption'));
-
-        return $hasPhoto && $hasCaption;
+        return TelegramMessageHelper::hasPhoto($telegramUpdate)
+            && TelegramMessageHelper::hasCaption($telegramUpdate);
     }
 
     public function process(array $telegramUpdate): string
     {
         $photos = data_get($telegramUpdate, 'message.photo', []);
-        $caption = data_get($telegramUpdate, 'message.caption');
-        $userName = data_get($telegramUpdate, 'message.from.first_name', 'Usuario');
+        $caption = TelegramMessageHelper::getCaption($telegramUpdate);
+        $userName = TelegramMessageHelper::getUserName($telegramUpdate);
         $photoCount = count($photos);
 
         return "¡Hola {$userName}! Has enviado una foto con {$photoCount} resoluciones y el texto: \"{$caption}\". He recibido tanto tu imagen como tu mensaje.";

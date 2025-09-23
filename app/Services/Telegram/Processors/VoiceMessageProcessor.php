@@ -3,6 +3,7 @@
 namespace App\Services\Telegram\Processors;
 
 use App\Contracts\TelegramMessageProcessorInterface;
+use App\Services\Telegram\Helpers\TelegramMessageHelper;
 
 class VoiceMessageProcessor implements TelegramMessageProcessorInterface
 {
@@ -13,16 +14,17 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
 
     public function canHandle(array $telegramUpdate): bool
     {
-        return !empty(data_get($telegramUpdate, 'message.voice'));
+        return TelegramMessageHelper::hasVoice($telegramUpdate);
     }
 
     public function process(array $telegramUpdate): string
     {
         $voiceData = data_get($telegramUpdate, 'message.voice');
-        $userName = data_get($telegramUpdate, 'message.from.first_name', 'Usuario');
+        $userName = TelegramMessageHelper::getUserName($telegramUpdate);
         $duration = data_get($voiceData, 'duration', 0);
+        $durationFormatted = TelegramMessageHelper::formatDuration($duration);
 
-        return "¡Hola {$userName}! Has enviado un mensaje de voz de {$duration} segundos. En este momento no puedo procesar mensajes de voz, pero he recibido tu mensaje.";
+        return "¡Hola {$userName}! Has enviado un mensaje de voz de {$durationFormatted}. En este momento no puedo procesar mensajes de voz, pero he recibido tu mensaje.";
     }
 
     public function getPriority(): int

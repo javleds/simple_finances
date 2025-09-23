@@ -3,9 +3,15 @@
 namespace App\Services\Telegram\Processors;
 
 use App\Contracts\TelegramMessageProcessorInterface;
+use App\Services\Telegram\Helpers\TelegramMessageHelper;
+use App\Services\Telegram\TelegramFileService;
 
 class PhotoMessageProcessor implements TelegramMessageProcessorInterface
 {
+    public function __construct(
+        private readonly TelegramFileService $fileService
+    ) {}
+
     public static function getMessageType(): string
     {
         return 'photo';
@@ -13,19 +19,34 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
 
     public function canHandle(array $telegramUpdate): bool
     {
-        $hasPhoto = !empty(data_get($telegramUpdate, 'message.photo'));
-        $hasCaption = !empty(data_get($telegramUpdate, 'message.caption'));
-
-        return $hasPhoto && !$hasCaption;
+        return TelegramMessageHelper::hasPhoto($telegramUpdate)
+            && !TelegramMessageHelper::hasCaption($telegramUpdate);
     }
 
     public function process(array $telegramUpdate): string
     {
         $photos = data_get($telegramUpdate, 'message.photo', []);
-        $userName = data_get($telegramUpdate, 'message.from.first_name', 'Usuario');
+        $userName = TelegramMessageHelper::getUserName($telegramUpdate);
         $photoCount = count($photos);
 
-        return "¡Hola {$userName}! Has enviado una foto con {$photoCount} resoluciones diferentes. He recibido tu imagen correctamente.";
+        $baseMessage = "¡Hola {$userName}! Has enviado una foto con {$photoCount} resoluciones diferentes.";
+
+        try {
+            $fileInfo = $this->fileService->getFileFromPhoto($photos);
+
+            if (!$fileInfo) {
+                return "{$baseMessage} He recibido tu imagen correctamente.";
+            }
+
+            TelegramMessageHelper::logFileProcessed('photo', $fileInfo, $userName);
+
+            $fileSize = TelegramMessageHelper::formatFileSize($fileInfo['file_size']);
+            return "{$baseMessage} Tamaño del archivo: {$fileSize}. He recibido tu imagen correctamente.";
+
+        } catch (\Exception $e) {
+            TelegramMessageHelper::logFileError('photo', $e, $userName, ['photos' => $photos]);
+            return "{$baseMessage} He recibido tu imagen correctamente.";
+        }
     }
 
     public function getPriority(): int

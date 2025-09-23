@@ -3,6 +3,7 @@
 namespace App\Services\Telegram\Processors;
 
 use App\Contracts\TelegramMessageProcessorInterface;
+use App\Services\Telegram\Helpers\TelegramMessageHelper;
 
 class TextMessageProcessor implements TelegramMessageProcessorInterface
 {
@@ -13,13 +14,13 @@ class TextMessageProcessor implements TelegramMessageProcessorInterface
 
     public function canHandle(array $telegramUpdate): bool
     {
-        return !empty(data_get($telegramUpdate, 'message.text'));
+        return TelegramMessageHelper::hasText($telegramUpdate);
     }
 
     public function process(array $telegramUpdate): string
     {
-        $messageText = data_get($telegramUpdate, 'message.text');
-        $userName = data_get($telegramUpdate, 'message.from.first_name', 'Usuario');
+        $messageText = TelegramMessageHelper::getText($telegramUpdate);
+        $userName = TelegramMessageHelper::getUserName($telegramUpdate);
 
         return "¡Hola {$userName}! Has enviado el mensaje de texto: \"{$messageText}\"";
     }

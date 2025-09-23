@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\TelegramMessageProcessorInterface;
+use App\Services\Telegram\TelegramFileService;
 use App\Services\Telegram\TelegramMessageProcessorFactory;
 use App\Services\Telegram\TelegramMessageProcessingService;
 use Illuminate\Support\ServiceProvider;
@@ -13,6 +14,8 @@ class TelegramMessageProcessorServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->singleton(TelegramFileService::class);
+
         $this->app->singleton(TelegramMessageProcessorFactory::class, function ($app) {
             $factory = new TelegramMessageProcessorFactory();
 

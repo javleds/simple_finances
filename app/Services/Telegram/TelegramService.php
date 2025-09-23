@@ -49,4 +49,41 @@ class TelegramService implements TelegramServiceInterface
             throw new \Exception("Error al enviar mensaje: " . $response->body());
         }
     }
+
+    public function getFile(string $fileId): array
+    {
+        $response = Http::get("{$this->baseUrl}/getFile", [
+            'file_id' => $fileId,
+        ]);
+
+        if (!$response->successful()) {
+            throw new \Exception("Error al obtener información del archivo: " . $response->body());
+        }
+
+        $data = $response->json();
+
+        if (!$data['ok']) {
+            throw new \Exception("Error en la respuesta de Telegram: " . ($data['description'] ?? 'Error desconocido'));
+        }
+
+        return $data['result'];
+    }
+
+    public function downloadFile(string $filePath): string
+    {
+        $downloadUrl = "https://api.telegram.org/file/bot{$this->botToken}/{$filePath}";
+
+        $response = Http::get($downloadUrl);
+
+        if (!$response->successful()) {
+            throw new \Exception("Error al descargar archivo: " . $response->body());
+        }
+
+        return $response->body();
+    }
+
+    public function getFileUrl(string $filePath): string
+    {
+        return "https://api.telegram.org/file/bot{$this->botToken}/{$filePath}";
+    }
 }
