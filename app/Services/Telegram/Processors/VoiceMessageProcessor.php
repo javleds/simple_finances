@@ -4,12 +4,15 @@ namespace App\Services\Telegram\Processors;
 
 use App\Contracts\TelegramMessageProcessorInterface;
 use App\Services\Telegram\Helpers\TelegramMessageHelper;
+use App\Services\Telegram\Helpers\TelegramUserHelper;
 use App\Services\Telegram\TelegramFileService;
+use App\Services\Transaction\TransactionProcessorService;
 
 class VoiceMessageProcessor implements TelegramMessageProcessorInterface
 {
     public function __construct(
-        private readonly TelegramFileService $fileService
+        private readonly TelegramFileService $fileService,
+        private readonly TransactionProcessorService $transactionProcessor
     ) {}
 
     public static function getMessageType(): string
@@ -28,38 +31,63 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
         $userName = TelegramMessageHelper::getUserName($telegramUpdate);
         $duration = data_get($voiceData, 'duration', 0);
         $durationFormatted = TelegramMessageHelper::formatDuration($duration);
-
-        $baseMessage = "¡Hola {$userName}! Has enviado un mensaje de voz de {$durationFormatted}.";
+        
+        // Verificar autenticación
+        $user = TelegramUserHelper::getAuthenticatedUser($telegramUpdate);
+        
+        if (!$user) {
+            return "Hola {$userName}! Para poder procesar mensajes de voz y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
+        }
 
         try {
             $fileInfo = $this->fileService->getFileFromVoice($voiceData);
 
             if (!$fileInfo) {
-                return "{$baseMessage} He recibido tu mensaje de voz correctamente.";
+                return "No pude procesar el mensaje de voz. Por favor, inténtalo de nuevo.";
             }
 
-            $fileSize = TelegramMessageHelper::formatFileSize($fileInfo['file_size']);
-
-            if ($this->fileService->shouldAutoDownload($fileInfo)) {
-                $downloadResult = $this->fileService->autoDownloadFile($fileInfo, 'voice');
-
-                if ($downloadResult) {
-                    TelegramMessageHelper::logFileProcessed('voice', $fileInfo, $userName, $downloadResult);
-                    return "{$baseMessage} Tamaño: {$fileSize}. El mensaje de voz ha sido guardado correctamente.";
-                }
+            // Verificar duración (máximo 60 segundos para procesamiento con IA)
+            if ($duration > 60) {
+                return "El mensaje de voz es demasiado largo ({$durationFormatted}). Para procesar transacciones, por favor envía mensajes de voz de máximo 60 segundos.";
             }
 
-            TelegramMessageHelper::logFileProcessed('voice', $fileInfo, $userName);
-            return "{$baseMessage} Tamaño: {$fileSize}. He recibido tu mensaje de voz correctamente.";
+            // Descargar audio temporalmente
+            $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
+            
+            if (!$downloadResult) {
+                return "No pude descargar el mensaje de voz para procesarlo. Inténtalo de nuevo.";
+            }
+
+            // Procesar audio con IA
+            $result = $this->transactionProcessor->processAudio($downloadResult['full_path'], $user);
+            
+            // Limpiar archivo temporal
+            $this->cleanupTemporaryFile($downloadResult['full_path']);
+            
+            return $result;
 
         } catch (\Exception $e) {
             TelegramMessageHelper::logFileError('voice', $e, $userName, ['voice_data' => $voiceData]);
-            return "{$baseMessage} He recibido tu mensaje de voz correctamente.";
+            return "Ocurrió un error al procesar el mensaje de voz. Por favor, inténtalo de nuevo.";
         }
     }
 
     public function getPriority(): int
     {
         return 20;
+    }
+
+    private function cleanupTemporaryFile(string $filePath): void
+    {
+        try {
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to cleanup temporary file', [
+                'file_path' => $filePath,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

@@ -80,45 +80,45 @@
 ## 5. Actualización de Procesadores de Telegram
 
 ### 5.1 Modificar TextMessageProcessor
-- [ ] Actualizar `app/Services/Telegram/Processors/TextMessageProcessor.php`
-- [ ] Inyectar `TransactionProcessorService` 
-- [ ] Implementar lógica de llamada a OpenAI para texto
-- [ ] Manejar respuestas exitosas y errores
-- [ ] Mantener backward compatibility para otros tipos de mensajes de texto
+- [x] Actualizar `app/Services/Telegram/Processors/TextMessageProcessor.php`
+- [x] Inyectar `TransactionProcessorService` 
+- [x] Implementar lógica de llamada a OpenAI para texto
+- [x] Manejar respuestas exitosas y errores
+- [x] Mantener backward compatibility para otros tipos de mensajes de texto
 
 ### 5.2 Modificar PhotoMessageProcessor  
-- [ ] Actualizar `app/Services/Telegram/Processors/PhotoMessageProcessor.php`
-- [ ] Inyectar `TransactionProcessorService`
-- [ ] Implementar descarga temporal de imagen
-- [ ] Implementar lógica de llamada a OpenAI para OCR
-- [ ] Limpiar archivos temporales después del procesamiento
+- [x] Actualizar `app/Services/Telegram/Processors/PhotoMessageProcessor.php`
+- [x] Inyectar `TransactionProcessorService`
+- [x] Implementar descarga temporal de imagen
+- [x] Implementar lógica de llamada a OpenAI para OCR
+- [x] Limpiar archivos temporales después del procesamiento
 
 ### 5.3 Modificar VoiceMessageProcessor
-- [ ] Actualizar `app/Services/Telegram/Processors/VoiceMessageProcessor.php` 
-- [ ] Inyectar `TransactionProcessorService`
-- [ ] Implementar descarga temporal de audio
-- [ ] Implementar lógica de llamada a OpenAI para transcripción
-- [ ] Limpiar archivos temporales después del procesamiento
+- [x] Actualizar `app/Services/Telegram/Processors/VoiceMessageProcessor.php` 
+- [x] Inyectar `TransactionProcessorService`
+- [x] Implementar descarga temporal de audio
+- [x] Implementar lógica de llamada a OpenAI para transcripción
+- [x] Limpiar archivos temporales después del procesamiento
 
 ### 5.4 Modificar PhotoWithCaptionMessageProcessor
-- [ ] Actualizar `app/Services/Telegram/Processors/PhotoWithCaptionMessageProcessor.php`
-- [ ] Combinar procesamiento de imagen + texto del caption
-- [ ] Priorizar texto del caption sobre OCR si ambos están disponibles
+- [x] Actualizar `app/Services/Telegram/Processors/PhotoWithCaptionMessageProcessor.php`
+- [x] Combinar procesamiento de imagen + texto del caption
+- [x] Priorizar texto del caption sobre OCR si ambos están disponibles
 
 ## 6. Prompts y Configuración de IA
 
 ### 6.1 Prompts del Sistema
-- [ ] Crear `app/Services/OpenAI/Prompts/TransactionExtractionPrompt.php`
-- [ ] Definir prompt del sistema para extracción de transacciones
-- [ ] Incluir ejemplos de entrada y salida esperada
-- [ ] Especificar formato JSON de respuesta requerido
-- [ ] Configurar instrucciones para manejar casos ambiguos
+- [x] Crear `app/Services/OpenAI/Prompts/TransactionExtractionPrompt.php`
+- [x] Definir prompt del sistema para extracción de transacciones
+- [x] Incluir ejemplos de entrada y salida esperada
+- [x] Especificar formato JSON de respuesta requerido
+- [x] Configurar instrucciones para manejar casos ambiguos
 
 ### 6.2 Configuración de Modelos
-- [ ] Configurar modelo para texto (ej: gpt-4o-mini)
-- [ ] Configurar modelo para visión (ej: gpt-4o)
-- [ ] Configurar modelo para audio (whisper-1)
-- [ ] Definir parámetros de temperatura y max_tokens
+- [x] Configurar modelo para texto (ej: gpt-4o-mini)
+- [x] Configurar modelo para visión (ej: gpt-4o)
+- [x] Configurar modelo para audio (whisper-1)
+- [x] Definir parámetros de temperatura y max_tokens
 
 ## 7. Manejo de Errores y Mensajes
 
@@ -138,18 +138,18 @@
 ## 8. Helpers y Utilidades
 
 ### 8.1 Helper para Procesamiento de Archivos
-- [ ] Crear `app/Services/Telegram/Helpers/MediaProcessorHelper.php`
-- [ ] Implementar métodos para descarga temporal de archivos
-- [ ] Implementar validación de tipos de archivo
-- [ ] Implementar límites de tamaño de archivo
-- [ ] Implementar limpieza automática de archivos temporales
+- [x] Crear `app/Services/Telegram/Helpers/MediaProcessorHelper.php`
+- [x] Implementar métodos para descarga temporal de archivos
+- [x] Implementar validación de tipos de archivo
+- [x] Implementar límites de tamaño de archivo
+- [x] Implementar limpieza automática de archivos temporales
 
 ### 8.2 Helper para Mapeo de Datos
-- [ ] Crear `app/Services/Transaction/Helpers/TransactionMappingHelper.php`
-- [ ] Implementar mapeo de nombres de cuenta a IDs
-- [ ] Implementar mapeo de nombres de metas financieras a IDs
-- [ ] Implementar normalización de tipos de transacción
-- [ ] Implementar parseo inteligente de fechas en español
+- [x] Crear `app/Services/Transaction/Helpers/TransactionMappingHelper.php`
+- [x] Implementar mapeo de nombres de cuenta a IDs
+- [x] Implementar mapeo de nombres de metas financieras a IDs
+- [x] Implementar normalización de tipos de transacción
+- [x] Implementar parseo inteligente de fechas en español
 
 ## 9. Testing y Validación
 

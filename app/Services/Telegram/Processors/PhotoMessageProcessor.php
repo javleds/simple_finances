@@ -4,12 +4,15 @@ namespace App\Services\Telegram\Processors;
 
 use App\Contracts\TelegramMessageProcessorInterface;
 use App\Services\Telegram\Helpers\TelegramMessageHelper;
+use App\Services\Telegram\Helpers\TelegramUserHelper;
 use App\Services\Telegram\TelegramFileService;
+use App\Services\Transaction\TransactionProcessorService;
 
 class PhotoMessageProcessor implements TelegramMessageProcessorInterface
 {
     public function __construct(
-        private readonly TelegramFileService $fileService
+        private readonly TelegramFileService $fileService,
+        private readonly TransactionProcessorService $transactionProcessor
     ) {}
 
     public static function getMessageType(): string
@@ -27,39 +30,58 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
     {
         $photos = data_get($telegramUpdate, 'message.photo', []);
         $userName = TelegramMessageHelper::getUserName($telegramUpdate);
-        $photoCount = count($photos);
-
-        $baseMessage = "¡Hola {$userName}! Has enviado una foto con {$photoCount} resoluciones diferentes.";
+        
+        // Verificar autenticación
+        $user = TelegramUserHelper::getAuthenticatedUser($telegramUpdate);
+        
+        if (!$user) {
+            return "Hola {$userName}! Para poder procesar imágenes y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
+        }
 
         try {
             $fileInfo = $this->fileService->getFileFromPhoto($photos);
 
             if (!$fileInfo) {
-                return "{$baseMessage} He recibido tu imagen correctamente.";
+                return "No pude procesar la imagen. Por favor, inténtalo de nuevo.";
             }
 
-            $fileSize = TelegramMessageHelper::formatFileSize($fileInfo['file_size']);
-
-            if ($this->fileService->shouldAutoDownload($fileInfo)) {
-                $downloadResult = $this->fileService->autoDownloadFile($fileInfo, 'photos');
-
-                if ($downloadResult) {
-                    TelegramMessageHelper::logFileProcessed('photo', $fileInfo, $userName, $downloadResult);
-                    return "{$baseMessage} Tamaño: {$fileSize}. La imagen ha sido guardada correctamente.";
-                }
+            // Descargar imagen temporalmente
+            $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
+            
+            if (!$downloadResult) {
+                return "No pude descargar la imagen para procesarla. Inténtalo de nuevo.";
             }
 
-            TelegramMessageHelper::logFileProcessed('photo', $fileInfo, $userName);
-            return "{$baseMessage} Tamaño: {$fileSize}. He recibido tu imagen correctamente.";
+            // Procesar imagen con IA
+            $result = $this->transactionProcessor->processImage($downloadResult['full_path'], $user);
+            
+            // Limpiar archivo temporal
+            $this->cleanupTemporaryFile($downloadResult['full_path']);
+            
+            return $result;
 
         } catch (\Exception $e) {
             TelegramMessageHelper::logFileError('photo', $e, $userName, ['photos' => $photos]);
-            return "{$baseMessage} He recibido tu imagen correctamente.";
+            return "Ocurrió un error al procesar la imagen. Por favor, inténtalo de nuevo.";
         }
     }
 
     public function getPriority(): int
     {
         return 15;
+    }
+
+    private function cleanupTemporaryFile(string $filePath): void
+    {
+        try {
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to cleanup temporary file', [
+                'file_path' => $filePath,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

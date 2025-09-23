@@ -93,6 +93,35 @@ class TelegramFileService
         ];
     }
 
+    public function downloadFileTemporarily(array $fileInfo): ?array
+    {
+        if (!isset($fileInfo['file_path'])) {
+            return null;
+        }
+
+        try {
+            $fileContent = $this->telegramService->downloadFile($fileInfo['file_path']);
+            
+            $fileName = $this->generateFileName($fileInfo);
+            $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'telegram_' . $fileName;
+            
+            file_put_contents($tempPath, $fileContent);
+
+            return [
+                'file_info' => $fileInfo,
+                'storage_path' => $tempPath,
+                'full_path' => $tempPath,
+            ];
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to download file temporarily', [
+                'file_info' => $fileInfo,
+                'error' => $e->getMessage()
+            ]);
+            
+            return null;
+        }
+    }
+
     private function generateFileName(array $fileInfo): string
     {
         $extension = pathinfo($fileInfo['file_path'] ?? '', PATHINFO_EXTENSION);
