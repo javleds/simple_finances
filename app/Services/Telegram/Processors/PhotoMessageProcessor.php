@@ -38,10 +38,19 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
                 return "{$baseMessage} He recibido tu imagen correctamente.";
             }
 
-            TelegramMessageHelper::logFileProcessed('photo', $fileInfo, $userName);
-
             $fileSize = TelegramMessageHelper::formatFileSize($fileInfo['file_size']);
-            return "{$baseMessage} Tamaño del archivo: {$fileSize}. He recibido tu imagen correctamente.";
+
+            if ($this->fileService->shouldAutoDownload($fileInfo)) {
+                $downloadResult = $this->fileService->autoDownloadFile($fileInfo, 'photos');
+
+                if ($downloadResult) {
+                    TelegramMessageHelper::logFileProcessed('photo', $fileInfo, $userName, $downloadResult);
+                    return "{$baseMessage} Tamaño: {$fileSize}. La imagen ha sido guardada correctamente.";
+                }
+            }
+
+            TelegramMessageHelper::logFileProcessed('photo', $fileInfo, $userName);
+            return "{$baseMessage} Tamaño: {$fileSize}. He recibido tu imagen correctamente.";
 
         } catch (\Exception $e) {
             TelegramMessageHelper::logFileError('photo', $e, $userName, ['photos' => $photos]);

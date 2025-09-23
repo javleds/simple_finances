@@ -148,4 +148,22 @@ class TelegramFileService
             default => null,
         };
     }
+
+    public function autoDownloadFile(array $fileInfo, string $fileType = 'media'): ?array
+    {
+        if (!$fileInfo || !isset($fileInfo['file_id'])) {
+            return null;
+        }
+
+        try {
+            return $this->downloadAndStore($fileInfo['file_id'], "telegram/{$fileType}");
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    public function shouldAutoDownload(array $fileInfo, int $maxSizeBytes = 50971520): bool
+    {
+        return isset($fileInfo['file_size']) && $fileInfo['file_size'] <= $maxSizeBytes;
+    }
 }

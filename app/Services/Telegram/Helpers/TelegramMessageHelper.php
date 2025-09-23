@@ -99,6 +99,16 @@ class TelegramMessageHelper
         return !empty(data_get($telegramUpdate, 'message.text'));
     }
 
+    public static function hasAudio(array $telegramUpdate): bool
+    {
+        return !empty(data_get($telegramUpdate, 'message.audio'));
+    }
+
+    public static function hasDocument(array $telegramUpdate): bool
+    {
+        return !empty(data_get($telegramUpdate, 'message.document'));
+    }
+
     public static function getCaption(array $telegramUpdate): string
     {
         return data_get($telegramUpdate, 'message.caption', '');

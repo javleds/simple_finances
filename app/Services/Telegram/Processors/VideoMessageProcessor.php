@@ -42,15 +42,17 @@ class VideoMessageProcessor implements TelegramMessageProcessorInterface
 
             $fileSize = TelegramMessageHelper::formatFileSize($fileInfo['file_size']);
 
-            if (!TelegramMessageHelper::isFileSizeAllowedForDownload($fileInfo['file_size'])) {
-                return "{$baseMessage} Tamaño: {$fileSize}. El archivo es muy grande para descarga automática.";
+            if ($this->fileService->shouldAutoDownload($fileInfo)) {
+                $downloadResult = $this->fileService->autoDownloadFile($fileInfo, 'videos');
+
+                if ($downloadResult) {
+                    TelegramMessageHelper::logFileProcessed('video', $fileInfo, $userName, $downloadResult);
+                    return "{$baseMessage} Tamaño: {$fileSize}. El video ha sido guardado correctamente.";
+                }
             }
 
-            $downloadResult = $this->fileService->downloadAndStore($fileInfo['file_id'], 'telegram/videos');
-
-            TelegramMessageHelper::logFileProcessed('video', $fileInfo, $userName, $downloadResult);
-
-            return "{$baseMessage} Tamaño: {$fileSize}. El video ha sido descargado y guardado correctamente.";
+            TelegramMessageHelper::logFileProcessed('video', $fileInfo, $userName);
+            return "{$baseMessage} Tamaño: {$fileSize}. El archivo es muy grande para descarga automática.";
 
         } catch (\Exception $e) {
             TelegramMessageHelper::logFileError('video', $e, $userName, ['video_data' => $videoData]);
