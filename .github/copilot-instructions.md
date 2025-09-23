@@ -24,7 +24,7 @@
 - Focus on code implementation over auxiliary files
 
 ### Code Quality
-- Do not add comments into the code unless the code is not clear by itself
+- Do not add comments into the code unless explicitly requested
 - Follow self-documenting code approach using descriptive variable, function, and class names
 - Choose meaningful names that express intent and purpose
 - Avoid redundant or obvious comments
