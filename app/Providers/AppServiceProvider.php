@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Contracts\TelegramServiceInterface;
+use App\Services\Telegram\DummyTelegramService;
+use App\Services\Telegram\TelegramService;
 use Filament\Actions\Action;
 use Filament\Infolists\Infolist;
 use Filament\Pages\Page;
@@ -18,6 +21,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(TelegramServiceInterface::class, function ($app) {
+            $botToken = config('services.telegram.bot_token') ?? env('TELEGRAM_BOT_TOKEN');
+
+            if (empty($botToken)) {
+                return new DummyTelegramService();
+            }
+
+            return new TelegramService($botToken);
+        });
     }
 
     /**
