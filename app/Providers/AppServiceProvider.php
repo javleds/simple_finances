@@ -30,6 +30,16 @@ class AppServiceProvider extends ServiceProvider
 
             return new TelegramService($botToken);
         });
+
+        $this->app->bind(TelegramService::class, function ($app) {
+            $botToken = config('services.telegram.bot_token') ?? env('TELEGRAM_BOT_TOKEN');
+
+            if (empty($botToken)) {
+                throw new \Exception('Telegram bot token is required for TelegramService');
+            }
+
+            return new TelegramService($botToken);
+        });
     }
 
     /**

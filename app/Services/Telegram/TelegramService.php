@@ -25,6 +25,19 @@ class TelegramService implements TelegramServiceInterface
         }
     }
 
+    public function setWebhookUrlWithStatus(string $url): int
+    {
+        $response = Http::post("{$this->baseUrl}/setWebhook", [
+            'url' => $url,
+        ]);
+
+        if (!$response->successful()) {
+            throw new \Exception("Error al configurar webhook: " . $response->body());
+        }
+
+        return $response->status();
+    }
+
     public function sendMessage(string $chatId, string $message): void
     {
         $response = Http::post("{$this->baseUrl}/sendMessage", [
