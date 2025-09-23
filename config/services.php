@@ -37,6 +37,8 @@ return [
 
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        'webhook_url' => env('TELEGRAM_WEBHOOK_URL'),
+        'verification_code_expiration_minutes' => env('TELEGRAM_VERIFICATION_CODE_EXPIRATION_MINUTES', 10),
     ],
 
 ];

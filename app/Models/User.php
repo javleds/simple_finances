@@ -25,6 +25,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         'email',
         'password',
         'phone_number',
+        'telegram_chat_id',
     ];
 
     /**
@@ -63,6 +64,21 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function notificableAccounts(): BelongsToMany
     {
         return $this->belongsToMany(Account::class, 'account_user_notifications');
+    }
+
+    public function telegramVerificationCodes(): HasMany
+    {
+        return $this->hasMany(TelegramVerificationCode::class);
+    }
+
+    public function hasTelegramLinked(): bool
+    {
+        return !empty($this->telegram_chat_id);
+    }
+
+    public function getTelegramUsername(): ?string
+    {
+        return $this->telegram_chat_id ? '@' . $this->name : null;
     }
 
     public function canAccessPanel(Panel $panel): bool
