@@ -28,7 +28,7 @@ class EditProfile extends AuthEditProfile
                     ->helperText('Proveer tu numero de teléfono te permite ligar tu cuenta a Telegram para mayores beneficios.')
                     ->tel()
                     ->placeholder('+52 1234657890'),
-                
+
                 Group::make([
                     Placeholder::make('telegram_status')
                         ->label('Estado de Telegram')
@@ -43,7 +43,7 @@ class EditProfile extends AuthEditProfile
     protected function getTelegramStatusContent(): string
     {
         $user = $this->getUser();
-        
+
         if ($user->hasTelegramLinked()) {
             return "✅ Tu cuenta está vinculada con Telegram. Recibirás notificaciones automáticamente.";
         }
@@ -60,7 +60,7 @@ class EditProfile extends AuthEditProfile
                 ->color(Color::Blue)
                 ->visible(fn () => !$this->getUser()->hasTelegramLinked())
                 ->action('generateTelegramCode'),
-            
+
             Action::make('disconnect_telegram')
                 ->label('Desconectar Telegram')
                 ->icon('heroicon-o-x-mark')

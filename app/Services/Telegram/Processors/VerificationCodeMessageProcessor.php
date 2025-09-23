@@ -20,7 +20,7 @@ class VerificationCodeMessageProcessor implements TelegramMessageProcessorInterf
     public function canHandle(array $telegramUpdate): bool
     {
         $messageText = TelegramMessageHelper::getText($telegramUpdate);
-        
+
         if (empty($messageText)) {
             return false;
         }
