@@ -92,7 +92,7 @@ class EditProfile extends AuthEditProfile
 
             Notification::make()
                 ->title('Código generado')
-                ->body("Tu código de verificación es: {$verificationCode->code}. Envía este código al bot de Telegram. Expira en 10 minutos.")
+                ->body("Tu código de verificación es: {$verificationCode->code}.\n\nEnvía al bot: `/verify {$verificationCode->code}`\n\nExpira en 10 minutos.")
                 ->success()
                 ->persistent()
                 ->send();
