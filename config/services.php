@@ -41,4 +41,13 @@ return [
         'verification_code_expiration_minutes' => env('TELEGRAM_VERIFICATION_CODE_EXPIRATION_MINUTES', 10),
     ],
 
+    'openai' => [
+        'api_token' => env('OPENAI_API_TOKEN'),
+        'default_model' => env('OPENAI_DEFAULT_MODEL', 'gpt-4o-mini'),
+        'vision_model' => env('OPENAI_VISION_MODEL', 'gpt-4o'),
+        'audio_model' => env('OPENAI_AUDIO_MODEL', 'whisper-1'),
+        'max_tokens' => env('OPENAI_MAX_TOKENS', 1000),
+        'temperature' => env('OPENAI_TEMPERATURE', 0.3),
+    ],
+
 ];
