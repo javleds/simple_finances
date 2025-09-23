@@ -21,7 +21,7 @@ class TelegramService implements TelegramServiceInterface
         ]);
 
         if (!$response->successful()) {
-            throw new \Exception("Failed to set webhook: " . $response->body());
+            throw new \Exception("Error al configurar webhook: " . $response->body());
         }
     }
 
@@ -33,7 +33,7 @@ class TelegramService implements TelegramServiceInterface
         ]);
 
         if (!$response->successful()) {
-            throw new \Exception("Failed to send message: " . $response->body());
+            throw new \Exception("Error al enviar mensaje: " . $response->body());
         }
     }
 }
