@@ -67,55 +67,7 @@ class AudioMessageProcessor implements TelegramMessageProcessorInterface
                 return "{$baseMessage} El archivo es demasiado grande ({$fileSize}). Para procesar con IA, el archivo no debe superar los 20MB.";
             }
 
-            // Descargar audio temporalmente
-            $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
-
-            if (!$downloadResult) {
-                return "{$baseMessage} No pude descargar el archivo de audio para procesarlo. Inténtalo de nuevo.";
-            }
-
-            // Transcribir el audio usando OpenAI
-            $transcriptionResult = $this->openAIService->transcribeAudio($downloadResult['full_path']);
-
-            // Limpiar archivo temporal
-            $this->cleanupTemporaryFile($downloadResult['full_path']);
-
-            if (!$transcriptionResult['success']) {
-                Log::error('Audio transcription failed', ['error' => $transcriptionResult['error']]);
-                return "{$baseMessage} No pude transcribir el audio. Por favor, inténtalo de nuevo.";
-            }
-
-            $transcribedText = $transcriptionResult['text'];
-            Log::info('AudioMessageProcessor: Audio transcribed', ['text' => $transcribedText]);
-
-            // Usar el sistema de detección de acciones como en TextMessageProcessor
-            try {
-                $detectionResult = $this->actionDetectionService->detectAction($transcribedText);
-
-                if ($detectionResult['success']) {
-                    // Crear enum desde el valor
-                    $action = MessageAction::from($detectionResult['action']);
-
-                    // Procesar con el procesador específico de la acción
-                    $actionProcessor = $this->actionProcessorFactory->getProcessor($action);
-
-                    if ($actionProcessor && $actionProcessor->canHandle($action, $detectionResult['context'] ?? [])) {
-                        $result = $actionProcessor->process($detectionResult['context'] ?? [], $user);
-                        return "🎤 **Audio transcrito**: \"{$transcribedText}\"\n\n{$result}";
-                    }
-                }
-
-                // Si no se detectó acción válida, mostrar mensaje con transcripción
-                return "🎤 **Audio transcrito**: \"{$transcribedText}\"\n\n⚠️ No pude determinar qué acción realizar con este audio. Por favor, intenta ser más específico.";
-
-            } catch (\Exception $e) {
-                Log::error('AudioMessageProcessor: Action processing failed', [
-                    'error' => $e->getMessage(),
-                    'transcribed_text' => $transcribedText
-                ]);
-
-                return "🎤 **Audio transcrito**: \"{$transcribedText}\"\n\n⚠️ Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo.";
-            }
+            return $this->processAudioFile($fileInfo, $baseMessage, $user);
 
         } catch (\Exception $e) {
             TelegramMessageHelper::logFileError('audio', $e, $userName, ['audio_data' => $audioData]);
@@ -126,6 +78,64 @@ class AudioMessageProcessor implements TelegramMessageProcessorInterface
     public function getPriority(): int
     {
         return 20;
+    }
+
+    private function processAudioFile(array $fileInfo, string $baseMessage, $user): string
+    {
+        // Descargar audio temporalmente
+        $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
+
+        if (!$downloadResult) {
+            return "{$baseMessage} No pude descargar el archivo de audio para procesarlo. Inténtalo de nuevo.";
+        }
+
+        // Transcribir el audio usando OpenAI
+        $transcriptionResult = $this->openAIService->transcribeAudio($downloadResult['full_path']);
+
+        // Limpiar archivo temporal
+        $this->cleanupTemporaryFile($downloadResult['full_path']);
+
+        if (!$transcriptionResult['success']) {
+            Log::error('Audio transcription failed', ['error' => $transcriptionResult['error']]);
+            return "{$baseMessage} No pude transcribir el audio. Por favor, inténtalo de nuevo.";
+        }
+
+        $transcribedText = $transcriptionResult['text'];
+        Log::info('AudioMessageProcessor: Audio transcribed', ['text' => $transcribedText]);
+
+        return $this->processTranscribedText($transcribedText, $user);
+    }
+
+    private function processTranscribedText(string $transcribedText, $user): string
+    {
+        try {
+            $detectionResult = $this->actionDetectionService->detectAction($transcribedText);
+
+            if (!$detectionResult['success']) {
+                return "🎤 **Audio transcrito**: \"{$transcribedText}\"\n\n⚠️ No pude determinar qué acción realizar con este audio. Por favor, intenta ser más específico.";
+            }
+
+            // Crear enum desde el valor
+            $action = MessageAction::from($detectionResult['action']);
+
+            // Procesar con el procesador específico de la acción
+            $actionProcessor = $this->actionProcessorFactory->getProcessor($action);
+
+            if (!$actionProcessor || !$actionProcessor->canHandle($action, $detectionResult['context'] ?? [])) {
+                return "🎤 **Audio transcrito**: \"{$transcribedText}\"\n\n⚠️ No encontré un procesador adecuado para esta acción. Por favor, intenta ser más específico.";
+            }
+
+            $result = $actionProcessor->process($detectionResult['context'] ?? [], $user);
+            return "🎤 **Audio transcrito**: \"{$transcribedText}\"\n\n{$result}";
+
+        } catch (\Exception $e) {
+            Log::error('AudioMessageProcessor: Action processing failed', [
+                'error' => $e->getMessage(),
+                'transcribed_text' => $transcribedText
+            ]);
+
+            return "🎤 **Audio transcrito**: \"{$transcribedText}\"\n\n⚠️ Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo.";
+        }
     }
 
     private function cleanupTemporaryFile(string $filePath): void
