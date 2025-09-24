@@ -28,6 +28,7 @@ REGLAS IMPORTANTES:
 8. Para 'account': extrae el nombre más probable de la cuenta, aunque no sea exacto (ej: \"nómina\", \"ahorro\", \"efectivo\")
 9. Si menciona palabras como \"cuenta de\", \"tarjeta\", \"banco\", extrae solo el nombre principal
 10. Responde ÚNICAMENTE con el JSON, sin explicaciones adicionales
+11. Si a través del contenido de la imagen puede inferiste el concepto de la transacción, inclúyelo en el campo 'concept' a menos que ya venga de forma explícita en el texto.
 
 EJEMPLOS:
 Texto: \"Deposité 1500 pesos en mi cuenta de ahorros para mi fondo de emergencia el 15 de enero\"
