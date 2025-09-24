@@ -19,7 +19,7 @@ class AccountBalanceService
             }
 
             // Actualizar balance para asegurar datos actuales
-            $balance = $account->updateBalance();
+            $balance = $account->balance;
 
             $data = [
                 'account' => $account,
