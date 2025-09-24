@@ -49,6 +49,9 @@ Respuesta: {\"action\": \"create_transaction\", \"context\": {\"amount\": 500, \
 Texto: \"Quiero cambiar el monto de mi última transacción\"
 Respuesta: {\"action\": \"modify_last_transaction\", \"context\": {\"field_to_modify\": \"amount\"}, \"confidence\": 0.92}
 
+Texto: \"Cambia el tipo de ingreso a egreso del último movimiento.\"
+Respuesta: {\"action\": \"modify_last_transaction\", \"context\": {\"field_to_modify\": \"type\"}, \"confidence\": 0.92}
+
 Texto: \"Elimina mi última transacción, fue un error\"
 Respuesta: {\"action\": \"delete_last_transaction\", \"context\": {\"reason\": \"error\"}, \"confidence\": 0.95}
 
