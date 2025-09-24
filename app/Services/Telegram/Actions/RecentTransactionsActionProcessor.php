@@ -6,6 +6,7 @@ use App\Contracts\MessageActionProcessorInterface;
 use App\Dto\RecentTransactionsQueryDto;
 use App\Enums\MessageAction;
 use App\Models\User;
+use App\Services\Account\AccountFinderService;
 use App\Services\Account\TransactionHistoryService;
 use App\Services\Telegram\Helpers\MessageActionHelper;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +14,8 @@ use Illuminate\Support\Facades\Log;
 class RecentTransactionsActionProcessor implements MessageActionProcessorInterface
 {
     public function __construct(
-        private readonly TransactionHistoryService $transactionHistoryService
+        private readonly TransactionHistoryService $transactionHistoryService,
+        private readonly AccountFinderService $accountFinderService
     ) {}
 
     public static function getActionType(): MessageAction
@@ -64,9 +66,7 @@ class RecentTransactionsActionProcessor implements MessageActionProcessorInterfa
         }
 
         // Necesitamos obtener la cuenta para el formato de respuesta
-        $account = $user->accounts()
-            ->whereRaw('LOWER(name) LIKE ?', ["%".strtolower(trim($accountName))."%"])
-            ->first();
+        $account = $this->accountFinderService->findUserAccount($accountName, $user);
 
         if (!$account) {
             return MessageActionHelper::formatNoAccountFoundResponse($accountName);

@@ -9,10 +9,14 @@ use Illuminate\Support\Facades\Log;
 
 class AccountBalanceService
 {
+    public function __construct(
+        private readonly AccountFinderService $accountFinderService
+    ) {}
+
     public function getAccountBalance(string $accountName, User $user): ?array
     {
         try {
-            $account = $this->findAccountByName($accountName, $user);
+            $account = $this->accountFinderService->findUserAccount($accountName, $user);
 
             if (!$account) {
                 return null;
@@ -64,17 +68,5 @@ class AccountBalanceService
                     'formatted_available_credit' => $account->available_credit ? as_money($account->available_credit) : null,
                 ];
             });
-    }
-
-    private function findAccountByName(string $accountName, User $user): ?Account
-    {
-        $normalizedName = strtolower(trim($accountName));
-
-        return $user->accounts()
-            ->whereRaw('LOWER(name) LIKE ?', ["%{$normalizedName}%"])
-            ->first() ?:
-            $user->accounts()
-                ->whereRaw('LOWER(name) = ?', [$normalizedName])
-                ->first();
     }
 }

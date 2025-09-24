@@ -10,10 +10,14 @@ use Illuminate\Support\Facades\Log;
 
 class TransactionHistoryService
 {
+    public function __construct(
+        private readonly AccountFinderService $accountFinderService
+    ) {}
+
     public function getRecentTransactions(string $accountName, User $user, int $limit = 5): ?Collection
     {
         try {
-            $account = $this->findAccountByName($accountName, $user);
+            $account = $this->accountFinderService->findUserAccount($accountName, $user);
 
             if (!$account) {
                 return null;
@@ -85,17 +89,5 @@ class TransactionHistoryService
             ]);
             return [];
         }
-    }
-
-    private function findAccountByName(string $accountName, User $user): ?Account
-    {
-        $normalizedName = strtolower(trim($accountName));
-
-        return $user->accounts()
-            ->whereRaw('LOWER(name) LIKE ?', ["%{$normalizedName}%"])
-            ->first() ?:
-            $user->accounts()
-                ->whereRaw('LOWER(name) = ?', [$normalizedName])
-                ->first();
     }
 }

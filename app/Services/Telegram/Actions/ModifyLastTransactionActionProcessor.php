@@ -7,6 +7,7 @@ use App\Contracts\OpenAIServiceInterface;
 use App\Enums\MessageAction;
 use App\Enums\TransactionType;
 use App\Models\User;
+use App\Services\Account\AccountFinderService;
 use App\Services\Telegram\Helpers\MessageActionHelper;
 use App\Services\Transaction\LastTransactionService;
 use Illuminate\Support\Facades\Log;
@@ -15,7 +16,8 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
 {
     public function __construct(
         private readonly LastTransactionService $lastTransactionService,
-        private readonly OpenAIServiceInterface $openAIService
+        private readonly OpenAIServiceInterface $openAIService,
+        private readonly AccountFinderService $accountFinderService
     ) {}
 
     public static function getActionType(): MessageAction
@@ -159,9 +161,7 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
 
         // Validar cambios de cuenta si se especifica
         if (isset($data['account']) && !empty($data['account'])) {
-            $account = $user->accounts()
-                ->whereRaw('LOWER(name) LIKE ?', ["%".strtolower(trim($data['account']))."%"])
-                ->first();
+            $account = $this->accountFinderService->findUserAccount($data['account'], $user);
 
             if ($account && $account->id !== $lastTransaction->account_id) {
                 $changes['account_id'] = $account->id;
