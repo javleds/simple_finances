@@ -18,7 +18,6 @@ class AccountBalanceService
                 return null;
             }
 
-            // Actualizar balance para asegurar datos actuales
             $balance = $account->balance;
 
             $data = [
@@ -54,7 +53,7 @@ class AccountBalanceService
         return $user->accounts()
             ->get()
             ->map(function (Account $account) {
-                $balance = $account->updateBalance();
+                $balance = $account->balance;
 
                 return [
                     'account' => $account,

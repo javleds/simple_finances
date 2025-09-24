@@ -19,6 +19,6 @@ class CreateTransaction extends CreateRecord
 
     public function afterCreate(): void
     {
-        event(new TransactionSaved(Transaction::find($this->getRecord()->id), Action::Deleted));
+        event(new TransactionSaved(Transaction::find($this->getRecord()->id), Action::Created));
     }
 }

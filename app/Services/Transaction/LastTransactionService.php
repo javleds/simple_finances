@@ -81,13 +81,6 @@ class LastTransactionService
 
             $transaction->save();
 
-            // Actualizar balance de cuentas afectadas
-            $transaction->account->updateBalance();
-            if (isset($originalData['account_id']) && $originalData['account_id'] !== $transaction->account_id) {
-                // Si cambió de cuenta, actualizar también la cuenta anterior
-                \App\Models\Account::find($originalData['account_id'])?->updateBalance();
-            }
-
             // Disparar evento de modificación
             event(new TransactionSaved($transaction, Action::Updated));
 
@@ -123,13 +116,8 @@ class LastTransactionService
 
             $account = $transaction->account;
 
-            // Disparar evento antes de eliminar
-            event(new TransactionSaved($transaction, Action::Deleted));
-
             $transaction->delete();
-
-            // Actualizar balance de la cuenta
-            $account->updateBalance();
+            event(new TransactionSaved($transaction, Action::Deleted));
 
             Log::info('LastTransactionService: Transaction deleted successfully', [
                 'user_id' => $user->id,
