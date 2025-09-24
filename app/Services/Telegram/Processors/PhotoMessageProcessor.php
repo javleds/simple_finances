@@ -53,7 +53,7 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
             }
 
             // Procesar imagen con IA
-            $result = $this->transactionProcessor->processImage($downloadResult['full_path'], $user);
+            $result = $this->transactionProcessor->processImage($downloadResult['full_path'], user: $user);
 
             // Limpiar archivo temporal
             $this->cleanupTemporaryFile($downloadResult['full_path']);

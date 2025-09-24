@@ -61,7 +61,7 @@ class OpenAIService implements OpenAIServiceInterface
         }
     }
 
-    public function processImage(string $imagePath): array
+    public function processImage(string $imagePath, string $caption = ''): array
     {
         try {
             Log::info('OpenAI: Processing image', ['imagePath' => $imagePath]);
@@ -72,6 +72,11 @@ class OpenAIService implements OpenAIServiceInterface
 
             $imageData = base64_encode(file_get_contents($imagePath));
             $mimeType = mime_content_type($imagePath);
+
+            $userMessage = 'Analiza esta imagen y extrae la información de transacción financiera que puedas encontrar.';
+            if (!empty($caption)) {
+                $userMessage .= ' Además, ten en cuenta el siguiente texto que la acompaña: ' . $caption;
+            }
 
             $response = $this->client->chat()->create([
                 'model' => $this->config['vision_model'],
@@ -85,7 +90,7 @@ class OpenAIService implements OpenAIServiceInterface
                         'content' => [
                             [
                                 'type' => 'text',
-                                'text' => 'Analiza esta imagen y extrae la información de transacción financiera que puedas encontrar.'
+                                'text' => $userMessage,
                             ],
                             [
                                 'type' => 'image_url',

@@ -36,10 +36,10 @@ class TransactionProcessorService
         }
     }
 
-    public function processImage(string $imagePath, User $user): string
+    public function processImage(string $imagePath, string $caption = '', User $user): string
     {
         try {
-            $response = $this->openAIService->processImage($imagePath);
+            $response = $this->openAIService->processImage($imagePath, $caption);
 
             if (!$response['success']) {
                 Log::error('OpenAI image processing failed', ['error' => $response['error']]);
