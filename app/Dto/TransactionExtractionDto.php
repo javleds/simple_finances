@@ -8,6 +8,7 @@ class TransactionExtractionDto
         public readonly ?string $account = null,
         public readonly ?float $amount = null,
         public readonly ?string $type = null,
+        public readonly ?string $concept = null,
         public readonly ?string $date = null,
         public readonly ?string $financialGoal = null,
     ) {}
@@ -17,7 +18,9 @@ class TransactionExtractionDto
         return !is_null($this->account)
             && !is_null($this->amount)
             && !is_null($this->type)
-            && in_array($this->type, ['income', 'outcome']);
+            && !is_null($this->concept)
+            && in_array($this->type, ['income', 'outcome'])
+            && trim($this->concept) !== '';
     }
 
     public function getMissingFields(): array
@@ -36,6 +39,10 @@ class TransactionExtractionDto
             $missing[] = 'type';
         }
 
+        if (is_null($this->concept) || trim($this->concept) === '') {
+            $missing[] = 'concept';
+        }
+
         return $missing;
     }
 
@@ -45,6 +52,7 @@ class TransactionExtractionDto
             'account' => $this->account,
             'amount' => $this->amount,
             'type' => $this->type,
+            'concept' => $this->concept,
             'date' => $this->date,
             'financial_goal' => $this->financialGoal,
         ];

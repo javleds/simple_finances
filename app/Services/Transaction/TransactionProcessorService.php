@@ -80,6 +80,7 @@ class TransactionProcessorService
             account: $data['account'],
             amount: $data['amount'],
             type: $data['type'],
+            concept: $data['concept'],
             date: $data['date'],
             financialGoal: $data['financial_goal']
         );
@@ -120,7 +121,7 @@ class TransactionProcessorService
         $transaction->type = TransactionType::from($dto->type);
         $transaction->amount = $dto->amount;
         $transaction->scheduled_at = $scheduledAt;
-        $transaction->concept = 'Transacción creada desde Telegram';
+        $transaction->concept = $dto->concept;
 
         if ($financialGoal) {
             $transaction->financial_goal_id = $financialGoal->id;
@@ -133,7 +134,8 @@ class TransactionProcessorService
             'user_id' => $user->id,
             'account' => $account->name,
             'amount' => $dto->amount,
-            'type' => $dto->type
+            'type' => $dto->type,
+            'concept' => $dto->concept
         ]);
 
         return $transaction;
@@ -150,7 +152,8 @@ class TransactionProcessorService
         $message .= "📊 Tipo: " . ucfirst($typeText) . "\n";
         $message .= "💰 Monto: $" . $amount . "\n";
         $message .= "🏦 Cuenta: " . $account . "\n";
-        $message .= "📅 Fecha: " . $date . "\n";
+        $message .= "� Concepto: " . $transaction->concept . "\n";
+        $message .= "�📅 Fecha: " . $date . "\n";
 
         if ($transaction->financialGoal) {
             $message .= "🎯 Meta financiera: " . $transaction->financialGoal->name . "\n";

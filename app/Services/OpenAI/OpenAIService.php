@@ -158,6 +158,7 @@ class OpenAIService implements OpenAIServiceInterface
             account: $data['account'] ?? null,
             amount: isset($data['amount']) ? (float) $data['amount'] : null,
             type: $data['type'] ?? null,
+            concept: $data['concept'] ?? null,
             date: $data['date'] ?? null,
             financialGoal: $data['financial_goal'] ?? null,
         );
