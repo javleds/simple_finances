@@ -3,14 +3,20 @@
 namespace App\Services\Telegram\Processors;
 
 use App\Contracts\TelegramMessageProcessorInterface;
+use App\Contracts\MessageActionDetectionServiceInterface;
 use App\Services\Telegram\Helpers\TelegramMessageHelper;
 use App\Services\Telegram\Helpers\TelegramUserHelper;
+use App\Services\Telegram\MessageActionProcessorFactory;
 use App\Services\Transaction\TransactionProcessorService;
+use App\Enums\MessageAction;
+use Illuminate\Support\Facades\Log;
 
 class TextMessageProcessor implements TelegramMessageProcessorInterface
 {
     public function __construct(
-        private readonly TransactionProcessorService $transactionProcessor
+        private readonly TransactionProcessorService $transactionProcessor,
+        private readonly MessageActionDetectionServiceInterface $actionDetectionService,
+        private readonly MessageActionProcessorFactory $actionProcessorFactory
     ) {}
 
     public static function getMessageType(): string
@@ -33,16 +39,57 @@ class TextMessageProcessor implements TelegramMessageProcessorInterface
         $user = TelegramUserHelper::getAuthenticatedUser($telegramUpdate);
 
         if (!$user) {
-            return "Hola {$userName}! Para poder crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
+            return "Hola {$userName}! Para poder usar el bot, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
 
-        // Si el mensaje parece una transacción, procesarlo con IA
-        if ($this->seemsLikeTransaction($messageText)) {
-            return $this->transactionProcessor->processText($messageText, $user);
+        try {
+            // Detectar la acción del mensaje usando OpenAI
+            $detectionResult = $this->actionDetectionService->detectAction($messageText);
+            
+            if ($detectionResult['success'] && $detectionResult['action'] !== MessageAction::CreateTransaction->value) {
+                // Crear enum desde el valor
+                $action = MessageAction::from($detectionResult['action']);
+                
+                // Procesar con el procesador específico de la acción
+                $actionProcessor = $this->actionProcessorFactory->getProcessor($action);
+                
+                if ($actionProcessor && $actionProcessor->canHandle($action, $detectionResult['context'] ?? [])) {
+                    return $actionProcessor->process($detectionResult['context'] ?? [], $user);
+                }
+            }
+            
+            // Si llegamos aquí, es una creación de transacción o no se pudo procesar
+            if ($this->seemsLikeTransaction($messageText) || 
+                ($detectionResult['success'] && $detectionResult['action'] === MessageAction::CreateTransaction->value)) {
+                return $this->transactionProcessor->processText($messageText, $user);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('TextMessageProcessor: Error processing message action', [
+                'user_id' => $user->id,
+                'message' => $messageText,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Fallback al comportamiento anterior si hay error
+            if ($this->seemsLikeTransaction($messageText)) {
+                return $this->transactionProcessor->processText($messageText, $user);
+            }
         }
 
         // Respuesta por defecto para otros mensajes de texto
-        return "¡Hola {$userName}! Puedo ayudarte a crear transacciones. Describe tu transacción incluyendo la cuenta, monto y tipo (ingreso o gasto). Por ejemplo: 'Deposité 1500 pesos en mi cuenta de ahorros' o 'Gasté 250 en supermercado con mi tarjeta'.";
+        return $this->getDefaultResponse($userName);
+    }
+
+    private function getDefaultResponse(string $userName): string
+    {
+        return "¡Hola {$userName}! Puedo ayudarte con varias acciones:\n\n" .
+               "💰 **Transacciones**: Describe tu movimiento (ej: 'Gasté 250 en supermercado')\n" .
+               "📊 **Consultar saldo**: 'Cuál es mi saldo' o 'Balance de mi cuenta Santander'\n" .
+               "📋 **Ver movimientos**: 'Mis últimos movimientos' o 'Historial de mi tarjeta'\n" .
+               "✏️ **Modificar**: 'Modifica mi última transacción'\n" .
+               "🗑️ **Eliminar**: 'Elimina mi última transacción'\n\n" .
+               "¿En qué te puedo ayudar?";
     }
 
     public function getPriority(): int
