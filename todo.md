@@ -20,10 +20,10 @@ Implementar un sistema de acciones escalable similar al sistema actual de proces
 - [x] Crear `MessageActionDetectionServiceInterface` para el servicio de detección de acciones
 
 ### 1.3 Crear DTOs para las Nuevas Acciones
-- [ ] Crear `MessageActionDetectionDto` para encapsular la respuesta de detección de acción
-- [ ] Crear `BalanceQueryDto` para consultas de balance
-- [ ] Crear `RecentTransactionsQueryDto` para consultas de movimientos recientes
-- [ ] Crear `TransactionModificationDto` para modificaciones de transacciones
+- [x] Crear `MessageActionDetectionDto` para encapsular la respuesta de detección de acción
+- [x] Crear `BalanceQueryDto` para consultas de balance
+- [x] Crear `RecentTransactionsQueryDto` para consultas de movimientos recientes
+- [x] Crear `TransactionModificationDto` para modificaciones de transacciones
 
 ---
 
