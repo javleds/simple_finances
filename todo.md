@@ -49,9 +49,9 @@ Implementar un sistema de acciones escalable similar al sistema actual de proces
 ## ✅ Fase 3: Implementación de Procesadores de Acciones
 
 ### 3.1 Crear Procesador de Consulta de Balance
-- [ ] Crear `BalanceQueryActionProcessor` que implemente `MessageActionProcessorInterface`
-- [ ] Implementar lógica para obtener balance de cuenta por nombre
-- [ ] Formatear respuesta con balance actual y información adicional
+- [x] Crear `BalanceQueryActionProcessor` que implemente `MessageActionProcessorInterface`
+- [x] Implementar lógica para obtener balance de cuenta por nombre
+- [x] Formatear respuesta con balance actual y información adicional
 
 ### 3.2 Crear Procesador de Consulta de Movimientos Recientes
 - [ ] Crear `RecentTransactionsActionProcessor`
