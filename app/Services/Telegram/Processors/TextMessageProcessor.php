@@ -8,13 +8,11 @@ use App\Services\Telegram\Helpers\TelegramMessageHelper;
 use App\Services\Telegram\Helpers\TelegramUserHelper;
 use App\Services\Telegram\MessageActionProcessorFactory;
 use App\Enums\MessageAction;
-use App\Services\Transaction\TransactionProcessorService;
 use Illuminate\Support\Facades\Log;
 
 class TextMessageProcessor implements TelegramMessageProcessorInterface
 {
     public function __construct(
-        private readonly TransactionProcessorService $transactionProcessor,
         private readonly MessageActionDetectionServiceInterface $actionDetectionService,
         private readonly MessageActionProcessorFactory $actionProcessorFactory
     ) {}
@@ -58,22 +56,12 @@ class TextMessageProcessor implements TelegramMessageProcessorInterface
                 }
             }
 
-            // Fallback: si no se pudo detectar la acción o procesar, usar lógica antigua
-            if ($this->seemsLikeTransaction($messageText)) {
-                return $this->transactionProcessor->processText($messageText, $user);
-            }
-
         } catch (\Exception $e) {
             Log::error('TextMessageProcessor: Error processing message action', [
                 'user_id' => $user->id,
                 'message' => $messageText,
                 'error' => $e->getMessage()
             ]);
-
-            // Fallback al comportamiento anterior si hay error
-            if ($this->seemsLikeTransaction($messageText)) {
-                return $this->transactionProcessor->processText($messageText, $user);
-            }
         }
 
         // Respuesta por defecto para otros mensajes de texto
@@ -100,27 +88,5 @@ class TextMessageProcessor implements TelegramMessageProcessorInterface
     {
         $text = TelegramMessageHelper::getText($telegramUpdate);
         return str_starts_with(trim($text), '/');
-    }
-
-    private function seemsLikeTransaction(string $text): bool
-    {
-        $text = mb_strtolower($text);
-
-        // Palabras clave que sugieren una transacción
-        $transactionKeywords = [
-            'gast', 'deposit', 'ingres', 'cobr', 'pag', 'retir',
-            'compré', 'vendí', 'recibí', 'transferí', 'ahorre',
-            'cuenta', 'tarjeta', 'efectivo', 'pesos', '$', 'dinero',
-            'banco', 'oxxo', 'supermercado', 'gasolina', 'comida'
-        ];
-
-        foreach ($transactionKeywords as $keyword) {
-            if (str_contains($text, $keyword)) {
-                return true;
-            }
-        }
-
-        // También verificar si contiene números (posibles montos)
-        return preg_match('/\d+/', $text);
     }
 }
