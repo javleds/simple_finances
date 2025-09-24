@@ -52,8 +52,9 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
                 return "No pude descargar la imagen para procesarla. Inténtalo de nuevo.";
             }
 
-            // Procesar imagen con IA
-            $result = $this->transactionProcessor->processImage($downloadResult['full_path'], user: $user);
+            // Procesar imagen directamente con el TransactionProcessor
+            // Este servicio ya incluye detección de acciones internamente
+            $result = $this->transactionProcessor->processImage($downloadResult['full_path'], '', $user);
 
             // Limpiar archivo temporal
             $this->cleanupTemporaryFile($downloadResult['full_path']);
