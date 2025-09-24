@@ -38,9 +38,8 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
             return "Hola {$userName}! Para poder procesar imágenes con texto y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
 
-        // Priorizar el texto del caption sobre la imagen
-        if ($this->seemsLikeTransaction($caption)) {
-            return $this->transactionProcessor->processText($caption, $user);
+        if (!$this->seemsLikeTransaction($caption)) {
+            return 'No parece una transacción. Si tienes información de transacción, por favor descríbela en texto.';
         }
 
         // Si el caption no parece una transacción, procesar la imagen
@@ -60,7 +59,7 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
             }
 
             // Procesar imagen con IA
-            $result = $this->transactionProcessor->processImage($downloadResult['full_path'], $user);
+            $result = $this->transactionProcessor->processImage($downloadResult['full_path'], $caption, $user);
 
             // Limpiar archivo temporal
             $this->cleanupTemporaryFile($downloadResult['full_path']);
