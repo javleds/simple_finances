@@ -54,10 +54,10 @@ Implementar un sistema de acciones escalable similar al sistema actual de proces
 - [x] Formatear respuesta con balance actual y información adicional
 
 ### 3.2 Crear Procesador de Consulta de Movimientos Recientes
-- [ ] Crear `RecentTransactionsActionProcessor`
-- [ ] Implementar consulta de últimos 5 movimientos de una cuenta específica
-- [ ] Incluir: concepto, tipo, fecha, nombre de usuario
-- [ ] Formatear respuesta legible para Telegram
+- [x] Crear `RecentTransactionsActionProcessor`
+- [x] Implementar consulta de últimos 5 movimientos de una cuenta específica
+- [x] Incluir: concepto, tipo, fecha, nombre de usuario
+- [x] Formatear respuesta legible para Telegram
 
 ### 3.3 Crear Procesador de Modificación de Transacciones
 - [ ] Crear `ModifyLastTransactionActionProcessor`
