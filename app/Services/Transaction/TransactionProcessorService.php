@@ -120,7 +120,7 @@ class TransactionProcessorService
         $transaction->type = TransactionType::from($dto->type);
         $transaction->amount = $dto->amount;
         $transaction->scheduled_at = $scheduledAt;
-        $transaction->description = 'Transacción creada desde Telegram';
+        $transaction->concept = 'Transacción creada desde Telegram';
 
         if ($financialGoal) {
             $transaction->financial_goal_id = $financialGoal->id;
