@@ -165,6 +165,47 @@ class OpenAIService implements OpenAIServiceInterface
         }
     }
 
+    public function transcribeAudio(string $audioPath): array
+    {
+        try {
+            Log::info('OpenAI: Transcribing audio', ['audioPath' => $audioPath]);
+
+            if (!file_exists($audioPath)) {
+                throw new \Exception("Audio file not found: {$audioPath}");
+            }
+
+            // Transcribir el audio
+            $transcriptionResponse = $this->client->audio()->transcribe([
+                'model' => $this->config['audio_model'],
+                'file' => fopen($audioPath, 'r'),
+                'language' => 'es',
+                'response_format' => 'text',
+            ]);
+
+            $transcribedText = $transcriptionResponse->text;
+
+            Log::info('OpenAI: Audio transcription successful', ['transcription' => $transcribedText]);
+
+            return [
+                'success' => true,
+                'text' => $transcribedText,
+                'error' => null
+            ];
+
+        } catch (Throwable $e) {
+            Log::error('OpenAI: Audio transcription failed', [
+                'error' => $e->getMessage(),
+                'audioPath' => $audioPath
+            ]);
+
+            return [
+                'success' => false,
+                'text' => null,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
     public function processAudio(string $audioPath): array
     {
         try {

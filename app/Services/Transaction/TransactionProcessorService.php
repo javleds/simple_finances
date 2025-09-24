@@ -55,23 +55,6 @@ class TransactionProcessorService
         }
     }
 
-    public function processAudio(string $audioPath, User $user): string
-    {
-        try {
-            $response = $this->openAIService->processAudio($audioPath);
-
-            if (!$response['success']) {
-                Log::error('OpenAI audio processing failed', ['error' => $response['error']]);
-                return 'Lo siento, no pude procesar el audio. Inténtalo de nuevo más tarde.';
-            }
-
-            return $this->processTransactionData($response['data'], $user);
-        } catch (\Exception $e) {
-            Log::error('Transaction audio processing failed', ['error' => $e->getMessage()]);
-            return 'Ocurrió un error al procesar el audio. Por favor, inténtalo de nuevo.';
-        }
-    }
-
     private function processTransactionData(?array $data, User $user): string
     {
         if (!$data) {

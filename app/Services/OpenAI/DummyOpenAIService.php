@@ -110,6 +110,20 @@ class DummyOpenAIService implements OpenAIServiceInterface
         return $response->toArray();
     }
 
+    public function transcribeAudio(string $audioPath): array
+    {
+        Log::info('DummyOpenAI: Transcribing audio (dummy mode)', ['audioPath' => $audioPath]);
+
+        // Simular transcripción con texto dummy
+        $dummyTranscription = 'Gasté 150 pesos en el supermercado comprando comida';
+
+        return [
+            'success' => true,
+            'text' => $dummyTranscription,
+            'error' => null
+        ];
+    }
+
     public function processAudio(string $audioPath): array
     {
         Log::info('DummyOpenAI: Processing audio (dummy mode)', ['audioPath' => $audioPath]);
