@@ -62,15 +62,18 @@ Se ha implementado un sistema completo de procesamiento de acciones que permite 
 - Actualización automática de balance de cuenta
 - Información detallada de la transacción eliminada
 
-### 5. 📝 Creación de Transacciones (Mejorada)
+### 5. 📝 Creación de Transacciones (Integrada)
 
-**Funciona igual que antes:**
+**Ejemplos de uso:**
 - "Gasté 250 en supermercado con mi tarjeta"
 - "Deposité 1500 pesos en mi cuenta de ahorros"
+- "Compré gasolina por 800 pesos"
 
-**Mejoras:**
-- Detección inteligente de intención antes del procesamiento
-- Compatibilidad total con el flujo existente
+**Funcionalidades:**
+- Ahora **completamente integrada** al nuevo sistema de acciones
+- Detección automática de intención de crear transacciones
+- Procesamiento a través del mismo mecanismo que otras acciones
+- Mantiene toda la funcionalidad existente del sistema original
 
 ## 🏗️ Arquitectura Técnica
 
@@ -90,6 +93,7 @@ Se ha implementado un sistema completo de procesamiento de acciones que permite 
 3. **Procesadores de Acciones**:
    - `BalanceQueryActionProcessor`
    - `RecentTransactionsActionProcessor`
+   - `CreateTransactionActionProcessor`
    - `ModifyLastTransactionActionProcessor`
    - `DeleteLastTransactionActionProcessor`
 
@@ -103,7 +107,7 @@ Se ha implementado un sistema completo de procesamiento de acciones que permite 
 1. **Recepción del Mensaje**: TextMessageProcessor recibe mensaje de texto
 2. **Detección de Intención**: OpenAI analiza el texto y determina la acción
 3. **Enrutamiento**: Factory selecciona el procesador apropiado basado en prioridad
-4. **Procesamiento**: El procesador específico maneja la lógica de la acción
+4. **Procesamiento**: El procesador específico maneja la lógica de la acción (incluyendo creación de transacciones)
 5. **Respuesta**: Se devuelve respuesta formateada al usuario
 
 ### Auto-Registro de Procesadores
@@ -130,8 +134,9 @@ El sistema requiere configuración de OpenAI en `config/services.php`:
 ### Fallback
 
 Si OpenAI no está disponible, el sistema automáticamente:
-- Asume que todos los mensajes son creación de transacciones
-- Mantiene compatibilidad con el flujo existente
+- Asume que todos los mensajes son creación de transacciones por defecto
+- Procesa a través del `CreateTransactionActionProcessor`
+- Mantiene compatibilidad completa con el flujo existente
 - Log de advertencias para debug
 
 ## 📊 Ejemplos de Respuestas del Bot
@@ -172,12 +177,13 @@ Si OpenAI no está disponible, el sistema automáticamente:
 • amount: 750
 ```
 
-## 🔄 Compatibilidad
+## 🔄 Arquitectura Unificada
 
-- ✅ **Totalmente compatible** con el flujo de creación de transacciones existente
-- ✅ **Fallback automático** si OpenAI no está disponible
-- ✅ **Sin cambios** en comandos existentes del bot
-- ✅ **Extensible** para agregar nuevas funcionalidades
+- ✅ **Todas las acciones** (incluida creación de transacciones) siguen el mismo patrón
+- ✅ **Sin casos especiales** - toda la lógica está unificada bajo el sistema de procesadores
+- ✅ **Extensible** para agregar nuevas funcionalidades fácilmente
+- ✅ **Fallback robusto** si OpenAI no está disponible
+- ✅ **Compatibilidad total** con el comportamiento existente
 
 ## 🚀 Despliegue
 
@@ -190,6 +196,6 @@ Si OpenAI no está disponible, el sistema automáticamente:
 
 Todos los componentes han sido verificados para:
 - ✅ Resolución correcta de dependencias
-- ✅ Auto-registro de procesadores
-- ✅ Compatibilidad con flujo existente
+- ✅ Auto-registro de **todos los 5 procesadores** (incluida creación de transacciones)
+- ✅ Arquitectura unificada sin casos especiales
 - ✅ Manejo de errores y fallbacks
