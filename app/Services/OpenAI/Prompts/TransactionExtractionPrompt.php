@@ -20,7 +20,7 @@ class TransactionExtractionPrompt
 REGLAS IMPORTANTES:
 1. Los campos obligatorios son: account, amount, type, concept
 2. Si falta algún campo obligatorio, devuelve null para todo el objeto
-3. Para 'type': usa 'income' para ingresos/entradas/cobros/depósitos y 'outcome' para gastos/salidas/pagos/retiros
+3. Para 'type': usa 'income' para ingresos/entradas/cobros/depósitos y 'outcome' para gastos/salidas/pagos/retiros/compra
 4. Para 'concept': describe brevemente qué fue la transacción (ej: \"Compra de comida\", \"Pago de gasolina\", \"Salario mensual\")
 5. Para 'date': si no se especifica, usa null (NO uses la fecha actual)
 6. Para 'financial_goal': solo si se menciona explícitamente una meta o ahorro específico
