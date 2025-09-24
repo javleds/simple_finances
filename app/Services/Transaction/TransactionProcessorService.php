@@ -4,7 +4,9 @@ namespace App\Services\Transaction;
 
 use App\Contracts\OpenAIServiceInterface;
 use App\Dto\TransactionExtractionDto;
+use App\Enums\Action;
 use App\Enums\TransactionType;
+use App\Events\TransactionSaved;
 use App\Models\Account;
 use App\Models\FinancialGoal;
 use App\Models\Transaction;
@@ -128,6 +130,8 @@ class TransactionProcessorService
         }
 
         $transaction->save();
+
+        event(new TransactionSaved(Transaction::find($transaction->id), Action::Created));
 
         Log::info('Transaction created successfully', [
             'transaction_id' => $transaction->id,
