@@ -29,21 +29,21 @@ class CreateTransactionActionProcessor implements MessageActionProcessorInterfac
         try {
             // Obtener el texto original del mensaje desde el contexto
             $messageText = $context['original_text'] ?? $context['text'] ?? '';
-            
+
             if (empty($messageText)) {
                 return "❌ No pude procesar la transacción. El mensaje está vacío.";
             }
 
             // Usar el servicio existente de procesamiento de transacciones
             return $this->transactionProcessor->processText($messageText, $user);
-            
+
         } catch (\Exception $e) {
             Log::error('CreateTransactionActionProcessor: Error processing transaction creation', [
                 'user_id' => $user->id,
                 'context' => $context,
                 'error' => $e->getMessage()
             ]);
-            
+
             return "⚠️ Ocurrió un error al procesar la transacción. Por favor, inténtalo de nuevo más tarde.";
         }
     }
