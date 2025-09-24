@@ -16,8 +16,8 @@ Implementar un sistema de acciones escalable similar al sistema actual de proces
 - [x] Mantener separación clara con el enum `Action` existente (que maneja eventos de transacciones)
 
 ### 1.2 Crear Contratos e Interfaces
-- [ ] Crear `MessageActionProcessorInterface` para definir el contrato de procesadores de acciones
-- [ ] Crear `MessageActionDetectionServiceInterface` para el servicio de detección de acciones
+- [x] Crear `MessageActionProcessorInterface` para definir el contrato de procesadores de acciones
+- [x] Crear `MessageActionDetectionServiceInterface` para el servicio de detección de acciones
 
 ### 1.3 Crear DTOs para las Nuevas Acciones
 - [ ] Crear `MessageActionDetectionDto` para encapsular la respuesta de detección de acción
