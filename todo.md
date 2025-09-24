@@ -35,9 +35,9 @@ Implementar un sistema de acciones escalable similar al sistema actual de proces
 - [x] Crear `DummyMessageActionDetectionService` para desarrollo/testing
 
 ### 2.2 Crear Factory de Procesadores de Acciones
-- [ ] Crear `MessageActionProcessorFactory` similar al `TelegramMessageProcessorFactory`
-- [ ] Implementar registro automático de procesadores de acciones de Telegram
-- [ ] Añadir sistema de prioridades para procesadores de acciones
+- [x] Crear `MessageActionProcessorFactory` similar al `TelegramMessageProcessorFactory`
+- [x] Implementar registro automático de procesadores de acciones de Telegram
+- [x] Añadir sistema de prioridades para procesadores de acciones
 
 ### 2.3 Modificar OpenAI Service
 - [x] Extender `OpenAIServiceInterface` con método `detectMessageAction(string $text): array`
