@@ -148,13 +148,13 @@ class TransactionProcessorService
     private function buildSuccessMessage(Transaction $transaction, TransactionExtractionDto $dto): string
     {
         $typeText = $transaction->type === TransactionType::Income ? 'ingreso' : 'gasto';
-        $amount = number_format($transaction->amount, 2);
+        $amount = as_money($transaction->amount);
         $account = $transaction->account->name;
         $date = $transaction->scheduled_at->format('d/m/Y');
 
         $message = "✅ ¡Transacción creada exitosamente!\n\n";
         $message .= "📊 Tipo: " . ucfirst($typeText) . "\n";
-        $message .= "💰 Monto: " . money_format($amount) . "\n";
+        $message .= "💰 Monto: " . $amount . "\n";
         $message .= "🏦 Cuenta: " . $account . "\n";
         $message .= "📋 Concepto: " . $transaction->concept . "\n";
         $message .= "📅 Fecha: " . $date . "\n";
