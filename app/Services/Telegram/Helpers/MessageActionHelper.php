@@ -14,9 +14,9 @@ class MessageActionHelper
     {
         $account = $balanceData['account'];
         $balance = $balanceData['formatted_balance'];
-        
+
         $message = "💰 **Balance de {$account->name}**\n\n";
-        
+
         if ($balanceData['is_credit_card']) {
             $message .= "📊 Balance actual: {$balance}\n";
             $message .= "💳 Crédito disponible: {$balanceData['formatted_available_credit']}\n";
@@ -25,7 +25,7 @@ class MessageActionHelper
         } else {
             $message .= "💵 Saldo disponible: {$balance}\n";
         }
-        
+
         return $message;
     }
 
@@ -36,7 +36,7 @@ class MessageActionHelper
         }
 
         $message = "📋 **Últimos movimientos de {$account->name}**\n\n";
-        
+
         $transactions->each(function (Transaction $transaction, int $index) use (&$message) {
             $number = $index + 1;
             $type = $transaction->type->getLabel();
@@ -44,12 +44,12 @@ class MessageActionHelper
             $amount = as_money($transaction->amount);
             $date = $transaction->scheduled_at->format('d/m/Y');
             $userName = $transaction->user->name;
-            
+
             $message .= "{$number}. {$typeIcon} **{$transaction->concept}**\n";
             $message .= "   {$type}: {$amount}\n";
             $message .= "   📅 {$date} | 👤 {$userName}\n\n";
         });
-        
+
         return rtrim($message);
     }
 
@@ -73,14 +73,14 @@ class MessageActionHelper
         $message .= "📝 Tipo: {$transaction->type->getLabel()}\n";
         $message .= "📅 Fecha: {$transaction->scheduled_at->format('d/m/Y')}\n";
         $message .= "🏦 Cuenta: {$transaction->account->name}\n";
-        
+
         if (!empty($changes)) {
             $message .= "\n🔄 **Cambios realizados:**\n";
             foreach ($changes as $field => $value) {
                 $message .= "• " . ucfirst($field) . ": {$value}\n";
             }
         }
-        
+
         return $message;
     }
 

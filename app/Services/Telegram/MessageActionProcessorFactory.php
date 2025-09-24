@@ -18,18 +18,18 @@ class MessageActionProcessorFactory
     public function registerProcessor(MessageActionProcessorInterface $processor): void
     {
         $actionType = $processor::getActionType();
-        
+
         if (!$this->processors->has($actionType->value)) {
             $this->processors->put($actionType->value, collect());
         }
-        
+
         $this->processors->get($actionType->value)->push($processor);
     }
 
     public function getProcessor(MessageAction $action, array $context = []): ?MessageActionProcessorInterface
     {
         $processors = $this->processors->get($action->value);
-        
+
         if (!$processors || $processors->isEmpty()) {
             return null;
         }
@@ -52,7 +52,7 @@ class MessageActionProcessorFactory
 
     public function hasProcessorForAction(MessageAction $action): bool
     {
-        return $this->processors->has($action->value) && 
+        return $this->processors->has($action->value) &&
                $this->processors->get($action->value)->isNotEmpty();
     }
 

@@ -27,31 +27,31 @@ class TransactionModificationDto
     public function getChangedFields(): array
     {
         $changed = [];
-        
+
         if (!is_null($this->newConcept)) {
             $changed['concept'] = $this->newConcept;
         }
-        
+
         if (!is_null($this->newAmount)) {
             $changed['amount'] = $this->newAmount;
         }
-        
+
         if (!is_null($this->newType)) {
             $changed['type'] = $this->newType;
         }
-        
+
         if (!is_null($this->newDate)) {
             $changed['date'] = $this->newDate;
         }
-        
+
         if (!is_null($this->newAccountName)) {
             $changed['account_name'] = $this->newAccountName;
         }
-        
+
         if (!is_null($this->newFinancialGoal)) {
             $changed['financial_goal'] = $this->newFinancialGoal;
         }
-        
+
         return $changed;
     }
 

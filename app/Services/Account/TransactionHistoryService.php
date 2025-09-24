@@ -14,7 +14,7 @@ class TransactionHistoryService
     {
         try {
             $account = $this->findAccountByName($accountName, $user);
-            
+
             if (!$account) {
                 return null;
             }
@@ -25,7 +25,7 @@ class TransactionHistoryService
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
                 ->get();
-                
+
         } catch (\Exception $e) {
             Log::error('TransactionHistoryService: Error getting recent transactions', [
                 'account_name' => $accountName,
@@ -47,7 +47,7 @@ class TransactionHistoryService
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
                 ->get();
-                
+
         } catch (\Exception $e) {
             Log::error('TransactionHistoryService: Error getting recent transactions for all accounts', [
                 'user_id' => $user->id,
@@ -90,10 +90,10 @@ class TransactionHistoryService
     private function findAccountByName(string $accountName, User $user): ?Account
     {
         $normalizedName = strtolower(trim($accountName));
-        
+
         return $user->accounts()
             ->whereRaw('LOWER(name) LIKE ?', ["%{$normalizedName}%"])
-            ->first() ?: 
+            ->first() ?:
             $user->accounts()
                 ->whereRaw('LOWER(name) = ?', [$normalizedName])
                 ->first();

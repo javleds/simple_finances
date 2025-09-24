@@ -13,14 +13,14 @@ class AccountBalanceService
     {
         try {
             $account = $this->findAccountByName($accountName, $user);
-            
+
             if (!$account) {
                 return null;
             }
 
             // Actualizar balance para asegurar datos actuales
             $balance = $account->updateBalance();
-            
+
             $data = [
                 'account' => $account,
                 'balance' => $balance,
@@ -55,7 +55,7 @@ class AccountBalanceService
             ->get()
             ->map(function (Account $account) {
                 $balance = $account->updateBalance();
-                
+
                 return [
                     'account' => $account,
                     'balance' => $balance,
@@ -70,10 +70,10 @@ class AccountBalanceService
     private function findAccountByName(string $accountName, User $user): ?Account
     {
         $normalizedName = strtolower(trim($accountName));
-        
+
         return $user->accounts()
             ->whereRaw('LOWER(name) LIKE ?', ["%{$normalizedName}%"])
-            ->first() ?: 
+            ->first() ?:
             $user->accounts()
                 ->whereRaw('LOWER(name) = ?', [$normalizedName])
                 ->first();

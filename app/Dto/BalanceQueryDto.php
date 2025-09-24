@@ -18,11 +18,11 @@ class BalanceQueryDto
     public function getMissingFields(): array
     {
         $missing = [];
-        
+
         if (empty($this->accountName)) {
             $missing[] = 'nombre de cuenta';
         }
-        
+
         return $missing;
     }
 

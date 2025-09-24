@@ -54,13 +54,13 @@ class DummyOpenAIService implements OpenAIServiceInterface
     {
         $keywords = ['balance', 'saldo', 'movimientos', 'transacciones', 'modificar', 'eliminar', 'gasté', 'deposité'];
         $found = [];
-        
+
         foreach ($keywords as $keyword) {
             if (str_contains(strtolower($text), $keyword)) {
                 $found[] = $keyword;
             }
         }
-        
+
         return $found;
     }
     public function processText(string $text): array

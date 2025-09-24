@@ -33,7 +33,7 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
         try {
             // Obtener la última transacción del usuario
             $lastTransaction = $this->lastTransactionService->getLastUserTransaction($user);
-            
+
             if (!$lastTransaction) {
                 return MessageActionHelper::formatNoLastTransactionResponse();
             }
@@ -45,7 +45,7 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
 
             // Mostrar información actual de la transacción
             $currentInfo = $this->formatCurrentTransactionInfo($lastTransaction);
-            
+
             // Si no hay información específica de modificación en el contexto,
             // pedimos al usuario que especifique qué quiere cambiar
             if (!$this->hasModificationData($context)) {
@@ -60,14 +60,14 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
 
             // Procesar la modificación
             return $this->processModification($context, $lastTransaction, $user);
-            
+
         } catch (\Exception $e) {
             Log::error('ModifyLastTransactionActionProcessor: Error processing modification', [
                 'user_id' => $user->id,
                 'context' => $context,
                 'error' => $e->getMessage()
             ]);
-            
+
             return MessageActionHelper::formatErrorResponse('modificar la transacción');
         }
     }
@@ -79,7 +79,7 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
 
     private function hasModificationData(array $context): bool
     {
-        return !empty($context['modification_text']) || 
+        return !empty($context['modification_text']) ||
                !empty($context['field_to_modify']) ||
                !empty($context['new_value']);
     }
@@ -88,7 +88,7 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
     {
         // Extraer texto de modificación del contexto
         $modificationText = $context['modification_text'] ?? $context['additional_info'] ?? '';
-        
+
         if (empty($modificationText)) {
             return "❌ No pude entender qué quieres modificar. Por favor, especifica los cambios que deseas realizar.";
         }
@@ -96,36 +96,36 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
         // Usar OpenAI para procesar el texto de modificación y extraer los cambios
         try {
             $response = $this->openAIService->processText($modificationText);
-            
+
             if (!$response['success'] || !$response['data']) {
                 return "❌ No pude procesar los cambios solicitados. Inténtalo de nuevo con más detalles.";
             }
 
             $changes = $this->extractChangesFromResponse($response['data'], $lastTransaction, $user);
-            
+
             if (empty($changes)) {
                 return "❌ No se detectaron cambios válidos. Por favor, especifica qué quieres modificar.";
             }
 
             // Aplicar modificaciones
             $success = $this->lastTransactionService->modifyTransaction($lastTransaction, $changes, $user);
-            
+
             if (!$success) {
                 return "❌ No se pudo modificar la transacción. Por favor, inténtalo de nuevo.";
             }
 
             // Recargar la transacción para obtener los datos actualizados
             $lastTransaction->refresh();
-            
+
             return MessageActionHelper::formatTransactionModificationResponse($lastTransaction, $changes);
-            
+
         } catch (\Exception $e) {
             Log::error('ModifyLastTransactionActionProcessor: Error processing modification with OpenAI', [
                 'user_id' => $user->id,
                 'modification_text' => $modificationText,
                 'error' => $e->getMessage()
             ]);
-            
+
             return "❌ Ocurrió un error al procesar la modificación. Inténtalo de nuevo.";
         }
     }
@@ -133,41 +133,41 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
     private function extractChangesFromResponse(array $data, $lastTransaction, User $user): array
     {
         $changes = [];
-        
+
         // Revisar cada campo y ver si cambió
         if (isset($data['concept']) && $data['concept'] !== $lastTransaction->concept) {
             $changes['concept'] = $data['concept'];
         }
-        
+
         if (isset($data['amount']) && (float)$data['amount'] !== $lastTransaction->amount) {
             $changes['amount'] = (float)$data['amount'];
         }
-        
+
         if (isset($data['type'])) {
             $newType = TransactionType::from($data['type']);
             if ($newType !== $lastTransaction->type) {
                 $changes['type'] = $newType;
             }
         }
-        
+
         if (isset($data['date']) && !empty($data['date'])) {
             $newDate = \Carbon\Carbon::parse($data['date']);
             if ($newDate->toDateString() !== $lastTransaction->scheduled_at->toDateString()) {
                 $changes['scheduled_at'] = $newDate;
             }
         }
-        
+
         // Validar cambios de cuenta si se especifica
         if (isset($data['account']) && !empty($data['account'])) {
             $account = $user->accounts()
                 ->whereRaw('LOWER(name) LIKE ?', ["%".strtolower(trim($data['account']))."%"])
                 ->first();
-                
+
             if ($account && $account->id !== $lastTransaction->account_id) {
                 $changes['account_id'] = $account->id;
             }
         }
-        
+
         return $changes;
     }
 
@@ -179,7 +179,7 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
         $message .= "📝 Tipo: {$transaction->type->getLabel()}\n";
         $message .= "📅 Fecha: {$transaction->scheduled_at->format('d/m/Y')}\n";
         $message .= "🏦 Cuenta: {$transaction->account->name}";
-        
+
         return $message;
     }
 }

@@ -45,32 +45,32 @@ class TextMessageProcessor implements TelegramMessageProcessorInterface
         try {
             // Detectar la acción del mensaje usando OpenAI
             $detectionResult = $this->actionDetectionService->detectAction($messageText);
-            
+
             if ($detectionResult['success'] && $detectionResult['action'] !== MessageAction::CreateTransaction->value) {
                 // Crear enum desde el valor
                 $action = MessageAction::from($detectionResult['action']);
-                
+
                 // Procesar con el procesador específico de la acción
                 $actionProcessor = $this->actionProcessorFactory->getProcessor($action);
-                
+
                 if ($actionProcessor && $actionProcessor->canHandle($action, $detectionResult['context'] ?? [])) {
                     return $actionProcessor->process($detectionResult['context'] ?? [], $user);
                 }
             }
-            
+
             // Si llegamos aquí, es una creación de transacción o no se pudo procesar
-            if ($this->seemsLikeTransaction($messageText) || 
+            if ($this->seemsLikeTransaction($messageText) ||
                 ($detectionResult['success'] && $detectionResult['action'] === MessageAction::CreateTransaction->value)) {
                 return $this->transactionProcessor->processText($messageText, $user);
             }
-            
+
         } catch (\Exception $e) {
             Log::error('TextMessageProcessor: Error processing message action', [
                 'user_id' => $user->id,
                 'message' => $messageText,
                 'error' => $e->getMessage()
             ]);
-            
+
             // Fallback al comportamiento anterior si hay error
             if ($this->seemsLikeTransaction($messageText)) {
                 return $this->transactionProcessor->processText($messageText, $user);

@@ -19,15 +19,15 @@ class RecentTransactionsQueryDto
     public function getMissingFields(): array
     {
         $missing = [];
-        
+
         if (empty($this->accountName)) {
             $missing[] = 'nombre de cuenta';
         }
-        
+
         if ($this->limit <= 0) {
             $missing[] = 'límite válido de transacciones';
         }
-        
+
         return $missing;
     }
 

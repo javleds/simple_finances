@@ -30,7 +30,7 @@ class DeleteLastTransactionActionProcessor implements MessageActionProcessorInte
         try {
             // Obtener la última transacción del usuario
             $lastTransaction = $this->lastTransactionService->getLastUserTransaction($user);
-            
+
             if (!$lastTransaction) {
                 return MessageActionHelper::formatNoLastTransactionResponse();
             }
@@ -47,20 +47,20 @@ class DeleteLastTransactionActionProcessor implements MessageActionProcessorInte
 
             // Procesar la eliminación
             $success = $this->lastTransactionService->deleteTransaction($lastTransaction, $user);
-            
+
             if (!$success) {
                 return "❌ No se pudo eliminar la transacción. Por favor, inténtalo de nuevo.";
             }
-            
+
             return MessageActionHelper::formatTransactionDeletionResponse($lastTransaction);
-            
+
         } catch (\Exception $e) {
             Log::error('DeleteLastTransactionActionProcessor: Error processing deletion', [
                 'user_id' => $user->id,
                 'context' => $context,
                 'error' => $e->getMessage()
             ]);
-            
+
             return MessageActionHelper::formatErrorResponse('eliminar la transacción');
         }
     }
@@ -73,11 +73,11 @@ class DeleteLastTransactionActionProcessor implements MessageActionProcessorInte
     private function hasConfirmation(array $context): bool
     {
         $confirmationWords = ['sí', 'si', 'yes', 'confirmo', 'confirm', 'ok', 'vale', 'eliminar'];
-        
+
         if (isset($context['confirmation'])) {
             return in_array(strtolower($context['confirmation']), $confirmationWords);
         }
-        
+
         // Buscar palabras de confirmación en el texto adicional
         if (isset($context['additional_info'])) {
             $additionalText = strtolower($context['additional_info']);
@@ -85,7 +85,7 @@ class DeleteLastTransactionActionProcessor implements MessageActionProcessorInte
                 return str_contains($additionalText, $word);
             });
         }
-        
+
         return false;
     }
 
@@ -102,7 +102,7 @@ class DeleteLastTransactionActionProcessor implements MessageActionProcessorInte
         $message .= "• \"Sí, eliminar mi última transacción\"\n";
         $message .= "• \"Confirmo eliminar\"\n";
         $message .= "• O simplemente \"Sí\"";
-        
+
         return $message;
     }
 }

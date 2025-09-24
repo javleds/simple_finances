@@ -58,7 +58,7 @@ class MessageActionServiceProvider extends ServiceProvider
         foreach ($processors as $processorClass) {
             try {
                 $processor = $this->app->make($processorClass);
-                
+
                 if ($processor instanceof MessageActionProcessorInterface) {
                     $factory->registerProcessor($processor);
                 }

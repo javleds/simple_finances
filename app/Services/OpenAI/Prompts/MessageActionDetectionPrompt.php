@@ -19,7 +19,7 @@ ACCIONES DISPONIBLES:
 
 REGLAS DE CLASIFICACIÓN:
 - Si el mensaje describe una transacción nueva (gastos, ingresos, compras, pagos), usa 'create_transaction'
-- Si pregunta por saldo, balance, dinero disponible, usa 'query_balance'  
+- Si pregunta por saldo, balance, dinero disponible, usa 'query_balance'
 - Si pregunta por movimientos, historial, últimas transacciones, usa 'query_recent_transactions'
 - Si quiere cambiar, modificar, corregir la última transacción, usa 'modify_last_transaction'
 - Si quiere eliminar, borrar, quitar la última transacción, usa 'delete_last_transaction'
