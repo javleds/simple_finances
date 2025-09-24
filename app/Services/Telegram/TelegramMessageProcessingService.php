@@ -39,9 +39,12 @@ class TelegramMessageProcessingService
         try {
             $response = $processor->process($telegramUpdate);
 
-            if (!empty($response)) {
-                $this->telegramService->sendMessage((string) $chatId, $response);
+            if (empty($response)) {
+                $this->telegramService->sendMessage((string) $chatId, 'Mensaje procesado correctamente 👌🏼.');
+                return;
             }
+
+            $this->telegramService->sendMessage((string) $chatId, $response);
         } catch (\Exception $e) {
             Log::error('Error procesando mensaje de Telegram', [
                 'processor' => get_class($processor),

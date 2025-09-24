@@ -131,7 +131,7 @@ class TransactionProcessorService
 
         $transaction->save();
 
-        event(new TransactionSaved(Transaction::find($transaction->id), Action::Created));
+        event(new TransactionSaved($transaction, Action::Created));
 
         Log::info('Transaction created successfully', [
             'transaction_id' => $transaction->id,
@@ -154,10 +154,10 @@ class TransactionProcessorService
 
         $message = "✅ ¡Transacción creada exitosamente!\n\n";
         $message .= "📊 Tipo: " . ucfirst($typeText) . "\n";
-        $message .= "💰 Monto: $" . $amount . "\n";
+        $message .= "💰 Monto: " . money_format($amount) . "\n";
         $message .= "🏦 Cuenta: " . $account . "\n";
-        $message .= "� Concepto: " . $transaction->concept . "\n";
-        $message .= "�📅 Fecha: " . $date . "\n";
+        $message .= "📋 Concepto: " . $transaction->concept . "\n";
+        $message .= "📅 Fecha: " . $date . "\n";
 
         if ($transaction->financialGoal) {
             $message .= "🎯 Meta financiera: " . $transaction->financialGoal->name . "\n";

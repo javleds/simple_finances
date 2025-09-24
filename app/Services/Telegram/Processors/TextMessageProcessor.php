@@ -7,8 +7,8 @@ use App\Contracts\MessageActionDetectionServiceInterface;
 use App\Services\Telegram\Helpers\TelegramMessageHelper;
 use App\Services\Telegram\Helpers\TelegramUserHelper;
 use App\Services\Telegram\MessageActionProcessorFactory;
-use App\Services\Transaction\TransactionProcessorService;
 use App\Enums\MessageAction;
+use App\Services\Transaction\TransactionProcessorService;
 use Illuminate\Support\Facades\Log;
 
 class TextMessageProcessor implements TelegramMessageProcessorInterface
