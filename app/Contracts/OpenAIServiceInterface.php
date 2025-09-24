@@ -18,4 +18,9 @@ interface OpenAIServiceInterface
      * Procesa audio usando transcripción y extrae información de transacción
      */
     public function processAudio(string $audioPath): array;
+
+    /**
+     * Detecta la acción que el usuario quiere realizar basado en su mensaje
+     */
+    public function detectMessageAction(string $text): array;
 }

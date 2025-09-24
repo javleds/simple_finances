@@ -3,12 +3,66 @@
 namespace App\Services\OpenAI;
 
 use App\Contracts\OpenAIServiceInterface;
+use App\Dto\MessageActionDetectionDto;
 use App\Dto\OpenAIResponseDto;
 use App\Dto\TransactionExtractionDto;
+use App\Enums\MessageAction;
 use Illuminate\Support\Facades\Log;
 
 class DummyOpenAIService implements OpenAIServiceInterface
 {
+    public function detectMessageAction(string $text): array
+    {
+        Log::info('DummyOpenAI: Detecting message action (dummy mode)', ['text' => $text]);
+
+        // Lógica simple para simular detección de acciones basada en palabras clave
+        $text = strtolower($text);
+        $action = MessageAction::CreateTransaction; // Default
+        $context = [];
+
+        if (str_contains($text, 'balance') || str_contains($text, 'saldo') || str_contains($text, 'cuánto tengo')) {
+            $action = MessageAction::QueryBalance;
+            // Extraer posible nombre de cuenta
+            if (preg_match('/\b(ahorros?|nómina|efectivo|tarjeta|cuenta)\b/', $text, $matches)) {
+                $context['account_name'] = $matches[1];
+            }
+        } elseif (str_contains($text, 'movimientos') || str_contains($text, 'transacciones') || str_contains($text, 'historial')) {
+            $action = MessageAction::QueryRecentTransactions;
+            if (preg_match('/\b(ahorros?|nómina|efectivo|tarjeta|cuenta)\b/', $text, $matches)) {
+                $context['account_name'] = $matches[1];
+            }
+        } elseif (str_contains($text, 'modificar') || str_contains($text, 'cambiar') || str_contains($text, 'corregir')) {
+            $action = MessageAction::ModifyLastTransaction;
+            $context['modification_type'] = 'general';
+        } elseif (str_contains($text, 'eliminar') || str_contains($text, 'borrar') || str_contains($text, 'quitar')) {
+            $action = MessageAction::DeleteLastTransaction;
+            $context['reason'] = 'user_request';
+        }
+
+        $dto = new MessageActionDetectionDto(
+            success: true,
+            action: $action,
+            context: $context,
+            error: null,
+            rawResponse: ['dummy' => true, 'detected_keywords' => $this->extractKeywords($text)]
+        );
+
+        return $dto->toArray();
+    }
+
+    private function extractKeywords(string $text): array
+    {
+        $keywords = ['balance', 'saldo', 'movimientos', 'transacciones', 'modificar', 'eliminar', 'gasté', 'deposité'];
+        $found = [];
+        
+        foreach ($keywords as $keyword) {
+            if (str_contains(strtolower($text), $keyword)) {
+                $found[] = $keyword;
+            }
+        }
+        
+        return $found;
+    }
     public function processText(string $text): array
     {
         Log::info('DummyOpenAI: Processing text (dummy mode)', ['text' => $text]);

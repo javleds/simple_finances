@@ -3,9 +3,12 @@
 namespace App\Services\OpenAI;
 
 use App\Contracts\OpenAIServiceInterface;
+use App\Dto\MessageActionDetectionDto;
 use App\Dto\OpenAIRequestDto;
 use App\Dto\OpenAIResponseDto;
 use App\Dto\TransactionExtractionDto;
+use App\Enums\MessageAction;
+use App\Services\OpenAI\Prompts\MessageActionDetectionPrompt;
 use App\Services\OpenAI\Prompts\TransactionExtractionPrompt;
 use Illuminate\Support\Facades\Log;
 use OpenAI;
@@ -20,6 +23,45 @@ class OpenAIService implements OpenAIServiceInterface
     {
         $this->config = config('services.openai');
         $this->client = OpenAI::client($this->config['api_token']);
+    }
+
+    public function detectMessageAction(string $text): array
+    {
+        try {
+            Log::info('OpenAI: Detecting message action', ['text' => $text]);
+
+            $response = $this->client->chat()->create([
+                'model' => $this->config['default_model'],
+                'messages' => [
+                    [
+                        'role' => 'system',
+                        'content' => MessageActionDetectionPrompt::getSystemPrompt()
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => MessageActionDetectionPrompt::getUserPrompt($text)
+                    ]
+                ],
+                'max_tokens' => 500,
+                'temperature' => $this->config['temperature'],
+                'response_format' => ['type' => 'json_object'],
+            ]);
+
+            $content = $response->choices[0]->message->content;
+            $data = json_decode($content, true);
+
+            Log::info('OpenAI: Action detection successful', ['response' => $data]);
+
+            return $this->buildActionDetectionResponse($data, $response->toArray());
+
+        } catch (Throwable $e) {
+            Log::error('OpenAI: Action detection failed', [
+                'error' => $e->getMessage(),
+                'text' => $text
+            ]);
+
+            return $this->buildActionDetectionErrorResponse($e->getMessage());
+        }
     }
 
     public function processText(string $text): array
@@ -185,6 +227,36 @@ class OpenAIService implements OpenAIServiceInterface
         );
 
         return $response->toArray();
+    }
+
+    private function buildActionDetectionResponse(array $data, array $rawResponse): array
+    {
+        $action = null;
+        if (isset($data['action']) && !empty($data['action'])) {
+            $action = MessageAction::tryFrom($data['action']);
+        }
+
+        $dto = new MessageActionDetectionDto(
+            success: true,
+            action: $action,
+            context: $data['context'] ?? [],
+            error: null,
+            rawResponse: $rawResponse
+        );
+
+        return $dto->toArray();
+    }
+
+    private function buildActionDetectionErrorResponse(string $error): array
+    {
+        $dto = new MessageActionDetectionDto(
+            success: false,
+            action: null,
+            context: [],
+            error: $error
+        );
+
+        return $dto->toArray();
     }
 
     private function retryOperation(callable $operation, int $maxRetries = 3): mixed

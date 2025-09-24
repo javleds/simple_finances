@@ -30,9 +30,9 @@ Implementar un sistema de acciones escalable similar al sistema actual de proces
 ## ✅ Fase 2: Implementación del Sistema de Detección de Acciones
 
 ### 2.1 Crear Servicio de Detección de Acciones con OpenAI
-- [ ] Crear `MessageActionDetectionService` que use OpenAI para determinar la acción del usuario
-- [ ] Implementar prompt especializado para clasificar mensajes según el enum `MessageAction`
-- [ ] Crear `DummyMessageActionDetectionService` para desarrollo/testing
+- [x] Crear `MessageActionDetectionService` que use OpenAI para determinar la acción del usuario
+- [x] Implementar prompt especializado para clasificar mensajes según el enum `MessageAction`
+- [x] Crear `DummyMessageActionDetectionService` para desarrollo/testing
 
 ### 2.2 Crear Factory de Procesadores de Acciones
 - [ ] Crear `MessageActionProcessorFactory` similar al `TelegramMessageProcessorFactory`
@@ -40,9 +40,9 @@ Implementar un sistema de acciones escalable similar al sistema actual de proces
 - [ ] Añadir sistema de prioridades para procesadores de acciones
 
 ### 2.3 Modificar OpenAI Service
-- [ ] Extender `OpenAIServiceInterface` con método `detectMessageAction(string $text): array`
-- [ ] Implementar método en `OpenAIService` y `DummyOpenAIService`
-- [ ] Crear prompt para detección de acciones en `MessageActionDetectionPrompt`
+- [x] Extender `OpenAIServiceInterface` con método `detectMessageAction(string $text): array`
+- [x] Implementar método en `OpenAIService` y `DummyOpenAIService`
+- [x] Crear prompt para detección de acciones en `MessageActionDetectionPrompt`
 
 ---
 
