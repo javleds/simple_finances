@@ -1,66 +1,187 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Simple Finances
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Una aplicación de finanzas personales desarrollada con Laravel y Filament, con integración de Telegram Bot y OpenAI para el procesamiento automático de transacciones.
 
-## About Laravel
+## Características
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Panel de Administración**: Interfaz intuitiva desarrollada con FilamentPHP
+- **Bot de Telegram**: Procesamiento de transacciones mediante texto, imágenes y audio
+- **Integración OpenAI**: Extracción automática de información de transacciones usando IA
+- **Gestión de Cuentas**: Múltiples cuentas bancarias y de efectivo
+- **Metas Financieras**: Seguimiento de objetivos de ahorro
+- **Transacciones**: Registro de ingresos y gastos con categorización
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requisitos del Sistema
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.1 o superior
+- Composer
+- SQLite (por defecto) o MySQL/PostgreSQL
+- Node.js y NPM (para compilar assets)
+- Docker (opcional, para desarrollo)
 
-## Learning Laravel
+## Variables de Entorno
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Asegúrate de configurar las siguientes variables en tu archivo `.env`:
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+```env
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=tu_token_de_telegram
+TELEGRAM_WEBHOOK_URL=https://tu-dominio.com/telegram/webhook
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# OpenAI (Opcional - Si no se configura, se usa modo dummy)
+OPENAI_API_TOKEN=tu_token_de_openai
 
-## Laravel Sponsors
+# Base de datos (SQLite por defecto)
+DB_CONNECTION=sqlite
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Variables de OpenAI (Opcionales)
 
-### Premium Partners
+```env
+OPENAI_DEFAULT_MODEL=gpt-4o-mini
+OPENAI_VISION_MODEL=gpt-4o
+OPENAI_AUDIO_MODEL=whisper-1
+OPENAI_MAX_TOKENS=1000
+OPENAI_TEMPERATURE=0.3
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+## Instalación
 
-## Contributing
+1. Clona el repositorio:
+```bash
+git clone https://github.com/javleds/simple_finances.git
+cd simple_finances
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+2. Instala las dependencias de PHP:
+```bash
+composer install
+```
 
-## Code of Conduct
+3. Instala las dependencias de Node.js:
+```bash
+npm install
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+4. Copia el archivo de configuración:
+```bash
+cp .env.example .env
+```
 
-## Security Vulnerabilities
+5. Genera la clave de aplicación:
+```bash
+php artisan key:generate
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+6. Ejecuta las migraciones:
+```bash
+php artisan migrate --seed
+```
 
-## License
+7. Compila los assets:
+```bash
+npm run build
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+8. Inicia el servidor de desarrollo:
+```bash
+php artisan serve
+```
+
+## Bot de Telegram
+
+El bot de Telegram puede procesar transacciones de las siguientes formas:
+
+### Procesamiento de Texto
+```
+"Deposité 1500 pesos en mi cuenta de ahorros para mi fondo de emergencia"
+"Gasté 250 en supermercado con mi tarjeta de débito"
+```
+
+### Procesamiento de Imágenes
+- Envía una foto de un recibo, ticket o comprobante
+- El bot usará OCR para extraer la información de la transacción
+
+### Procesamiento de Audio
+- Envía un mensaje de voz describiendo la transacción
+- El bot transcribirá el audio y procesará la información
+
+### Campos Requeridos
+Para crear una transacción exitosamente, se requiere:
+- **Cuenta**: Nombre de la cuenta (debe existir en el sistema)
+- **Monto**: Cantidad de la transacción
+- **Tipo**: "ingreso" o "gasto"
+
+### Campos Opcionales
+- **Fecha**: Si no se especifica, se usa la fecha actual
+- **Meta Financiera**: Solo para ingresos, si se menciona una meta específica
+
+## Comandos del Bot
+
+- `/start` - Iniciar el proceso de verificación
+- `/verify [código]` - Verificar cuenta con código de 6 dígitos
+
+## Configuración del Bot de Telegram
+
+1. Crea un bot con [@BotFather](https://t.me/botfather)
+2. Obtén el token y configúralo en `TELEGRAM_BOT_TOKEN`
+3. Configura el webhook:
+```bash
+php artisan telegram:set-webhook https://tu-dominio.com
+```
+
+## Integración con OpenAI
+
+La aplicación puede funcionar con o sin OpenAI:
+
+- **Con OpenAI**: Procesamiento inteligente de texto, imágenes y audio
+- **Sin OpenAI**: Modo dummy que simula respuestas (para desarrollo/testing)
+
+### Costos de OpenAI
+- **Texto**: ~$0.0001 por mensaje
+- **Imágenes**: ~$0.01 por imagen
+- **Audio**: ~$0.006 por minuto
+
+## Desarrollo
+
+### Ejecutar tests
+```bash
+php artisan test
+```
+
+### Linting de código
+```bash
+./vendor/bin/pint
+```
+
+### Compilar assets en modo desarrollo
+```bash
+npm run dev
+```
+
+### Docker (Opcional)
+```bash
+docker-compose up -d
+```
+
+## Arquitectura
+
+El proyecto sigue los principios de Clean Architecture:
+
+- **Contracts**: Interfaces para servicios
+- **DTOs**: Objetos de transferencia de datos
+- **Services**: Lógica de negocio
+- **Processors**: Procesadores específicos de Telegram
+- **Models**: Eloquent models para la base de datos
+
+## Contribuir
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/nueva-caracteristica`)
+3. Commit tus cambios (`git commit -am 'Agregar nueva característica'`)
+4. Push a la rama (`git push origin feature/nueva-caracteristica`)
+5. Crea un Pull Request
+
+## Licencia
+
+Este proyecto está licenciado bajo la [MIT License](https://opensource.org/licenses/MIT).

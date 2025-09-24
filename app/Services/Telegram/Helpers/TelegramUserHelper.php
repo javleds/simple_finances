@@ -19,7 +19,7 @@ class TelegramUserHelper
     public static function getAuthenticatedUser(array $telegramUpdate): ?User
     {
         $chatId = self::getChatId($telegramUpdate);
-        
+
         if (!$chatId) {
             return null;
         }

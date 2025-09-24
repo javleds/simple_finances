@@ -28,10 +28,10 @@ class TextMessageProcessor implements TelegramMessageProcessorInterface
     {
         $messageText = TelegramMessageHelper::getText($telegramUpdate);
         $userName = TelegramMessageHelper::getUserName($telegramUpdate);
-        
+
         // Verificar si el usuario está autenticado
         $user = TelegramUserHelper::getAuthenticatedUser($telegramUpdate);
-        
+
         if (!$user) {
             return "Hola {$userName}! Para poder crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
@@ -59,10 +59,10 @@ class TextMessageProcessor implements TelegramMessageProcessorInterface
     private function seemsLikeTransaction(string $text): bool
     {
         $text = mb_strtolower($text);
-        
+
         // Palabras clave que sugieren una transacción
         $transactionKeywords = [
-            'gast', 'deposit', 'ingres', 'cobr', 'pag', 'retir', 
+            'gast', 'deposit', 'ingres', 'cobr', 'pag', 'retir',
             'compré', 'vendí', 'recibí', 'transferí', 'ahorre',
             'cuenta', 'tarjeta', 'efectivo', 'pesos', '$', 'dinero',
             'banco', 'oxxo', 'supermercado', 'gasolina', 'comida'

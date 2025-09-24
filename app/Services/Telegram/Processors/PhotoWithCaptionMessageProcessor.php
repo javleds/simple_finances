@@ -30,10 +30,10 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
     {
         $caption = TelegramMessageHelper::getCaption($telegramUpdate);
         $userName = TelegramMessageHelper::getUserName($telegramUpdate);
-        
+
         // Verificar autenticación
         $user = TelegramUserHelper::getAuthenticatedUser($telegramUpdate);
-        
+
         if (!$user) {
             return "Hola {$userName}! Para poder procesar imágenes con texto y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
@@ -54,17 +54,17 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
 
             // Descargar imagen temporalmente
             $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
-            
+
             if (!$downloadResult) {
                 return "No pude descargar la imagen para procesarla. Si tienes información de transacción, por favor descríbela en texto.";
             }
 
             // Procesar imagen con IA
             $result = $this->transactionProcessor->processImage($downloadResult['full_path'], $user);
-            
+
             // Limpiar archivo temporal
             $this->cleanupTemporaryFile($downloadResult['full_path']);
-            
+
             return $result;
 
         } catch (\Exception $e) {
@@ -81,10 +81,10 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
     private function seemsLikeTransaction(string $text): bool
     {
         $text = mb_strtolower($text);
-        
+
         // Palabras clave que sugieren una transacción
         $transactionKeywords = [
-            'gast', 'deposit', 'ingres', 'cobr', 'pag', 'retir', 
+            'gast', 'deposit', 'ingres', 'cobr', 'pag', 'retir',
             'compré', 'vendí', 'recibí', 'transferí', 'ahorre',
             'cuenta', 'tarjeta', 'efectivo', 'pesos', '$', 'dinero',
             'banco', 'oxxo', 'supermercado', 'gasolina', 'comida'

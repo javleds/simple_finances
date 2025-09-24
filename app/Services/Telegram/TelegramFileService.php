@@ -101,10 +101,10 @@ class TelegramFileService
 
         try {
             $fileContent = $this->telegramService->downloadFile($fileInfo['file_path']);
-            
+
             $fileName = $this->generateFileName($fileInfo);
             $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'telegram_' . $fileName;
-            
+
             file_put_contents($tempPath, $fileContent);
 
             return [
@@ -117,7 +117,7 @@ class TelegramFileService
                 'file_info' => $fileInfo,
                 'error' => $e->getMessage()
             ]);
-            
+
             return null;
         }
     }

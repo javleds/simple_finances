@@ -13,11 +13,11 @@ class OpenAIServiceProvider extends ServiceProvider
     {
         $this->app->bind(OpenAIServiceInterface::class, function () {
             $apiToken = config('services.openai.api_token');
-            
+
             if (empty($apiToken)) {
                 return new DummyOpenAIService();
             }
-            
+
             return new OpenAIService();
         });
     }

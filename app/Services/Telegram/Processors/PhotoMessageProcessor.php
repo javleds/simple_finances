@@ -30,10 +30,10 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
     {
         $photos = data_get($telegramUpdate, 'message.photo', []);
         $userName = TelegramMessageHelper::getUserName($telegramUpdate);
-        
+
         // Verificar autenticación
         $user = TelegramUserHelper::getAuthenticatedUser($telegramUpdate);
-        
+
         if (!$user) {
             return "Hola {$userName}! Para poder procesar imágenes y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
@@ -47,17 +47,17 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
 
             // Descargar imagen temporalmente
             $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
-            
+
             if (!$downloadResult) {
                 return "No pude descargar la imagen para procesarla. Inténtalo de nuevo.";
             }
 
             // Procesar imagen con IA
             $result = $this->transactionProcessor->processImage($downloadResult['full_path'], $user);
-            
+
             // Limpiar archivo temporal
             $this->cleanupTemporaryFile($downloadResult['full_path']);
-            
+
             return $result;
 
         } catch (\Exception $e) {

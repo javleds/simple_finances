@@ -185,26 +185,26 @@ class OpenAIService implements OpenAIServiceInterface
     {
         $attempt = 0;
         $lastException = null;
-        
+
         while ($attempt < $maxRetries) {
             try {
                 return $operation();
             } catch (Throwable $e) {
                 $lastException = $e;
                 $attempt++;
-                
+
                 if ($attempt >= $maxRetries) {
                     throw $e;
                 }
-                
+
                 Log::warning("OpenAI: Retry attempt {$attempt}/{$maxRetries}", [
                     'error' => $e->getMessage()
                 ]);
-                
+
                 sleep(pow(2, $attempt)); // Exponential backoff
             }
         }
-        
+
         throw $lastException ?? new \Exception('Retry operation failed');
     }
 }

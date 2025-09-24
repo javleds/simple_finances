@@ -23,7 +23,7 @@ class TransactionProcessorService
     {
         try {
             $response = $this->openAIService->processText($text);
-            
+
             if (!$response['success']) {
                 Log::error('OpenAI text processing failed', ['error' => $response['error']]);
                 return 'Lo siento, no pude procesar tu mensaje. Inténtalo de nuevo más tarde.';
@@ -40,7 +40,7 @@ class TransactionProcessorService
     {
         try {
             $response = $this->openAIService->processImage($imagePath);
-            
+
             if (!$response['success']) {
                 Log::error('OpenAI image processing failed', ['error' => $response['error']]);
                 return 'Lo siento, no pude procesar la imagen. Inténtalo de nuevo más tarde.';
@@ -57,7 +57,7 @@ class TransactionProcessorService
     {
         try {
             $response = $this->openAIService->processAudio($audioPath);
-            
+
             if (!$response['success']) {
                 Log::error('OpenAI audio processing failed', ['error' => $response['error']]);
                 return 'Lo siento, no pude procesar el audio. Inténtalo de nuevo más tarde.';
@@ -91,14 +91,14 @@ class TransactionProcessorService
         }
 
         $validationResult = $this->validator->validateTransactionData($dto, $user);
-        
+
         if (!$validationResult['valid']) {
             return $validationResult['error'];
         }
 
         try {
             $transaction = $this->createTransaction($dto, $validationResult['account'], $validationResult['financial_goal'], $user);
-            
+
             return $this->buildSuccessMessage($transaction, $dto);
         } catch (\Exception $e) {
             Log::error('Transaction creation failed', ['error' => $e->getMessage(), 'dto' => $dto->toArray()]);
@@ -113,7 +113,7 @@ class TransactionProcessorService
         User $user
     ): Transaction {
         $scheduledAt = $dto->date ? Carbon::parse($dto->date) : now();
-        
+
         $transaction = new Transaction();
         $transaction->user_id = $user->id;
         $transaction->account_id = $account->id;
@@ -121,13 +121,13 @@ class TransactionProcessorService
         $transaction->amount = $dto->amount;
         $transaction->scheduled_at = $scheduledAt;
         $transaction->description = 'Transacción creada desde Telegram';
-        
+
         if ($financialGoal) {
             $transaction->financial_goal_id = $financialGoal->id;
         }
-        
+
         $transaction->save();
-        
+
         Log::info('Transaction created successfully', [
             'transaction_id' => $transaction->id,
             'user_id' => $user->id,
@@ -135,7 +135,7 @@ class TransactionProcessorService
             'amount' => $dto->amount,
             'type' => $dto->type
         ]);
-        
+
         return $transaction;
     }
 
@@ -145,17 +145,17 @@ class TransactionProcessorService
         $amount = number_format($transaction->amount, 2);
         $account = $transaction->account->name;
         $date = $transaction->scheduled_at->format('d/m/Y');
-        
+
         $message = "✅ ¡Transacción creada exitosamente!\n\n";
         $message .= "📊 Tipo: " . ucfirst($typeText) . "\n";
         $message .= "💰 Monto: $" . $amount . "\n";
         $message .= "🏦 Cuenta: " . $account . "\n";
         $message .= "📅 Fecha: " . $date . "\n";
-        
+
         if ($transaction->financialGoal) {
             $message .= "🎯 Meta financiera: " . $transaction->financialGoal->name . "\n";
         }
-        
+
         return $message;
     }
 }

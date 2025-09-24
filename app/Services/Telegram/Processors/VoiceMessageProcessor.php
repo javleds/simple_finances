@@ -31,10 +31,10 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
         $userName = TelegramMessageHelper::getUserName($telegramUpdate);
         $duration = data_get($voiceData, 'duration', 0);
         $durationFormatted = TelegramMessageHelper::formatDuration($duration);
-        
+
         // Verificar autenticación
         $user = TelegramUserHelper::getAuthenticatedUser($telegramUpdate);
-        
+
         if (!$user) {
             return "Hola {$userName}! Para poder procesar mensajes de voz y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
@@ -53,17 +53,17 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
 
             // Descargar audio temporalmente
             $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
-            
+
             if (!$downloadResult) {
                 return "No pude descargar el mensaje de voz para procesarlo. Inténtalo de nuevo.";
             }
 
             // Procesar audio con IA
             $result = $this->transactionProcessor->processAudio($downloadResult['full_path'], $user);
-            
+
             // Limpiar archivo temporal
             $this->cleanupTemporaryFile($downloadResult['full_path']);
-            
+
             return $result;
 
         } catch (\Exception $e) {

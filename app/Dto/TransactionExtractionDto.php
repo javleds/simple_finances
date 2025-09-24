@@ -14,8 +14,8 @@ class TransactionExtractionDto
 
     public function isValid(): bool
     {
-        return !is_null($this->account) 
-            && !is_null($this->amount) 
+        return !is_null($this->account)
+            && !is_null($this->amount)
             && !is_null($this->type)
             && in_array($this->type, ['income', 'outcome']);
     }
@@ -23,19 +23,19 @@ class TransactionExtractionDto
     public function getMissingFields(): array
     {
         $missing = [];
-        
+
         if (is_null($this->account)) {
             $missing[] = 'account';
         }
-        
+
         if (is_null($this->amount)) {
             $missing[] = 'amount';
         }
-        
+
         if (is_null($this->type) || !in_array($this->type, ['income', 'outcome'])) {
             $missing[] = 'type';
         }
-        
+
         return $missing;
     }
 

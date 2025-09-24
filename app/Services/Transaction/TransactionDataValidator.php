@@ -80,7 +80,7 @@ class TransactionDataValidator
 
         foreach ($accounts as $account) {
             $similarity = $this->calculateSimilarity($accountName, $account->name);
-            
+
             if ($similarity > $highestSimilarity && $similarity > 0.7) {
                 $highestSimilarity = $similarity;
                 $bestMatch = $account;
@@ -118,7 +118,7 @@ class TransactionDataValidator
 
         foreach ($goals as $goal) {
             $similarity = $this->calculateSimilarity($goalName, $goal->name);
-            
+
             if ($similarity > $highestSimilarity && $similarity > 0.7) {
                 $highestSimilarity = $similarity;
                 $bestMatch = $goal;
