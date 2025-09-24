@@ -44,6 +44,8 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
             return "Hola {$userName}! Para poder procesar imágenes con texto y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
 
+        auth()->login($user);
+
         try {
             // Primero intentar detectar acción usando el caption
             $detectionResult = $this->actionDetectionService->detectAction($caption);

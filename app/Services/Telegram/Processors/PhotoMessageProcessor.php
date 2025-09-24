@@ -38,6 +38,8 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
             return "Hola {$userName}! Para poder procesar imágenes y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
 
+        auth()->login($user);
+
         try {
             $fileInfo = $this->fileService->getFileFromPhoto($photos);
 

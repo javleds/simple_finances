@@ -45,6 +45,8 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
             return "Hola {$userName}! Para poder procesar mensajes de voz y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
 
+        auth()->login($user);
+
         try {
             $fileInfo = $this->fileService->getFileFromVoice($voiceData);
 

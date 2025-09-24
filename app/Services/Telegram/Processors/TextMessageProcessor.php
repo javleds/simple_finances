@@ -40,6 +40,8 @@ class TextMessageProcessor implements TelegramMessageProcessorInterface
             return "Hola {$userName}! Para poder usar el bot, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
 
+        auth()->login($user);
+
         try {
             // Detectar la acción del mensaje usando OpenAI
             $detectionResult = $this->actionDetectionService->detectAction($messageText);
