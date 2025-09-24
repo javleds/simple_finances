@@ -46,7 +46,7 @@ class TextMessageProcessor implements TelegramMessageProcessorInterface
             // Detectar la acción del mensaje usando OpenAI
             $detectionResult = $this->actionDetectionService->detectAction($messageText);
 
-            if ($detectionResult['success'] && $detectionResult['action'] !== MessageAction::CreateTransaction->value) {
+            if ($detectionResult['success']) {
                 // Crear enum desde el valor
                 $action = MessageAction::from($detectionResult['action']);
 
@@ -58,9 +58,8 @@ class TextMessageProcessor implements TelegramMessageProcessorInterface
                 }
             }
 
-            // Si llegamos aquí, es una creación de transacción o no se pudo procesar
-            if ($this->seemsLikeTransaction($messageText) ||
-                ($detectionResult['success'] && $detectionResult['action'] === MessageAction::CreateTransaction->value)) {
+            // Fallback: si no se pudo detectar la acción o procesar, usar lógica antigua
+            if ($this->seemsLikeTransaction($messageText)) {
                 return $this->transactionProcessor->processText($messageText, $user);
             }
 

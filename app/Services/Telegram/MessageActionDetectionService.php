@@ -29,6 +29,12 @@ class MessageActionDetectionService implements MessageActionDetectionServiceInte
                 return $this->buildFallbackResponse($text);
             }
 
+            // Asegurar que el texto original esté en el contexto
+            if (!isset($response['context'])) {
+                $response['context'] = [];
+            }
+            $response['context']['original_text'] = $text;
+
             return $response;
         } catch (\Exception $e) {
             Log::error('MessageActionDetectionService: Exception occurred', [

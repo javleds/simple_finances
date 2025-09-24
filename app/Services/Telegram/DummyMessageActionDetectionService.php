@@ -15,7 +15,7 @@ class DummyMessageActionDetectionService implements MessageActionDetectionServic
 
         $text = strtolower($text);
         $action = MessageAction::CreateTransaction; // Default
-        $context = [];
+        $context = ['original_text' => $text];
 
         // Lógica simple basada en palabras clave
         if (str_contains($text, 'balance') || str_contains($text, 'saldo') || str_contains($text, 'cuánto')) {

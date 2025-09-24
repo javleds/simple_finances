@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Contracts\MessageActionDetectionServiceInterface;
 use App\Contracts\MessageActionProcessorInterface;
 use App\Services\Telegram\Actions\BalanceQueryActionProcessor;
+use App\Services\Telegram\Actions\CreateTransactionActionProcessor;
 use App\Services\Telegram\Actions\DeleteLastTransactionActionProcessor;
 use App\Services\Telegram\Actions\ModifyLastTransactionActionProcessor;
 use App\Services\Telegram\Actions\RecentTransactionsActionProcessor;
@@ -51,6 +52,7 @@ class MessageActionServiceProvider extends ServiceProvider
         $processors = [
             BalanceQueryActionProcessor::class,
             RecentTransactionsActionProcessor::class,
+            CreateTransactionActionProcessor::class,
             ModifyLastTransactionActionProcessor::class,
             DeleteLastTransactionActionProcessor::class,
         ];
