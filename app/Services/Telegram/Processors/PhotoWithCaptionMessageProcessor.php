@@ -2,17 +2,23 @@
 
 namespace App\Services\Telegram\Processors;
 
+use App\Contracts\MessageActionDetectionServiceInterface;
 use App\Contracts\TelegramMessageProcessorInterface;
+use App\Enums\MessageAction;
 use App\Services\Telegram\Helpers\TelegramMessageHelper;
 use App\Services\Telegram\Helpers\TelegramUserHelper;
+use App\Services\Telegram\MessageActionProcessorFactory;
 use App\Services\Telegram\TelegramFileService;
 use App\Services\Transaction\TransactionProcessorService;
+use Illuminate\Support\Facades\Log;
 
 class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterface
 {
     public function __construct(
         private readonly TelegramFileService $fileService,
-        private readonly TransactionProcessorService $transactionProcessor
+        private readonly TransactionProcessorService $transactionProcessor,
+        private readonly MessageActionDetectionServiceInterface $actionDetectionService,
+        private readonly MessageActionProcessorFactory $actionProcessorFactory
     ) {}
 
     public static function getMessageType(): string
@@ -38,65 +44,78 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
             return "Hola {$userName}! Para poder procesar imágenes con texto y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
 
-        if (!$this->seemsLikeTransaction($caption)) {
-            return 'No parece una transacción. Si tienes información de transacción, por favor descríbela en texto.';
-        }
-
-        // Si el caption no parece una transacción, procesar la imagen
         try {
-            $photos = data_get($telegramUpdate, 'message.photo', []);
-            $fileInfo = $this->fileService->getFileFromPhoto($photos);
+            // Primero intentar detectar acción usando el caption
+            $detectionResult = $this->actionDetectionService->detectAction($caption);
 
-            if (!$fileInfo) {
-                return "No pude procesar la imagen. Si tienes información de transacción, por favor descríbela en texto.";
+            // Si no se pudo detectar acción, procesar como transacción directamente
+            if (!$detectionResult['success']) {
+                return $this->processImageWithCaption($telegramUpdate, $caption, $user);
             }
 
-            // Descargar imagen temporalmente
-            $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
+            // Crear enum desde el valor
+            $action = MessageAction::from($detectionResult['action']);
 
-            if (!$downloadResult) {
-                return "No pude descargar la imagen para procesarla. Si tienes información de transacción, por favor descríbela en texto.";
+            // Si es crear transacción, procesar imagen con caption como contexto
+            if ($action === MessageAction::CreateTransaction) {
+                return $this->processImageWithCaption($telegramUpdate, $caption, $user);
             }
 
-            // Procesar imagen con IA
-            $result = $this->transactionProcessor->processImage($downloadResult['full_path'], $caption, $user);
+            // Para otras acciones, obtener el procesador específico
+            $actionProcessor = $this->actionProcessorFactory->getProcessor($action);
 
-            // Limpiar archivo temporal
-            $this->cleanupTemporaryFile($downloadResult['full_path']);
+            // Si no hay procesador disponible, procesar como transacción
+            if (!$actionProcessor || !$actionProcessor->canHandle($action, $detectionResult['context'] ?? [])) {
+                return $this->processImageWithCaption($telegramUpdate, $caption, $user);
+            }
 
-            return $result;
+            // Procesar la acción específica con contexto enriquecido
+            $context = $detectionResult['context'] ?? [];
+            $context['original_text'] = $caption;
+            $context['source_type'] = 'photo_with_caption';
+            $context['has_image'] = true;
+
+            return $actionProcessor->process($context, $user);
 
         } catch (\Exception $e) {
+            Log::error('PhotoWithCaptionMessageProcessor: Error processing message', [
+                'user_id' => $user->id,
+                'caption' => $caption,
+                'error' => $e->getMessage()
+            ]);
             TelegramMessageHelper::logFileError('photo_with_caption', $e, $userName);
-            return "Ocurrió un error al procesar la imagen. Si tienes información de transacción, por favor descríbela en texto.";
+            return "Ocurrió un error al procesar la imagen con texto. Si tienes información de transacción, por favor descríbela en texto.";
         }
+    }
+
+    private function processImageWithCaption(array $telegramUpdate, string $caption, $user): string
+    {
+        $photos = data_get($telegramUpdate, 'message.photo', []);
+        $fileInfo = $this->fileService->getFileFromPhoto($photos);
+
+        if (!$fileInfo) {
+            return "No pude procesar la imagen. Si tienes información de transacción, por favor descríbela en texto.";
+        }
+
+        // Descargar imagen temporalmente
+        $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
+
+        if (!$downloadResult) {
+            return "No pude descargar la imagen para procesarla. Si tienes información de transacción, por favor descríbela en texto.";
+        }
+
+        // Procesar imagen con IA, pasando el caption como contexto adicional
+        $result = $this->transactionProcessor->processImage($downloadResult['full_path'], $caption, $user);
+
+        // Limpiar archivo temporal
+        $this->cleanupTemporaryFile($downloadResult['full_path']);
+
+        return $result;
     }
 
     public function getPriority(): int
     {
         return 25;
-    }
-
-    private function seemsLikeTransaction(string $text): bool
-    {
-        $text = mb_strtolower($text);
-
-        // Palabras clave que sugieren una transacción
-        $transactionKeywords = [
-            'gast', 'deposit', 'ingres', 'cobr', 'pag', 'retir',
-            'compré', 'vendí', 'recibí', 'transferí', 'ahorre',
-            'cuenta', 'tarjeta', 'efectivo', 'pesos', '$', 'dinero',
-            'banco', 'oxxo', 'supermercado', 'gasolina', 'comida'
-        ];
-
-        foreach ($transactionKeywords as $keyword) {
-            if (str_contains($text, $keyword)) {
-                return true;
-            }
-        }
-
-        // También verificar si contiene números (posibles montos)
-        return preg_match('/\d+/', $text);
     }
 
     private function cleanupTemporaryFile(string $filePath): void
@@ -106,7 +125,7 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
                 unlink($filePath);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to cleanup temporary file', [
+            Log::warning('Failed to cleanup temporary file', [
                 'file_path' => $filePath,
                 'error' => $e->getMessage()
             ]);

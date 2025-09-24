@@ -100,7 +100,7 @@ class AudioMessageProcessor implements TelegramMessageProcessorInterface
                 unlink($filePath);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to cleanup temporary file', [
+            Log::warning('Failed to cleanup temporary file', [
                 'file_path' => $filePath,
                 'error' => $e->getMessage()
             ]);
