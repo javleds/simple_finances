@@ -40,7 +40,8 @@ class ListAccounts extends ListRecords
         return [
             Tab::make('Físicas')->modifyQueryUsing(fn (Builder $query) => $query->where('virtual', false)),
             Tab::make('Virtuales')->modifyQueryUsing(fn (Builder $query) => $query->where('virtual', true)),
-            Tab::make('Todas'),
+            Tab::make('Archivadas')->modifyQueryUsing(fn (Builder $query) => $query->onlyTrashed()),
+            Tab::make('Todas')->modifyQueryUsing(fn (Builder $query) => $query->withTrashed()),
         ];
     }
 }
