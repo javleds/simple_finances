@@ -3,7 +3,7 @@ version: '3.8'
 services:
     mysql:
         container_name: simple_finances_db
-        image: mysql:latest
+        image: mysql:8.0
         restart: always
         command: --default-authentication-plugin=mysql_native_password
         volumes:
