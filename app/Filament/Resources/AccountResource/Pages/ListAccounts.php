@@ -38,10 +38,10 @@ class ListAccounts extends ListRecords
     public function getTabs(): array
     {
         return [
-            Tab::make('Físicas')->modifyQueryUsing(fn (Builder $query) => $query->where('virtual', false)),
-            Tab::make('Virtuales')->modifyQueryUsing(fn (Builder $query) => $query->where('virtual', true)),
+            Tab::make('Físicas')->modifyQueryUsing(fn (Builder $query) => $query->where('virtual', false)->withoutTrashed()),
+            Tab::make('Virtuales')->modifyQueryUsing(fn (Builder $query) => $query->where('virtual', true)->withoutTrashed()),
             Tab::make('Archivadas')->modifyQueryUsing(fn (Builder $query) => $query->onlyTrashed()),
-            Tab::make('Todas')->modifyQueryUsing(fn (Builder $query) => $query->withTrashed()),
+            Tab::make('Todas'),
         ];
     }
 }

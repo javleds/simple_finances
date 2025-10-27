@@ -22,6 +22,7 @@ use Filament\Tables;
 use Filament\Tables\Actions\RestoreAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class AccountResource extends Resource
 {
@@ -94,6 +95,14 @@ class AccountResource extends Resource
                     ->label('Nombre')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('deleted_at')
+                    ->label('Estatus')
+                    ->badge()
+                    ->getStateUsing(fn (Account $record) => $record->deleted_at ? 'Archivada' : 'Activa')
+                    ->colors([
+                        'success' => fn (Account $record) => $record->deleted_at === null,
+                        'danger' => fn (Account $record) => $record->deleted_at !== null,
+                    ]),
                 Tables\Columns\TextColumn::make('balance')
                     ->alignRight()
                     ->formatStateUsing(fn (Account $account) => as_money($account->balance))
@@ -234,5 +243,13 @@ class AccountResource extends Resource
             'view' => Pages\ViewAccount::route('/{record}'),
             'edit' => Pages\EditAccount::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
     }
 }
