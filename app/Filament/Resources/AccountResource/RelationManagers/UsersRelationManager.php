@@ -35,6 +35,8 @@ class UsersRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('name'),
                 Tables\Columns\TextInputColumn::make('percentage')
                     ->label('Porcentaje de egresos')
+                    ->rules(['required', 'min:0', 'max:100', 'numeric'])
+                    ->disabled($this->getOwnerRecord()->user_id === auth()->id())
                     ->afterStateUpdated(fn (Component $livewire) => $livewire->dispatch('refreshAccount')),
             ])
             ->filters([
