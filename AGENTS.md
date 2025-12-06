@@ -8,3 +8,12 @@
 - Sustituir switch/case por un patron Strategy con registro automatico en el contenedor de Laravel para manejar la logica por clases.
 - Crear pruebas automatizadas para cada service class.
 - Todos los documentos .md generados por codex CLI deben estar en español a menos que se indique lo contrario.
+
+## Contexto funcional
+- Aplicacion para finanzas personales: usuarios crean cuentas con transacciones de ingreso y egreso; el balance se calcula al registrar movimientos.
+- Cuentas de tipo credito emulan tarjetas de credito; feature incompleto y requiere manejo especifico.
+- Subscripciones: registrar servicios (Netflix, YouTube Premium, etc.), periodo y monto; generar proyecciones mensuales/anuales y sugerir ahorro mensual o quincenal para pagos anuales.
+- Cuentas compartidas entre multiples usuarios: cada usuario puede editar/eliminar solo sus transacciones; otros usuarios las ven y reciben notificaciones por email en cada movimiento.
+- Notificacion semanal: cada domingo se envia email con transacciones en CSV segun configuracion de notificaciones (por transaccion, por cuenta y por movimientos).
+- Eloquent usa un scope global para filtrar por el usuario activo; todos los modelos tienen `user_id` salvo relaciones many-to-many y cuentas compartidas que se resuelven por joins.
+- Orquestacion sobre eventos: clases de orquestacion (ej. `CreateTransaction`) llaman servicios para crear transaccion, recalcular balance y enviar notificacion sin contener logica de dominio; preferir este enfoque a eventos.
