@@ -12,6 +12,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
 use Filament\Tables\Actions\Action;
@@ -47,7 +48,16 @@ class AddTransactionShortcutAction extends Action
                             ->grouped()
                             ->options(TransactionType::class)
                             ->default(TransactionType::Outcome)
-                            ->required(),
+                            ->required()
+                            ->live(),
+                        ToggleButtons::make('status')
+                            ->label('Estatus')
+                            ->inline()
+                            ->grouped()
+                            ->options(TransactionStatus::class)
+                            ->default(TransactionStatus::Completed)
+                            ->required()
+                            ->hidden(fn (Get $get) => $get('type') !== TransactionType::Income),
                         DatePicker::make('scheduled_at')
                             ->label('Fecha')
                             ->prefixIcon('heroicon-o-calendar')
@@ -62,7 +72,7 @@ class AddTransactionShortcutAction extends Action
                     'concept' => $data['concept'],
                     'amount' => $data['amount'],
                     'type' => $data['type'],
-                    'status' => TransactionStatus::Completed,
+                    'status' => $data['status'] ?? TransactionStatus::Completed,
                     'scheduled_at' => $data['scheduled_at'],
                 ]);
 

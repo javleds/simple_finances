@@ -71,7 +71,8 @@ class TransactionsRelationManager extends RelationManager
                     ->grouped()
                     ->options(TransactionStatus::class)
                     ->default(TransactionStatus::Completed)
-                    ->required(),
+                    ->required()
+                    ->hidden(fn (Forms\Get $get) => $get('type') !== TransactionType::Income),
                 Forms\Components\TextInput::make('concept')
                     ->label('Concepto')
                     ->required()
@@ -98,7 +99,6 @@ class TransactionsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->where('status', TransactionStatus::Completed))
             ->defaultSort(fn (Builder $query) => $query->orderBy('scheduled_at', 'desc')->orderBy('created_at', 'desc'))
             ->recordTitleAttribute('concept')
             ->columns([
@@ -163,7 +163,6 @@ class TransactionsRelationManager extends RelationManager
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Estatus')
                     ->options(TransactionStatus::class)
-                    ->default([TransactionStatus::Completed->value])
                     ->multiple()
                     ->searchable(),
                 DateRangeFilter::make('scheduled_at', 'Fecha de pago'),

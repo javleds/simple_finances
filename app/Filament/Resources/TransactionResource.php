@@ -51,7 +51,8 @@ class TransactionResource extends Resource
                     ->grouped()
                     ->options(TransactionStatus::class)
                     ->default(TransactionStatus::Completed)
-                    ->required(),
+                    ->required()
+                    ->hidden(fn (Forms\Get $get) => $get('type') !== TransactionType::Income),
                 Forms\Components\TextInput::make('concept')
                     ->label('Concepto')
                     ->required()
