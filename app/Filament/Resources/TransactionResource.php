@@ -45,6 +45,7 @@ class TransactionResource extends Resource
                     ->options(TransactionType::class)
                     ->default(TransactionType::Outcome)
                     ->required()
+                    ->columnSpan(fn (Forms\Get $get) => $get('type') === TransactionType::Outcome ? 'full' : null)
                     ->live(),
                 Forms\Components\ToggleButtons::make('status')
                     ->label('Estatus')
@@ -69,6 +70,42 @@ class TransactionResource extends Resource
                     ->preload()
                     ->live()
                     ->required(),
+                Forms\Components\Checkbox::make('split_between_users')
+                    ->label('Dividir entre usuarios de la cuenta')
+                    ->default(false)
+                    ->hidden(function (Forms\Get $get) {
+                        if ($get('type') !== TransactionType::Outcome) {
+                            return true;
+                        }
+
+                        $account = Account::find($get('account_id'));
+
+                        if (!$account) {
+                            return true;
+                        }
+
+                        return $account->users()->count() <= 1;
+                    })
+                    ->live(),
+                Forms\Components\Repeater::make('account.users')
+                    // ->relationship(fn (Forms\Get $get) => Account::find($get('account_id'))->users())
+                    ->hidden(fn (Forms\Get $get) => !$get('split_between_users'))
+                    ->label('Usuarios')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nombre')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('percentage')
+                            ->label('Porcentaje')
+                            ->suffix('%')
+                            ->required()
+                            ->numeric(),
+                    ])
+                    ->columns(2)
+                    ->collapsed()
+                    ->columnSpan('full')
+                    ->visible(fn (Forms\Get $get) => $get('type') === TransactionType::Outcome),
                 Forms\Components\DatePicker::make('scheduled_at')
                     ->label('Fecha')
                     ->prefixIcon('heroicon-o-calendar')
