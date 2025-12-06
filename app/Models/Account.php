@@ -37,7 +37,7 @@ class Account extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class);
+        return $this->belongsToMany(User::class)->withPivot(['percentage']);
     }
 
     public function transactions(): HasMany

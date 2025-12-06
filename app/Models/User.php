@@ -53,7 +53,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 
     public function accounts(): BelongsToMany
     {
-        return $this->belongsToMany(Account::class);
+        return $this->belongsToMany(Account::class)->withPivot(['percentage']);
     }
 
     public function notificationTypes(): BelongsToMany
