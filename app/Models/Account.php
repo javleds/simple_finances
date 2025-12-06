@@ -68,7 +68,8 @@ class Account extends Model
     public function updateBalance(): float
     {
         if (!$this->credit_card) {
-            $this->balance = $this->transactions()->completed()->income()->sum('amount') - $this->transactions()->completed()->outcome()->sum('amount');
+            $this->balance = $this->transactions()->completed()->income()->sum('amount')
+                - $this->transactions()->completed()->outcome()->sum('amount');
             $this->save();
 
             return $this->balance;
