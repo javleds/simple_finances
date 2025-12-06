@@ -105,6 +105,20 @@ class TransactionResource extends Resource
                 Forms\Components\Repeater::make('user_payments')
                     ->hidden(fn (Forms\Get $get) => !$get('split_between_users'))
                     ->label('Usuarios')
+                    ->rules([
+                        function (Forms\Get $get) {
+                            return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                if (!$get('split_between_users')) {
+                                    return;
+                                }
+                                $totalPercentage = collect($value)->sum('percentage');
+
+                                if ($totalPercentage !== 100.0) {
+                                    $fail('La suma de los porcentajes debe ser igual a 100.00 %.');
+                                }
+                            };
+                        },
+                    ])
                     ->schema([
                         Forms\Components\Select::make('user_id')
                             ->visible(false)
@@ -119,7 +133,9 @@ class TransactionResource extends Resource
                             ->label('Porcentaje')
                             ->suffix('%')
                             ->required()
-                            ->numeric(),
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(100),
                     ])
                     ->columns()
                     ->columnSpanFull()
