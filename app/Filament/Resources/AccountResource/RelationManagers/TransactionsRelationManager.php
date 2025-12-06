@@ -64,7 +64,6 @@ class TransactionsRelationManager extends RelationManager
                     ->options(TransactionType::class)
                     ->default(TransactionType::Outcome)
                     ->required()
-                    ->columnSpanFull()
                     ->live(),
                 Forms\Components\ToggleButtons::make('status')
                     ->label('Estatus')
