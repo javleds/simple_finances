@@ -86,12 +86,31 @@ class TransactionResource extends Resource
 
                         return $account->users()->count() <= 1;
                     })
-                    ->live(),
-                Forms\Components\Repeater::make('account.users')
-                    // ->relationship(fn (Forms\Get $get) => Account::find($get('account_id'))->users())
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
+                        $account = Account::find($get('account_id'));
+
+                        if (!$account) {
+                            return $set('user_payments', []);
+                        }
+
+                        $set('user_payments', $account->users()->get()->map(function (User $user) {
+                            return [
+                                'user_id' => $user->id,
+                                'name' => $user->name,
+                                'percentage' => $user->pivot->percentage ?? 0.0,
+                            ];
+                        })->toArray());
+                    }),
+                Forms\Components\Repeater::make('user_payments')
                     ->hidden(fn (Forms\Get $get) => !$get('split_between_users'))
                     ->label('Usuarios')
                     ->schema([
+                        Forms\Components\Select::make('user_id')
+                            ->visible(false)
+                            ->default(fn (Forms\Set $set, Forms\Get $get, $state) => $state['user_id'] ?? null)
+                            ->required()
+                            ->disabled(),
                         Forms\Components\TextInput::make('name')
                             ->label('Nombre')
                             ->required()
@@ -102,10 +121,28 @@ class TransactionResource extends Resource
                             ->required()
                             ->numeric(),
                     ])
-                    ->columns(2)
-                    ->collapsed()
-                    ->columnSpan('full')
-                    ->visible(fn (Forms\Get $get) => $get('type') === TransactionType::Outcome),
+                    ->columns()
+                    ->columnSpanFull()
+                    ->deletable(false)
+                    ->reorderable(false)
+                    ->maxItems(function (Forms\Get $get) {
+                        $account = Account::find($get('account_id'));
+
+                        if (!$account) {
+                            return 0;
+                        }
+
+                        return $account->users()->count();
+                    })
+                    ->minItems(function (Forms\Get $get) {
+                        $account = Account::find($get('account_id'));
+
+                        if (!$account) {
+                            return 0;
+                        }
+
+                        return $account->users()->count();
+                    }),
                 Forms\Components\DatePicker::make('scheduled_at')
                     ->label('Fecha')
                     ->prefixIcon('heroicon-o-calendar')
