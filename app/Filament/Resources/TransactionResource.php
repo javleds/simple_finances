@@ -45,8 +45,7 @@ class TransactionResource extends Resource
                     ->options(TransactionType::class)
                     ->default(TransactionType::Outcome)
                     ->required()
-                    ->live()
-                    ->columnSpanFull(),
+                    ->live(),
                 Forms\Components\ToggleButtons::make('status')
                     ->label('Estatus')
                     ->grouped()
