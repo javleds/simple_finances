@@ -7,3 +7,4 @@
 - Evitar if/else anidados y, en general, la sentencia `else`; preferir early returns.
 - Sustituir switch/case por un patron Strategy con registro automatico en el contenedor de Laravel para manejar la logica por clases.
 - Crear pruebas automatizadas para cada service class.
+- Todos los documentos .md generados por codex CLI deben estar en español a menos que se indique lo contrario.
