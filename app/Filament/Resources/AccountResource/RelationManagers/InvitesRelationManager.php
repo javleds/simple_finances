@@ -43,6 +43,15 @@ class InvitesRelationManager extends RelationManager
                     ->required()
                     ->maxLength(255)
                     ->email(),
+                Forms\Components\TextInput::make('percentage')
+                    ->label('Porcentaje asignado')
+                    ->numeric()
+                    ->minValue(0)
+                    ->maxValue(100)
+                    ->default(0.00)
+                    ->suffix('%')
+                    ->required()
+                    ->hint('Dejar en 0 si no se desea asignar un porcentaje'),
             ]);
     }
 
