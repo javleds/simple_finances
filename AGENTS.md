@@ -8,6 +8,9 @@
 - Sustituir switch/case por un patron Strategy con registro automatico en el contenedor de Laravel para manejar la logica por clases.
 - Crear pruebas automatizadas para cada service class.
 - Todos los documentos .md generados por codex CLI deben estar en español a menos que se indique lo contrario.
+- Por defualt, los modelos de laravel en filament son unguarded, porque esta logina la maneja filament, la propiedad $fillable no es requerida, pero si genera los casts usando la funcion protected function casts(): array correctos dependiendo del tipo. 
+- Genera codigo completamente tipado, en funciones, returnos, argumentos, etc.
+- Usa short sytax disponible en las últimas versiones de PHP compatibles con este proyecto (PHP 8.2). 
 
 ## Contexto funcional
 - Aplicacion para finanzas personales: usuarios crean cuentas con transacciones de ingreso y egreso; el balance se calcula al registrar movimientos.
