@@ -222,9 +222,10 @@ class AccountResource extends Resource
                         ->schema([
                             TextEntry::make('name')->label('Nombre'),
                             TextEntry::make('email')->label('Correo electrónico'),
-                            TextEntry::make('pivot.percentage')->label('Porcentage de egresos')
+                            TextEntry::make('pivot.percentage')->label('Porcentage')
                                 ->formatStateUsing(fn ($state) => "{$state} %"),
                         ])
+                        ->columns(3)
                 ]),
             ]);
     }
