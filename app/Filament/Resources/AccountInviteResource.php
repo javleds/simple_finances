@@ -63,6 +63,10 @@ class AccountInviteResource extends Resource
                     ->formatStateUsing(fn ($state) => Account::withoutGlobalScopes()->find($state)->name),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Invitadción de'),
+                Tables\Columns\TextColumn::make('percentage')
+                    ->label('Egresos compartidos')
+                    ->formatStateUsing(fn ($state) => $state !== 0.0 ? "{$state} %" : 'No asignado')
+                    ->alignCenter(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estatus')
                     ->badge(),
