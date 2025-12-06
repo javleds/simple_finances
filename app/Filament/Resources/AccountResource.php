@@ -236,6 +236,7 @@ class AccountResource extends Resource
             RelationManagers\TransactionsRelationManager::class,
             RelationManagers\InvitesRelationManager::class,
             RelationManagers\FinancialGoalsRelationManager::class,
+            RelationManagers\UsersRelationManager::class,
         ];
     }
 
