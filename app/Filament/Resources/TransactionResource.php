@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Enums\Action;
+use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
 use App\Events\TransactionSaved;
@@ -46,6 +47,12 @@ class TransactionResource extends Resource
                     ->required()
                     ->live()
                     ->columnSpanFull(),
+                Forms\Components\ToggleButtons::make('status')
+                    ->label('Estatus')
+                    ->grouped()
+                    ->options(TransactionStatus::class)
+                    ->default(TransactionStatus::Completed)
+                    ->required(),
                 Forms\Components\TextInput::make('concept')
                     ->label('Concepto')
                     ->required()
@@ -100,16 +107,22 @@ class TransactionResource extends Resource
                     ->sortable()
                     ->summarize([
                         Tables\Columns\Summarizers\Sum::make('income')
-                            ->query(fn (QueryBuilder $query) => $query->where('type', TransactionType::Income))
+                            ->query(fn (QueryBuilder $query) => $query->where('type', TransactionType::Income)->where('status', TransactionStatus::Completed))
                             ->formatStateUsing(fn ($state) => as_money($state))
                             ->label('Ingresos'),
                         Tables\Columns\Summarizers\Sum::make('outcome')
-                            ->query(fn (QueryBuilder $query) => $query->where('type', TransactionType::Outcome))
+                            ->query(fn (QueryBuilder $query) => $query->where('type', TransactionType::Outcome)->where('status', TransactionStatus::Completed))
                             ->formatStateUsing(fn ($state) => as_money($state))
                             ->label('Egresos'),
                     ]),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Estatus')
+                    ->badge()
+                    ->formatStateUsing(fn (TransactionStatus $state) => $state->getLabel())
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('account.name')
@@ -139,6 +152,12 @@ class TransactionResource extends Resource
                 Tables\Filters\SelectFilter::make('type')
                     ->label('Tipo')
                     ->options(TransactionType::class)
+                    ->multiple()
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Estatus')
+                    ->options(TransactionStatus::class)
+                    ->default([TransactionStatus::Completed->value])
                     ->multiple()
                     ->searchable(),
                 DateRangeFilter::make('scheduled_at', 'Fecha de pago'),
@@ -193,5 +212,10 @@ class TransactionResource extends Resource
             'create' => Pages\CreateTransaction::route('/create'),
             'edit' => Pages\EditTransaction::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->where('status', TransactionStatus::Completed);
     }
 }

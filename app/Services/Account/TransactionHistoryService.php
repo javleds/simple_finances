@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class TransactionHistoryService
 {
@@ -24,13 +25,14 @@ class TransactionHistoryService
             }
 
             return $account->transactions()
+                ->completed()
                 ->with('user', 'account')
                 ->orderBy('scheduled_at', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
                 ->get();
 
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             Log::error('TransactionHistoryService: Error getting recent transactions', [
                 'account_name' => $accountName,
                 'user_id' => $user->id,
@@ -46,13 +48,14 @@ class TransactionHistoryService
             return Transaction::whereHas('account.users', function ($query) use ($user) {
                     $query->where('user_id', $user->id);
                 })
+                ->completed()
                 ->with('user', 'account')
                 ->orderBy('scheduled_at', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
                 ->get();
 
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             Log::error('TransactionHistoryService: Error getting recent transactions for all accounts', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage()
@@ -64,10 +67,11 @@ class TransactionHistoryService
     public function getAccountTransactionSummary(Account $account): array
     {
         try {
-            $totalIncome = $account->transactions()->income()->sum('amount');
-            $totalOutcome = $account->transactions()->outcome()->sum('amount');
-            $transactionCount = $account->transactions()->count();
+            $totalIncome = $account->transactions()->completed()->income()->sum('amount');
+            $totalOutcome = $account->transactions()->completed()->outcome()->sum('amount');
+            $transactionCount = $account->transactions()->completed()->count();
             $lastTransaction = $account->transactions()
+                ->completed()
                 ->orderBy('scheduled_at', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->first();

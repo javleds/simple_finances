@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Scopes\BelongsToUserScope;
 use App\Models\Scopes\BelongsToUserThroughAccount;
@@ -19,12 +20,17 @@ class Transaction extends Model
 {
     use HasFactory;
 
+    protected $attributes = [
+        'status' => TransactionStatus::Completed->value,
+    ];
+
     protected function casts(): array
     {
         return [
             'user_id' => 'integer',
             'account_id' => 'integer',
             'type' => TransactionType::class,
+            'status' => TransactionStatus::class,
             'amount' => 'float',
             'scheduled_at' => 'immutable_datetime',
             'financial_goal_id' => 'integer',
@@ -56,11 +62,21 @@ class Transaction extends Model
         $builder->where('type', TransactionType::Outcome);
     }
 
+    public function scopeCompleted(Builder $builder): void
+    {
+        $builder->where('status', TransactionStatus::Completed);
+    }
+
+    public function scopePending(Builder $builder): void
+    {
+        $builder->where('status', TransactionStatus::Pending);
+    }
+
     public function scopeBeforeOf(Builder $builder, ?Carbon $date): void
     {
         if (!$date) {
             return;
-       }
+        }
 
         $builder->whereDate('scheduled_at', '<', $date->toDateString());
     }

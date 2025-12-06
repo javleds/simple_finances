@@ -7,6 +7,7 @@ use App\Events\TransactionSaved;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class LastTransactionService
 {
@@ -16,11 +17,12 @@ class LastTransactionService
             return Transaction::whereHas('account.users', function ($query) use ($user) {
                     $query->where('user_id', $user->id);
                 })
+                ->completed()
                 ->where('user_id', $user->id) // Asegurar que la transacción fue creada por el usuario
                 ->orderBy('created_at', 'desc')
                 ->first();
 
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             Log::error('LastTransactionService: Error getting last user transaction', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage()

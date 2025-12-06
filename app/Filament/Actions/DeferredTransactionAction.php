@@ -2,6 +2,7 @@
 
 namespace App\Filament\Actions;
 
+use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
 use App\Models\Account;
@@ -178,6 +179,7 @@ class DeferredTransactionAction extends Action
                             'amount' => $transaction['amount'],
                             'scheduled_at' => $transaction['scheduled_at'],
                             'type' => TransactionType::Outcome,
+                            'status' => TransactionStatus::Pending,
                         ])
                     );
                 }

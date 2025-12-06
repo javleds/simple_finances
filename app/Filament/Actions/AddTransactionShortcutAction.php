@@ -3,6 +3,7 @@
 namespace App\Filament\Actions;
 
 use App\Enums\Action as UserAction;
+use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\TransactionSaved;
 use App\Models\Account;
@@ -61,6 +62,7 @@ class AddTransactionShortcutAction extends Action
                     'concept' => $data['concept'],
                     'amount' => $data['amount'],
                     'type' => $data['type'],
+                    'status' => TransactionStatus::Completed,
                     'scheduled_at' => $data['scheduled_at'],
                 ]);
 

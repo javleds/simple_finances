@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AccountResource\RelationManagers;
 
 use App\Enums\Action;
+use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
 use App\Events\TransactionSaved;
@@ -65,6 +66,13 @@ class TransactionsRelationManager extends RelationManager
                     ->required()
                     ->columnSpanFull()
                     ->live(),
+                Forms\Components\ToggleButtons::make('status')
+                    ->label('Estatus')
+                    ->inline()
+                    ->grouped()
+                    ->options(TransactionStatus::class)
+                    ->default(TransactionStatus::Completed)
+                    ->required(),
                 Forms\Components\TextInput::make('concept')
                     ->label('Concepto')
                     ->required()
@@ -91,6 +99,7 @@ class TransactionsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->where('status', TransactionStatus::Completed))
             ->defaultSort(fn (Builder $query) => $query->orderBy('scheduled_at', 'desc')->orderBy('created_at', 'desc'))
             ->recordTitleAttribute('concept')
             ->columns([
@@ -106,16 +115,22 @@ class TransactionsRelationManager extends RelationManager
                     ->sortable()
                     ->summarize([
                         Tables\Columns\Summarizers\Sum::make('income')
-                            ->query(fn (\Illuminate\Database\Query\Builder $query) => $query->where('type', TransactionType::Income))
+                            ->query(fn (\Illuminate\Database\Query\Builder $query) => $query->where('type', TransactionType::Income)->where('status', TransactionStatus::Completed))
                             ->formatStateUsing(fn ($state) => as_money($state))
                             ->label('Ingresos'),
                         Tables\Columns\Summarizers\Sum::make('outcome')
-                            ->query(fn (\Illuminate\Database\Query\Builder $query) => $query->where('type', TransactionType::Outcome))
+                            ->query(fn (\Illuminate\Database\Query\Builder $query) => $query->where('type', TransactionType::Outcome)->where('status', TransactionStatus::Completed))
                             ->formatStateUsing(fn ($state) => as_money($state))
                             ->label('Egresos'),
                     ]),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipo')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Estatus')
+                    ->badge()
+                    ->formatStateUsing(fn (TransactionStatus $state) => $state->getLabel())
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('scheduled_at')
@@ -144,6 +159,12 @@ class TransactionsRelationManager extends RelationManager
                 Tables\Filters\SelectFilter::make('type')
                     ->label('Tipo')
                     ->options(TransactionType::class)
+                    ->multiple()
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Estatus')
+                    ->options(TransactionStatus::class)
+                    ->default([TransactionStatus::Completed->value])
                     ->multiple()
                     ->searchable(),
                 DateRangeFilter::make('scheduled_at', 'Fecha de pago'),

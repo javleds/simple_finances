@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SubscriptionResource\RelationManagers;
 
+use App\Enums\TransactionStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\TransactionType;
 use App\Models\Account;
@@ -157,6 +158,7 @@ class PaymentsRelationManager extends RelationManager
                             'amount' => $record->amount,
                             'scheduled_at' => Carbon::now(),
                             'type' => TransactionType::Outcome,
+                            'status' => TransactionStatus::Completed,
                         ]);
 
                         Notification::make('payment_created')

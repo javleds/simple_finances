@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
 use App\Models\Account;
@@ -22,6 +23,7 @@ class TransferCreator
                 'concept' => $concept,
                 'amount' => $amount,
                 'type' => TransactionType::Income,
+                'status' => TransactionStatus::Completed,
                 'scheduled_at' => $date,
             ])
         );
@@ -31,6 +33,7 @@ class TransferCreator
                 'concept' => $concept,
                 'amount' => $amount,
                 'type' => TransactionType::Outcome,
+                'status' => TransactionStatus::Completed,
                 'scheduled_at' => $date,
             ])
         );

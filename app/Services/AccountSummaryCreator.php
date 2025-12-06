@@ -12,6 +12,7 @@ class AccountSummaryCreator
     {
         $transactions = $account->transactions()
             ->withoutGlobalScopes()
+            ->completed()
             ->with('user')
             ->orderBy('scheduled_at', 'desc')
             ->orderBy('created_at', 'desc')

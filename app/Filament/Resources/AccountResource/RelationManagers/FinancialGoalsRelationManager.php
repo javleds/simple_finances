@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AccountResource\RelationManagers;
 
+use App\Enums\TransactionStatus;
 use App\Filament\Tables\Columns\ProgressColumn;
 use App\Models\FinancialGoal;
 use App\Models\Transaction;
