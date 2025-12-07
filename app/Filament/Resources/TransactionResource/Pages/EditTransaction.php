@@ -2,12 +2,12 @@
 
 namespace App\Filament\Resources\TransactionResource\Pages;
 
-use App\Enums\Action;
-use App\Events\TransactionSaved;
+use App\Dto\TransactionFormDto;
 use App\Filament\Resources\TransactionResource;
-use App\Models\Transaction;
+use App\Services\Transaction\TransactionUpdater;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class EditTransaction extends EditRecord
 {
@@ -25,8 +25,10 @@ class EditTransaction extends EditRecord
         return TransactionResource::getUrl();
     }
 
-    public function afterSave(): void
+    protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        event(new TransactionSaved(Transaction::find($this->getRecord()->id), Action::Updated));
+        $data['id'] = $record->id;
+
+        return app(TransactionUpdater::class)->execute($record, TransactionFormDto::fromFormArray($data));
     }
 }

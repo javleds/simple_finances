@@ -64,6 +64,11 @@ class Transaction extends Model
         return $this->hasMany(Transaction::class, 'parent_transaction_id');
     }
 
+    public function isSubTransaction(): bool
+    {
+        return $this->parent_transaction_id !== null;
+    }
+
     public function scopeIncome(Builder $builder): void
     {
         $builder->where('type', TransactionType::Income);
