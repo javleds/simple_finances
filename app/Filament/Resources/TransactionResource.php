@@ -111,7 +111,8 @@ class TransactionResource extends Resource
                                 if (!$get('split_between_users')) {
                                     return;
                                 }
-                                $totalPercentage = collect($value)->sum('percentage');
+
+                                $totalPercentage = (float) collect($value)->sum('percentage');
 
                                 if ($totalPercentage !== 100.0) {
                                     $fail('La suma de los porcentajes debe ser igual a 100.00 %.');
