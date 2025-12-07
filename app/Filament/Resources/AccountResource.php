@@ -8,11 +8,14 @@ use App\Filament\Actions\DirectReceiveTransferAction;
 use App\Filament\Actions\DirectSendTransferAction;
 use App\Filament\Resources\AccountResource\Pages;
 use App\Filament\Resources\AccountResource\RelationManagers;
+use App\Enums\TransactionStatus;
+use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\ColorEntry;
+use Filament\Infolists\Components\Group;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
@@ -219,13 +222,30 @@ class AccountResource extends Resource
                         ->grid(2)
                         ->hidden(fn (Account $record) => $record->users()->count() <= 1)
                         ->label('Compartido con')
-                        ->schema([
+                        ->schema(fn (Account $record) => [
                             TextEntry::make('name')->label('Nombre'),
                             TextEntry::make('email')->label('Correo electrónico'),
                             TextEntry::make('pivot.percentage')->label('Porcentage')
                                 ->formatStateUsing(fn ($state) => "{$state} %"),
+                            TextEntry::make('id')
+                                ->label('Egresos pendientes')
+                                ->formatStateUsing(function ($state) use ($record): string {
+                                    $userId = $state ?? null;
+
+                                    if (!$userId) {
+                                        return '-';
+                                    }
+
+                                    $pending = $record->transactions()
+                                        ->where('user_id', $userId)
+                                        ->where('type', TransactionType::Income)
+                                        ->where('status', TransactionStatus::Pending)
+                                        ->sum('amount');
+
+                                    return as_money($pending);
+                                }),
                         ])
-                        ->columns(3)
+                        ->columns(2)
                 ]),
             ]);
     }
