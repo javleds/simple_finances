@@ -8,6 +8,7 @@ use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\TransactionSaved;
 use App\Models\Transaction;
+use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Auth\Guard;
@@ -48,6 +49,12 @@ class TransactionUpdater
             }
 
             $subTransactions = $transaction->subTransactions()->get();
+
+            if ($dto->type === TransactionType::Outcome && $dto->userPayments !== [] && $subTransactions->isEmpty()) {
+                $this->createSubTransactions($transaction, $dto);
+
+                return $transaction;
+            }
 
             if ($subTransactions->isEmpty()) {
                 return $transaction;
@@ -114,6 +121,33 @@ class TransactionUpdater
             $subTransaction->account_id = $dto->accountId;
             $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
             $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
+            $subTransaction->save();
+        }
+    }
+
+    private function createSubTransactions(Transaction $transaction, TransactionFormDto $dto): void
+    {
+        foreach ($dto->userPayments as $paymentData) {
+            $user = User::withoutGlobalScopes()->find($paymentData->userId);
+
+            if (!$user) {
+                continue;
+            }
+
+            $amount = round($dto->amount * ($paymentData->percentage / 100), 2);
+
+            $subTransaction = new Transaction();
+            $subTransaction->type = TransactionType::Income;
+            $subTransaction->status = TransactionStatus::Pending;
+            $subTransaction->concept = $dto->concept . ' - Parte de ' . $user->name;
+            $subTransaction->amount = $amount;
+            $subTransaction->percentage = $paymentData->percentage;
+            $subTransaction->account_id = $dto->accountId;
+            $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
+            $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
+            $subTransaction->user_id = $user->id;
+            $subTransaction->parent_transaction_id = $transaction->id;
+
             $subTransaction->save();
         }
     }
