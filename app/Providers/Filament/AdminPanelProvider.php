@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\EditProfile;
 use App\Filament\Pages\NotificationSetupPage;
 use App\Filament\Pages\Register;
+use App\Filament\Pages\SimpleFinancesDashboard;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -34,6 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->profile(EditProfile::class, isSimple: false)
             ->registration(Register::class)
+            ->homeUrl(fn () => SimpleFinancesDashboard::getUrl())
             ->passwordReset()
             ->emailVerification()
             ->darkMode(isForced: true)
