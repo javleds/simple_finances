@@ -3,6 +3,7 @@
 namespace App\Filament\Actions;
 
 use App\Dto\TransactionFormDto;
+use App\Dto\UserPaymentDto;
 use App\Enums\Action as UserAction;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
@@ -158,7 +159,7 @@ class AddTransactionShortcutAction extends Action
                     amount: $data['amount'],
                     accountId: $record->id,
                     splitBetweenUsers: $data['split_between_users'] ?? false,
-                    userPayments: $data['user_payments'] ?? [],
+                    userPayments: collect($data['user_payments'] ?? [])->map(fn (array $userPayment) => UserPaymentDto::fromFormArray($userPayment))->all() ?? [],
                     scheduledAt: $data['scheduled_at'],
                     finanialGoalId: null,
                 ));

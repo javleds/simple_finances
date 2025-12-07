@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\AccountResource\RelationManagers;
 
+use App\Dto\TransactionFormDto;
+use App\Dto\UserPaymentDto;
 use App\Enums\Action;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
@@ -14,9 +16,11 @@ use App\Models\Account;
 use App\Models\FinancialGoal;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Transaction\TransactionCreator;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -25,6 +29,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
+use MailerSend\Helpers\Arr;
 
 class TransactionsRelationManager extends RelationManager
 {
@@ -64,7 +69,8 @@ class TransactionsRelationManager extends RelationManager
                     ->options(TransactionType::class)
                     ->default(TransactionType::Outcome)
                     ->required()
-                    ->live(),
+                    ->live()
+                    ->columnSpan(fn (Forms\Get $get) => $get('type') === TransactionType::Outcome ? 'full' : null),
                 Forms\Components\ToggleButtons::make('status')
                     ->label('Estatus')
                     ->inline()
@@ -82,6 +88,97 @@ class TransactionsRelationManager extends RelationManager
                     ->prefix('$')
                     ->required()
                     ->numeric(),
+                Forms\Components\Checkbox::make('split_between_users')
+                    ->label('Dividir entre usuarios de la cuenta')
+                    ->default(false)
+                    ->hidden(function (Forms\Get $get) {
+                        if ($get('type') !== TransactionType::Outcome) {
+                            return true;
+                        }
+
+                        $account = $this->getOwnerRecord();
+
+                        if (!$account) {
+                            return true;
+                        }
+
+                        return $account->users()->count() <= 1;
+                    })
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
+                        $account = $this->getOwnerRecord();
+
+                        if (!$account) {
+                            return $set('user_payments', []);
+                        }
+
+                        $set('user_payments', $account->users()->withoutGlobalScopes()->get()->map(function (User $user) {
+                            return [
+                                'user_id' => $user->id,
+                                'name' => $user->name,
+                                'percentage' => $user->pivot->percentage ?? 0.0,
+                            ];
+                        })->toArray());
+                    }),
+                Forms\Components\Repeater::make('user_payments')
+                    ->hidden(fn (Forms\Get $get) => !$get('split_between_users'))
+                    ->label('Usuarios')
+                    ->rules([
+                        function (Forms\Get $get) {
+                            return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                if (!$get('split_between_users')) {
+                                    return;
+                                }
+
+                                $totalPercentage = (float) collect($value)->sum('percentage');
+
+                                if ($totalPercentage !== 100.0) {
+                                    $fail('La suma de los porcentajes debe ser igual a 100.00 %.');
+                                }
+                            };
+                        },
+                    ])
+                    ->schema([
+                        Forms\Components\TextInput::make('user_id')
+                            ->label('ID')
+                            ->numeric()
+                            ->required()
+                            ->readOnly(),
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nombre')
+                            ->required()
+                            ->maxLength(255)
+                            ->readOnly(),
+                        Forms\Components\TextInput::make('percentage')
+                            ->label('Porcentaje')
+                            ->suffix('%')
+                            ->required()
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(100),
+                    ])
+                    ->columns(3)
+                    ->columnSpanFull()
+                    ->deletable(false)
+                    ->reorderable(false)
+                    ->maxItems(function () {
+                        $account = $this->getOwnerRecord();
+
+                        if (!$account) {
+                            return 0;
+                        }
+
+                        return $account->users()->count();
+                    })
+                    ->minItems(function () {
+                        $account = $this->getOwnerRecord();
+
+                        if (!$account) {
+                            return 0;
+                        }
+
+                        return $account->users()->count();
+                    }),
                 Forms\Components\DatePicker::make('scheduled_at')
                     ->label('Fecha')
                     ->prefixIcon('heroicon-o-calendar')
@@ -177,8 +274,24 @@ class TransactionsRelationManager extends RelationManager
                 DeferredTransactionAction::makeWithOwnerRecord($this->getOwnerRecord()),
                 Tables\Actions\CreateAction::make()
                     ->modalHeading('Crear Transacción')
-                    ->after(function (Transaction $record, Component $livewire) {
-                        event(new TransactionSaved($record, Action::Created));
+                    ->action(function (array $data, Component $livewire) {
+                        app(TransactionCreator::class)->execute(new TransactionFormDto(
+                            id: null,
+                            type: $data['type'],
+                            status: $data['status'] ?? TransactionStatus::Completed,
+                            concept: $data['concept'],
+                            amount: (float) $data['amount'],
+                            accountId: $this->getOwnerRecord()->id,
+                            splitBetweenUsers: $data['split_between_users'] ?? false,
+                            userPayments: collect($data['user_payments'] ?? [])->map(fn (array $userPayment) => UserPaymentDto::fromFormArray($userPayment))->all() ?? [],
+                            scheduledAt: $data['scheduled_at'],
+                            finanialGoalId: $data['financial_goal_id'] ?? null,
+                        ));
+
+                        Notification::make('transaction_added')
+                            ->success()
+                            ->title('Transacción creada')
+                            ->send();
 
                         $livewire->dispatch('refreshAccount');
                     }),
