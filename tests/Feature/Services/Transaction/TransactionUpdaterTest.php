@@ -58,6 +58,7 @@ it('rebalances sub transactions when amount changes', function () {
     expect($updatedTransaction->amount)->toBe(300.0)
         ->and($subTransactions)->toHaveCount(2)
         ->and($subTransactions->pluck('amount')->values()->all())->toBe([90.0, 210.0])
+        ->and($subTransactions->pluck('percentage')->values()->all())->toBe([30.0, 70.0])
         ->and($subTransactions->pluck('status')->unique()->all())->toBe([TransactionStatus::Pending])
         ->and($subTransactions->pluck('parent_transaction_id')->unique()->values()->all())->toBe([$updatedTransaction->id]);
 });

@@ -34,6 +34,7 @@ class Transaction extends Model
             'type' => TransactionType::class,
             'status' => TransactionStatus::class,
             'amount' => 'float',
+            'percentage' => 'float',
             'scheduled_at' => 'immutable_datetime',
             'financial_goal_id' => 'integer',
         ];

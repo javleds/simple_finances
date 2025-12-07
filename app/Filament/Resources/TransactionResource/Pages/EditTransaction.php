@@ -47,7 +47,7 @@ class EditTransaction extends EditRecord
 
         $data['split_between_users'] = true;
         $data['user_payments'] = $subTransactions->map(function ($subTransaction) use ($total) {
-            $percentage = $total > 0 ? round(($subTransaction->amount / $total) * 100, 2) : 0.0;
+            $percentage = $subTransaction->percentage ?? ($total > 0 ? round(($subTransaction->amount / $total) * 100, 2) : 0.0);
 
             return [
                 'user_id' => $subTransaction->user_id,

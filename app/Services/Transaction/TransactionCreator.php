@@ -46,6 +46,7 @@ class TransactionCreator
         $transaction->status = $dto->status;
         $transaction->concept = $dto->concept;
         $transaction->amount = $dto->amount;
+        $transaction->percentage = 100.0;
         $transaction->account_id = $dto->accountId;
         $transaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
         $transaction->financial_goal_id = $dto->finanialGoalId ?: null;
@@ -62,6 +63,7 @@ class TransactionCreator
         $mainTransaction->status = TransactionStatus::Completed;
         $mainTransaction->concept = $dto->concept;
         $mainTransaction->amount = $dto->amount;
+        $mainTransaction->percentage = 100.0;
         $mainTransaction->account_id = $dto->accountId;
         $mainTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
         $mainTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
@@ -77,6 +79,7 @@ class TransactionCreator
             $subTransaction->status = TransactionStatus::Pending;
             $subTransaction->concept = $dto->concept . ' - Parte de ' . $user->name;
             $subTransaction->amount = $amount;
+            $subTransaction->percentage = $paymentData->percentage;
             $subTransaction->account_id = $dto->accountId;
             $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
             $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;

@@ -67,10 +67,12 @@ it('creates sub transactions for outcome type with user payments', function () {
 
     expect($transactions)->toHaveCount(3)
         ->and($mainTransaction->status)->toBe(TransactionStatus::Completed)
+        ->and($mainTransaction->percentage)->toBe(100.0)
         ->and($subTransactions->pluck('amount')->sort()->values()->all())->toBe([50.0, 150.0])
         ->and($subTransactions->pluck('type')->unique()->all())->toBe([TransactionType::Income])
         ->and($subTransactions->pluck('status')->unique()->all())->toBe([TransactionStatus::Pending])
         ->and($subTransactions->pluck('user_id')->sort()->values()->all())->toBe([$owner->id, $partner->id])
+        ->and($subTransactions->pluck('percentage')->sort()->values()->all())->toBe([25.0, 75.0])
         ->and($subTransactions->pluck('parent_transaction_id')->unique()->values()->all())->toBe([$mainTransaction->id]);
 });
 

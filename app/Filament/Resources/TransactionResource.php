@@ -271,13 +271,12 @@ class TransactionResource extends Resource
                 Tables\Actions\Action::make('mark_completed')
                     ->label('')
                     ->icon('heroicon-o-check-badge')
-                    ->requiresConfirmation()
+                    ->requiresConfirmation('¿Estás seguro de que deseas marcar esta transacción como completada?')
                     ->visible(fn (Transaction $record) => $record->status === TransactionStatus::Pending && $record->user_id === auth()->id())
                     ->action(function (Transaction $record) {
                         $subTransactions = $record->subTransactions()->get();
-                        $total = $subTransactions->sum('amount');
-                        $userPayments = $subTransactions->map(function (Transaction $sub) use ($total) {
-                            $percentage = $total > 0 ? round(($sub->amount / $total) * 100, 2) : 0.0;
+                        $userPayments = $subTransactions->map(function (Transaction $sub) {
+                            $percentage = $sub->percentage ?? 0.0;
 
                             return [
                                 'user_id' => $sub->user_id,

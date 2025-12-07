@@ -24,6 +24,7 @@ class TransactionFactory extends Factory
         return [
             'concept' => $this->faker->words(3, true),
             'amount' => $this->faker->randomFloat(2, 1.0, 10000.0),
+            'percentage' => 100.0,
             'type' => $this->faker->randomElement(TransactionType::values()),
             'status' => TransactionStatus::Completed,
             'user_id' => User::factory(),

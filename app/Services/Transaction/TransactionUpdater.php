@@ -76,6 +76,7 @@ class TransactionUpdater
         $transaction->status = $dto->status;
         $transaction->concept = $dto->concept;
         $transaction->amount = $dto->amount;
+        $transaction->percentage = $dto->userPayments === [] ? 100.0 : $transaction->percentage;
         $transaction->account_id = $dto->accountId;
         $transaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
         $transaction->financial_goal_id = $dto->finanialGoalId ?: null;
@@ -105,10 +106,11 @@ class TransactionUpdater
 
         foreach ($subTransactions as $subTransaction) {
             $percentage = collect($dto->userPayments)
-                ->firstWhere('userId', $subTransaction->user_id)?->percentage ?? 0.0;
+                ->firstWhere('userId', $subTransaction->user_id)?->percentage ?? $subTransaction->percentage ?? 0.0;
             $amount = round($dto->amount * ($percentage / 100), 2);
 
             $subTransaction->amount = $amount;
+            $subTransaction->percentage = $percentage;
             $subTransaction->account_id = $dto->accountId;
             $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
             $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
