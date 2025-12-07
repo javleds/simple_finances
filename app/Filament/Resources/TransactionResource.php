@@ -279,8 +279,8 @@ class TransactionResource extends Resource
                         ->exporter(TransactionExporter::class)
                         ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make()
-                        ->after(function (Collection $records) {
-                            event(new BulkTransactionSaved($records));
+                        ->action(function (Collection $records) {
+                            $records->each(fn (Transaction $record) => app(TransactionRemover::class)->execute($record));
                         }),
                 ]),
             ]);

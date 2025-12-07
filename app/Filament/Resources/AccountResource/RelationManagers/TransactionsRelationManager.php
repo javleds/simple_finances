@@ -366,8 +366,8 @@ class TransactionsRelationManager extends RelationManager
                         ->exporter(TransactionExporter::class)
                         ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make()
-                        ->after(function (Collection $records, Component $livewire) {
-                            event(new BulkTransactionSaved($records));
+                        ->action(function (Collection $records, Component $livewire) {
+                            $records->each(fn (Transaction $record) => app(TransactionRemover::class)->execute($record));
 
                             $livewire->dispatch('refreshAccount');
                         }),
