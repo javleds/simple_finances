@@ -93,7 +93,7 @@ class Transaction extends Model
     protected static function booted(): void
     {
         static::creating(function (Model $model) {
-            if (auth()->check()) {
+            if (auth()->check() && empty($model->user_id)) {
                 $model->user_id = auth()->id();
             }
         });

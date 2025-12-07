@@ -81,7 +81,16 @@ class TransactionCreator
             $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
             $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
             $subTransaction->user_id = $user->id;
+
+            logger()->debug('Before creating sub-transaction', [
+                'subTransaction' => $subTransaction
+            ]);
+
             $subTransaction->save();
+
+            logger()->debug('After creating sub-transaction', [
+                'subTransaction' => $subTransaction
+            ]);
         }
 
         return $mainTransaction;
