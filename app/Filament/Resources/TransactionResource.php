@@ -2,11 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Enums\Action;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
-use App\Events\TransactionSaved;
 use App\Filament\Exports\TransactionExporter;
 use App\Filament\Filters\DateRangeFilter;
 use App\Filament\Resources\TransactionResource\Pages;
@@ -14,6 +12,7 @@ use App\Models\Account;
 use App\Models\FinancialGoal;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Transaction\TransactionRemover;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -271,9 +270,7 @@ class TransactionResource extends Resource
                     ->label(''),
                 Tables\Actions\DeleteAction::make()
                     ->label('')
-                    ->after(function (Transaction $record) {
-                        event(new TransactionSaved($record, Action::Deleted));
-                    }),
+                    ->action(fn (Transaction $record) => app(TransactionRemover::class)->execute($record)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

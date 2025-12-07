@@ -4,11 +4,9 @@ namespace App\Filament\Resources\AccountResource\RelationManagers;
 
 use App\Dto\TransactionFormDto;
 use App\Dto\UserPaymentDto;
-use App\Enums\Action;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
-use App\Events\TransactionSaved;
 use App\Filament\Actions\DeferredTransactionAction;
 use App\Filament\Exports\TransactionExporter;
 use App\Filament\Filters\DateRangeFilter;
@@ -17,6 +15,7 @@ use App\Models\FinancialGoal;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Transaction\TransactionCreator;
+use App\Services\Transaction\TransactionRemover;
 use App\Services\Transaction\TransactionUpdater;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -355,7 +354,7 @@ class TransactionsRelationManager extends RelationManager
                 Tables\Actions\DeleteAction::make()
                     ->label('')
                     ->after(function (Transaction $record, Component $livewire) {
-                        event(new TransactionSaved($record, Action::Deleted));
+                        app(TransactionRemover::class)->execute($record);
 
                         $livewire->dispatch('refreshAccount');
                     }),
