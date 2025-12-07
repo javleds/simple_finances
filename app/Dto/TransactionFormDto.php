@@ -4,6 +4,7 @@ namespace App\Dto;
 
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
+use Carbon\CarbonInterface;
 
 class TransactionFormDto
 {
@@ -16,21 +17,24 @@ class TransactionFormDto
         public int $accountId,
         public bool $splitBetweenUsers,
         public array $userPayments,
-        public string $scheduledAt,
+        public string|CarbonInterface $scheduledAt,
         public ?int $finanialGoalId,
     ) {}
 
     public static function fromFormArray(array $data): self
     {
+        $type = $data['type'] ?? TransactionType::Outcome->value;
+        $status = $data['status'] ?? TransactionStatus::Completed->value;
+
         return new self(
             id: $data['id'] ?? null,
-            type: $data['type'],
-            status: $data['status'] ?? TransactionStatus::Completed,
+            type: $type instanceof TransactionType ? $type : TransactionType::from($type),
+            status: $status instanceof TransactionStatus ? $status : TransactionStatus::from($status),
             concept: $data['concept'],
-            amount: $data['amount'],
-            accountId: $data['account_id'],
+            amount: (float) $data['amount'],
+            accountId: (int) $data['account_id'],
             splitBetweenUsers: $data['split_between_users'] ?? false,
-            userPayments: collect($data['user_payments'])->map(fn (array $userPayment) => UserPaymentDto::fromFormArray($userPayment))->toArray() ?? [],
+            userPayments: collect($data['user_payments'] ?? [])->map(fn (array $userPayment) => UserPaymentDto::fromFormArray($userPayment))->all(),
             scheduledAt: $data['scheduled_at'] ?? '',
             finanialGoalId: $data['financial_goal_id'] ?? null,
         );
