@@ -94,7 +94,7 @@ class TransactionResource extends Resource
                             return $set('user_payments', []);
                         }
 
-                        $set('user_payments', $account->users()->get()->map(function (User $user) {
+                        $set('user_payments', $account->users()->withoutGlobalScopes()->get()->map(function (User $user) {
                             return [
                                 'user_id' => $user->id,
                                 'name' => $user->name,
@@ -121,15 +121,16 @@ class TransactionResource extends Resource
                         },
                     ])
                     ->schema([
-                        Forms\Components\Select::make('user_id')
-                            ->visible(false)
-                            ->default(fn (Forms\Set $set, Forms\Get $get, $state) => $state['user_id'] ?? null)
+                        Forms\Components\TextInput::make('user_id')
+                            ->label('ID')
+                            ->numeric()
                             ->required()
-                            ->disabled(),
+                            ->readOnly(),
                         Forms\Components\TextInput::make('name')
                             ->label('Nombre')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->readOnly(),
                         Forms\Components\TextInput::make('percentage')
                             ->label('Porcentaje')
                             ->suffix('%')
@@ -138,7 +139,7 @@ class TransactionResource extends Resource
                             ->minValue(0)
                             ->maxValue(100),
                     ])
-                    ->columns()
+                    ->columns(3)
                     ->columnSpanFull()
                     ->deletable(false)
                     ->reorderable(false)

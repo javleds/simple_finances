@@ -17,22 +17,22 @@ class TransactionFormDto
         public bool $splitBetweenUsers,
         public array $userPayments,
         public string $scheduledAt,
-        public int $finanialGoalId,
+        public ?int $finanialGoalId,
     ) {}
 
     public static function fromFormArray(array $data): self
     {
         return new self(
             id: $data['id'] ?? null,
-            type: TransactionType::from($data['type']),
-            status: TransactionStatus::from($data['status']),
+            type: $data['type'],
+            status: $data['status'] ?? TransactionStatus::Completed,
             concept: $data['concept'],
             amount: $data['amount'],
             accountId: $data['account_id'],
             splitBetweenUsers: $data['split_between_users'] ?? false,
-            userPayments: $data['user_payments'] ?? [],
+            userPayments: collect($data['user_payments'])->map(fn (array $userPayment) => UserPaymentDto::fromFormArray($userPayment))->toArray() ?? [],
             scheduledAt: $data['scheduled_at'] ?? '',
-            finanialGoalId: $data['financial_goal_id'] ?? 0,
+            finanialGoalId: $data['financial_goal_id'] ?? null,
         );
     }
 }
