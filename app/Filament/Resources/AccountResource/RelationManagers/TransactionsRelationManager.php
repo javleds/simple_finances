@@ -351,6 +351,38 @@ class TransactionsRelationManager extends RelationManager
                         $livewire->dispatch('refreshAccount');
 
                     }),
+                Tables\Actions\Action::make('mark_completed')
+                    ->label('')
+                    ->icon('heroicon-o-check-badge')
+                    ->requiresConfirmation()
+                    ->visible(fn (Transaction $record) => $record->status === TransactionStatus::Pending && $record->user_id === auth()->id())
+                    ->action(function (Transaction $record, Component $livewire) {
+                        $subTransactions = $record->subTransactions()->get();
+                        $total = $subTransactions->sum('amount');
+                        $userPayments = $subTransactions->map(function (Transaction $sub) use ($total) {
+                            $percentage = $total > 0 ? round(($sub->amount / $total) * 100, 2) : 0.0;
+
+                            return [
+                                'user_id' => $sub->user_id,
+                                'percentage' => $percentage,
+                            ];
+                        })->toArray();
+
+                        app(TransactionUpdater::class)->execute($record, TransactionFormDto::fromFormArray([
+                            'id' => $record->id,
+                            'type' => $record->type,
+                            'status' => TransactionStatus::Completed,
+                            'concept' => $record->concept,
+                            'amount' => $record->amount,
+                            'account_id' => $record->account_id,
+                            'split_between_users' => $subTransactions->isNotEmpty(),
+                            'user_payments' => $userPayments,
+                            'scheduled_at' => $record->scheduled_at,
+                            'financial_goal_id' => $record->financial_goal_id,
+                        ]));
+
+                        $livewire->dispatch('refreshAccount');
+                    }),
                 Tables\Actions\DeleteAction::make()
                     ->label('')
                     ->after(function (Transaction $record, Component $livewire) {

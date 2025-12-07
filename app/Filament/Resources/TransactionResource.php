@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Dto\TransactionFormDto;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
@@ -12,6 +13,7 @@ use App\Models\Account;
 use App\Models\FinancialGoal;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Transaction\TransactionUpdater;
 use App\Services\Transaction\TransactionRemover;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -266,6 +268,36 @@ class TransactionResource extends Resource
                     ->multiple(),
             ])
             ->actions([
+                Tables\Actions\Action::make('mark_completed')
+                    ->label('')
+                    ->icon('heroicon-o-check-badge')
+                    ->requiresConfirmation()
+                    ->visible(fn (Transaction $record) => $record->status === TransactionStatus::Pending && $record->user_id === auth()->id())
+                    ->action(function (Transaction $record) {
+                        $subTransactions = $record->subTransactions()->get();
+                        $total = $subTransactions->sum('amount');
+                        $userPayments = $subTransactions->map(function (Transaction $sub) use ($total) {
+                            $percentage = $total > 0 ? round(($sub->amount / $total) * 100, 2) : 0.0;
+
+                            return [
+                                'user_id' => $sub->user_id,
+                                'percentage' => $percentage,
+                            ];
+                        })->toArray();
+
+                        app(TransactionUpdater::class)->execute($record, TransactionFormDto::fromFormArray([
+                            'id' => $record->id,
+                            'type' => $record->type,
+                            'status' => TransactionStatus::Completed,
+                            'concept' => $record->concept,
+                            'amount' => $record->amount,
+                            'account_id' => $record->account_id,
+                            'split_between_users' => $subTransactions->isNotEmpty(),
+                            'user_payments' => $userPayments,
+                            'scheduled_at' => $record->scheduled_at,
+                            'financial_goal_id' => $record->financial_goal_id,
+                        ]));
+                    }),
                 Tables\Actions\EditAction::make()
                     ->label(''),
                 Tables\Actions\DeleteAction::make()
