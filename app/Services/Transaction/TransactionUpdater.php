@@ -41,7 +41,8 @@ class TransactionUpdater
             }
 
             if ($dto->type !== TransactionType::Outcome && $transaction->subTransactions()->exists()) {
-                $transaction->subTransactions()->delete();
+                $transaction->subTransactions()->where('status', TransactionStatus::Pending)->delete();
+                $transaction->subTransactions()->where('status', TransactionStatus::Completed)->update(['parent_transaction_id' => null]);
 
                 return $transaction;
             }
