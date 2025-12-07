@@ -58,7 +58,6 @@ class TransactionUpdater
 
             $this->rebalanceSubTransactions(
                 $subTransactions,
-                $transaction,
                 $dto
             );
 
@@ -99,7 +98,6 @@ class TransactionUpdater
 
     private function rebalanceSubTransactions(
         Collection $subTransactions,
-        Transaction $transaction,
         TransactionFormDto $dto,
     ): void {
         $subTransactions->load('user');
