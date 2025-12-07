@@ -4,6 +4,7 @@ namespace App\Filament\Actions;
 
 use App\Enums\Action as UserAction;
 use App\Enums\PaymentStatus;
+use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\TransactionSaved;
 use App\Models\Account;
@@ -67,6 +68,7 @@ class CreateSubscriptionPaymentAction extends Action
                     $transaction = Transaction::create([
                         'amount' => $data['amount'],
                         'type' => TransactionType::Outcome,
+                        'status' => TransactionStatus::Completed,
                         'scheduled_at' => $data['scheduled_at'],
                         'concept' => sprintf('Pago de subscripción %s.', $record->name),
                         'account_id' => $data['feed_account_id'],

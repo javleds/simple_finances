@@ -30,7 +30,7 @@ class UpdateFinancialGoalsOnTransactionSaved
         $goals = $event->transaction->account->financialGoals()->where('user_id', auth()->id())->get();
 
         foreach ($goals as $goal) {
-            $savedAmount = Transaction::income()
+            $savedAmount = Transaction::completed()->income()
                 ->where('financial_goal_id', $goal->id)
                 ->where('user_id', auth()->id())
                 ->sum('amount');

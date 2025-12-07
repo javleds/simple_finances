@@ -37,7 +37,7 @@ class Account extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class);
+        return $this->belongsToMany(User::class)->withPivot(['percentage']);
     }
 
     public function transactions(): HasMany
@@ -68,19 +68,20 @@ class Account extends Model
     public function updateBalance(): float
     {
         if (!$this->credit_card) {
-            $this->balance = $this->transactions()->income()->sum('amount') - $this->transactions()->outcome()->sum('amount');
+            $this->balance = $this->transactions()->completed()->income()->sum('amount')
+                - $this->transactions()->completed()->outcome()->sum('amount');
             $this->save();
 
             return $this->balance;
         }
 
-        $this->spent = $this->transactions()->income()->sum('amount')
-            - $this->transactions()->outcome()->sum('amount');
+        $this->spent = $this->transactions()->completed()->income()->sum('amount')
+            - $this->transactions()->completed()->outcome()->sum('amount');
 
         $this->available_credit = $this->credit_line - ($this->spent * -1);
 
-        $this->balance = $this->transactions()->beforeOrEqualsTo($this->next_cutoff_date)->income()->sum('amount')
-            - $this->transactions()->beforeOrEqualsTo($this->next_cutoff_date)->outcome()->sum('amount');
+        $this->balance = $this->transactions()->beforeOrEqualsTo($this->next_cutoff_date)->completed()->income()->sum('amount')
+            - $this->transactions()->beforeOrEqualsTo($this->next_cutoff_date)->completed()->outcome()->sum('amount');
 
         $this->save();
 
@@ -90,8 +91,8 @@ class Account extends Model
     public function getBalanceUntilNow(): float
     {
         return
-            $this->transactions()->untilNow()->income()->sum('amount')
-            - $this->transactions()->untilNow()->outcome()->sum('amount')
+            $this->transactions()->untilNow()->completed()->income()->sum('amount')
+            - $this->transactions()->untilNow()->completed()->outcome()->sum('amount')
             ?? 0.0;
     }
 

@@ -36,6 +36,15 @@ class AccountInviteResource extends Resource
                     ->email()
                     ->required()
                     ->maxLength(255),
+                Forms\Components\TextInput::make('percentage')
+                    ->label('Porcentaje asignado')
+                    ->numeric()
+                    ->minValue(0)
+                    ->maxValue(100)
+                    ->default(0.00)
+                    ->suffix('%')
+                    ->required()
+                    ->hint('Dejar en 0 si no se desea asignar un porcentaje'),
                 Forms\Components\TextInput::make('status')
                     ->required(),
                 Forms\Components\Select::make('account_id')
@@ -54,6 +63,10 @@ class AccountInviteResource extends Resource
                     ->formatStateUsing(fn ($state) => Account::withoutGlobalScopes()->find($state)->name),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Invitadción de'),
+                Tables\Columns\TextColumn::make('percentage')
+                    ->label('Egresos compartidos')
+                    ->formatStateUsing(fn ($state) => $state !== 0.0 ? "{$state} %" : 'No asignado')
+                    ->alignCenter(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estatus')
                     ->badge(),

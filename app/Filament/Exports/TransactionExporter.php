@@ -3,6 +3,7 @@
 namespace App\Filament\Exports;
 
 use App\Models\Transaction;
+use App\Enums\TransactionStatus;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
@@ -23,6 +24,9 @@ class TransactionExporter extends Exporter
             ExportColumn::make('type')
                 ->label('Tipo')
                 ->formatStateUsing(fn ($state) => $state->getLabel()),
+            ExportColumn::make('status')
+                ->label('Estatus')
+                ->formatStateUsing(fn (TransactionStatus $state) => $state->getLabel()),
             ExportColumn::make('scheduled_at')
                 ->label('Fecha de pago'),
             ExportColumn::make('account.name')

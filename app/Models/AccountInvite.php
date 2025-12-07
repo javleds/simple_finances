@@ -23,6 +23,7 @@ class AccountInvite extends Model
         return [
             'account_id' => 'integer',
             'status' => InviteStatus::class,
+            'percentage' => 'float',
         ];
     }
 
@@ -64,5 +65,10 @@ class AccountInvite extends Model
     public function isOwnerAccount(): bool
     {
         return $this->user_id === auth()->id();
+    }
+
+    public function hasPercentageAssigned(): bool
+    {
+        return $this->percentage > 0.0;
     }
 }

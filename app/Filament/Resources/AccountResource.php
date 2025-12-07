@@ -9,6 +9,7 @@ use App\Filament\Actions\DirectSendTransferAction;
 use App\Filament\Resources\AccountResource\Pages;
 use App\Filament\Resources\AccountResource\RelationManagers;
 use App\Models\Account;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\ColorEntry;
@@ -221,7 +222,10 @@ class AccountResource extends Resource
                         ->schema([
                             TextEntry::make('name')->label('Nombre'),
                             TextEntry::make('email')->label('Correo electrónico'),
+                            TextEntry::make('pivot.percentage')->label('Porcentage')
+                                ->formatStateUsing(fn ($state) => "{$state} %"),
                         ])
+                        ->columns(3)
                 ]),
             ]);
     }
@@ -232,6 +236,7 @@ class AccountResource extends Resource
             RelationManagers\TransactionsRelationManager::class,
             RelationManagers\InvitesRelationManager::class,
             RelationManagers\FinancialGoalsRelationManager::class,
+            RelationManagers\UsersRelationManager::class,
         ];
     }
 

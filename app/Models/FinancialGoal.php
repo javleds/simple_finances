@@ -38,6 +38,7 @@ class FinancialGoal extends Model
     public function getAchievedAmount(): float
     {
         return $this->account->transactions()
+            ->completed()
             ->where('financial_goal_id', $this->id)
             ->sum('amount');
     }

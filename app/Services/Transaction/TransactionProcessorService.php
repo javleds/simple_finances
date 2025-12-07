@@ -5,6 +5,7 @@ namespace App\Services\Transaction;
 use App\Contracts\OpenAIServiceInterface;
 use App\Dto\TransactionExtractionDto;
 use App\Enums\Action;
+use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\TransactionSaved;
 use App\Models\Account;
@@ -104,6 +105,7 @@ class TransactionProcessorService
         $transaction->user_id = $user->id;
         $transaction->account_id = $account->id;
         $transaction->type = TransactionType::from($dto->type);
+        $transaction->status = TransactionStatus::Completed;
         $transaction->amount = $dto->amount;
         $transaction->scheduled_at = $scheduledAt;
         $transaction->concept = $dto->concept;

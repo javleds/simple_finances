@@ -21,7 +21,9 @@ readonly class Respond
 
             Account::withoutGlobalScopes()
                 ->find($invite->account_id)->users()
-                ->attach(auth()->id());
+                ->attach(auth()->id(), [
+                    'percentage' => $invite->percentage,
+                ]);
 
             $this->notifyOnInteract->execute($invite);
             $this->enableNotificationForInvitation->execute($invite);

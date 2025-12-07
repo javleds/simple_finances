@@ -2,11 +2,14 @@
 
 namespace App\Filament\Resources\TransactionResource\Pages;
 
+use App\Dto\TransactionFormDto;
 use App\Enums\Action;
 use App\Events\TransactionSaved;
 use App\Filament\Resources\TransactionResource;
 use App\Models\Transaction;
+use App\Services\Transaction\TransactionCreator;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class CreateTransaction extends CreateRecord
 {
@@ -17,8 +20,8 @@ class CreateTransaction extends CreateRecord
         return TransactionResource::getUrl();
     }
 
-    public function afterCreate(): void
+    protected function handleRecordCreation(array $data): Model
     {
-        event(new TransactionSaved(Transaction::find($this->getRecord()->id), Action::Created));
+        return app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray($data));
     }
 }
