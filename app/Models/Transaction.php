@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[ScopedBy([BelongsToUserThroughAccount::class])]
 class Transaction extends Model
@@ -27,6 +28,7 @@ class Transaction extends Model
     protected function casts(): array
     {
         return [
+            'parent_transaction_id' => 'integer',
             'user_id' => 'integer',
             'account_id' => 'integer',
             'type' => TransactionType::class,
@@ -50,6 +52,16 @@ class Transaction extends Model
     public function financialGoal(): BelongsTo
     {
         return $this->belongsTo(FinancialGoal::class);
+    }
+
+    public function parentTransaction(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class, 'parent_transaction_id');
+    }
+
+    public function subTransactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class, 'parent_transaction_id');
     }
 
     public function scopeIncome(Builder $builder): void
