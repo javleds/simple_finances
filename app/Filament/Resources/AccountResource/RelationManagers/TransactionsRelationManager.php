@@ -17,6 +17,7 @@ use App\Models\FinancialGoal;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Transaction\TransactionCreator;
+use App\Services\Transaction\TransactionUpdater;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -299,10 +300,57 @@ class TransactionsRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->label('')
-                    ->after(function (Transaction $record, Component $livewire) {
-                        event(new TransactionSaved($record, Action::Updated));
+                    ->mutateRecordDataUsing(function (Transaction $record) {
+                        $hasSubtransactions = $record->subTransactions()->exists();
+
+                        $data = [
+                            'type' => $record->type,
+                            'status' => $record->status,
+                            'concept' => $record->concept,
+                            'amount' => $record->amount,
+                            'scheduled_at' => $record->scheduled_at,
+                            'financial_goal_id' => $record->financial_goal_id,
+                            'split_between_users' => $hasSubtransactions,
+                            'user_payments' => [],
+                        ];
+
+                        if ($hasSubtransactions) {
+                            $data['user_payments'] = $record->subTransactions
+                                ->map(function (Transaction $subTransaction) {
+                                    return [
+                                        'user_id' => $subTransaction->user_id,
+                                        'name' => $subTransaction->user->name,
+                                        'percentage' => round(($subTransaction->amount / $subTransaction->parentTransaction->amount) * 100, 2),
+                                    ];
+                                })->toArray();
+                        }
+
+                        return $data;
+                    })
+                    ->action(function (Transaction $record, array $data, Component $livewire) {
+                        app(TransactionUpdater::class)->execute(
+                            $record,
+                            new TransactionFormDto(
+                                id: $record->id,
+                                type: $data['type'],
+                                status: $data['status'] ?? TransactionStatus::Completed,
+                                concept: $data['concept'],
+                                amount: (float) $data['amount'],
+                                accountId: $this->getOwnerRecord()->id,
+                                splitBetweenUsers: $data['concept'],
+                                userPayments: collect($data['user_payments'] ?? [])->map(fn (array $userPayment) => UserPaymentDto::fromFormArray($userPayment))->all() ?? [],
+                                scheduledAt: $data['scheduled_at'],
+                                finanialGoalId: $data['financial_goal_id'] ?? null,
+                            )
+                        );
+
+                        Notification::make('transaction_updated')
+                            ->success()
+                            ->title('Transacción actualizada')
+                            ->send();
 
                         $livewire->dispatch('refreshAccount');
+
                     }),
                 Tables\Actions\DeleteAction::make()
                     ->label('')

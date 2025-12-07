@@ -40,7 +40,9 @@ class TransactionUpdater
                 return $transaction;
             }
 
-            if ($dto->type !== TransactionType::Outcome) {
+            if ($dto->type !== TransactionType::Outcome && $transaction->subTransactions()->exists()) {
+                $transaction->subTransactions()->delete();
+
                 return $transaction;
             }
 
@@ -54,7 +56,11 @@ class TransactionUpdater
                 return $transaction;
             }
 
-            $this->rebalanceSubTransactions($subTransactions, $transaction, $dto->amount, $dto->concept, $dto->accountId, $this->resolveScheduleDate($dto->scheduledAt), $dto->finanialGoalId);
+            $this->rebalanceSubTransactions(
+                $subTransactions,
+                $transaction,
+                $dto
+            );
 
             return $transaction;
         });
@@ -94,28 +100,19 @@ class TransactionUpdater
     private function rebalanceSubTransactions(
         Collection $subTransactions,
         Transaction $transaction,
-        float $newAmount,
-        string $concept,
-        int $accountId,
-        CarbonInterface $scheduledAt,
-        ?int $financialGoalId,
+        TransactionFormDto $dto,
     ): void {
-        $totalSubAmount = $subTransactions->sum('amount');
-
-        if ($totalSubAmount <= 0.0) {
-            return;
-        }
-
         $subTransactions->load('user');
 
         foreach ($subTransactions as $subTransaction) {
-            $percentage = $subTransaction->amount / $totalSubAmount;
-            $subTransaction->amount = round($newAmount * $percentage, 2);
-            $subTransaction->concept = $concept . ' - Parte de ' . $subTransaction->user->name;
-            $subTransaction->account_id = $accountId;
-            $subTransaction->scheduled_at = $scheduledAt;
-            $subTransaction->financial_goal_id = $financialGoalId ?: null;
-            $subTransaction->parent_transaction_id = $transaction->id;
+            $percentage = collect($dto->userPayments)
+                ->firstWhere('userId', $subTransaction->user_id)?->percentage ?? 0.0;
+            $amount = round($dto->amount * ($percentage / 100), 2);
+
+            $subTransaction->amount = $amount;
+            $subTransaction->account_id = $dto->accountId;
+            $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
+            $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
             $subTransaction->save();
         }
     }

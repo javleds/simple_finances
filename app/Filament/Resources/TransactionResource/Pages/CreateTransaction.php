@@ -24,9 +24,4 @@ class CreateTransaction extends CreateRecord
     {
         return app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray($data));
     }
-
-    public function afterCreate(): void
-    {
-        event(new TransactionSaved(Transaction::find($this->getRecord()->id), Action::Created));
-    }
 }
