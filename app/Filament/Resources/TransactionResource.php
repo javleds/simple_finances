@@ -249,7 +249,6 @@ class TransactionResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Estatus')
                     ->options(TransactionStatus::class)
-                    ->default([TransactionStatus::Completed->value])
                     ->multiple()
                     ->searchable(),
                 DateRangeFilter::make('scheduled_at', 'Fecha de pago'),
@@ -308,6 +307,6 @@ class TransactionResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('status', TransactionStatus::Completed);
+        return parent::getEloquentQuery();
     }
 }
