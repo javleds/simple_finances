@@ -31,4 +31,31 @@ class EditTransaction extends EditRecord
 
         return app(TransactionUpdater::class)->execute($record, TransactionFormDto::fromFormArray($data));
     }
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $subTransactions = $this->getRecord()->subTransactions()->with('user')->get();
+
+        if ($subTransactions->isEmpty()) {
+            $data['split_between_users'] = false;
+            $data['user_payments'] = [];
+
+            return $data;
+        }
+
+        $total = $subTransactions->sum('amount');
+
+        $data['split_between_users'] = true;
+        $data['user_payments'] = $subTransactions->map(function ($subTransaction) use ($total) {
+            $percentage = $total > 0 ? round(($subTransaction->amount / $total) * 100, 2) : 0.0;
+
+            return [
+                'user_id' => $subTransaction->user_id,
+                'name' => $subTransaction->user?->name ?? '',
+                'percentage' => $percentage,
+            ];
+        })->toArray();
+
+        return $data;
+    }
 }
