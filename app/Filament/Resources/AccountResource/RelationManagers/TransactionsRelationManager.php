@@ -297,6 +297,37 @@ class TransactionsRelationManager extends RelationManager
                     }),
             ])
             ->actions([
+                Tables\Actions\Action::make('mark_completed')
+                    ->label('')
+                    ->icon('heroicon-o-check-badge')
+                    ->requiresConfirmation('¿Estás seguro de que deseas marcar esta transacción como completada?')
+                    ->visible(fn (Transaction $record) => $record->status === TransactionStatus::Pending && $record->user_id === auth()->id())
+                    ->action(function (Transaction $record, Component $livewire) {
+                        $subTransactions = $record->subTransactions()->get();
+                        $userPayments = $subTransactions->map(function (Transaction $sub) {
+                            $percentage = $sub->percentage ?? 0.0;
+
+                            return [
+                                'user_id' => $sub->user_id,
+                                'percentage' => $percentage,
+                            ];
+                        })->toArray();
+
+                        app(TransactionUpdater::class)->execute($record, TransactionFormDto::fromFormArray([
+                            'id' => $record->id,
+                            'type' => $record->type,
+                            'status' => TransactionStatus::Completed,
+                            'concept' => $record->concept,
+                            'amount' => $record->amount,
+                            'account_id' => $record->account_id,
+                            'split_between_users' => $subTransactions->isNotEmpty(),
+                            'user_payments' => $userPayments,
+                            'scheduled_at' => $record->scheduled_at,
+                            'financial_goal_id' => $record->financial_goal_id,
+                        ]));
+
+                        $livewire->dispatch('refreshAccount');
+                    }),
                 Tables\Actions\EditAction::make()
                     ->label('')
                     ->mutateRecordDataUsing(function (Transaction $record) {
@@ -350,37 +381,6 @@ class TransactionsRelationManager extends RelationManager
 
                         $livewire->dispatch('refreshAccount');
 
-                    }),
-                Tables\Actions\Action::make('mark_completed')
-                    ->label('')
-                    ->icon('heroicon-o-check-badge')
-                    ->requiresConfirmation('¿Estás seguro de que deseas marcar esta transacción como completada?')
-                    ->visible(fn (Transaction $record) => $record->status === TransactionStatus::Pending && $record->user_id === auth()->id())
-                    ->action(function (Transaction $record, Component $livewire) {
-                        $subTransactions = $record->subTransactions()->get();
-                        $userPayments = $subTransactions->map(function (Transaction $sub) {
-                            $percentage = $sub->percentage ?? 0.0;
-
-                            return [
-                                'user_id' => $sub->user_id,
-                                'percentage' => $percentage,
-                            ];
-                        })->toArray();
-
-                        app(TransactionUpdater::class)->execute($record, TransactionFormDto::fromFormArray([
-                            'id' => $record->id,
-                            'type' => $record->type,
-                            'status' => TransactionStatus::Completed,
-                            'concept' => $record->concept,
-                            'amount' => $record->amount,
-                            'account_id' => $record->account_id,
-                            'split_between_users' => $subTransactions->isNotEmpty(),
-                            'user_payments' => $userPayments,
-                            'scheduled_at' => $record->scheduled_at,
-                            'financial_goal_id' => $record->financial_goal_id,
-                        ]));
-
-                        $livewire->dispatch('refreshAccount');
                     }),
                 Tables\Actions\DeleteAction::make()
                     ->label('')
