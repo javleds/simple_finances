@@ -16,6 +16,9 @@ use Livewire\Component;
 class UsersRelationManager extends RelationManager
 {
     protected static string $relationship = 'users';
+    protected static ?string $title = 'Usuarios';
+    protected static ?string $modelLabel = 'Usuario';
+    protected static ?string $pluralModelLabel = 'Usuarios';
 
     public function form(Form $form): Form
     {
