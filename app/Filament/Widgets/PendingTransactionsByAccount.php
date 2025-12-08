@@ -29,21 +29,13 @@ class PendingTransactionsByAccount extends BaseWidget
                 Transaction::query()
                     ->where('status', TransactionStatus::Pending)
                     ->where('user_id', auth()->id())
-                    ->with('account', 'subTransactions')
+                    ->with('account')
             )
-            ->groups([
-                Tables\Grouping\Group::make('account.name')->label('Cuenta'),
-            ])
-            ->defaultGroup('account.name')
             ->columns([
-                Tables\Columns\TextColumn::make('account.name')
-                    ->label('Cuenta')
-                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('concept')
                     ->label('Concepto'),
-                Tables\Columns\TextColumn::make('scheduled_at')
-                    ->label('Fecha')
-                    ->date('M d, Y'),
+                Tables\Columns\TextColumn::make('account.name')
+                    ->label('Cuenta'),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Monto')
                     ->formatStateUsing(fn (float $state) => as_money($state))
@@ -88,13 +80,5 @@ class PendingTransactionsByAccount extends BaseWidget
                     ->url(TransactionResource::getUrl())
                     ->openUrlInNewTab(),
             ]);
-    }
-
-    private function getPendingTotal(): float
-    {
-        return Transaction::query()
-            ->where('status', TransactionStatus::Pending)
-            ->where('user_id', auth()->id())
-            ->sum('amount');
     }
 }
