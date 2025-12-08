@@ -14,7 +14,7 @@ use Filament\Widgets\TableWidget as BaseWidget;
 
 class PendingTransactionsByAccount extends BaseWidget
 {
-    protected static ?string $heading = 'Transacciones pendientes por cuenta';
+    protected static ?string $heading = 'Transacciones pendientes';
 
     public function table(Table $table): Table
     {
