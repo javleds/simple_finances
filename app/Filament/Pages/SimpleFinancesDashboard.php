@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Widgets\PendingTransactionsByAccount;
+use App\Filament\Widgets\PendingTransactionSum;
 use App\Filament\Widgets\SubscriptionMonthlyProjection;
 use Filament\Pages\Dashboard;
 use Filament\Pages\Page;
@@ -17,6 +18,7 @@ class SimpleFinancesDashboard extends Dashboard
     {
         return [
             SubscriptionMonthlyProjection::class,
+            PendingTransactionSum::class,
             PendingTransactionsByAccount::class,
         ];
     }
