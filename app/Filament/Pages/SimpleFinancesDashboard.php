@@ -2,9 +2,13 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\AccountResource;
+use App\Filament\Resources\SubscriptionResource;
+use App\Filament\Resources\TransactionResource;
 use App\Filament\Widgets\PendingTransactionSum;
 use App\Filament\Widgets\PendingTransactionsByAccount;
 use App\Filament\Widgets\SubscriptionMonthlyProjection;
+use Filament\Actions\Action;
 use Filament\Pages\Dashboard;
 
 class SimpleFinancesDashboard extends Dashboard
@@ -26,7 +30,24 @@ class SimpleFinancesDashboard extends Dashboard
     {
         return [
             'sm' => 1,
-            // 'lg' => 2,
+        ];
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('go_to_subscriptions')
+                ->label('Ir a subscricpiones')
+                ->icon('heroicon-o-calendar-date-range')
+                ->url(fn () => SubscriptionResource::getUrl()),
+            Action::make('go_to_accounts')
+                ->label('Ir a cuentas')
+                ->icon('heroicon-o-credit-card')
+                ->url(fn () => AccountResource::getUrl()),
+            Action::make('go_to_transactions')
+                ->label('Ir a transacciones')
+                ->icon('heroicon-o-banknotes')
+                ->url(fn () => TransactionResource::getUrl()),
         ];
     }
 }
