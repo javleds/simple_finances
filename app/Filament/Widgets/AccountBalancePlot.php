@@ -48,8 +48,14 @@ class AccountBalancePlot extends ChartWidget
     protected function getOptions(): RawJs
     {
         return RawJs::make(<<<JS
-            (() => {
-                const isMobile = matchMedia('(max-width: 640px)').matches;
+            (function () {
+                var isMobile = matchMedia('(max-width: 640px)').matches;
+                var restoreBalance = function (value) {
+                    var sign = value === 0 ? 0 : (value > 0 ? 1 : -1);
+                    var restored = Math.exp(Math.abs(value)) - 1;
+
+                    return sign * restored;
+                };
 
                 return {
                     scales: {
@@ -65,8 +71,8 @@ class AccountBalancePlot extends ChartWidget
                             type: 'linear',
                             ticks: {
                                 display: !isMobile,
-                                callback: (value) => {
-                                    const restored = Math.sign(value) * Math.expm1(Math.abs(value));
+                                callback: function (value) {
+                                    var restored = restoreBalance(value);
                                     return '$' + restored.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                 },
                             },
@@ -90,7 +96,15 @@ class AccountBalancePlot extends ChartWidget
                                     borderDash: [6, 6],
                                 }
                             }
-                        }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    var restored = restoreBalance(context.parsed.y);
+                                    return context.dataset.label + ': $' + restored.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                },
+                            },
+                        },
                     }
                 };
             })()
