@@ -15,7 +15,7 @@ class AccountBalancePlot extends ChartWidget
         'lg' => 1,
     ];
 
-    protected static ?string $maxHeight = '150px';
+    protected static ?string $maxHeight = '250px';
 
     protected function getData(): array
     {
@@ -25,15 +25,16 @@ class AccountBalancePlot extends ChartWidget
 
         $palette = $this->getPalette();
         $datasets = [];
+        $paletteSize = count($palette);
 
         foreach ($accounts as $index => $account) {
             $datasets[] = [
                 'label' => $account->name,
                 'data' => collect($accounts->keys())
-                    ->map(fn (int $position) => $position === $index ? $account->balance : 0)
+                    ->map(fn (int $position) => $position === $index ? $this->transformBalance((float) $account->balance) : 0)
                     ->all(),
-                'backgroundColor' => $palette[$index % count($palette)]['background'],
-                'borderColor' => $palette[$index % count($palette)]['border'],
+                'backgroundColor' => $palette[$index % $paletteSize]['background'],
+                'borderColor' => $palette[$index % $paletteSize]['border'],
                 'borderWidth' => 2,
                 'barThickness' => 22,
             ];
@@ -51,8 +52,12 @@ class AccountBalancePlot extends ChartWidget
             {
                 scales: {
                     y: {
+                        type: 'linear',
                         ticks: {
-                            callback: (value) => '$' + value.toLocaleString(),
+                            callback: (value) => {
+                                const restored = Math.sign(value) * Math.expm1(Math.abs(value));
+                                return '$' + restored.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            },
                         },
                     },
                 },
@@ -93,5 +98,20 @@ class AccountBalancePlot extends ChartWidget
             ['background' => '#22c55e25', 'border' => '#22c55e'],
             ['background' => '#0ea5e925', 'border' => '#0ea5e9'],
         ];
+    }
+
+    private function transformBalance(float $balance): float
+    {
+        if ($balance === 0.0) {
+            return 0.0;
+        }
+
+        $magnitude = log1p(abs($balance));
+
+        if ($balance > 0.0) {
+            return $magnitude;
+        }
+
+        return -$magnitude;
     }
 }
