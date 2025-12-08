@@ -19,7 +19,7 @@ class PendingTransactionSum extends BaseWidget
     protected function getStats(): array
     {
         return [
-            Stat::make('Por pagar', as_money(Transaction::where('status', 'pending')->sum('amount')))
+            Stat::make('Por pagar', as_money(Transaction::where('status', 'pending')->where('user_id', auth()->id())->sum('amount')))
                 ->icon('heroicon-o-clock'),
             Stat::make('Cuentas activas', Account::whereNull('deleted_at')->count())
                 ->icon('heroicon-o-building-library'),
