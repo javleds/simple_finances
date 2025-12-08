@@ -2,10 +2,11 @@
 
 namespace App\Filament\Widgets;
 
+use App\Dto\TransactionFormDto;
+use App\Enums\TransactionStatus;
 use App\Filament\Resources\TransactionResource;
-use App\Filament\Resources\TransactionResource\Pages\ListTransactions;
-use App\Models\Account;
-use App\Models\User;
+use App\Models\Transaction;
+use App\Services\Transaction\TransactionUpdater;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
@@ -19,34 +20,51 @@ class PendingTransactionsByAccount extends BaseWidget
     {
         return $table
             ->query(
-                Account::query()
-                    ->whereHas('transactions', function ($query) {
-                        $query->where('status', 'pending')
-                            ->where('user_id', auth()->id());
-                    })
-                    ->withSum(['transactions as pending_payment' => function ($query) {
-                        $query->where('status', 'pending')
-                            ->where('user_id', auth()->id());
-                    }], 'amount')
+                Transaction::query()
+                    ->where('status', TransactionStatus::Pending)
+                    ->where('user_id', auth()->id())
+                    ->with('account', 'subTransactions')
             )
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                Tables\Columns\TextColumn::make('account.name')
                     ->label('Cuenta'),
-                Tables\Columns\TextColumn::make('pending_payment')
-                    ->label('Por pagar')
-                    ->formatStateUsing(fn ($state) => as_money($state))
+                Tables\Columns\TextColumn::make('concept')
+                    ->label('Concepto'),
+                Tables\Columns\TextColumn::make('amount')
+                    ->label('Monto')
+                    ->formatStateUsing(fn (float $state) => as_money($state))
                     ->alignRight(),
             ])
             ->actions([
-                Tables\Actions\Action::make('view_transactions')
-                    ->label('Ver transacciones')
-                    ->url(fn (Account $record) => TransactionResource::getUrl('index', [
-                        'filters' => [
-                            'account_id' => $record->id,
-                            'status' => 'pending',
-                        ],
-                    ]))
-                    ->openUrlInNewTab(),
+                Tables\Actions\Action::make('mark_completed')
+                    ->label('')
+                    ->icon('heroicon-o-check-badge')
+                    ->requiresConfirmation('¿Estás seguro de que deseas marcar esta transacción como completada?')
+                    ->visible(fn (Transaction $record) => $record->status === TransactionStatus::Pending && $record->user_id === auth()->id())
+                    ->action(function (Transaction $record) {
+                        $subTransactions = $record->subTransactions()->get();
+                        $userPayments = $subTransactions->map(function (Transaction $sub) {
+                            $percentage = $sub->percentage ?? 0.0;
+
+                            return [
+                                'user_id' => $sub->user_id,
+                                'percentage' => $percentage,
+                            ];
+                        })->toArray();
+
+                        app(TransactionUpdater::class)->execute($record, TransactionFormDto::fromFormArray([
+                            'id' => $record->id,
+                            'type' => $record->type,
+                            'status' => TransactionStatus::Completed,
+                            'concept' => $record->concept,
+                            'amount' => $record->amount,
+                            'account_id' => $record->account_id,
+                            'split_between_users' => $subTransactions->isNotEmpty(),
+                            'user_payments' => $userPayments,
+                            'scheduled_at' => $record->scheduled_at,
+                            'financial_goal_id' => $record->financial_goal_id,
+                        ]));
+                    }),
             ])
             ->headerActions([
                 Action::make('view_all_pending')
