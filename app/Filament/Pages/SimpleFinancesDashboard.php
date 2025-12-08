@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Filament\Resources\AccountResource;
 use App\Filament\Resources\SubscriptionResource;
 use App\Filament\Resources\TransactionResource;
+use App\Filament\Widgets\AccountBalancePlot;
 use App\Filament\Widgets\PendingTransactionSum;
 use App\Filament\Widgets\PendingTransactionsByAccount;
 use App\Filament\Widgets\SubscriptionMonthlyProjection;
@@ -20,9 +21,10 @@ class SimpleFinancesDashboard extends Dashboard
     public function getWidgets(): array
     {
         return [
-            SubscriptionMonthlyProjection::class,
+            AccountBalancePlot::class,
             PendingTransactionSum::class,
             PendingTransactionsByAccount::class,
+            SubscriptionMonthlyProjection::class,
         ];
     }
 
@@ -30,6 +32,7 @@ class SimpleFinancesDashboard extends Dashboard
     {
         return [
             'sm' => 1,
+            'lg' => 1,
         ];
     }
 
