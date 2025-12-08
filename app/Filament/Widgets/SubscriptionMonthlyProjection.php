@@ -21,8 +21,7 @@ class SubscriptionMonthlyProjection extends BaseWidget
 
         return [
             Stat::make('Gasto anual en suscripciones', as_money($yearlyAmount)),
-            Stat::make('Gasto mensual en suscripciones', as_money($monthlyAmount)),
-            Stat::make('Ahorro quincenal en suscripciones', as_money($monthlyAmount / 2)),
+            Stat::make('Ahorro quincenal sigerido para subs', as_money($monthlyAmount / 2)),
         ];
     }
 
