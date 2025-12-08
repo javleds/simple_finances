@@ -42,15 +42,18 @@ class SimpleFinancesDashboard extends Dashboard
             Action::make('go_to_subscriptions')
                 ->label('Ir a subscricpiones')
                 ->icon('heroicon-o-calendar-date-range')
-                ->url(fn () => SubscriptionResource::getUrl()),
+                ->url(fn () => SubscriptionResource::getUrl())
+                ->outlined(),
             Action::make('go_to_accounts')
                 ->label('Ir a cuentas')
                 ->icon('heroicon-o-credit-card')
-                ->url(fn () => AccountResource::getUrl()),
+                ->url(fn () => AccountResource::getUrl())
+                ->outlined(),
             Action::make('go_to_transactions')
                 ->label('Ir a transacciones')
                 ->icon('heroicon-o-banknotes')
-                ->url(fn () => TransactionResource::getUrl()),
+                ->url(fn () => TransactionResource::getUrl())
+                ->outlined(),
         ];
     }
 }
