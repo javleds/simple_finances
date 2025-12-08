@@ -36,7 +36,6 @@ class AccountBalancePlot extends ChartWidget
                 'backgroundColor' => $palette[$index % $paletteSize]['background'],
                 'borderColor' => $palette[$index % $paletteSize]['border'],
                 'borderWidth' => 2,
-                'barThickness' => 22,
             ];
         }
 
@@ -49,33 +48,52 @@ class AccountBalancePlot extends ChartWidget
     protected function getOptions(): RawJs
     {
         return RawJs::make(<<<JS
-            {
-                scales: {
-                    y: {
-                        type: 'linear',
-                        ticks: {
-                            callback: (value) => {
-                                const restored = Math.sign(value) * Math.expm1(Math.abs(value));
-                                return '$' + restored.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            (() => {
+                const isMobile = matchMedia('(max-width: 640px)').matches;
+
+                return {
+                    scales: {
+                        x: {
+                            ticks: {
+                                display: !isMobile,
+                            },
+                            grid: {
+                                display: !isMobile,
+                            },
+                        },
+                        y: {
+                            type: 'linear',
+                            ticks: {
+                                display: !isMobile,
+                                callback: (value) => {
+                                    const restored = Math.sign(value) * Math.expm1(Math.abs(value));
+                                    return '$' + restored.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                },
                             },
                         },
                     },
-                },
-                plugins: {
-                    annotation: {
-                        annotations: {
-                            line1: {
-                                type: 'line',
-                                yMin: 0,
-                                yMax: 0,
-                                borderColor: 'rgba(255, 99, 132, 0.8)',
-                                borderWidth: 2,
-                                borderDash: [6, 6],
+                    datasets: {
+                        bar: {
+                            categoryPercentage: isMobile ? 1 : 0.9,
+                            barPercentage: isMobile ? 1 : 0.9,
+                        },
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    yMin: 0,
+                                    yMax: 0,
+                                    borderColor: 'rgba(255, 99, 132, 0.8)',
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                }
                             }
                         }
                     }
-                }
-            }
+                };
+            })()
         JS);
     }
 
