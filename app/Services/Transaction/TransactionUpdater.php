@@ -45,6 +45,8 @@ class TransactionUpdater
                 $transaction->subTransactions()->where('status', TransactionStatus::Pending)->delete();
                 $transaction->subTransactions()->where('status', TransactionStatus::Completed)->update(['parent_transaction_id' => null]);
 
+                $this->dispatcher->dispatch(new TransactionSaved($transaction, Action::Updated));
+
                 return $transaction;
             }
 
@@ -52,6 +54,8 @@ class TransactionUpdater
 
             if ($dto->type === TransactionType::Outcome && $dto->userPayments !== [] && $subTransactions->isEmpty()) {
                 $this->createSubTransactions($transaction, $dto);
+
+                $this->dispatcher->dispatch(new TransactionSaved($transaction, Action::Updated));
 
                 return $transaction;
             }

@@ -29,7 +29,11 @@ class TransactionCreator
         }
 
         if ($dto->type !== TransactionType::Outcome || count($dto->userPayments) === 0) {
-            return $this->createSingleTransaction($dto);
+            $transaction = $this->createSingleTransaction($dto);
+
+            $this->dispatcher->dispatch(new TransactionSaved($transaction, Action::Created));
+
+            return $transaction;
         }
 
         $transaction = DB::transaction(fn () => $this->createSplitTransactions($dto));
