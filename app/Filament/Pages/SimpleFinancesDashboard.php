@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Widgets\SubscriptionMonthlyProjection;
 use Filament\Pages\Dashboard;
 use Filament\Pages\Page;
 
@@ -11,5 +12,10 @@ class SimpleFinancesDashboard extends Dashboard
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static string $view = 'filament.pages.simple-finances-dashboard';
+    public function getWidgets(): array
+    {
+        return [
+            SubscriptionMonthlyProjection::class,
+        ];
+    }
 }
