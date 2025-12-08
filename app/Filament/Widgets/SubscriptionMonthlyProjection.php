@@ -8,6 +8,13 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class SubscriptionMonthlyProjection extends BaseWidget
 {
+    protected ?string $heading = 'Subscripciones';
+
+    protected int | string | array $columnSpan = [
+        'sm' => 1,
+        'lg' => 1,
+    ];
+
     protected function getStats(): array
     {
         $subscriptions = Subscription::whereNull('finished_at')->get();
@@ -20,8 +27,12 @@ class SubscriptionMonthlyProjection extends BaseWidget
         );
 
         return [
-            Stat::make('Gasto anual en suscripciones', as_money($yearlyAmount)),
-            Stat::make('Ahorro quincenal sigerido para subs', as_money($monthlyAmount / 2)),
+            Stat::make('Ahorro mensual recomendado', as_money($monthlyAmount))
+                ->icon('heroicon-o-banknotes'),
+            Stat::make('Ahorro quincenal recomendado', as_money($monthlyAmount / 2))
+                ->icon('heroicon-o-currency-dollar'),
+            Stat::make('Gasto anual en suscripciones', as_money($yearlyAmount))
+                ->icon('heroicon-o-calendar-days'),
         ];
     }
 

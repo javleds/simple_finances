@@ -14,22 +14,36 @@ use Filament\Widgets\TableWidget as BaseWidget;
 
 class PendingTransactionsByAccount extends BaseWidget
 {
-    protected static ?string $heading = 'Transacciones pendientes';
+    protected static ?string $heading = 'Pendientes por cuenta';
+
+    protected int | string | array $columnSpan = [
+        'sm' => 1,
+        'lg' => 1,
+    ];
 
     public function table(Table $table): Table
     {
         return $table
+            ->defaultSort('scheduled_at')
             ->query(
                 Transaction::query()
                     ->where('status', TransactionStatus::Pending)
                     ->where('user_id', auth()->id())
                     ->with('account', 'subTransactions')
             )
+            ->groups([
+                Tables\Grouping\Group::make('account.name')->label('Cuenta'),
+            ])
+            ->defaultGroup('account.name')
             ->columns([
                 Tables\Columns\TextColumn::make('account.name')
-                    ->label('Cuenta'),
+                    ->label('Cuenta')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('concept')
                     ->label('Concepto'),
+                Tables\Columns\TextColumn::make('scheduled_at')
+                    ->label('Fecha')
+                    ->date('M d, Y'),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Monto')
                     ->formatStateUsing(fn (float $state) => as_money($state))
@@ -69,7 +83,18 @@ class PendingTransactionsByAccount extends BaseWidget
             ->headerActions([
                 Action::make('view_all_pending')
                     ->label('Ver transacciones')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->color('primary')
                     ->url(TransactionResource::getUrl())
+                    ->openUrlInNewTab(),
             ]);
+    }
+
+    private function getPendingTotal(): float
+    {
+        return Transaction::query()
+            ->where('status', TransactionStatus::Pending)
+            ->where('user_id', auth()->id())
+            ->sum('amount');
     }
 }
