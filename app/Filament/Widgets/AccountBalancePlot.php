@@ -49,34 +49,27 @@ class AccountBalancePlot extends ChartWidget
     {
         return RawJs::make(<<<JS
             {
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: '#e5e7eb',
-                        },
-                    },
-                },
                 scales: {
                     y: {
                         ticks: {
-                            color: '#e5e7eb',
                             callback: (value) => '$' + value.toLocaleString(),
                         },
-                        grid: {
-                            color: '#374151',
-                        },
-                    },
-                    x: {
-                        ticks: {
-                            color: '#e5e7eb',
-                            autoSkip: false,
-                        },
-                        grid: {
-                            color: '#1f2937',
-                        },
-                        stacked: true,
                     },
                 },
+                plugins: {
+                    annotation: {
+                        annotations: {
+                            line1: {
+                                type: 'line',
+                                yMin: 0,
+                                yMax: 0,
+                                borderColor: 'rgba(255, 99, 132, 0.8)',
+                                borderWidth: 2,
+                                borderDash: [6, 6],
+                            }
+                        }
+                    }
+                }
             }
         JS);
     }
