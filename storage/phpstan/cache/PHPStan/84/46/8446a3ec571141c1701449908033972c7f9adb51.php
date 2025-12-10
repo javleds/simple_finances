@@ -1,0 +1,7 @@
+<?php declare(strict_types = 1);
+
+// variadic-method-App\Contracts\TelegramServiceInterface-sendMessage-/Users/javleds/dev/javleds/simple_finances/app/Contracts/TelegramServiceInterface.php
+return \PHPStan\Cache\CacheItem::__set_state(array(
+   'variableKey' => '1765163687-v4',
+   'data' => false,
+));
