@@ -58,6 +58,7 @@
         ],
         "stan": "phpstan analyse --memory-limit=512M",
         "stan:baseline": "phpstan analyse --memory-limit=512M --generate-baseline=phpstan-baseline.neon",
+        "pint": "pint",
         "format": "php-cs-fixer fix",
         "format:check": "php-cs-fixer fix --dry-run --diff"
     },
