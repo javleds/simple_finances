@@ -39,12 +39,12 @@ class DateRangeFilter
                 $indicators = [];
 
                 if ($data['from'] ?? null) {
-                    $indicators[] = Indicator::make($label . ' Desde ' . Carbon::parse($data['from'])->toFormattedDateString())
+                    $indicators[] = Indicator::make($label.' Desde '.Carbon::parse($data['from'])->toFormattedDateString())
                         ->removeField('from');
                 }
 
                 if ($data['until'] ?? null) {
-                    $indicators[] = Indicator::make($label . ' Hasta ' . Carbon::parse($data['until'])->toFormattedDateString())
+                    $indicators[] = Indicator::make($label.' Hasta '.Carbon::parse($data['until'])->toFormattedDateString())
                         ->removeField('until');
                 }
 

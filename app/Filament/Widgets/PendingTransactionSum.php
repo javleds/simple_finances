@@ -9,7 +9,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class PendingTransactionSum extends BaseWidget
 {
-    protected int | string | array $columnSpan = [
+    protected int|string|array $columnSpan = [
         'sm' => 1,
         'lg' => 1,
     ];

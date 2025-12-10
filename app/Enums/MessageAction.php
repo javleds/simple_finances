@@ -12,7 +12,7 @@ enum MessageAction: string
 
     public function getLabel(): string
     {
-        return match($this) {
+        return match ($this) {
             self::CreateTransaction => 'Crear transacción',
             self::QueryBalance => 'Consultar balance',
             self::QueryRecentTransactions => 'Consultar movimientos recientes',
@@ -23,7 +23,7 @@ enum MessageAction: string
 
     public function getDescription(): string
     {
-        return match($this) {
+        return match ($this) {
             self::CreateTransaction => 'El usuario quiere crear una nueva transacción',
             self::QueryBalance => 'El usuario quiere consultar el balance de una cuenta',
             self::QueryRecentTransactions => 'El usuario quiere ver los últimos movimientos de una cuenta',

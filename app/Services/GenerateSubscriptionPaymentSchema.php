@@ -44,7 +44,7 @@ class GenerateSubscriptionPaymentSchema
                 continue;
             }
 
-            if ($lastPayment !== null && !$startDate->isAfter($lastPayment->scheduled_at)) {
+            if ($lastPayment !== null && ! $startDate->isAfter($lastPayment->scheduled_at)) {
                 $startDate->add($subscription->getAddFrequency());
 
                 continue;
@@ -67,16 +67,16 @@ class GenerateSubscriptionPaymentSchema
 
         SubscriptionPayment::insert($dates);
 
-//        $payments = DB::select(
-//            'SELECT sp.scheduled_at, COUNT(*) total, GROUP_CONCAT(sp.id) ids FROM subscription_payments sp WHERE sp.subscription_id = ? HAVING total > 1',
-//            [$subscription->id]
-//        );
-//
-//        $deletableI = [];
-//        foreach ($payments as $payment) {
-//            $payment['scheduled_at'];
-//            $total = $payment['total'];
-//            $ids = explode(',', $payment['ids']);
-//        }
+        //        $payments = DB::select(
+        //            'SELECT sp.scheduled_at, COUNT(*) total, GROUP_CONCAT(sp.id) ids FROM subscription_payments sp WHERE sp.subscription_id = ? HAVING total > 1',
+        //            [$subscription->id]
+        //        );
+        //
+        //        $deletableI = [];
+        //        foreach ($payments as $payment) {
+        //            $payment['scheduled_at'];
+        //            $total = $payment['total'];
+        //            $ids = explode(',', $payment['ids']);
+        //        }
     }
 }

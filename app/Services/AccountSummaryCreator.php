@@ -32,7 +32,7 @@ class AccountSummaryCreator
             return null;
         }
 
-        if (!file_exists(storage_path('app/temp'))) {
+        if (! file_exists(storage_path('app/temp'))) {
             mkdir(storage_path('app/temp'));
         }
 

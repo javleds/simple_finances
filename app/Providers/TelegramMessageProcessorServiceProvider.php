@@ -4,10 +4,10 @@ namespace App\Providers;
 
 use App\Contracts\TelegramMessageProcessorInterface;
 use App\Services\Telegram\TelegramFileService;
-use App\Services\Telegram\TelegramMessageProcessorFactory;
 use App\Services\Telegram\TelegramMessageProcessingService;
-use Illuminate\Support\ServiceProvider;
+use App\Services\Telegram\TelegramMessageProcessorFactory;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\ServiceProvider;
 use ReflectionClass;
 
 class TelegramMessageProcessorServiceProvider extends ServiceProvider
@@ -17,7 +17,7 @@ class TelegramMessageProcessorServiceProvider extends ServiceProvider
         $this->app->singleton(TelegramFileService::class);
 
         $this->app->singleton(TelegramMessageProcessorFactory::class, function ($app) {
-            $factory = new TelegramMessageProcessorFactory();
+            $factory = new TelegramMessageProcessorFactory;
 
             $this->registerProcessors($factory);
 
@@ -31,7 +31,7 @@ class TelegramMessageProcessorServiceProvider extends ServiceProvider
     {
         $processorsPath = app_path('Services/Telegram/Processors');
 
-        if (!File::exists($processorsPath)) {
+        if (! File::exists($processorsPath)) {
             return;
         }
 
@@ -50,19 +50,20 @@ class TelegramMessageProcessorServiceProvider extends ServiceProvider
     private function getClassNameFromFile(\SplFileInfo $file): string
     {
         $filename = pathinfo($file->getFilename(), PATHINFO_FILENAME);
+
         return "App\\Services\\Telegram\\Processors\\{$filename}";
     }
 
     private function isValidProcessor(string $className): bool
     {
-        if (!class_exists($className)) {
+        if (! class_exists($className)) {
             return false;
         }
 
         $reflection = new ReflectionClass($className);
 
         return $reflection->implementsInterface(TelegramMessageProcessorInterface::class)
-            && !$reflection->isAbstract();
+            && ! $reflection->isAbstract();
     }
 
     public function boot(): void

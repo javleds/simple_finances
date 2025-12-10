@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\SubscriptionResource\RelationManagers;
 
-use App\Enums\TransactionStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\Subscription;
@@ -18,13 +18,14 @@ use Filament\Support\Colors\Color;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Carbon;
 
 class PaymentsRelationManager extends RelationManager
 {
     protected static string $relationship = 'payments';
+
     protected static ?string $title = 'Esquema de pagos';
+
     protected static ?string $modelLabel = 'Pago';
 
     public function getTabs(): array
@@ -65,7 +66,7 @@ class PaymentsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-//                Tables\Actions\CreateAction::make(),
+                //                Tables\Actions\CreateAction::make(),
                 Tables\Actions\Action::make('make_payments')
                     ->label('Generar pagos')
                     ->form([
@@ -94,25 +95,25 @@ class PaymentsRelationManager extends RelationManager
                                 ->closeOnDateSelection()
                                 ->suffixIcon('heroicon-o-calendar')
                                 ->minDate(fn () => $this->getOwnerRecord()->started_at),
-                        ])->columns()
+                        ])->columns(),
                     ])
-                ->action(function(GenerateSubscriptionPaymentSchema $paymentSchema, array $data) {
-                    $paymentSchema->handle(
-                        $this->getOwnerRecord(),
-                        Carbon::make($data['from']),
-                        Carbon::make($data['to'])
-                    );
+                    ->action(function (GenerateSubscriptionPaymentSchema $paymentSchema, array $data) {
+                        $paymentSchema->handle(
+                            $this->getOwnerRecord(),
+                            Carbon::make($data['from']),
+                            Carbon::make($data['to'])
+                        );
 
-                    /** @var Subscription $subscription */
-                    $subscription = $this->getOwnerRecord();
-                    $subscription->next_payment_date = $subscription->payments()->where('status', PaymentStatus::Pending)->first()?->scheduled_at;
-                    $subscription->save();
+                        /** @var Subscription $subscription */
+                        $subscription = $this->getOwnerRecord();
+                        $subscription->next_payment_date = $subscription->payments()->where('status', PaymentStatus::Pending)->first()?->scheduled_at;
+                        $subscription->save();
 
-                    Notification::make('payments_created')
-                        ->success()
-                        ->title('Esquema de pagos generado.')
-                        ->send();
-                })
+                        Notification::make('payments_created')
+                            ->success()
+                            ->title('Esquema de pagos generado.')
+                            ->send();
+                    }),
             ])
             ->actions([
                 Tables\Actions\Action::make('pay')
@@ -122,7 +123,7 @@ class PaymentsRelationManager extends RelationManager
                     ->form([
                         Forms\Components\Select::make('account_id')
                             ->options(fn () => Account::all()->pluck('name', 'id'))
-                            ->default(fn () => $this->getOwnerRecord()->feed_account_id)
+                            ->default(fn () => $this->getOwnerRecord()->feed_account_id),
                     ])
                     ->action(function (array $data, SubscriptionPayment $record) {
                         $record->status = PaymentStatus::Paid;
@@ -145,7 +146,7 @@ class PaymentsRelationManager extends RelationManager
 
                         $account = Account::find($data['account_id']);
 
-                        if (!$account) {
+                        if (! $account) {
                             return;
                         }
 

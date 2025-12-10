@@ -14,20 +14,20 @@ readonly class Respond
     ) {}
 
     public function execute(AccountInvite $invite, InviteStatus $status): AccountInvite
-        {
-            $invite->update([
-                'status' => $status,
+    {
+        $invite->update([
+            'status' => $status,
+        ]);
+
+        Account::withoutGlobalScopes()
+            ->find($invite->account_id)->users()
+            ->attach(auth()->id(), [
+                'percentage' => $invite->percentage,
             ]);
 
-            Account::withoutGlobalScopes()
-                ->find($invite->account_id)->users()
-                ->attach(auth()->id(), [
-                    'percentage' => $invite->percentage,
-                ]);
+        $this->notifyOnInteract->execute($invite);
+        $this->enableNotificationForInvitation->execute($invite);
 
-            $this->notifyOnInteract->execute($invite);
-            $this->enableNotificationForInvitation->execute($invite);
-
-            return $invite;
-        }
+        return $invite;
+    }
 }

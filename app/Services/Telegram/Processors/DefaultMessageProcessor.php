@@ -14,7 +14,7 @@ class DefaultMessageProcessor implements TelegramMessageProcessorInterface
 
     public function canHandle(array $telegramUpdate): bool
     {
-        return !empty(data_get($telegramUpdate, 'message'));
+        return ! empty(data_get($telegramUpdate, 'message'));
     }
 
     public function process(array $telegramUpdate): string

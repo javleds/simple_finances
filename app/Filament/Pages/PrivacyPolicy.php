@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Providers\Filament\AdminPanelProvider;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;

@@ -6,8 +6,6 @@ use App\Events\TransactionSaved;
 use App\Models\NotificationType;
 use App\Models\User;
 use App\Notifications\SharedTransactionChangedEmail;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 
@@ -38,11 +36,11 @@ class NotifyOnSharedAccountSaved
                 continue;
             }
 
-            if (!$user->canReceiveNotification(NotificationType::MOVEMENTS_NOTIFICATION)) {
+            if (! $user->canReceiveNotification(NotificationType::MOVEMENTS_NOTIFICATION)) {
                 continue;
             }
 
-            if (!$user->notificableAccounts()->get()->contains($event->transaction->account)) {
+            if (! $user->notificableAccounts()->get()->contains($event->transaction->account)) {
                 continue;
             }
 

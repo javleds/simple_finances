@@ -22,8 +22,8 @@ class TelegramMessageProcessorFactory
     public function getProcessor(array $telegramUpdate): ?TelegramMessageProcessorInterface
     {
         return $this->processors
-            ->filter(fn(TelegramMessageProcessorInterface $processor) => $processor->canHandle($telegramUpdate))
-            ->sortByDesc(fn(TelegramMessageProcessorInterface $processor) => $processor->getPriority())
+            ->filter(fn (TelegramMessageProcessorInterface $processor) => $processor->canHandle($telegramUpdate))
+            ->sortByDesc(fn (TelegramMessageProcessorInterface $processor) => $processor->getPriority())
             ->first();
     }
 

@@ -84,7 +84,7 @@ class AdminPanelProvider extends PanelProvider
 
         FilamentView::registerRenderHook(
             'panels::body.end',
-            fn(): string => Blade::render("@vite(['resources/js/app.js', 'resources/css/app.css'])")
+            fn (): string => Blade::render("@vite(['resources/js/app.js', 'resources/css/app.css'])")
         );
     }
 }

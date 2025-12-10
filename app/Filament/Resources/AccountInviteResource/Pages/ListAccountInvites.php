@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\AccountInviteResource\Pages;
 
 use App\Filament\Resources\AccountInviteResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListAccountInvites extends ListRecords

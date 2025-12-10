@@ -26,7 +26,7 @@ class DirectCompareAction extends Action
             ->fillForm(function (array $data, Account $record) {
                 $data['origin_id'] = $record->id;
 
-                if (!$record->feed_account_id) {
+                if (! $record->feed_account_id) {
                     return $data;
                 }
 
@@ -67,7 +67,7 @@ class DirectCompareAction extends Action
                                     if ($get('destination_id') === $get('origin_id')) {
                                         $fail('Las cuentas no deben ser iguales.');
                                     }
-                                }
+                                },
                             ])
                             ->live(onBlur: true)
                             ->afterStateUpdated(function (Get $get, Set $set) {
@@ -105,7 +105,7 @@ class DirectCompareAction extends Action
                             ->columnSpanFull()
                             ->readOnly()
                             ->disabled(),
-                    ])
+                    ]),
             ])
             ->action(function (array $data) {});
     }

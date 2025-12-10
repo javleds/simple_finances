@@ -16,12 +16,12 @@ class MessageActionDetectionDto
 
     public function isSuccess(): bool
     {
-        return $this->success && !is_null($this->action);
+        return $this->success && ! is_null($this->action);
     }
 
     public function hasError(): bool
     {
-        return !$this->success || !is_null($this->error);
+        return ! $this->success || ! is_null($this->error);
     }
 
     public function toArray(): array

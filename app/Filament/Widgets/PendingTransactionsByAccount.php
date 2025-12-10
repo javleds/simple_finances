@@ -16,7 +16,7 @@ class PendingTransactionsByAccount extends BaseWidget
 {
     protected static ?string $heading = 'Pendientes por cuenta';
 
-    protected int | string | array $columnSpan = [
+    protected int|string|array $columnSpan = [
         'sm' => 1,
         'lg' => 1,
     ];

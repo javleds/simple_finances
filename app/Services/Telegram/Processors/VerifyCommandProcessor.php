@@ -42,7 +42,7 @@ class VerifyCommandProcessor implements TelegramMessageProcessorInterface
             // Verificar código
             $user = $this->verificationService->verifyCode($code, $chatId);
 
-            if (!$user) {
+            if (! $user) {
                 return $this->getInvalidCodeMessage($userName, $code);
             }
 
@@ -63,25 +63,25 @@ class VerifyCommandProcessor implements TelegramMessageProcessorInterface
 
     private function getUsageMessage(string $userName): string
     {
-        return "¡Hola {$userName}! Para verificar tu código, usa:\n\n" .
-               "`/verify 123456`\n\n" .
-               "Donde `123456` es tu código de verificación de 6 dígitos.\n\n" .
-               "💡 También puedes enviar solo el código: `123456`";
+        return "¡Hola {$userName}! Para verificar tu código, usa:\n\n".
+               "`/verify 123456`\n\n".
+               "Donde `123456` es tu código de verificación de 6 dígitos.\n\n".
+               '💡 También puedes enviar solo el código: `123456`';
     }
 
     private function getInvalidCodeMessage(string $userName, string $code): string
     {
-        return "¡Hola {$userName}! El código `{$code}` no es válido o ha expirado.\n\n" .
-               "✅ Verifica que el código sea correcto\n" .
-               "🔄 Genera uno nuevo desde tu perfil si es necesario\n" .
-               "⏰ Los códigos expiran en 10 minutos";
+        return "¡Hola {$userName}! El código `{$code}` no es válido o ha expirado.\n\n".
+               "✅ Verifica que el código sea correcto\n".
+               "🔄 Genera uno nuevo desde tu perfil si es necesario\n".
+               '⏰ Los códigos expiran en 10 minutos';
     }
 
     private function getSuccessMessage(string $userName): string
     {
-        return "🎉 ¡Perfecto {$userName}!\n\n" .
-               "✅ Tu cuenta ha sido vinculada exitosamente con Telegram\n" .
-               "🔔 Ahora recibirás notificaciones de tus finanzas directamente aquí\n" .
-               "💰 ¡Bienvenido a Simple Finances!";
+        return "🎉 ¡Perfecto {$userName}!\n\n".
+               "✅ Tu cuenta ha sido vinculada exitosamente con Telegram\n".
+               "🔔 Ahora recibirás notificaciones de tus finanzas directamente aquí\n".
+               '💰 ¡Bienvenido a Simple Finances!';
     }
 }

@@ -4,8 +4,6 @@ namespace App\Services\Telegram\Helpers;
 
 use App\Models\Account;
 use App\Models\Transaction;
-use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class MessageActionHelper
@@ -55,8 +53,8 @@ class MessageActionHelper
 
     public static function formatNoAccountFoundResponse(string $accountName): string
     {
-        return "❌ No encontré una cuenta con el nombre **{$accountName}**.\n\n" .
-               "💡 Tip: Revisa el nombre de la cuenta o usa /cuentas para ver todas tus cuentas disponibles.";
+        return "❌ No encontré una cuenta con el nombre **{$accountName}**.\n\n".
+               '💡 Tip: Revisa el nombre de la cuenta o usa /cuentas para ver todas tus cuentas disponibles.';
     }
 
     public static function formatErrorResponse(string $operation): string
@@ -69,15 +67,15 @@ class MessageActionHelper
         $message = "✅ **Transacción modificada exitosamente**\n\n";
         $message .= "📊 **Nueva información:**\n";
         $message .= "💼 Concepto: {$transaction->concept}\n";
-        $message .= "💰 Cantidad: " . as_money($transaction->amount) . "\n";
+        $message .= '💰 Cantidad: '.as_money($transaction->amount)."\n";
         $message .= "📝 Tipo: {$transaction->type->getLabel()}\n";
         $message .= "📅 Fecha: {$transaction->scheduled_at->format('d/m/Y')}\n";
         $message .= "🏦 Cuenta: {$transaction->account->name}\n";
 
-        if (!empty($changes)) {
+        if (! empty($changes)) {
             $message .= "\n🔄 **Cambios realizados:**\n";
             foreach ($changes as $field => $value) {
-                $message .= "• " . ucfirst($field) . ": {$value}\n";
+                $message .= '• '.ucfirst($field).": {$value}\n";
             }
         }
 
@@ -86,15 +84,15 @@ class MessageActionHelper
 
     public static function formatTransactionDeletionResponse(Transaction $transaction): string
     {
-        return "🗑️ **Transacción eliminada exitosamente**\n\n" .
-               "📊 Se eliminó: {$transaction->concept}\n" .
-               "💰 Cantidad: " . as_money($transaction->amount) . "\n" .
-               "🏦 Cuenta: {$transaction->account->name}\n" .
+        return "🗑️ **Transacción eliminada exitosamente**\n\n".
+               "📊 Se eliminó: {$transaction->concept}\n".
+               '💰 Cantidad: '.as_money($transaction->amount)."\n".
+               "🏦 Cuenta: {$transaction->account->name}\n".
                "📅 Fecha: {$transaction->scheduled_at->format('d/m/Y')}";
     }
 
     public static function formatNoLastTransactionResponse(): string
     {
-        return "❌ No encontré ninguna transacción reciente tuya para modificar o eliminar.";
+        return '❌ No encontré ninguna transacción reciente tuya para modificar o eliminar.';
     }
 }

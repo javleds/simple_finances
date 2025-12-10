@@ -7,7 +7,7 @@ use Filament\Support\Colors\Color;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum PaymentStatus: string implements HasLabel, HasColor
+enum PaymentStatus: string implements HasColor, HasLabel
 {
     use EnumToArray;
 

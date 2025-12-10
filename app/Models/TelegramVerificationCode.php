@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -35,7 +34,7 @@ class TelegramVerificationCode extends Model
     public function scopeValid(Builder $query): Builder
     {
         return $query->whereNull('used_at')
-                    ->where('expires_at', '>', now());
+            ->where('expires_at', '>', now());
     }
 
     public function scopeExpired(Builder $query): Builder
@@ -60,7 +59,7 @@ class TelegramVerificationCode extends Model
 
     public function isUsed(): bool
     {
-        return !is_null($this->used_at);
+        return ! is_null($this->used_at);
     }
 
     public function markAsUsed(): void

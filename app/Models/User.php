@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable implements MustVerifyEmail, FilamentUser
+class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
     use HasFactory, Notifiable;
 
@@ -73,12 +73,12 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 
     public function hasTelegramLinked(): bool
     {
-        return !empty($this->telegram_chat_id);
+        return ! empty($this->telegram_chat_id);
     }
 
     public function getTelegramUsername(): ?string
     {
-        return $this->telegram_chat_id ? '@' . $this->name : null;
+        return $this->telegram_chat_id ? '@'.$this->name : null;
     }
 
     public function canAccessPanel(Panel $panel): bool

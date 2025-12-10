@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Account;
 use Illuminate\Console\Command;
+
 use function Laravel\Prompts\progress;
 
 class MigrateAccountsToManyToMany extends Command

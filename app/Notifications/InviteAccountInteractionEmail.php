@@ -6,7 +6,6 @@ use App\Models\Account;
 use App\Models\AccountInvite;
 use Filament\Facades\Filament;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 

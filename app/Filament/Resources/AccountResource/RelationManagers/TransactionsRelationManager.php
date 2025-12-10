@@ -6,7 +6,6 @@ use App\Dto\TransactionFormDto;
 use App\Dto\UserPaymentDto;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
-use App\Events\BulkTransactionSaved;
 use App\Filament\Actions\DeferredTransactionAction;
 use App\Filament\Exports\TransactionExporter;
 use App\Filament\Filters\DateRangeFilter;
@@ -27,15 +26,14 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Livewire\Component;
-use MailerSend\Helpers\Arr;
 
 class TransactionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'transactions';
 
     protected static ?string $title = 'Transacciones';
+
     protected static ?string $label = 'Transacción';
 
     public function isReadOnly(): bool
@@ -48,7 +46,7 @@ class TransactionsRelationManager extends RelationManager
         /** @var Account $account */
         $account = $this->getOwnerRecord();
 
-        if (!$account->isCreditCard()) {
+        if (! $account->isCreditCard()) {
             return [];
         }
 
@@ -98,7 +96,7 @@ class TransactionsRelationManager extends RelationManager
 
                         $account = $this->getOwnerRecord();
 
-                        if (!$account) {
+                        if (! $account) {
                             return true;
                         }
 
@@ -108,7 +106,7 @@ class TransactionsRelationManager extends RelationManager
                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
                         $account = $this->getOwnerRecord();
 
-                        if (!$account) {
+                        if (! $account) {
                             return $set('user_payments', []);
                         }
 
@@ -121,12 +119,12 @@ class TransactionsRelationManager extends RelationManager
                         })->toArray());
                     }),
                 Forms\Components\Repeater::make('user_payments')
-                    ->hidden(fn (Forms\Get $get) => !$get('split_between_users'))
+                    ->hidden(fn (Forms\Get $get) => ! $get('split_between_users'))
                     ->label('Usuarios')
                     ->rules([
                         function (Forms\Get $get) {
                             return function (string $attribute, $value, \Closure $fail) use ($get) {
-                                if (!$get('split_between_users')) {
+                                if (! $get('split_between_users')) {
                                     return;
                                 }
 
@@ -164,7 +162,7 @@ class TransactionsRelationManager extends RelationManager
                     ->maxItems(function () {
                         $account = $this->getOwnerRecord();
 
-                        if (!$account) {
+                        if (! $account) {
                             return 0;
                         }
 
@@ -173,7 +171,7 @@ class TransactionsRelationManager extends RelationManager
                     ->minItems(function () {
                         $account = $this->getOwnerRecord();
 
-                        if (!$account) {
+                        if (! $account) {
                             return 0;
                         }
 

@@ -34,7 +34,7 @@ class DocumentMessageProcessor implements TelegramMessageProcessorInterface
         try {
             $fileInfo = $this->fileService->getFileFromDocument($documentData);
 
-            if (!$fileInfo) {
+            if (! $fileInfo) {
                 return "{$baseMessage} He recibido tu documento correctamente.";
             }
 
@@ -45,15 +45,18 @@ class DocumentMessageProcessor implements TelegramMessageProcessorInterface
 
                 if ($downloadResult) {
                     TelegramMessageHelper::logFileProcessed('document', $fileInfo, $userName, $downloadResult);
+
                     return "{$baseMessage} Tamaño: {$fileSize}. El documento ha sido guardado correctamente.";
                 }
             }
 
             TelegramMessageHelper::logFileProcessed('document', $fileInfo, $userName);
+
             return "{$baseMessage} Tamaño: {$fileSize}. He recibido tu documento correctamente.";
 
         } catch (\Exception $e) {
             TelegramMessageHelper::logFileError('document', $e, $userName, ['document_data' => $documentData]);
+
             return "{$baseMessage} He recibido tu documento correctamente.";
         }
     }

@@ -20,7 +20,7 @@ class TelegramUserHelper
     {
         $chatId = self::getChatId($telegramUpdate);
 
-        if (!$chatId) {
+        if (! $chatId) {
             return null;
         }
 
@@ -29,6 +29,6 @@ class TelegramUserHelper
 
     public static function isUserAuthenticated(array $telegramUpdate): bool
     {
-        return !is_null(self::getAuthenticatedUser($telegramUpdate));
+        return ! is_null(self::getAuthenticatedUser($telegramUpdate));
     }
 }

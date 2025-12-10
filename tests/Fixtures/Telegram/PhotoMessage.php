@@ -16,14 +16,14 @@ class PhotoMessage
                     'first_name' => 'John',
                     'last_name' => 'Doe',
                     'username' => 'johndoe',
-                    'language_code' => 'es'
+                    'language_code' => 'es',
                 ],
                 'chat' => [
                     'id' => 123456789,
                     'first_name' => 'John',
                     'last_name' => 'Doe',
                     'username' => 'johndoe',
-                    'type' => 'private'
+                    'type' => 'private',
                 ],
                 'date' => 1640995320,
                 'photo' => [
@@ -32,31 +32,31 @@ class PhotoMessage
                         'file_unique_id' => 'AQADAQtrG310mEZ4',
                         'file_size' => 1060,
                         'width' => 90,
-                        'height' => 67
+                        'height' => 67,
                     ],
                     [
                         'file_id' => 'AgACAgEAAxkBAAMHaNJFVl4Il_wnCUOrMjNtwMDHzgwAAgELaxt9dJhGIeM8sa_a0NUBAAMCAANtAAM2BA',
                         'file_unique_id' => 'AQADAQtrG310mEZy',
                         'file_size' => 16755,
                         'width' => 320,
-                        'height' => 240
+                        'height' => 240,
                     ],
                     [
                         'file_id' => 'AgACAgEAAxkBAAMHaNJFVl4Il_wnCUOrMjNtwMDHzgwAAgELaxt9dJhGIeM8sa_a0NUBAAMCAAN4AAM2BA',
                         'file_unique_id' => 'AQADAQtrG310mEZ9',
                         'file_size' => 94578,
                         'width' => 800,
-                        'height' => 600
+                        'height' => 600,
                     ],
                     [
                         'file_id' => 'AgACAgEAAxkBAAMHaNJFVl4Il_wnCUOrMjNtwMDHzgwAAgELaxt9dJhGIeM8sa_a0NUBAAMCAAN5AAM2BA',
                         'file_unique_id' => 'AQADAQtrG310mEZ-',
                         'file_size' => 135116,
                         'width' => 1280,
-                        'height' => 960
-                    ]
-                ]
-            ]
+                        'height' => 960,
+                    ],
+                ],
+            ],
         ];
     }
 }

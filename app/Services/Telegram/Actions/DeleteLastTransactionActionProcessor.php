@@ -31,20 +31,20 @@ class DeleteLastTransactionActionProcessor implements MessageActionProcessorInte
             // Obtener la última transacción del usuario
             $lastTransaction = $this->lastTransactionService->getLastUserTransaction($user);
 
-            if (!$lastTransaction) {
+            if (! $lastTransaction) {
                 return MessageActionHelper::formatNoLastTransactionResponse();
             }
 
             // Verificar permisos
-            if (!$this->lastTransactionService->canModifyTransaction($lastTransaction, $user)) {
-                return "❌ No tienes permisos para eliminar esta transacción.";
+            if (! $this->lastTransactionService->canModifyTransaction($lastTransaction, $user)) {
+                return '❌ No tienes permisos para eliminar esta transacción.';
             }
 
             // Procesar la eliminación
             $success = $this->lastTransactionService->deleteTransaction($lastTransaction, $user);
 
-            if (!$success) {
-                return "❌ No se pudo eliminar la transacción. Por favor, inténtalo de nuevo.";
+            if (! $success) {
+                return '❌ No se pudo eliminar la transacción. Por favor, inténtalo de nuevo.';
             }
 
             return MessageActionHelper::formatTransactionDeletionResponse($lastTransaction);
@@ -53,7 +53,7 @@ class DeleteLastTransactionActionProcessor implements MessageActionProcessorInte
             Log::error('DeleteLastTransactionActionProcessor: Error processing deletion', [
                 'user_id' => $user->id,
                 'context' => $context,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return MessageActionHelper::formatErrorResponse('eliminar la transacción');

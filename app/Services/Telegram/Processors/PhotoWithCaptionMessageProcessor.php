@@ -40,7 +40,7 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
         // Verificar autenticación
         $user = TelegramUserHelper::getAuthenticatedUser($telegramUpdate);
 
-        if (!$user) {
+        if (! $user) {
             return "Hola {$userName}! Para poder procesar imágenes con texto y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
 
@@ -51,7 +51,7 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
             $detectionResult = $this->actionDetectionService->detectAction($caption);
 
             // Si no se pudo detectar acción, procesar como transacción directamente
-            if (!$detectionResult['success']) {
+            if (! $detectionResult['success']) {
                 return $this->processImageWithCaption($telegramUpdate, $caption, $user);
             }
 
@@ -67,7 +67,7 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
             $actionProcessor = $this->actionProcessorFactory->getProcessor($action);
 
             // Si no hay procesador disponible, procesar como transacción
-            if (!$actionProcessor || !$actionProcessor->canHandle($action, $detectionResult['context'] ?? [])) {
+            if (! $actionProcessor || ! $actionProcessor->canHandle($action, $detectionResult['context'] ?? [])) {
                 return $this->processImageWithCaption($telegramUpdate, $caption, $user);
             }
 
@@ -83,10 +83,11 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
             Log::error('PhotoWithCaptionMessageProcessor: Error processing message', [
                 'user_id' => $user->id,
                 'caption' => $caption,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             TelegramMessageHelper::logFileError('photo_with_caption', $e, $userName);
-            return "Ocurrió un error al procesar la imagen con texto. Si tienes información de transacción, por favor descríbela en texto.";
+
+            return 'Ocurrió un error al procesar la imagen con texto. Si tienes información de transacción, por favor descríbela en texto.';
         }
     }
 
@@ -95,15 +96,15 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
         $photos = data_get($telegramUpdate, 'message.photo', []);
         $fileInfo = $this->fileService->getFileFromPhoto($photos);
 
-        if (!$fileInfo) {
-            return "No pude procesar la imagen. Si tienes información de transacción, por favor descríbela en texto.";
+        if (! $fileInfo) {
+            return 'No pude procesar la imagen. Si tienes información de transacción, por favor descríbela en texto.';
         }
 
         // Descargar imagen temporalmente
         $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
 
-        if (!$downloadResult) {
-            return "No pude descargar la imagen para procesarla. Si tienes información de transacción, por favor descríbela en texto.";
+        if (! $downloadResult) {
+            return 'No pude descargar la imagen para procesarla. Si tienes información de transacción, por favor descríbela en texto.';
         }
 
         // Procesar imagen con IA, pasando el caption como contexto adicional
@@ -129,7 +130,7 @@ class PhotoWithCaptionMessageProcessor implements TelegramMessageProcessorInterf
         } catch (\Exception $e) {
             Log::warning('Failed to cleanup temporary file', [
                 'file_path' => $filePath,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }

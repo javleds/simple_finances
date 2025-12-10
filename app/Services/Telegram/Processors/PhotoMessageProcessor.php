@@ -23,7 +23,7 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
     public function canHandle(array $telegramUpdate): bool
     {
         return TelegramMessageHelper::hasPhoto($telegramUpdate)
-            && !TelegramMessageHelper::hasCaption($telegramUpdate);
+            && ! TelegramMessageHelper::hasCaption($telegramUpdate);
     }
 
     public function process(array $telegramUpdate): string
@@ -34,7 +34,7 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
         // Verificar autenticación
         $user = TelegramUserHelper::getAuthenticatedUser($telegramUpdate);
 
-        if (!$user) {
+        if (! $user) {
             return "Hola {$userName}! Para poder procesar imágenes y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
 
@@ -43,15 +43,15 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
         try {
             $fileInfo = $this->fileService->getFileFromPhoto($photos);
 
-            if (!$fileInfo) {
-                return "No pude procesar la imagen. Por favor, inténtalo de nuevo.";
+            if (! $fileInfo) {
+                return 'No pude procesar la imagen. Por favor, inténtalo de nuevo.';
             }
 
             // Descargar imagen temporalmente
             $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
 
-            if (!$downloadResult) {
-                return "No pude descargar la imagen para procesarla. Inténtalo de nuevo.";
+            if (! $downloadResult) {
+                return 'No pude descargar la imagen para procesarla. Inténtalo de nuevo.';
             }
 
             // Procesar imagen directamente con el TransactionProcessor
@@ -65,7 +65,8 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
 
         } catch (\Exception $e) {
             TelegramMessageHelper::logFileError('photo', $e, $userName, ['photos' => $photos]);
-            return "Ocurrió un error al procesar la imagen. Por favor, inténtalo de nuevo.";
+
+            return 'Ocurrió un error al procesar la imagen. Por favor, inténtalo de nuevo.';
         }
     }
 
@@ -83,7 +84,7 @@ class PhotoMessageProcessor implements TelegramMessageProcessorInterface
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning('Failed to cleanup temporary file', [
                 'file_path' => $filePath,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }

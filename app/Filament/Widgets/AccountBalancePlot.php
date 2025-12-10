@@ -10,7 +10,7 @@ class AccountBalancePlot extends ChartWidget
 {
     protected static ?string $heading = 'Balance por cuenta';
 
-    protected int | string | array $columnSpan = [
+    protected int|string|array $columnSpan = [
         'sm' => 1,
         'lg' => 1,
     ];
@@ -47,7 +47,7 @@ class AccountBalancePlot extends ChartWidget
 
     protected function getOptions(): RawJs
     {
-        return RawJs::make(<<<JS
+        return RawJs::make(<<<'JS'
             (function () {
                 var isMobile = matchMedia('(max-width: 640px)').matches;
                 var restoreBalance = function (value) {

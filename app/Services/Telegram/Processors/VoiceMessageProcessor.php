@@ -41,7 +41,7 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
         // Verificar autenticación
         $user = TelegramUserHelper::getAuthenticatedUser($telegramUpdate);
 
-        if (!$user) {
+        if (! $user) {
             return "Hola {$userName}! Para poder procesar mensajes de voz y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
 
@@ -50,8 +50,8 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
         try {
             $fileInfo = $this->fileService->getFileFromVoice($voiceData);
 
-            if (!$fileInfo) {
-                return "No pude procesar el mensaje de voz. Por favor, inténtalo de nuevo.";
+            if (! $fileInfo) {
+                return 'No pude procesar el mensaje de voz. Por favor, inténtalo de nuevo.';
             }
 
             // Verificar duración (máximo 60 segundos para procesamiento con IA)
@@ -62,8 +62,8 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
             // Descargar audio temporalmente
             $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
 
-            if (!$downloadResult) {
-                return "No pude descargar el mensaje de voz para procesarlo. Inténtalo de nuevo.";
+            if (! $downloadResult) {
+                return 'No pude descargar el mensaje de voz para procesarlo. Inténtalo de nuevo.';
             }
 
             // Transcribir el audio usando OpenAI
@@ -72,9 +72,10 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
             // Limpiar archivo temporal
             $this->cleanupTemporaryFile($downloadResult['full_path']);
 
-            if (!$transcriptionResult['success']) {
+            if (! $transcriptionResult['success']) {
                 Log::error('Voice transcription failed', ['error' => $transcriptionResult['error']]);
-                return "No pude transcribir el mensaje de voz. Por favor, inténtalo de nuevo.";
+
+                return 'No pude transcribir el mensaje de voz. Por favor, inténtalo de nuevo.';
             }
 
             $transcribedText = $transcriptionResult['text'];
@@ -93,6 +94,7 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
 
                     if ($actionProcessor && $actionProcessor->canHandle($action, $detectionResult['context'] ?? [])) {
                         $result = $actionProcessor->process($detectionResult['context'] ?? [], $user);
+
                         return "🎙️ **Mensaje de voz transcrito**: \"{$transcribedText}\"\n\n{$result}";
                     }
                 }
@@ -103,7 +105,7 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
             } catch (\Exception $e) {
                 Log::error('VoiceMessageProcessor: Action processing failed', [
                     'error' => $e->getMessage(),
-                    'transcribed_text' => $transcribedText
+                    'transcribed_text' => $transcribedText,
                 ]);
 
                 return "🎙️ **Mensaje de voz transcrito**: \"{$transcribedText}\"\n\n⚠️ Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo.";
@@ -111,7 +113,8 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
 
         } catch (\Exception $e) {
             TelegramMessageHelper::logFileError('voice', $e, $userName, ['voice_data' => $voiceData]);
-            return "Ocurrió un error al procesar el mensaje de voz. Por favor, inténtalo de nuevo.";
+
+            return 'Ocurrió un error al procesar el mensaje de voz. Por favor, inténtalo de nuevo.';
         }
     }
 
@@ -129,7 +132,7 @@ class VoiceMessageProcessor implements TelegramMessageProcessorInterface
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning('Failed to cleanup temporary file', [
                 'file_path' => $filePath,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }

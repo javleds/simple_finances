@@ -19,7 +19,5 @@ class ViewAccount extends ViewRecord
     }
 
     #[On('refreshAccount')]
-    public function refresh(): void
-    {
-    }
+    public function refresh(): void {}
 }

@@ -31,7 +31,7 @@ class CreateTransactionActionProcessor implements MessageActionProcessorInterfac
             $messageText = $context['original_text'] ?? $context['text'] ?? '';
 
             if (empty($messageText)) {
-                return "❌ No pude procesar la transacción. El mensaje está vacío.";
+                return '❌ No pude procesar la transacción. El mensaje está vacío.';
             }
 
             // Usar el servicio existente de procesamiento de transacciones
@@ -41,10 +41,10 @@ class CreateTransactionActionProcessor implements MessageActionProcessorInterfac
             Log::error('CreateTransactionActionProcessor: Error processing transaction creation', [
                 'user_id' => $user->id,
                 'context' => $context,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
-            return "⚠️ Ocurrió un error al procesar la transacción. Por favor, inténtalo de nuevo más tarde.";
+            return '⚠️ Ocurrió un error al procesar la transacción. Por favor, inténtalo de nuevo más tarde.';
         }
     }
 

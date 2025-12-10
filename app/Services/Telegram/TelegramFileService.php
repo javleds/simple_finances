@@ -24,7 +24,7 @@ class TelegramFileService
 
     public function getFileFromVideo(array $videoData): ?array
     {
-        if (empty($videoData) || !isset($videoData['file_id'])) {
+        if (empty($videoData) || ! isset($videoData['file_id'])) {
             return null;
         }
 
@@ -33,7 +33,7 @@ class TelegramFileService
 
     public function getFileFromVoice(array $voiceData): ?array
     {
-        if (empty($voiceData) || !isset($voiceData['file_id'])) {
+        if (empty($voiceData) || ! isset($voiceData['file_id'])) {
             return null;
         }
 
@@ -42,7 +42,7 @@ class TelegramFileService
 
     public function getFileFromAudio(array $audioData): ?array
     {
-        if (empty($audioData) || !isset($audioData['file_id'])) {
+        if (empty($audioData) || ! isset($audioData['file_id'])) {
             return null;
         }
 
@@ -51,7 +51,7 @@ class TelegramFileService
 
     public function getFileFromDocument(array $documentData): ?array
     {
-        if (empty($documentData) || !isset($documentData['file_id'])) {
+        if (empty($documentData) || ! isset($documentData['file_id'])) {
             return null;
         }
 
@@ -75,7 +75,7 @@ class TelegramFileService
     {
         $fileInfo = $this->getFileInfo($fileId);
 
-        if (!$fileInfo['file_path']) {
+        if (! $fileInfo['file_path']) {
             throw new \Exception('No se pudo obtener la ruta del archivo');
         }
 
@@ -95,7 +95,7 @@ class TelegramFileService
 
     public function downloadFileTemporarily(array $fileInfo): ?array
     {
-        if (!isset($fileInfo['file_path'])) {
+        if (! isset($fileInfo['file_path'])) {
             return null;
         }
 
@@ -103,7 +103,7 @@ class TelegramFileService
             $fileContent = $this->telegramService->downloadFile($fileInfo['file_path']);
 
             $fileName = $this->generateFileName($fileInfo);
-            $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'telegram_' . $fileName;
+            $tempPath = sys_get_temp_dir().DIRECTORY_SEPARATOR.'telegram_'.$fileName;
 
             file_put_contents($tempPath, $fileContent);
 
@@ -115,7 +115,7 @@ class TelegramFileService
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to download file temporarily', [
                 'file_info' => $fileInfo,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return null;
@@ -128,30 +128,30 @@ class TelegramFileService
         $timestamp = now()->format('Y-m-d_H-i-s');
         $uniqueId = substr($fileInfo['file_unique_id'], 0, 8);
 
-        return "{$timestamp}_{$uniqueId}" . ($extension ? ".{$extension}" : '');
+        return "{$timestamp}_{$uniqueId}".($extension ? ".{$extension}" : '');
     }
 
     public function getFileType(array $telegramUpdate): ?string
     {
         $message = data_get($telegramUpdate, 'message', []);
 
-        if (!empty($message['photo'])) {
+        if (! empty($message['photo'])) {
             return 'photo';
         }
 
-        if (!empty($message['video'])) {
+        if (! empty($message['video'])) {
             return 'video';
         }
 
-        if (!empty($message['voice'])) {
+        if (! empty($message['voice'])) {
             return 'voice';
         }
 
-        if (!empty($message['audio'])) {
+        if (! empty($message['audio'])) {
             return 'audio';
         }
 
-        if (!empty($message['document'])) {
+        if (! empty($message['document'])) {
             return 'document';
         }
 
@@ -162,13 +162,13 @@ class TelegramFileService
     {
         $fileType = $this->getFileType($telegramUpdate);
 
-        if (!$fileType) {
+        if (! $fileType) {
             return null;
         }
 
         $message = data_get($telegramUpdate, 'message', []);
 
-        return match($fileType) {
+        return match ($fileType) {
             'photo' => $this->getFileFromPhoto($message['photo']),
             'video' => $this->getFileFromVideo($message['video']),
             'voice' => $this->getFileFromVoice($message['voice']),
@@ -180,7 +180,7 @@ class TelegramFileService
 
     public function autoDownloadFile(array $fileInfo, string $fileType = 'media'): ?array
     {
-        if (!$fileInfo || !isset($fileInfo['file_id'])) {
+        if (! $fileInfo || ! isset($fileInfo['file_id'])) {
             return null;
         }
 

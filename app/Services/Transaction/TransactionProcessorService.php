@@ -27,38 +27,42 @@ class TransactionProcessorService
         try {
             $response = $this->openAIService->processText($text);
 
-            if (!$response['success']) {
+            if (! $response['success']) {
                 Log::error('OpenAI text processing failed', ['error' => $response['error']]);
+
                 return 'Lo siento, no pude procesar tu mensaje. Inténtalo de nuevo más tarde.';
             }
 
             return $this->processTransactionData($response['data'], $user);
         } catch (\Exception $e) {
             Log::error('Transaction text processing failed', ['error' => $e->getMessage()]);
+
             return 'Ocurrió un error al procesar tu mensaje. Por favor, inténtalo de nuevo.';
         }
     }
 
-    public function processImage(string $imagePath, string $caption = '', User $user): string
+    public function processImage(string $imagePath, string $caption, User $user): string
     {
         try {
             $response = $this->openAIService->processImage($imagePath, $caption);
 
-            if (!$response['success']) {
+            if (! $response['success']) {
                 Log::error('OpenAI image processing failed', ['error' => $response['error']]);
+
                 return 'Lo siento, no pude procesar la imagen. Inténtalo de nuevo más tarde.';
             }
 
             return $this->processTransactionData($response['data'], $user);
         } catch (\Exception $e) {
             Log::error('Transaction image processing failed', ['error' => $e->getMessage()]);
+
             return 'Ocurrió un error al procesar la imagen. Por favor, inténtalo de nuevo.';
         }
     }
 
     private function processTransactionData(?array $data, User $user): string
     {
-        if (!$data) {
+        if (! $data) {
             return 'No pude extraer información de transacción de tu mensaje. Asegúrate de incluir al menos: cuenta, monto y tipo de transacción.';
         }
 
@@ -71,15 +75,16 @@ class TransactionProcessorService
             financialGoal: $data['financial_goal']
         );
 
-        if (!$dto->isValid()) {
+        if (! $dto->isValid()) {
             $missing = $dto->getMissingFields();
             $missingText = implode(', ', $missing);
+
             return "No pude procesar la transacción porque faltan los siguientes campos obligatorios: {$missingText}. Por favor, proporciona esta información e inténtalo de nuevo.";
         }
 
         $validationResult = $this->validator->validateTransactionData($dto, $user);
 
-        if (!$validationResult['valid']) {
+        if (! $validationResult['valid']) {
             return $validationResult['error'];
         }
 
@@ -89,6 +94,7 @@ class TransactionProcessorService
             return $this->buildSuccessMessage($transaction, $dto);
         } catch (\Exception $e) {
             Log::error('Transaction creation failed', ['error' => $e->getMessage(), 'dto' => $dto->toArray()]);
+
             return 'Ocurrió un error al crear la transacción. Por favor, inténtalo de nuevo.';
         }
     }
@@ -101,7 +107,7 @@ class TransactionProcessorService
     ): Transaction {
         $scheduledAt = $dto->date ? Carbon::parse($dto->date) : now();
 
-        $transaction = new Transaction();
+        $transaction = new Transaction;
         $transaction->user_id = $user->id;
         $transaction->account_id = $account->id;
         $transaction->type = TransactionType::from($dto->type);
@@ -124,7 +130,7 @@ class TransactionProcessorService
             'account' => $account->name,
             'amount' => $dto->amount,
             'type' => $dto->type,
-            'concept' => $dto->concept
+            'concept' => $dto->concept,
         ]);
 
         return $transaction;
@@ -138,14 +144,14 @@ class TransactionProcessorService
         $date = $transaction->scheduled_at->format('d/m/Y');
 
         $message = "✅ ¡Transacción creada exitosamente!\n\n";
-        $message .= "📊 Tipo: " . ucfirst($typeText) . "\n";
-        $message .= "💰 Monto: " . $amount . "\n";
-        $message .= "🏦 Cuenta: " . $account . "\n";
-        $message .= "📋 Concepto: " . $transaction->concept . "\n";
-        $message .= "📅 Fecha: " . $date . "\n";
+        $message .= '📊 Tipo: '.ucfirst($typeText)."\n";
+        $message .= '💰 Monto: '.$amount."\n";
+        $message .= '🏦 Cuenta: '.$account."\n";
+        $message .= '📋 Concepto: '.$transaction->concept."\n";
+        $message .= '📅 Fecha: '.$date."\n";
 
         if ($transaction->financialGoal) {
-            $message .= "🎯 Meta financiera: " . $transaction->financialGoal->name . "\n";
+            $message .= '🎯 Meta financiera: '.$transaction->financialGoal->name."\n";
         }
 
         return $message;

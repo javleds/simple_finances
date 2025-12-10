@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SubscriptionPayment extends Model
 {
-    use HasFactory;
     use BelongsToUser;
+    use HasFactory;
 
     protected function casts(): array
     {

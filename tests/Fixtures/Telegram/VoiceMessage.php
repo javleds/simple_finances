@@ -16,14 +16,14 @@ class VoiceMessage
                     'first_name' => 'John',
                     'last_name' => 'Doe',
                     'username' => 'johndoe',
-                    'language_code' => 'es'
+                    'language_code' => 'es',
                 ],
                 'chat' => [
                     'id' => 123456789,
                     'first_name' => 'John',
                     'last_name' => 'Doe',
                     'username' => 'johndoe',
-                    'type' => 'private'
+                    'type' => 'private',
                 ],
                 'date' => 1640995260,
                 'voice' => [
@@ -31,9 +31,9 @@ class VoiceMessage
                     'mime_type' => 'audio/ogg',
                     'file_id' => 'AwACAgEAAxkBAAMLaNJFoSysfRq6Lp_yoRPqex3h0j8AAk8GAAJ9dJhG9Rge9oEmqHY2BA',
                     'file_unique_id' => 'AgADTwYAAn10mEY',
-                    'file_size' => 13985
-                ]
-            ]
+                    'file_size' => 13985,
+                ],
+            ],
         ];
     }
 }

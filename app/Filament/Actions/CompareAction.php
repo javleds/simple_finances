@@ -40,7 +40,7 @@ class CompareAction extends Action
                                     if ($get('destination_id') === $get('origin_id')) {
                                         $fail('Las cuentas no deben ser iguales.');
                                     }
-                                }
+                                },
                             ])
                             ->live(onBlur: true)
                             ->afterStateUpdated(function (Get $get, Set $set) {
@@ -72,7 +72,7 @@ class CompareAction extends Action
                                     if ($get('destination_id') === $get('origin_id')) {
                                         $fail('Las cuentas no deben ser iguales.');
                                     }
-                                }
+                                },
                             ])
                             ->live(onBlur: true)
                             ->afterStateUpdated(function (Get $get, Set $set) {
@@ -107,7 +107,7 @@ class CompareAction extends Action
                             ->numeric()
                             ->columnSpanFull()
                             ->readOnly(),
-                    ])
+                    ]),
             ])
             ->action(function (array $data) {});
     }

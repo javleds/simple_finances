@@ -63,6 +63,7 @@ class DummyOpenAIService implements OpenAIServiceInterface
 
         return $found;
     }
+
     public function processText(string $text): array
     {
         Log::info('DummyOpenAI: Processing text (dummy mode)', ['text' => $text]);
@@ -120,7 +121,7 @@ class DummyOpenAIService implements OpenAIServiceInterface
         return [
             'success' => true,
             'text' => $dummyTranscription,
-            'error' => null
+            'error' => null,
         ];
     }
 
@@ -157,7 +158,7 @@ class DummyOpenAIService implements OpenAIServiceInterface
             'Salario mensual',
             'Compra en supermercado',
             'Transferencia bancaria',
-            'Pago de servicios'
+            'Pago de servicios',
         ];
 
         // Detectar palabras clave para generar datos más relevantes
@@ -166,7 +167,7 @@ class DummyOpenAIService implements OpenAIServiceInterface
         if (str_contains($lowerInput, 'gast') || str_contains($lowerInput, 'pag') || str_contains($lowerInput, 'compr')) {
             $type = 'outcome';
             $concept = $concepts[array_rand(array_slice($concepts, 0, 4))];
-        } else if (str_contains($lowerInput, 'ingres') || str_contains($lowerInput, 'deposit') || str_contains($lowerInput, 'cobr')) {
+        } elseif (str_contains($lowerInput, 'ingres') || str_contains($lowerInput, 'deposit') || str_contains($lowerInput, 'cobr')) {
             $type = 'income';
             $concept = $concepts[array_rand(array_slice($concepts, 2, 4))];
         } else {
@@ -180,7 +181,7 @@ class DummyOpenAIService implements OpenAIServiceInterface
             'type' => $type,
             'concept' => $concept,
             'date' => null, // Dummy service no proporciona fecha
-            'financial_goal' => null // Dummy service no detecta metas
+            'financial_goal' => null, // Dummy service no detecta metas
         ];
     }
 }

@@ -53,7 +53,7 @@ class CreateSubscriptionPaymentAction extends Action
                             ->closeOnDateSelection()
                             ->default(Carbon::now())
                             ->maxDate(Carbon::now()),
-                    ])
+                    ]),
             ])
             ->action(function (array $data, Subscription $record) {
                 $subscription = Subscription::find($record->id);

@@ -18,7 +18,7 @@ class AccountBalanceService
         try {
             $account = $this->accountFinderService->findUserAccount($accountName, $user);
 
-            if (!$account) {
+            if (! $account) {
                 return null;
             }
 
@@ -46,8 +46,9 @@ class AccountBalanceService
             Log::error('AccountBalanceService: Error getting balance', [
                 'account_name' => $accountName,
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }

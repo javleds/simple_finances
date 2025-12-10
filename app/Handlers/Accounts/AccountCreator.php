@@ -18,7 +18,7 @@ readonly class AccountCreator
 
     public function execute(AccountDto $dto): Account
     {
-        $account = new Account();
+        $account = new Account;
         $account->fill(
             array_merge(
                 $dto->toModelArray(),

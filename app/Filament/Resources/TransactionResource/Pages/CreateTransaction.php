@@ -3,10 +3,7 @@
 namespace App\Filament\Resources\TransactionResource\Pages;
 
 use App\Dto\TransactionFormDto;
-use App\Enums\Action;
-use App\Events\TransactionSaved;
 use App\Filament\Resources\TransactionResource;
-use App\Models\Transaction;
 use App\Services\Transaction\TransactionCreator;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;

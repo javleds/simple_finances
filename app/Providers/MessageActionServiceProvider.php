@@ -28,7 +28,7 @@ class MessageActionServiceProvider extends ServiceProvider
 
         // Registrar el factory como singleton
         $this->app->singleton(MessageActionProcessorFactory::class, function ($app) {
-            return new MessageActionProcessorFactory();
+            return new MessageActionProcessorFactory;
         });
     }
 
@@ -67,7 +67,7 @@ class MessageActionServiceProvider extends ServiceProvider
             } catch (\Exception $e) {
                 // Log error pero no fallar el boot
                 \Illuminate\Support\Facades\Log::error("Failed to register action processor: {$processorClass}", [
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }

@@ -13,7 +13,7 @@ class RecentTransactionsQueryDto
 
     public function isValid(): bool
     {
-        return !empty($this->accountName) && $this->limit > 0;
+        return ! empty($this->accountName) && $this->limit > 0;
     }
 
     public function getMissingFields(): array

@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
             $botToken = config('services.telegram.bot_token') ?? env('TELEGRAM_BOT_TOKEN');
 
             if (empty($botToken)) {
-                return new DummyTelegramService();
+                return new DummyTelegramService;
             }
 
             return new TelegramService($botToken);

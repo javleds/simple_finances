@@ -45,7 +45,7 @@ class TransactionCreator
 
     private function createSingleTransaction(TransactionFormDto $dto): Transaction
     {
-        $transaction = new Transaction();
+        $transaction = new Transaction;
         $transaction->type = $dto->type;
         $transaction->status = $dto->status;
         $transaction->concept = $dto->concept;
@@ -62,7 +62,7 @@ class TransactionCreator
 
     private function createSplitTransactions(TransactionFormDto $dto): Transaction
     {
-        $mainTransaction = new Transaction();
+        $mainTransaction = new Transaction;
         $mainTransaction->type = $dto->type;
         $mainTransaction->status = TransactionStatus::Completed;
         $mainTransaction->concept = $dto->concept;
@@ -78,10 +78,10 @@ class TransactionCreator
             $user = User::withoutGlobalScopes()->find($paymentData->userId);
             $amount = round($dto->amount * ($paymentData->percentage / 100), 2);
 
-            $subTransaction = new Transaction();
+            $subTransaction = new Transaction;
             $subTransaction->type = TransactionType::Income;
             $subTransaction->status = TransactionStatus::Pending;
-            $subTransaction->concept = $dto->concept . ' - Parte de ' . $user->name;
+            $subTransaction->concept = $dto->concept.' - Parte de '.$user->name;
             $subTransaction->amount = $amount;
             $subTransaction->percentage = $paymentData->percentage;
             $subTransaction->account_id = $dto->accountId;

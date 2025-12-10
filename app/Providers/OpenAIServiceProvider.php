@@ -15,10 +15,10 @@ class OpenAIServiceProvider extends ServiceProvider
             $apiToken = config('services.openai.api_token');
 
             if (empty($apiToken)) {
-                return new DummyOpenAIService();
+                return new DummyOpenAIService;
             }
 
-            return new OpenAIService();
+            return new OpenAIService;
         });
     }
 

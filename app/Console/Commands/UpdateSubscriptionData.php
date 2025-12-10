@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\PaymentStatus;
 use App\Models\Subscription;
 use Illuminate\Console\Command;
+
 use function Laravel\Prompts\progress;
 
 class UpdateSubscriptionData extends Command

@@ -7,7 +7,6 @@ use App\Models\Account;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Transaction\TransactionCreator;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 it('creates a single transaction when no user payments are provided', function () {
     $user = User::factory()->create();

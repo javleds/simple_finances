@@ -15,8 +15,8 @@ class LastTransactionService
     {
         try {
             return Transaction::whereHas('account.users', function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
-                })
+                $query->where('user_id', $user->id);
+            })
                 ->completed()
                 ->where('user_id', $user->id) // Asegurar que la transacción fue creada por el usuario
                 ->orderBy('created_at', 'desc')
@@ -25,8 +25,9 @@ class LastTransactionService
         } catch (Throwable $e) {
             Log::error('LastTransactionService: Error getting last user transaction', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -46,12 +47,13 @@ class LastTransactionService
     public function modifyTransaction(Transaction $transaction, array $changes, User $user): bool
     {
         try {
-            if (!$this->canModifyTransaction($transaction, $user)) {
+            if (! $this->canModifyTransaction($transaction, $user)) {
                 Log::warning('LastTransactionService: User attempted to modify transaction without permission', [
                     'user_id' => $user->id,
                     'transaction_id' => $transaction->id,
-                    'transaction_owner' => $transaction->user_id
+                    'transaction_owner' => $transaction->user_id,
                 ]);
+
                 return false;
             }
 
@@ -89,7 +91,7 @@ class LastTransactionService
             Log::info('LastTransactionService: Transaction modified successfully', [
                 'user_id' => $user->id,
                 'transaction_id' => $transaction->id,
-                'changes' => $changes
+                'changes' => $changes,
             ]);
 
             return true;
@@ -98,8 +100,9 @@ class LastTransactionService
                 'user_id' => $user->id,
                 'transaction_id' => $transaction->id,
                 'changes' => $changes,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -107,12 +110,13 @@ class LastTransactionService
     public function deleteTransaction(Transaction $transaction, User $user): bool
     {
         try {
-            if (!$this->canDeleteTransaction($transaction, $user)) {
+            if (! $this->canDeleteTransaction($transaction, $user)) {
                 Log::warning('LastTransactionService: User attempted to delete transaction without permission', [
                     'user_id' => $user->id,
                     'transaction_id' => $transaction->id,
-                    'transaction_owner' => $transaction->user_id
+                    'transaction_owner' => $transaction->user_id,
                 ]);
+
                 return false;
             }
 
@@ -125,7 +129,7 @@ class LastTransactionService
                 'user_id' => $user->id,
                 'transaction_id' => $transaction->id,
                 'concept' => $transaction->concept,
-                'amount' => $transaction->amount
+                'amount' => $transaction->amount,
             ]);
 
             return true;
@@ -133,8 +137,9 @@ class LastTransactionService
             Log::error('LastTransactionService: Error deleting transaction', [
                 'user_id' => $user->id,
                 'transaction_id' => $transaction->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

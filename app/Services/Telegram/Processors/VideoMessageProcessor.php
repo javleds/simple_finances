@@ -36,7 +36,7 @@ class VideoMessageProcessor implements TelegramMessageProcessorInterface
         try {
             $fileInfo = $this->fileService->getFileFromVideo($videoData);
 
-            if (!$fileInfo) {
+            if (! $fileInfo) {
                 return "{$baseMessage} He recibido tu video correctamente.";
             }
 
@@ -47,15 +47,18 @@ class VideoMessageProcessor implements TelegramMessageProcessorInterface
 
                 if ($downloadResult) {
                     TelegramMessageHelper::logFileProcessed('video', $fileInfo, $userName, $downloadResult);
+
                     return "{$baseMessage} Tamaño: {$fileSize}. El video ha sido guardado correctamente.";
                 }
             }
 
             TelegramMessageHelper::logFileProcessed('video', $fileInfo, $userName);
+
             return "{$baseMessage} Tamaño: {$fileSize}. El archivo es muy grande para descarga automática.";
 
         } catch (\Exception $e) {
             TelegramMessageHelper::logFileError('video', $e, $userName, ['video_data' => $videoData]);
+
             return "{$baseMessage} He recibido tu video correctamente.";
         }
     }

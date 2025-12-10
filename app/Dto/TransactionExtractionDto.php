@@ -15,10 +15,10 @@ class TransactionExtractionDto
 
     public function isValid(): bool
     {
-        return !is_null($this->account)
-            && !is_null($this->amount)
-            && !is_null($this->type)
-            && !is_null($this->concept)
+        return ! is_null($this->account)
+            && ! is_null($this->amount)
+            && ! is_null($this->type)
+            && ! is_null($this->concept)
             && in_array($this->type, ['income', 'outcome'])
             && trim($this->concept) !== '';
     }
@@ -35,7 +35,7 @@ class TransactionExtractionDto
             $missing[] = 'amount';
         }
 
-        if (is_null($this->type) || !in_array($this->type, ['income', 'outcome'])) {
+        if (is_null($this->type) || ! in_array($this->type, ['income', 'outcome'])) {
             $missing[] = 'type';
         }
 

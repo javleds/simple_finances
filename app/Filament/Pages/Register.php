@@ -4,7 +4,6 @@ namespace App\Filament\Pages;
 
 use Filament\Actions\Action;
 use Filament\Pages\Auth\Register as BaseRegisterPage;
-use Filament\Pages\Page;
 
 class Register extends BaseRegisterPage
 {

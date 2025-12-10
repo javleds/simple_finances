@@ -7,8 +7,11 @@ use App\Models\Subscription;
 class SubscriptionProjection
 {
     public string $name;
+
     public string $frequency;
+
     public float $amount;
+
     public float $projectionAmount;
 
     public function __construct(string $name, string $frequency, float $amount, float $projectionAmount)

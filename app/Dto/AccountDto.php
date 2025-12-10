@@ -5,12 +5,19 @@ namespace App\Dto;
 class AccountDto
 {
     public string $name;
+
     public ?string $color;
+
     public ?string $description;
+
     public bool $isVirtual;
+
     public bool $isCreditCard;
+
     public ?float $creditLine;
+
     public ?int $cutOffDay;
+
     public ?int $feedAccountId;
 
     public function __construct(string $name, ?string $color, ?string $description, bool $isVirtual, bool $isCreditCard, ?float $creditLine, ?int $cutOffDay, ?int $feedAccountId)

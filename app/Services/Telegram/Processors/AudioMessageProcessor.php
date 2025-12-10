@@ -42,7 +42,7 @@ class AudioMessageProcessor implements TelegramMessageProcessorInterface
         // Verificar autenticación
         $user = TelegramUserHelper::getAuthenticatedUser($telegramUpdate);
 
-        if (!$user) {
+        if (! $user) {
             return "Hola {$userName}! Para poder procesar archivos de audio y crear transacciones, primero necesitas verificar tu cuenta. Usa el comando /start para comenzar el proceso de verificación.";
         }
 
@@ -51,7 +51,7 @@ class AudioMessageProcessor implements TelegramMessageProcessorInterface
         try {
             $fileInfo = $this->fileService->getFileFromAudio($audioData);
 
-            if (!$fileInfo) {
+            if (! $fileInfo) {
                 return "{$baseMessage} He recibido tu archivo de audio correctamente, pero no pude procesarlo para crear transacciones.";
             }
 
@@ -71,7 +71,8 @@ class AudioMessageProcessor implements TelegramMessageProcessorInterface
 
         } catch (\Exception $e) {
             TelegramMessageHelper::logFileError('audio', $e, $userName, ['audio_data' => $audioData]);
-            return "Ocurrió un error al procesar el archivo de audio. Por favor, inténtalo de nuevo.";
+
+            return 'Ocurrió un error al procesar el archivo de audio. Por favor, inténtalo de nuevo.';
         }
     }
 
@@ -85,7 +86,7 @@ class AudioMessageProcessor implements TelegramMessageProcessorInterface
         // Descargar audio temporalmente
         $downloadResult = $this->fileService->downloadFileTemporarily($fileInfo);
 
-        if (!$downloadResult) {
+        if (! $downloadResult) {
             return "{$baseMessage} No pude descargar el archivo de audio para procesarlo. Inténtalo de nuevo.";
         }
 
@@ -95,8 +96,9 @@ class AudioMessageProcessor implements TelegramMessageProcessorInterface
         // Limpiar archivo temporal
         $this->cleanupTemporaryFile($downloadResult['full_path']);
 
-        if (!$transcriptionResult['success']) {
+        if (! $transcriptionResult['success']) {
             Log::error('Audio transcription failed', ['error' => $transcriptionResult['error']]);
+
             return "{$baseMessage} No pude transcribir el audio. Por favor, inténtalo de nuevo.";
         }
 
@@ -111,7 +113,7 @@ class AudioMessageProcessor implements TelegramMessageProcessorInterface
         try {
             $detectionResult = $this->actionDetectionService->detectAction($transcribedText);
 
-            if (!$detectionResult['success']) {
+            if (! $detectionResult['success']) {
                 return "🎤 **Audio transcrito**: \"{$transcribedText}\"\n\n⚠️ No pude determinar qué acción realizar con este audio. Por favor, intenta ser más específico.";
             }
 
@@ -121,17 +123,18 @@ class AudioMessageProcessor implements TelegramMessageProcessorInterface
             // Procesar con el procesador específico de la acción
             $actionProcessor = $this->actionProcessorFactory->getProcessor($action);
 
-            if (!$actionProcessor || !$actionProcessor->canHandle($action, $detectionResult['context'] ?? [])) {
+            if (! $actionProcessor || ! $actionProcessor->canHandle($action, $detectionResult['context'] ?? [])) {
                 return "🎤 **Audio transcrito**: \"{$transcribedText}\"\n\n⚠️ No encontré un procesador adecuado para esta acción. Por favor, intenta ser más específico.";
             }
 
             $result = $actionProcessor->process($detectionResult['context'] ?? [], $user);
+
             return "🎤 **Audio transcrito**: \"{$transcribedText}\"\n\n{$result}";
 
         } catch (\Exception $e) {
             Log::error('AudioMessageProcessor: Action processing failed', [
                 'error' => $e->getMessage(),
-                'transcribed_text' => $transcribedText
+                'transcribed_text' => $transcribedText,
             ]);
 
             return "🎤 **Audio transcrito**: \"{$transcribedText}\"\n\n⚠️ Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo.";
@@ -147,7 +150,7 @@ class AudioMessageProcessor implements TelegramMessageProcessorInterface
         } catch (\Exception $e) {
             Log::warning('Failed to cleanup temporary file', [
                 'file_path' => $filePath,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }

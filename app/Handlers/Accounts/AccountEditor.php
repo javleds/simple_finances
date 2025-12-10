@@ -4,7 +4,6 @@ namespace App\Handlers\Accounts;
 
 use App\Dto\AccountDto;
 use App\Models\Account;
-use App\Services\Accounts\AttachAccountToSignedInUser;
 use App\Services\Accounts\UpdateCreditCardBalance;
 
 readonly class AccountEditor

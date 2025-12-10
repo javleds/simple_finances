@@ -43,7 +43,7 @@ class DirectSendTransferAction extends Action
                                     if ($get('destination_id') === $get('origin_id')) {
                                         $fail('Las cuentas no deben ser iguales.');
                                     }
-                                }
+                                },
                             ])
                             ->disabled()
                             ->default(fn (Account $record) => $record->id),
@@ -61,7 +61,7 @@ class DirectSendTransferAction extends Action
                                     if ($get('destination_id') === $get('origin_id')) {
                                         $fail('Las cuentas no deben ser iguales.');
                                     }
-                                }
+                                },
                             ]),
                         TextInput::make('amount')
                             ->label('Cantidad')
@@ -88,7 +88,7 @@ class DirectSendTransferAction extends Action
                                             )
                                         );
                                     }
-                                }
+                                },
                             ]),
                         TextInput::make('concept')
                             ->label('Concepto')
@@ -99,7 +99,7 @@ class DirectSendTransferAction extends Action
                             ->prefixIcon('heroicon-o-calendar')
                             ->default(Carbon::now())
                             ->required(),
-                    ])
+                    ]),
             ])
             ->action(function (array $data, Account $account, TransferCreator $transferCreator) {
                 $origin = $account;

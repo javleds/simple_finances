@@ -47,7 +47,7 @@ class DeferredTransactionAction extends Action
 
         $this
             ->name('add_differed_transaction')
-            ->hidden(fn () => !$this->getOwnerRecord()->isCreditCard())
+            ->hidden(fn () => ! $this->getOwnerRecord()->isCreditCard())
             ->label('Crear Egreso Diferido')
             ->color(Color::Amber)
             ->form([
@@ -158,9 +158,9 @@ class DeferredTransactionAction extends Action
                                             )
                                         );
                                     }
-                                }
-                            ])
-                    ])
+                                },
+                            ]),
+                    ]),
             ])
             ->action(function (array $data, Component $livewire) {
                 /** @var Account $account */

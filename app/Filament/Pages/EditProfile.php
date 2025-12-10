@@ -4,7 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Services\Telegram\TelegramVerificationService;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
@@ -45,10 +44,10 @@ class EditProfile extends AuthEditProfile
         $user = $this->getUser();
 
         if ($user->hasTelegramLinked()) {
-            return "✅ Tu cuenta está vinculada con Telegram. Recibirás notificaciones automáticamente.";
+            return '✅ Tu cuenta está vinculada con Telegram. Recibirás notificaciones automáticamente.';
         }
 
-        return "⚠️ Tu cuenta no está vinculada con Telegram. Conecta tu cuenta para recibir notificaciones.";
+        return '⚠️ Tu cuenta no está vinculada con Telegram. Conecta tu cuenta para recibir notificaciones.';
     }
 
     protected function getHeaderActions(): array
@@ -58,7 +57,7 @@ class EditProfile extends AuthEditProfile
                 ->label('Conectar con Telegram')
                 ->icon('heroicon-o-link')
                 ->color(Color::Blue)
-                ->visible(fn () => !$this->getUser()->hasTelegramLinked())
+                ->visible(fn () => ! $this->getUser()->hasTelegramLinked())
                 ->action('generateTelegramCode'),
 
             Action::make('disconnect_telegram')
@@ -78,12 +77,13 @@ class EditProfile extends AuthEditProfile
         $user = $this->getUser();
         $verificationService = app(TelegramVerificationService::class);
 
-        if (!$verificationService->canGenerateNewCode($user)) {
+        if (! $verificationService->canGenerateNewCode($user)) {
             Notification::make()
                 ->title('Error al generar código')
                 ->body('Ya tienes Telegram vinculado o has alcanzado el límite de códigos por hora.')
                 ->danger()
                 ->send();
+
             return;
         }
 

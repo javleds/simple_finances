@@ -2,12 +2,8 @@
 
 namespace App\Listeners;
 
-use App\Enums\PaymentStatus;
 use App\Events\SubscriptionSaved;
-use App\Models\SubscriptionPayment;
 use App\Services\GenerateSubscriptionPaymentSchema;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
 
 class UpdatePaymentSchema

@@ -20,8 +20,8 @@ class TelegramService implements TelegramServiceInterface
             'url' => $url,
         ]);
 
-        if (!$response->successful()) {
-            throw new \Exception("Error al configurar webhook: " . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('Error al configurar webhook: '.$response->body());
         }
     }
 
@@ -31,8 +31,8 @@ class TelegramService implements TelegramServiceInterface
             'url' => $url,
         ]);
 
-        if (!$response->successful()) {
-            throw new \Exception("Error al configurar webhook: " . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('Error al configurar webhook: '.$response->body());
         }
 
         return $response->status();
@@ -45,8 +45,8 @@ class TelegramService implements TelegramServiceInterface
             'text' => $message,
         ]);
 
-        if (!$response->successful()) {
-            throw new \Exception("Error al enviar mensaje: " . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('Error al enviar mensaje: '.$response->body());
         }
     }
 
@@ -56,14 +56,14 @@ class TelegramService implements TelegramServiceInterface
             'file_id' => $fileId,
         ]);
 
-        if (!$response->successful()) {
-            throw new \Exception("Error al obtener información del archivo: " . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('Error al obtener información del archivo: '.$response->body());
         }
 
         $data = $response->json();
 
-        if (!$data['ok']) {
-            throw new \Exception("Error en la respuesta de Telegram: " . ($data['description'] ?? 'Error desconocido'));
+        if (! $data['ok']) {
+            throw new \Exception('Error en la respuesta de Telegram: '.($data['description'] ?? 'Error desconocido'));
         }
 
         return $data['result'];
@@ -75,8 +75,8 @@ class TelegramService implements TelegramServiceInterface
 
         $response = Http::get($downloadUrl);
 
-        if (!$response->successful()) {
-            throw new \Exception("Error al descargar archivo: " . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('Error al descargar archivo: '.$response->body());
         }
 
         return $response->body();

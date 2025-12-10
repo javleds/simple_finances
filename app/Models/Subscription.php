@@ -14,8 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subscription extends Model
 {
-    use HasFactory;
     use BelongsToUser;
+    use HasFactory;
 
     protected $dispatchesEvents = [
         'saving' => SubscriptionSaving::class,

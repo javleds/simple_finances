@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Enums\TransactionType;
 use App\Enums\TransactionStatus;
+use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\User;
 use Carbon\Carbon;

@@ -20,7 +20,7 @@ class TransactionHistoryService
         try {
             $account = $this->accountFinderService->findUserAccount($accountName, $user);
 
-            if (!$account) {
+            if (! $account) {
                 return null;
             }
 
@@ -36,8 +36,9 @@ class TransactionHistoryService
             Log::error('TransactionHistoryService: Error getting recent transactions', [
                 'account_name' => $accountName,
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -46,8 +47,8 @@ class TransactionHistoryService
     {
         try {
             return Transaction::whereHas('account.users', function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
-                })
+                $query->where('user_id', $user->id);
+            })
                 ->completed()
                 ->with('user', 'account')
                 ->orderBy('scheduled_at', 'desc')
@@ -58,8 +59,9 @@ class TransactionHistoryService
         } catch (Throwable $e) {
             Log::error('TransactionHistoryService: Error getting recent transactions for all accounts', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return collect();
         }
     }
@@ -89,8 +91,9 @@ class TransactionHistoryService
         } catch (\Exception $e) {
             Log::error('TransactionHistoryService: Error getting account summary', [
                 'account_id' => $account->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return [];
         }
     }

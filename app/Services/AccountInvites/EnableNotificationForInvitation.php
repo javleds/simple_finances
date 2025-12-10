@@ -9,13 +9,13 @@ class EnableNotificationForInvitation
 {
     public function execute(AccountInvite $invite): void
     {
-        if (!$invite->isAccepted()) {
+        if (! $invite->isAccepted()) {
             return;
         }
 
         $user = User::withoutGlobalScopes()->where('email', $invite->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return;
         }
 

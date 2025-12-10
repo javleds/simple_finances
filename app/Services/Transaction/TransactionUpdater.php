@@ -38,6 +38,7 @@ class TransactionUpdater
 
             if ($originalType !== $dto->type) {
                 $this->handleTypeChange($transaction);
+
                 return $transaction;
             }
 
@@ -134,16 +135,16 @@ class TransactionUpdater
         foreach ($dto->userPayments as $paymentData) {
             $user = User::withoutGlobalScopes()->find($paymentData->userId);
 
-            if (!$user) {
+            if (! $user) {
                 continue;
             }
 
             $amount = round($dto->amount * ($paymentData->percentage / 100), 2);
 
-            $subTransaction = new Transaction();
+            $subTransaction = new Transaction;
             $subTransaction->type = TransactionType::Income;
             $subTransaction->status = TransactionStatus::Pending;
-            $subTransaction->concept = $dto->concept . ' - Parte de ' . $user->name;
+            $subTransaction->concept = $dto->concept.' - Parte de '.$user->name;
             $subTransaction->amount = $amount;
             $subTransaction->percentage = $paymentData->percentage;
             $subTransaction->account_id = $dto->accountId;

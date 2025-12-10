@@ -10,10 +10,10 @@ enum Action
 
     public function getLabel(): string
     {
-        return match($this) {
-          self::Created => 'creado',
-          self::Updated => 'modificado',
-          self::Deleted => 'eliminado',
+        return match ($this) {
+            self::Created => 'creado',
+            self::Updated => 'modificado',
+            self::Deleted => 'eliminado',
         };
     }
 }

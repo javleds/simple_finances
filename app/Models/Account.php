@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Events\AccountCreated;
-use App\Events\AccountCreationRequested;
 use App\Models\Scopes\BelongsToSharedUsersScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -67,7 +65,7 @@ class Account extends Model
 
     public function updateBalance(): float
     {
-        if (!$this->credit_card) {
+        if (! $this->credit_card) {
             $this->balance = $this->transactions()->completed()->income()->sum('amount')
                 - $this->transactions()->completed()->outcome()->sum('amount');
             $this->save();

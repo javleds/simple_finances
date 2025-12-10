@@ -4,10 +4,8 @@ namespace App\Filament\Actions;
 
 use App\Dto\TransactionFormDto;
 use App\Dto\UserPaymentDto;
-use App\Enums\Action as UserAction;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
-use App\Events\TransactionSaved;
 use App\Models\Account;
 use App\Models\User;
 use App\Services\Transaction\TransactionCreator;
@@ -87,12 +85,12 @@ class AddTransactionShortcutAction extends Action
                                 })->toArray());
                             }),
                         Repeater::make('user_payments')
-                            ->hidden(fn (Get $get) => !$get('split_between_users'))
+                            ->hidden(fn (Get $get) => ! $get('split_between_users'))
                             ->label('Usuarios')
                             ->rules([
                                 function (Get $get) {
                                     return function (string $attribute, $value, \Closure $fail) use ($get) {
-                                        if (!$get('split_between_users')) {
+                                        if (! $get('split_between_users')) {
                                             return;
                                         }
 
@@ -128,14 +126,14 @@ class AddTransactionShortcutAction extends Action
                             ->deletable(false)
                             ->reorderable(false)
                             ->maxItems(function (Get $get, Account $record) {
-                                if (!$record) {
+                                if (! $record) {
                                     return 0;
                                 }
 
                                 return $record->users()->count();
                             })
                             ->minItems(function (Get $get, Account $record) {
-                                if (!$record) {
+                                if (! $record) {
                                     return 0;
                                 }
 

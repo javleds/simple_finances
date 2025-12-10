@@ -4,8 +4,6 @@ namespace App\Listeners;
 
 use App\Events\BulkTransactionSaved;
 use App\Models\Account;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 
 class UpdateAccountsOnBulkTransactionSaved
 {

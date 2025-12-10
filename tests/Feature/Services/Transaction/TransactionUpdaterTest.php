@@ -60,8 +60,8 @@ it('creates sub transactions when enabling split on an existing outcome transact
         ->and($subTransactions->pluck('amount')->values()->all())->toBe([72.0, 108.0])
         ->and($subTransactions->pluck('percentage')->values()->all())->toBe([40.0, 60.0])
         ->and($subTransactions->pluck('concept')->values()->all())->toBe([
-            'Shared expense no split - Parte de ' . $owner->name,
-            'Shared expense no split - Parte de ' . $partner->name,
+            'Shared expense no split - Parte de '.$owner->name,
+            'Shared expense no split - Parte de '.$partner->name,
         ]);
 });
 
@@ -220,6 +220,6 @@ it('deletes all pending sub transactions when changing outcome to income', funct
 
     expect($updatedTransaction->type)->toBe(TransactionType::Income)
         ->and($subTransactions)->toHaveCount(0)
-        ->and(Transaction::where('concept', 'Outcome to income - Parte de ' . $owner->name)->exists())->toBeFalse()
-        ->and(Transaction::where('concept', 'Outcome to income - Parte de ' . $partner->name)->exists())->toBeFalse();
+        ->and(Transaction::where('concept', 'Outcome to income - Parte de '.$owner->name)->exists())->toBeFalse()
+        ->and(Transaction::where('concept', 'Outcome to income - Parte de '.$partner->name)->exists())->toBeFalse();
 });

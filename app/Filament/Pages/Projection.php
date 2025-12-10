@@ -13,11 +13,15 @@ use Illuminate\Support\Collection;
 class Projection extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
+
     protected static bool $shouldRegisterNavigation = false;
+
     protected static string $view = 'filament.resources.subscription-resource.pages.projection';
 
     public Collection $subscriptions;
+
     public string $pageTitle = '';
+
     public float $total = 0.0;
 
     public function getTitle(): string|Htmlable

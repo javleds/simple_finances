@@ -8,9 +8,7 @@ use App\Notifications\WeeklySummaryNotification;
 
 readonly class WeeklySummaryProcessor
 {
-    public function __construct(private AccountSummaryCreator $accountSummaryCreator)
-    {
-    }
+    public function __construct(private AccountSummaryCreator $accountSummaryCreator) {}
 
     public function handle(): void
     {
@@ -25,7 +23,7 @@ readonly class WeeklySummaryProcessor
             $notificableAccounts = $user->notificableAccounts()->get();
             $attachments = [];
             foreach ($user->accounts as $account) {
-                if (!$notificableAccounts->contains($account)) {
+                if (! $notificableAccounts->contains($account)) {
                     continue;
                 }
 
@@ -37,7 +35,7 @@ readonly class WeeklySummaryProcessor
 
                 $attachments[$path] = [
                     'as' => sprintf('%s_%s.csv', str($account->name)->slug('_'), date('Y_m')),
-                    'mime' => 'text/csv'
+                    'mime' => 'text/csv',
                 ];
             }
 

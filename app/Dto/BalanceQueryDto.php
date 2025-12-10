@@ -12,7 +12,7 @@ class BalanceQueryDto
 
     public function isValid(): bool
     {
-        return !empty($this->accountName);
+        return ! empty($this->accountName);
     }
 
     public function getMissingFields(): array

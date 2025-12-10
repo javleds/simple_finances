@@ -19,7 +19,7 @@ class TransactionDataValidator
     {
         // Validar cuenta
         $account = $this->accountFinderService->findUserAccount($dto->account, $user);
-        if (!$account) {
+        if (! $account) {
             return [
                 'valid' => false,
                 'error' => "No encontré una cuenta con el nombre '{$dto->account}' en tu lista de cuentas. Verifica el nombre e inténtalo de nuevo.",
@@ -30,7 +30,7 @@ class TransactionDataValidator
         $financialGoal = null;
         if ($dto->financialGoal) {
             $financialGoal = $this->findUserFinancialGoal($dto->financialGoal, $user, $account);
-            if (!$financialGoal) {
+            if (! $financialGoal) {
                 return [
                     'valid' => false,
                     'error' => "No encontré una meta financiera con el nombre '{$dto->financialGoal}' para la cuenta '{$account->name}'. Verifica el nombre e inténtalo de nuevo.",
@@ -47,7 +47,7 @@ class TransactionDataValidator
         }
 
         // Validar fecha (opcional)
-        if ($dto->date && !$this->isValidDate($dto->date)) {
+        if ($dto->date && ! $this->isValidDate($dto->date)) {
             return [
                 'valid' => false,
                 'error' => "La fecha '{$dto->date}' no tiene un formato válido. Usa el formato YYYY-MM-DD o describe la fecha en palabras.",
@@ -94,7 +94,7 @@ class TransactionDataValidator
             'searched' => $goalName,
             'found' => $bestMatch?->name,
             'similarity' => $highestSimilarity,
-            'account' => $account->name
+            'account' => $account->name,
         ]);
 
         return $bestMatch;
@@ -116,6 +116,7 @@ class TransactionDataValidator
         }
 
         $distance = levenshtein($str1, $str2);
+
         return 1.0 - ($distance / $maxLen);
     }
 
@@ -123,6 +124,7 @@ class TransactionDataValidator
     {
         try {
             $parsedDate = \Carbon\Carbon::parse($date);
+
             return true;
         } catch (\Exception $e) {
             return false;

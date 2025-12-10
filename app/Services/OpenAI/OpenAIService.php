@@ -4,7 +4,6 @@ namespace App\Services\OpenAI;
 
 use App\Contracts\OpenAIServiceInterface;
 use App\Dto\MessageActionDetectionDto;
-use App\Dto\OpenAIRequestDto;
 use App\Dto\OpenAIResponseDto;
 use App\Dto\TransactionExtractionDto;
 use App\Enums\MessageAction;
@@ -17,6 +16,7 @@ use Throwable;
 class OpenAIService implements OpenAIServiceInterface
 {
     private OpenAI\Client $client;
+
     private array $config;
 
     public function __construct()
@@ -35,12 +35,12 @@ class OpenAIService implements OpenAIServiceInterface
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => MessageActionDetectionPrompt::getSystemPrompt()
+                        'content' => MessageActionDetectionPrompt::getSystemPrompt(),
                     ],
                     [
                         'role' => 'user',
-                        'content' => MessageActionDetectionPrompt::getUserPrompt($text)
-                    ]
+                        'content' => MessageActionDetectionPrompt::getUserPrompt($text),
+                    ],
                 ],
                 'max_tokens' => 500,
                 'temperature' => $this->config['temperature'],
@@ -57,7 +57,7 @@ class OpenAIService implements OpenAIServiceInterface
         } catch (Throwable $e) {
             Log::error('OpenAI: Action detection failed', [
                 'error' => $e->getMessage(),
-                'text' => $text
+                'text' => $text,
             ]);
 
             return $this->buildActionDetectionErrorResponse($e->getMessage());
@@ -74,12 +74,12 @@ class OpenAIService implements OpenAIServiceInterface
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => TransactionExtractionPrompt::getSystemPrompt()
+                        'content' => TransactionExtractionPrompt::getSystemPrompt(),
                     ],
                     [
                         'role' => 'user',
-                        'content' => TransactionExtractionPrompt::getUserPrompt($text)
-                    ]
+                        'content' => TransactionExtractionPrompt::getUserPrompt($text),
+                    ],
                 ],
                 'max_tokens' => $this->config['max_tokens'],
                 'temperature' => $this->config['temperature'],
@@ -96,7 +96,7 @@ class OpenAIService implements OpenAIServiceInterface
         } catch (Throwable $e) {
             Log::error('OpenAI: Text processing failed', [
                 'error' => $e->getMessage(),
-                'text' => $text
+                'text' => $text,
             ]);
 
             return $this->buildErrorResponse($e->getMessage());
@@ -108,7 +108,7 @@ class OpenAIService implements OpenAIServiceInterface
         try {
             Log::info('OpenAI: Processing image', ['imagePath' => $imagePath]);
 
-            if (!file_exists($imagePath)) {
+            if (! file_exists($imagePath)) {
                 throw new \Exception("Image file not found: {$imagePath}");
             }
 
@@ -116,8 +116,8 @@ class OpenAIService implements OpenAIServiceInterface
             $mimeType = mime_content_type($imagePath);
 
             $userMessage = 'Analiza esta imagen y extrae la información de transacción financiera que puedas encontrar.';
-            if (!empty($caption)) {
-                $userMessage .= ' Además, ten en cuenta el siguiente texto que la acompaña: ' . $caption;
+            if (! empty($caption)) {
+                $userMessage .= ' Además, ten en cuenta el siguiente texto que la acompaña: '.$caption;
             }
 
             $response = $this->client->chat()->create([
@@ -125,7 +125,7 @@ class OpenAIService implements OpenAIServiceInterface
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => TransactionExtractionPrompt::getSystemPrompt()
+                        'content' => TransactionExtractionPrompt::getSystemPrompt(),
                     ],
                     [
                         'role' => 'user',
@@ -137,11 +137,11 @@ class OpenAIService implements OpenAIServiceInterface
                             [
                                 'type' => 'image_url',
                                 'image_url' => [
-                                    'url' => "data:{$mimeType};base64,{$imageData}"
-                                ]
-                            ]
-                        ]
-                    ]
+                                    'url' => "data:{$mimeType};base64,{$imageData}",
+                                ],
+                            ],
+                        ],
+                    ],
                 ],
                 'max_tokens' => $this->config['max_tokens'],
                 'temperature' => $this->config['temperature'],
@@ -158,7 +158,7 @@ class OpenAIService implements OpenAIServiceInterface
         } catch (Throwable $e) {
             Log::error('OpenAI: Image processing failed', [
                 'error' => $e->getMessage(),
-                'imagePath' => $imagePath
+                'imagePath' => $imagePath,
             ]);
 
             return $this->buildErrorResponse($e->getMessage());
@@ -170,7 +170,7 @@ class OpenAIService implements OpenAIServiceInterface
         try {
             Log::info('OpenAI: Transcribing audio', ['audioPath' => $audioPath]);
 
-            if (!file_exists($audioPath)) {
+            if (! file_exists($audioPath)) {
                 throw new \Exception("Audio file not found: {$audioPath}");
             }
 
@@ -189,19 +189,19 @@ class OpenAIService implements OpenAIServiceInterface
             return [
                 'success' => true,
                 'text' => $transcribedText,
-                'error' => null
+                'error' => null,
             ];
 
         } catch (Throwable $e) {
             Log::error('OpenAI: Audio transcription failed', [
                 'error' => $e->getMessage(),
-                'audioPath' => $audioPath
+                'audioPath' => $audioPath,
             ]);
 
             return [
                 'success' => false,
                 'text' => null,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -211,7 +211,7 @@ class OpenAIService implements OpenAIServiceInterface
         try {
             Log::info('OpenAI: Processing audio', ['audioPath' => $audioPath]);
 
-            if (!file_exists($audioPath)) {
+            if (! file_exists($audioPath)) {
                 throw new \Exception("Audio file not found: {$audioPath}");
             }
 
@@ -233,7 +233,7 @@ class OpenAIService implements OpenAIServiceInterface
         } catch (Throwable $e) {
             Log::error('OpenAI: Audio processing failed', [
                 'error' => $e->getMessage(),
-                'audioPath' => $audioPath
+                'audioPath' => $audioPath,
             ]);
 
             return $this->buildErrorResponse($e->getMessage());
@@ -273,7 +273,7 @@ class OpenAIService implements OpenAIServiceInterface
     private function buildActionDetectionResponse(array $data, array $rawResponse): array
     {
         $action = null;
-        if (isset($data['action']) && !empty($data['action'])) {
+        if (isset($data['action']) && ! empty($data['action'])) {
             $action = MessageAction::tryFrom($data['action']);
         }
 
@@ -317,7 +317,7 @@ class OpenAIService implements OpenAIServiceInterface
                 }
 
                 Log::warning("OpenAI: Retry attempt {$attempt}/{$maxRetries}", [
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
 
                 sleep(pow(2, $attempt)); // Exponential backoff

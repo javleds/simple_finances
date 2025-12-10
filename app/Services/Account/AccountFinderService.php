@@ -16,6 +16,7 @@ class AccountFinderService
         $account = $this->findExactAccount($searchTerm, $user);
         if ($account) {
             Log::info('Account found - Exact match', ['searched' => $searchTerm, 'found' => $account->name]);
+
             return $account;
         }
 
@@ -23,6 +24,7 @@ class AccountFinderService
         $account = $this->findCaseInsensitiveAccount($searchTerm, $user);
         if ($account) {
             Log::info('Account found - Case insensitive', ['searched' => $searchTerm, 'found' => $account->name]);
+
             return $account;
         }
 
@@ -30,6 +32,7 @@ class AccountFinderService
         $account = $this->findPartialAccount($searchTerm, $user);
         if ($account) {
             Log::info('Account found - Partial match', ['searched' => $searchTerm, 'found' => $account->name]);
+
             return $account;
         }
 
@@ -37,6 +40,7 @@ class AccountFinderService
         $account = $this->findSoundexAccount($searchTerm, $user);
         if ($account) {
             Log::info('Account found - Soundex match', ['searched' => $searchTerm, 'found' => $account->name]);
+
             return $account;
         }
 
@@ -44,10 +48,12 @@ class AccountFinderService
         $account = $this->findSimilarAccount($searchTerm, $user);
         if ($account) {
             Log::info('Account found - Similarity match', ['searched' => $searchTerm, 'found' => $account->name]);
+
             return $account;
         }
 
         Log::info('Account not found', ['searched' => $searchTerm]);
+
         return null;
     }
 
@@ -56,8 +62,8 @@ class AccountFinderService
         return Account::whereHas('users', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
-        ->where('name', $searchTerm)
-        ->first();
+            ->where('name', $searchTerm)
+            ->first();
     }
 
     private function findCaseInsensitiveAccount(string $searchTerm, User $user): ?Account
@@ -65,8 +71,8 @@ class AccountFinderService
         return Account::whereHas('users', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
-        ->whereRaw('LOWER(name) = LOWER(?)', [$searchTerm])
-        ->first();
+            ->whereRaw('LOWER(name) = LOWER(?)', [$searchTerm])
+            ->first();
     }
 
     private function findPartialAccount(string $searchTerm, User $user): ?Account
@@ -75,10 +81,12 @@ class AccountFinderService
         $account = Account::whereHas('users', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
-        ->whereRaw('LOWER(name) LIKE LOWER(?)', ['%' . $searchTerm . '%'])
-        ->first();
+            ->whereRaw('LOWER(name) LIKE LOWER(?)', ['%'.$searchTerm.'%'])
+            ->first();
 
-        if ($account) return $account;
+        if ($account) {
+            return $account;
+        }
 
         // Buscar si alguna palabra del término aparece en el nombre
         $words = explode(' ', $searchTerm);
@@ -87,10 +95,12 @@ class AccountFinderService
                 $account = Account::whereHas('users', function ($query) use ($user) {
                     $query->where('user_id', $user->id);
                 })
-                ->whereRaw('LOWER(name) LIKE LOWER(?)', ['%' . $word . '%'])
-                ->first();
+                    ->whereRaw('LOWER(name) LIKE LOWER(?)', ['%'.$word.'%'])
+                    ->first();
 
-                if ($account) return $account;
+                if ($account) {
+                    return $account;
+                }
             }
         }
 
@@ -148,6 +158,7 @@ class AccountFinderService
     {
         // Remover acentos y caracteres especiales
         $str = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $str);
+
         // Convertir a minúsculas y remover espacios extra
         return trim(strtolower(preg_replace('/[^a-zA-Z0-9\s]/', '', $str)));
     }
@@ -168,6 +179,7 @@ class AccountFinderService
         }
 
         $distance = levenshtein($str1, $str2);
+
         return 1.0 - ($distance / $maxLen);
     }
 }

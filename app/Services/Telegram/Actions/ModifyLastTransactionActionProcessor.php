@@ -36,13 +36,13 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
             // Obtener la última transacción del usuario
             $lastTransaction = $this->lastTransactionService->getLastUserTransaction($user);
 
-            if (!$lastTransaction) {
+            if (! $lastTransaction) {
                 return MessageActionHelper::formatNoLastTransactionResponse();
             }
 
             // Verificar permisos
-            if (!$this->lastTransactionService->canModifyTransaction($lastTransaction, $user)) {
-                return "❌ No tienes permisos para modificar esta transacción.";
+            if (! $this->lastTransactionService->canModifyTransaction($lastTransaction, $user)) {
+                return '❌ No tienes permisos para modificar esta transacción.';
             }
 
             // Mostrar información actual de la transacción
@@ -50,14 +50,14 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
 
             // Si no hay información específica de modificación en el contexto,
             // pedimos al usuario que especifique qué quiere cambiar
-            if (!$this->hasModificationData($context)) {
-                return $currentInfo . "\n\n" .
-                       "💡 **Para modificar la transacción, especifica qué quieres cambiar:**\n" .
-                       "• \"Cambiar concepto a [nuevo concepto]\"\n" .
-                       "• \"Cambiar monto a [nuevo monto]\"\n" .
-                       "• \"Cambiar tipo a ingreso/gasto\"\n" .
-                       "• \"Cambiar fecha a [nueva fecha]\"\n\n" .
-                       "📝 También puedes escribir: \"Modifica mi última transacción: [nuevos datos]\"";
+            if (! $this->hasModificationData($context)) {
+                return $currentInfo."\n\n".
+                       "💡 **Para modificar la transacción, especifica qué quieres cambiar:**\n".
+                       "• \"Cambiar concepto a [nuevo concepto]\"\n".
+                       "• \"Cambiar monto a [nuevo monto]\"\n".
+                       "• \"Cambiar tipo a ingreso/gasto\"\n".
+                       "• \"Cambiar fecha a [nueva fecha]\"\n\n".
+                       '📝 También puedes escribir: "Modifica mi última transacción: [nuevos datos]"';
             }
 
             // Procesar la modificación
@@ -67,7 +67,7 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
             Log::error('ModifyLastTransactionActionProcessor: Error processing modification', [
                 'user_id' => $user->id,
                 'context' => $context,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return MessageActionHelper::formatErrorResponse('modificar la transacción');
@@ -81,9 +81,9 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
 
     private function hasModificationData(array $context): bool
     {
-        return !empty($context['modification_text']) ||
-               !empty($context['field_to_modify']) ||
-               !empty($context['new_value']);
+        return ! empty($context['modification_text']) ||
+               ! empty($context['field_to_modify']) ||
+               ! empty($context['new_value']);
     }
 
     private function processModification(array $context, $lastTransaction, User $user): string
@@ -92,28 +92,28 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
         $modificationText = $context['modification_text'] ?? $context['additional_info'] ?? '';
 
         if (empty($modificationText)) {
-            return "❌ No pude entender qué quieres modificar. Por favor, especifica los cambios que deseas realizar.";
+            return '❌ No pude entender qué quieres modificar. Por favor, especifica los cambios que deseas realizar.';
         }
 
         // Usar OpenAI para procesar el texto de modificación y extraer los cambios
         try {
             $response = $this->openAIService->processText($modificationText);
 
-            if (!$response['success'] || !$response['data']) {
-                return "❌ No pude procesar los cambios solicitados. Inténtalo de nuevo con más detalles.";
+            if (! $response['success'] || ! $response['data']) {
+                return '❌ No pude procesar los cambios solicitados. Inténtalo de nuevo con más detalles.';
             }
 
             $changes = $this->extractChangesFromResponse($response['data'], $lastTransaction, $user);
 
             if (empty($changes)) {
-                return "❌ No se detectaron cambios válidos. Por favor, especifica qué quieres modificar.";
+                return '❌ No se detectaron cambios válidos. Por favor, especifica qué quieres modificar.';
             }
 
             // Aplicar modificaciones
             $success = $this->lastTransactionService->modifyTransaction($lastTransaction, $changes, $user);
 
-            if (!$success) {
-                return "❌ No se pudo modificar la transacción. Por favor, inténtalo de nuevo.";
+            if (! $success) {
+                return '❌ No se pudo modificar la transacción. Por favor, inténtalo de nuevo.';
             }
 
             // Recargar la transacción para obtener los datos actualizados
@@ -125,10 +125,10 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
             Log::error('ModifyLastTransactionActionProcessor: Error processing modification with OpenAI', [
                 'user_id' => $user->id,
                 'modification_text' => $modificationText,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
-            return "❌ Ocurrió un error al procesar la modificación. Inténtalo de nuevo.";
+            return '❌ Ocurrió un error al procesar la modificación. Inténtalo de nuevo.';
         }
     }
 
@@ -141,8 +141,8 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
             $changes['concept'] = $data['concept'];
         }
 
-        if (isset($data['amount']) && (float)$data['amount'] !== $lastTransaction->amount) {
-            $changes['amount'] = (float)$data['amount'];
+        if (isset($data['amount']) && (float) $data['amount'] !== $lastTransaction->amount) {
+            $changes['amount'] = (float) $data['amount'];
         }
 
         if (isset($data['type'])) {
@@ -152,7 +152,7 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
             }
         }
 
-        if (isset($data['date']) && !empty($data['date'])) {
+        if (isset($data['date']) && ! empty($data['date'])) {
             $newDate = \Carbon\Carbon::parse($data['date']);
             if ($newDate->toDateString() !== $lastTransaction->scheduled_at->toDateString()) {
                 $changes['scheduled_at'] = $newDate;
@@ -160,7 +160,7 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
         }
 
         // Validar cambios de cuenta si se especifica
-        if (isset($data['account']) && !empty($data['account'])) {
+        if (isset($data['account']) && ! empty($data['account'])) {
             $account = $this->accountFinderService->findUserAccount($data['account'], $user);
 
             if ($account && $account->id !== $lastTransaction->account_id) {
@@ -175,7 +175,7 @@ class ModifyLastTransactionActionProcessor implements MessageActionProcessorInte
     {
         $message = "📊 **Tu última transacción:**\n\n";
         $message .= "💼 Concepto: {$transaction->concept}\n";
-        $message .= "💰 Cantidad: " . as_money($transaction->amount) . "\n";
+        $message .= '💰 Cantidad: '.as_money($transaction->amount)."\n";
         $message .= "📝 Tipo: {$transaction->type->getLabel()}\n";
         $message .= "📅 Fecha: {$transaction->scheduled_at->format('d/m/Y')}\n";
         $message .= "🏦 Cuenta: {$transaction->account->name}";

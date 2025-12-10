@@ -4,11 +4,8 @@ namespace App\Models;
 
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
-use App\Models\Scopes\BelongsToUserScope;
 use App\Models\Scopes\BelongsToUserThroughAccount;
-use App\Traits\BelongsToUser;
 use Carbon\Carbon;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -92,7 +89,7 @@ class Transaction extends Model
 
     public function scopeBeforeOf(Builder $builder, ?Carbon $date): void
     {
-        if (!$date) {
+        if (! $date) {
             return;
         }
 
@@ -101,7 +98,7 @@ class Transaction extends Model
 
     public function scopeBeforeOrEqualsTo(Builder $builder, ?Carbon $date): void
     {
-        if (!$date) {
+        if (! $date) {
             return;
         }
 

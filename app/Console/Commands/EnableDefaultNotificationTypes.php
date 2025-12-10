@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\NotificationType;
 use App\Models\User;
 use Illuminate\Console\Command;
+
 use function Laravel\Prompts\progress;
 
 class EnableDefaultNotificationTypes extends Command
@@ -29,7 +30,7 @@ class EnableDefaultNotificationTypes extends Command
     public function handle(): int
     {
         $users = User::withoutGlobalScopes()->get();
-        $notificationTypes = NotificationType::whereIn('name',NotificationType::DEFAULT_NOTIFICATIONS)
+        $notificationTypes = NotificationType::whereIn('name', NotificationType::DEFAULT_NOTIFICATIONS)
             ->get()
             ->pluck('id')
             ->toArray();

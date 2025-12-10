@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Enums\Frequency;
-use App\Filament\Actions\CreateSubscriptionPaymentAction;
 use App\Filament\Filters\DateRangeFilter;
 use App\Filament\Resources\SubscriptionResource\Pages;
 use App\Filament\Resources\SubscriptionResource\RelationManagers\PaymentsRelationManager;
@@ -15,15 +14,17 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 
 class SubscriptionResource extends Resource
 {
     protected static ?string $model = Subscription::class;
+
     protected static ?string $label = 'Subscripción';
+
     protected static ?string $pluralLabel = 'Subscripciones';
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-date-range';
+
     protected static ?int $navigationSort = 30;
 
     public static function form(Form $form): Form

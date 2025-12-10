@@ -6,8 +6,8 @@ use App\Filament\Resources\AccountResource;
 use App\Filament\Resources\SubscriptionResource;
 use App\Filament\Resources\TransactionResource;
 use App\Filament\Widgets\AccountBalancePlot;
-use App\Filament\Widgets\PendingTransactionSum;
 use App\Filament\Widgets\PendingTransactionsByAccount;
+use App\Filament\Widgets\PendingTransactionSum;
 use App\Filament\Widgets\SubscriptionMonthlyProjection;
 use Filament\Actions\Action;
 use Filament\Pages\Dashboard;
@@ -28,7 +28,7 @@ class SimpleFinancesDashboard extends Dashboard
         ];
     }
 
-    public function getColumns(): int | string | array
+    public function getColumns(): int|string|array
     {
         return [
             'sm' => 1,

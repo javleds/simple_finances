@@ -2,20 +2,18 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\TransactionStatus;
+use App\Enums\TransactionType;
 use App\Filament\Actions\AddTransactionShortcutAction;
 use App\Filament\Actions\DirectCompareAction;
 use App\Filament\Actions\DirectReceiveTransferAction;
 use App\Filament\Actions\DirectSendTransferAction;
 use App\Filament\Resources\AccountResource\Pages;
 use App\Filament\Resources\AccountResource\RelationManagers;
-use App\Enums\TransactionStatus;
-use App\Enums\TransactionType;
 use App\Models\Account;
-use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\ColorEntry;
-use Filament\Infolists\Components\Group;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
@@ -116,7 +114,7 @@ class AccountResource extends Resource
                     ->label('Total gastado')
                     ->alignRight()
                     ->formatStateUsing(
-                        fn (Account $record) => !$record->isCreditCard()
+                        fn (Account $record) => ! $record->isCreditCard()
                             ? '-'
                             : as_money($record->spent)
                     )
@@ -127,7 +125,7 @@ class AccountResource extends Resource
                     ->label('Crédito disponible')
                     ->alignRight()
                     ->formatStateUsing(
-                        fn (Account $record) => !$record->isCreditCard()
+                        fn (Account $record) => ! $record->isCreditCard()
                             ? '-'
                             : as_money($record->available_credit)
                     )
@@ -138,7 +136,7 @@ class AccountResource extends Resource
                     ->label('Línea de Crédito')
                     ->alignRight()
                     ->formatStateUsing(
-                        fn (Account $record) => !$record->isCreditCard()
+                        fn (Account $record) => ! $record->isCreditCard()
                             ? '-'
                             : as_money($record->credit_line)
                     )
@@ -156,7 +154,7 @@ class AccountResource extends Resource
                     ->label('Nombre')
                     ->options(fn () => Account::all()->pluck('name', 'name'))
                     ->multiple()
-                    ->searchable()
+                    ->searchable(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
@@ -183,70 +181,70 @@ class AccountResource extends Resource
     {
         return $infolist
             ->schema([
-               Section::make('Datos generales')
-                ->columns(3)
-                ->schema([
-                    TextEntry::make('name')
-                        ->label('Nombre'),
-                    ColorEntry::make('color')
-                        ->label('Color'),
-                    TextEntry::make('next_cutoff_date')
-                        ->label('Fecha de corte')
-                        ->hidden(fn (Account $record) => !$record->isCreditCard())
-                        ->dateTime('M d,Y'),
-                    TextEntry::make('description')
-                        ->label('Descripción')
-                        ->default('-'),
-                    IconEntry::make('virtual')
-                        ->label('¿Es una cuenta virtual?'),
-                    TextEntry::make('feedAccount.name')
-                        ->label('Cuenta de alimentación')
-                        ->default('-'),
-                    TextEntry::make('credit_line')
-                        ->label('Línea de crédito')
-                        ->hidden(fn (Account $record) => !$record->isCreditCard())
-                        ->formatStateUsing(fn ($state) => as_money($state)),
-                    TextEntry::make('balance')
-                        ->label(fn (Account $account) => sprintf('Balance %s', $account->credit_card ? $account->next_cutoff_date->translatedFormat('M d, Y') : ''))
-                        ->formatStateUsing(fn ($state) => as_money($state)),
-                    TextEntry::make('spent')
-                        ->label('Total gastado')
-                        ->hidden(fn (Account $record) => !$record->isCreditCard())
-                        ->formatStateUsing(fn ($state) => as_money($state)),
-                    TextEntry::make('available_credit')
-                        ->label('Crédito disponible')
-                        ->hidden(fn (Account $record) => !$record->isCreditCard())
-                        ->formatStateUsing(fn ($state) => as_money($state)),
-                    RepeatableEntry::make('users')
-                        ->columnSpanFull()
-                        ->grid(2)
-                        ->hidden(fn (Account $record) => $record->users()->count() <= 1)
-                        ->label('Compartido con')
-                        ->schema(fn (Account $record) => [
-                            TextEntry::make('name')->label('Nombre'),
-                            TextEntry::make('email')->label('Correo electrónico'),
-                            TextEntry::make('pivot.percentage')->label('Porcentage')
-                                ->formatStateUsing(fn ($state) => "{$state} %"),
-                            TextEntry::make('id')
-                                ->label('Egresos pendientes')
-                                ->formatStateUsing(function ($state) use ($record): string {
-                                    $userId = $state ?? null;
+                Section::make('Datos generales')
+                    ->columns(3)
+                    ->schema([
+                        TextEntry::make('name')
+                            ->label('Nombre'),
+                        ColorEntry::make('color')
+                            ->label('Color'),
+                        TextEntry::make('next_cutoff_date')
+                            ->label('Fecha de corte')
+                            ->hidden(fn (Account $record) => ! $record->isCreditCard())
+                            ->dateTime('M d,Y'),
+                        TextEntry::make('description')
+                            ->label('Descripción')
+                            ->default('-'),
+                        IconEntry::make('virtual')
+                            ->label('¿Es una cuenta virtual?'),
+                        TextEntry::make('feedAccount.name')
+                            ->label('Cuenta de alimentación')
+                            ->default('-'),
+                        TextEntry::make('credit_line')
+                            ->label('Línea de crédito')
+                            ->hidden(fn (Account $record) => ! $record->isCreditCard())
+                            ->formatStateUsing(fn ($state) => as_money($state)),
+                        TextEntry::make('balance')
+                            ->label(fn (Account $account) => sprintf('Balance %s', $account->credit_card ? $account->next_cutoff_date->translatedFormat('M d, Y') : ''))
+                            ->formatStateUsing(fn ($state) => as_money($state)),
+                        TextEntry::make('spent')
+                            ->label('Total gastado')
+                            ->hidden(fn (Account $record) => ! $record->isCreditCard())
+                            ->formatStateUsing(fn ($state) => as_money($state)),
+                        TextEntry::make('available_credit')
+                            ->label('Crédito disponible')
+                            ->hidden(fn (Account $record) => ! $record->isCreditCard())
+                            ->formatStateUsing(fn ($state) => as_money($state)),
+                        RepeatableEntry::make('users')
+                            ->columnSpanFull()
+                            ->grid(2)
+                            ->hidden(fn (Account $record) => $record->users()->count() <= 1)
+                            ->label('Compartido con')
+                            ->schema(fn (Account $record) => [
+                                TextEntry::make('name')->label('Nombre'),
+                                TextEntry::make('email')->label('Correo electrónico'),
+                                TextEntry::make('pivot.percentage')->label('Porcentage')
+                                    ->formatStateUsing(fn ($state) => "{$state} %"),
+                                TextEntry::make('id')
+                                    ->label('Egresos pendientes')
+                                    ->formatStateUsing(function ($state) use ($record): string {
+                                        $userId = $state ?? null;
 
-                                    if (!$userId) {
-                                        return '-';
-                                    }
+                                        if (! $userId) {
+                                            return '-';
+                                        }
 
-                                    $pending = $record->transactions()
-                                        ->where('user_id', $userId)
-                                        ->where('type', TransactionType::Income)
-                                        ->where('status', TransactionStatus::Pending)
-                                        ->sum('amount');
+                                        $pending = $record->transactions()
+                                            ->where('user_id', $userId)
+                                            ->where('type', TransactionType::Income)
+                                            ->where('status', TransactionStatus::Pending)
+                                            ->sum('amount');
 
-                                    return as_money($pending);
-                                }),
-                        ])
-                        ->columns(2)
-                ]),
+                                        return as_money($pending);
+                                    }),
+                            ])
+                            ->columns(2),
+                    ]),
             ]);
     }
 

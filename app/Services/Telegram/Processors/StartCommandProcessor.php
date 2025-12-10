@@ -37,15 +37,15 @@ class StartCommandProcessor implements TelegramMessageProcessorInterface
 
     private function getWelcomeMessage(string $userName): string
     {
-        return "¡Hola {$userName}! Bienvenido al bot de Simple Finances. " .
-               "Este bot te permitirá recibir notificaciones importantes sobre tus finanzas.\n\n" .
-               "📋 **Para vincular tu cuenta:**\n" .
-               "1. Ve a tu perfil en la aplicación web\n" .
-               "2. Haz clic en 'Conectar con Telegram'\n" .
-               "3. Usa el comando: `/verify 123456`\n" .
-               "   (donde 123456 es tu código de 6 dígitos)\n\n" .
-               "💡 **También puedes simplemente enviar el código:** `123456`\n\n" .
-               "¡Es así de fácil! Una vez vinculada tu cuenta, recibirás notificaciones automáticas " .
-               "sobre transacciones, recordatorios de objetivos y más.";
+        return "¡Hola {$userName}! Bienvenido al bot de Simple Finances. ".
+               "Este bot te permitirá recibir notificaciones importantes sobre tus finanzas.\n\n".
+               "📋 **Para vincular tu cuenta:**\n".
+               "1. Ve a tu perfil en la aplicación web\n".
+               "2. Haz clic en 'Conectar con Telegram'\n".
+               "3. Usa el comando: `/verify 123456`\n".
+               "   (donde 123456 es tu código de 6 dígitos)\n\n".
+               "💡 **También puedes simplemente enviar el código:** `123456`\n\n".
+               '¡Es así de fácil! Una vez vinculada tu cuenta, recibirás notificaciones automáticas '.
+               'sobre transacciones, recordatorios de objetivos y más.';
     }
 }

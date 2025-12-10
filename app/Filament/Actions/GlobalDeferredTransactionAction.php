@@ -18,7 +18,6 @@ use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
-use Illuminate\Database\Eloquent\Model;
 use Livewire\Component;
 
 class GlobalDeferredTransactionAction extends Action
@@ -63,7 +62,7 @@ class GlobalDeferredTransactionAction extends Action
                                 /** @var Account $account */
                                 $account = Account::find($get('account_id'));
 
-                                if (!$account) {
+                                if (! $account) {
                                     return;
                                 }
 
@@ -147,9 +146,9 @@ class GlobalDeferredTransactionAction extends Action
                                             )
                                         );
                                     }
-                                }
-                            ])
-                    ])
+                                },
+                            ]),
+                    ]),
             ])
             ->action(function (array $data, Component $livewire) {
                 /** @var Account $account */

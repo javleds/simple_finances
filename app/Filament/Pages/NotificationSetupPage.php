@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\NotificationType;
 use App\Services\NotificableAccountSetupBuilder;
 use App\Services\NotificationSetupBuilder;
 use Filament\Notifications\Notification;
@@ -41,7 +40,7 @@ class NotificationSetupPage extends Page
             $user->notificationTypes()->detach($notificationId);
             $this->refetch();
 
-            Notification::make('notification_setup_saved_off' . $notificationId)->title('Preferencia guardada.')->success()->send();
+            Notification::make('notification_setup_saved_off'.$notificationId)->title('Preferencia guardada.')->success()->send();
 
             return;
         }
@@ -49,7 +48,7 @@ class NotificationSetupPage extends Page
         $user->notificationTypes()->attach($notificationId);
         $this->refetch();
 
-        Notification::make('notification_setup_saved_on' . $notificationId)->title('Preferencia guardada.')->success()->send();
+        Notification::make('notification_setup_saved_on'.$notificationId)->title('Preferencia guardada.')->success()->send();
     }
 
     public function handleAccountNotification(int $accountId, int $enabled): void
@@ -60,7 +59,7 @@ class NotificationSetupPage extends Page
             $user->notificableAccounts()->detach($accountId);
             $this->refetch();
 
-            Notification::make('account_notification_saved_off' . $accountId)->title('Preferencia guardada.')->success()->send();
+            Notification::make('account_notification_saved_off'.$accountId)->title('Preferencia guardada.')->success()->send();
 
             return;
         }
@@ -68,7 +67,7 @@ class NotificationSetupPage extends Page
         $user->notificableAccounts()->attach($accountId);
         $this->refetch();
 
-        Notification::make('account_notification_saved_on' . $accountId)->title('Preferencia guardada.')->success()->send();
+        Notification::make('account_notification_saved_on'.$accountId)->title('Preferencia guardada.')->success()->send();
     }
 
     public function refetch(): void

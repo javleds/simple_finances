@@ -3,13 +3,10 @@
 namespace App\Services\Subscriptions;
 
 use App\Models\Subscription;
-use Carbon\CarbonImmutable;
 
 readonly class DailyUpdater
 {
-    public function __construct(private UpdateNextPayment $updateNextPayment)
-    {
-    }
+    public function __construct(private UpdateNextPayment $updateNextPayment) {}
 
     public function handle(): void
     {

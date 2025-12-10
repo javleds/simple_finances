@@ -13,12 +13,12 @@ class OpenAIResponseDto
 
     public function isSuccess(): bool
     {
-        return $this->success && !is_null($this->data);
+        return $this->success && ! is_null($this->data);
     }
 
     public function hasError(): bool
     {
-        return !$this->success || !is_null($this->error);
+        return ! $this->success || ! is_null($this->error);
     }
 
     public function toArray(): array

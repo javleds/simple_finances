@@ -16,14 +16,14 @@ class VideoMessage
                     'first_name' => 'John',
                     'last_name' => 'Doe',
                     'username' => 'johndoe',
-                    'language_code' => 'es'
+                    'language_code' => 'es',
                 ],
                 'chat' => [
                     'id' => 123456789,
                     'first_name' => 'John',
                     'last_name' => 'Doe',
                     'username' => 'johndoe',
-                    'type' => 'private'
+                    'type' => 'private',
                 ],
                 'date' => 1640995440,
                 'video' => [
@@ -37,20 +37,20 @@ class VideoMessage
                         'file_unique_id' => 'AQADUAYAAn10mEZy',
                         'file_size' => 24275,
                         'width' => 175,
-                        'height' => 320
+                        'height' => 320,
                     ],
                     'thumb' => [
                         'file_id' => 'AAMCAQADGQEAAxFo0kZDiG1fwxkDLlpsWCVr7AlSDgACUAYAAn10mEYxUI6XlS7yHQEAB20AAzYE',
                         'file_unique_id' => 'AQADUAYAAn10mEZy',
                         'file_size' => 24275,
                         'width' => 175,
-                        'height' => 320
+                        'height' => 320,
                     ],
                     'file_id' => 'BAACAgEAAxkBAAMRaNJGQ4htX8MZAy5abFgla-wJUg4AAlAGAAJ9dJhGMVCOl5Uu8h02BA',
                     'file_unique_id' => 'AgADUAYAAn10mEY',
-                    'file_size' => 659549
-                ]
-            ]
+                    'file_size' => 659549,
+                ],
+            ],
         ];
     }
 }

@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Enums\InviteStatus;
 use App\Filament\Resources\AccountInviteResource\Pages;
-use App\Filament\Resources\AccountInviteResource\RelationManagers;
 use App\Models\Account;
 use App\Models\AccountInvite;
 use App\Services\AccountInvites\Respond;
@@ -16,12 +15,13 @@ use Filament\Support\Colors\Color;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class AccountInviteResource extends Resource
 {
     protected static ?string $model = AccountInvite::class;
+
     protected static ?string $label = 'Invitación';
+
     protected static ?string $pluralLabel = 'Invitaciones';
 
     protected static ?string $navigationIcon = 'heroicon-o-inbox-arrow-down';

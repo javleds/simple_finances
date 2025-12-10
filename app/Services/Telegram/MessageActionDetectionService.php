@@ -17,20 +17,22 @@ class MessageActionDetectionService implements MessageActionDetectionServiceInte
     public function detectAction(string $text): array
     {
         try {
-            if (!$this->isAvailable()) {
+            if (! $this->isAvailable()) {
                 Log::warning('MessageActionDetectionService: Service not available');
+
                 return $this->buildFallbackResponse($text);
             }
 
             $response = $this->openAIService->detectMessageAction($text);
 
-            if (!$response['success']) {
+            if (! $response['success']) {
                 Log::error('MessageActionDetectionService: Detection failed', ['error' => $response['error']]);
+
                 return $this->buildFallbackResponse($text);
             }
 
             // Asegurar que el texto original esté en el contexto
-            if (!isset($response['context'])) {
+            if (! isset($response['context'])) {
                 $response['context'] = [];
             }
             $response['context']['original_text'] = $text;
@@ -39,8 +41,9 @@ class MessageActionDetectionService implements MessageActionDetectionServiceInte
         } catch (\Exception $e) {
             Log::error('MessageActionDetectionService: Exception occurred', [
                 'error' => $e->getMessage(),
-                'text' => $text
+                'text' => $text,
             ]);
+
             return $this->buildFallbackResponse($text);
         }
     }
@@ -49,7 +52,8 @@ class MessageActionDetectionService implements MessageActionDetectionServiceInte
     {
         // Verificar si OpenAI está disponible y configurado
         $apiToken = config('services.openai.api_token');
-        return !empty($apiToken);
+
+        return ! empty($apiToken);
     }
 
     private function buildFallbackResponse(string $text): array

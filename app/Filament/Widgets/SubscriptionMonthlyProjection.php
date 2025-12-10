@@ -10,7 +10,7 @@ class SubscriptionMonthlyProjection extends BaseWidget
 {
     protected ?string $heading = 'Subscripciones';
 
-    protected int | string | array $columnSpan = [
+    protected int|string|array $columnSpan = [
         'sm' => 1,
         'lg' => 1,
     ];

@@ -19,7 +19,7 @@ class MessageActionProcessorFactory
     {
         $actionType = $processor::getActionType();
 
-        if (!$this->processors->has($actionType->value)) {
+        if (! $this->processors->has($actionType->value)) {
             $this->processors->put($actionType->value, collect());
         }
 
@@ -30,13 +30,13 @@ class MessageActionProcessorFactory
     {
         $processors = $this->processors->get($action->value);
 
-        if (!$processors || $processors->isEmpty()) {
+        if (! $processors || $processors->isEmpty()) {
             return null;
         }
 
         return $processors
-            ->filter(fn(MessageActionProcessorInterface $processor) => $processor->canHandle($action, $context))
-            ->sortByDesc(fn(MessageActionProcessorInterface $processor) => $processor->getPriority())
+            ->filter(fn (MessageActionProcessorInterface $processor) => $processor->canHandle($action, $context))
+            ->sortByDesc(fn (MessageActionProcessorInterface $processor) => $processor->getPriority())
             ->first();
     }
 
@@ -60,6 +60,6 @@ class MessageActionProcessorFactory
     {
         return $this->processors
             ->keys()
-            ->map(fn(string $value) => MessageAction::from($value));
+            ->map(fn (string $value) => MessageAction::from($value));
     }
 }

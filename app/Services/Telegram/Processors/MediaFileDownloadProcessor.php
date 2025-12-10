@@ -32,12 +32,13 @@ class MediaFileDownloadProcessor implements TelegramMessageProcessorInterface
         try {
             $fileData = $this->fileService->extractFileData($telegramUpdate);
 
-            if (!$fileData) {
+            if (! $fileData) {
                 return "¡Hola {$userName}! No pude extraer información del archivo multimedia.";
             }
 
-            if (!TelegramMessageHelper::isFileSizeAllowedForDownload($fileData['file_size'])) {
+            if (! TelegramMessageHelper::isFileSizeAllowedForDownload($fileData['file_size'])) {
                 $fileSize = TelegramMessageHelper::formatFileSize($fileData['file_size']);
+
                 return "¡Hola {$userName}! El archivo es muy grande ({$fileSize}) para descarga automática. Máximo permitido: 20MB.";
             }
 
@@ -51,6 +52,7 @@ class MediaFileDownloadProcessor implements TelegramMessageProcessorInterface
 
         } catch (\Exception $e) {
             TelegramMessageHelper::logFileError('media_download', $e, $userName, ['update' => $telegramUpdate]);
+
             return "¡Hola {$userName}! Ocurrió un error al descargar tu archivo. Por favor intenta nuevamente.";
         }
     }

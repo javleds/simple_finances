@@ -13,14 +13,14 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Colors\Color;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class InvitesRelationManager extends RelationManager
 {
     protected static string $relationship = 'invites';
+
     protected static ?string $title = 'Invitaciones';
+
     protected static ?string $label = 'Invitación';
 
     public function isReadOnly(): bool
@@ -89,7 +89,7 @@ class InvitesRelationManager extends RelationManager
                     ->requiresConfirmation()
                     ->color(Color::Red)
                     ->label('Dejar de compartir')
-                    ->hidden(fn (AccountInvite $record) => !$record->isAccepted())
+                    ->hidden(fn (AccountInvite $record) => ! $record->isAccepted())
                     ->action(function (AccountInvite $record) {
                         $user = User::withoutGlobalScopes()->where('email', $record->email)->first();
                         $record->account->users()->detach($user->id);

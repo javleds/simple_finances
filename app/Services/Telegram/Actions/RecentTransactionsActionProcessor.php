@@ -3,7 +3,6 @@
 namespace App\Services\Telegram\Actions;
 
 use App\Contracts\MessageActionProcessorInterface;
-use App\Dto\RecentTransactionsQueryDto;
 use App\Enums\MessageAction;
 use App\Models\User;
 use App\Services\Account\AccountFinderService;
@@ -45,7 +44,7 @@ class RecentTransactionsActionProcessor implements MessageActionProcessorInterfa
             Log::error('RecentTransactionsActionProcessor: Error processing transactions query', [
                 'user_id' => $user->id,
                 'context' => $context,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return MessageActionHelper::formatErrorResponse('consultar los movimientos');
@@ -68,7 +67,7 @@ class RecentTransactionsActionProcessor implements MessageActionProcessorInterfa
         // Necesitamos obtener la cuenta para el formato de respuesta
         $account = $this->accountFinderService->findUserAccount($accountName, $user);
 
-        if (!$account) {
+        if (! $account) {
             return MessageActionHelper::formatNoAccountFoundResponse($accountName);
         }
 
@@ -80,8 +79,8 @@ class RecentTransactionsActionProcessor implements MessageActionProcessorInterfa
         $transactions = $this->transactionHistoryService->getRecentTransactionsAllAccounts($user, $limit);
 
         if ($transactions->isEmpty()) {
-            return "📝 No tienes movimientos registrados aún.\n\n" .
-                   "💡 Tip: Comienza creando transacciones para gestionar tus finanzas.";
+            return "📝 No tienes movimientos registrados aún.\n\n".
+                   '💡 Tip: Comienza creando transacciones para gestionar tus finanzas.';
         }
 
         $message = "📋 **Últimos {$limit} movimientos (todas las cuentas)**\n\n";

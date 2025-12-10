@@ -42,11 +42,12 @@ class TelegramVerificationService
             ->with('user')
             ->first();
 
-        if (!$verificationCode) {
+        if (! $verificationCode) {
             Log::warning('Intento de verificación con código inválido', [
                 'code' => $code,
                 'chat_id' => $chatId,
             ]);
+
             return null;
         }
 
@@ -57,6 +58,7 @@ class TelegramVerificationService
                 'existing_chat_id' => $verificationCode->user->telegram_chat_id,
                 'new_chat_id' => $chatId,
             ]);
+
             return null;
         }
 
@@ -112,13 +114,13 @@ class TelegramVerificationService
      */
     public function sendConfirmationMessage(User $user): void
     {
-        if (!$user->hasTelegramLinked()) {
+        if (! $user->hasTelegramLinked()) {
             return;
         }
 
         try {
-            $message = "¡Excelente {$user->name}! Tu cuenta ha sido vinculada exitosamente con Telegram. " .
-                      "Ahora recibirás notificaciones de tus finanzas directamente aquí.";
+            $message = "¡Excelente {$user->name}! Tu cuenta ha sido vinculada exitosamente con Telegram. ".
+                      'Ahora recibirás notificaciones de tus finanzas directamente aquí.';
 
             $this->telegramService->sendMessage($user->telegram_chat_id, $message);
 

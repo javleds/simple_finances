@@ -3,8 +3,6 @@
 namespace App\Models;
 
 use App\Enums\FinancialGoalStatus;
-use App\Traits\BelongsToSharedUsers;
-use App\Traits\BelongsToUser;
 use App\Traits\UnscopedBelongsToUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

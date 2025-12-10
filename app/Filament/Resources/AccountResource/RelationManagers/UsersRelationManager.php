@@ -2,22 +2,21 @@
 
 namespace App\Filament\Resources\AccountResource\RelationManagers;
 
-use App\Models\Account;
-use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Livewire\Component;
 
 class UsersRelationManager extends RelationManager
 {
     protected static string $relationship = 'users';
+
     protected static ?string $title = 'Usuarios';
+
     protected static ?string $modelLabel = 'Usuario';
+
     protected static ?string $pluralModelLabel = 'Usuarios';
 
     public function form(Form $form): Form

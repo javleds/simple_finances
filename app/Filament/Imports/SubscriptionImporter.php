@@ -52,15 +52,15 @@ class SubscriptionImporter extends Importer
 
     public function resolveRecord(): ?Subscription
     {
-        return new Subscription();
+        return new Subscription;
     }
 
     public static function getCompletedNotificationBody(Import $import): string
     {
-        $body = 'Importación finalizada con ' . number_format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' importados.';
+        $body = 'Importación finalizada con '.number_format($import->successful_rows).' '.str('row')->plural($import->successful_rows).' importados.';
 
         if ($failedRowsCount = $import->getFailedRowsCount()) {
-            $body .= ' ' . number_format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' registros fallaron.';
+            $body .= ' '.number_format($failedRowsCount).' '.str('row')->plural($failedRowsCount).' registros fallaron.';
         }
 
         return $body;
@@ -70,21 +70,25 @@ class SubscriptionImporter extends Importer
     {
         if (str_contains(mb_strtolower($this->data['frequency_type']), 'mes')) {
             $this->data['frequency_type'] = Frequency::Month;
+
             return;
         }
 
         if (str_contains(mb_strtolower($this->data['frequency_type']), 'año')) {
             $this->data['frequency_type'] = Frequency::Year;
+
             return;
         }
 
         if (str_contains(mb_strtolower($this->data['frequency_type']), 'dia')) {
             $this->data['frequency_type'] = Frequency::Day;
+
             return;
         }
 
         if (str_contains(mb_strtolower($this->data['frequency_type']), 'día')) {
             $this->data['frequency_type'] = Frequency::Day;
+
             return;
         }
 

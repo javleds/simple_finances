@@ -3,7 +3,6 @@
 namespace App\Services\Telegram\Actions;
 
 use App\Contracts\MessageActionProcessorInterface;
-use App\Dto\BalanceQueryDto;
 use App\Enums\MessageAction;
 use App\Models\User;
 use App\Services\Account\AccountBalanceService;
@@ -42,7 +41,7 @@ class BalanceQueryActionProcessor implements MessageActionProcessorInterface
             Log::error('BalanceQueryActionProcessor: Error processing balance query', [
                 'user_id' => $user->id,
                 'context' => $context,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return MessageActionHelper::formatErrorResponse('consultar el balance');
@@ -58,7 +57,7 @@ class BalanceQueryActionProcessor implements MessageActionProcessorInterface
     {
         $balanceData = $this->accountBalanceService->getAccountBalance($accountName, $user);
 
-        if (!$balanceData) {
+        if (! $balanceData) {
             return MessageActionHelper::formatNoAccountFoundResponse($accountName);
         }
 
@@ -70,8 +69,8 @@ class BalanceQueryActionProcessor implements MessageActionProcessorInterface
         $accountsBalance = $this->accountBalanceService->getAllAccountsBalance($user);
 
         if ($accountsBalance->isEmpty()) {
-            return "❌ No tienes cuentas registradas aún.\n\n" .
-                   "💡 Tip: Crea tu primera cuenta para comenzar a gestionar tus finanzas.";
+            return "❌ No tienes cuentas registradas aún.\n\n".
+                   '💡 Tip: Crea tu primera cuenta para comenzar a gestionar tus finanzas.';
         }
 
         $message = "💰 **Balance de todas tus cuentas**\n\n";
@@ -92,7 +91,7 @@ class BalanceQueryActionProcessor implements MessageActionProcessorInterface
         });
 
         if ($totalBalance > 0) {
-            $message .= "💰 **Total en cuentas regulares**: " . as_money($totalBalance);
+            $message .= '💰 **Total en cuentas regulares**: '.as_money($totalBalance);
         }
 
         return $message;

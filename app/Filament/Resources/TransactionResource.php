@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Dto\TransactionFormDto;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
-use App\Events\BulkTransactionSaved;
 use App\Filament\Exports\TransactionExporter;
 use App\Filament\Filters\DateRangeFilter;
 use App\Filament\Resources\TransactionResource\Pages;
@@ -13,8 +12,8 @@ use App\Models\Account;
 use App\Models\FinancialGoal;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\Transaction\TransactionUpdater;
 use App\Services\Transaction\TransactionRemover;
+use App\Services\Transaction\TransactionUpdater;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -29,7 +28,9 @@ use Illuminate\Support\Facades\DB;
 class TransactionResource extends Resource
 {
     protected static ?string $model = Transaction::class;
+
     protected static ?string $label = 'Transaccion';
+
     protected static ?string $pluralLabel = 'Transacciones';
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
@@ -81,7 +82,7 @@ class TransactionResource extends Resource
 
                         $account = Account::find($get('account_id'));
 
-                        if (!$account) {
+                        if (! $account) {
                             return true;
                         }
 
@@ -91,7 +92,7 @@ class TransactionResource extends Resource
                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
                         $account = Account::find($get('account_id'));
 
-                        if (!$account) {
+                        if (! $account) {
                             return $set('user_payments', []);
                         }
 
@@ -104,12 +105,12 @@ class TransactionResource extends Resource
                         })->toArray());
                     }),
                 Forms\Components\Repeater::make('user_payments')
-                    ->hidden(fn (Forms\Get $get) => !$get('split_between_users'))
+                    ->hidden(fn (Forms\Get $get) => ! $get('split_between_users'))
                     ->label('Usuarios')
                     ->rules([
                         function (Forms\Get $get) {
                             return function (string $attribute, $value, \Closure $fail) use ($get) {
-                                if (!$get('split_between_users')) {
+                                if (! $get('split_between_users')) {
                                     return;
                                 }
 
@@ -147,7 +148,7 @@ class TransactionResource extends Resource
                     ->maxItems(function (Forms\Get $get) {
                         $account = Account::find($get('account_id'));
 
-                        if (!$account) {
+                        if (! $account) {
                             return 0;
                         }
 
@@ -156,7 +157,7 @@ class TransactionResource extends Resource
                     ->minItems(function (Forms\Get $get) {
                         $account = Account::find($get('account_id'));
 
-                        if (!$account) {
+                        if (! $account) {
                             return 0;
                         }
 
@@ -174,7 +175,7 @@ class TransactionResource extends Resource
                         ->where('account_id', $get('account_id'))
                         ->pluck('name', 'id'))
                     ->label('Meta financiera')
-                    ->disabled(fn (Forms\Get $get) => $get('type') === TransactionType::Outcome || !filled($get('account_id'))),
+                    ->disabled(fn (Forms\Get $get) => $get('type') === TransactionType::Outcome || ! filled($get('account_id'))),
             ]);
     }
 

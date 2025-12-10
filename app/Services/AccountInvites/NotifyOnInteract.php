@@ -14,11 +14,11 @@ class NotifyOnInteract
     {
         $user = User::withoutGlobalScopes()->find($invite->user_id);
 
-        if (!$user->canReceiveNotification(NotificationType::INVITATION_INTERACTION)) {
+        if (! $user->canReceiveNotification(NotificationType::INVITATION_INTERACTION)) {
             return;
         }
 
-        if (!$user->notificableAccounts()->get()->contains($invite->account)) {
+        if (! $user->notificableAccounts()->get()->contains($invite->account)) {
             return;
         }
 

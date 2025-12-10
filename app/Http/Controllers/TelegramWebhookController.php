@@ -26,7 +26,7 @@ class TelegramWebhookController extends Controller
         } catch (\Exception $e) {
             Log::error('Error procesando webhook de Telegram', [
                 'error' => $e->getMessage(),
-                'webhook_data' => $request->all()
+                'webhook_data' => $request->all(),
             ]);
 
             return response()->json(['message' => 'Error procesando webhook de Telegram'], Response::HTTP_SERVICE_UNAVAILABLE);

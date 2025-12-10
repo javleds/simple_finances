@@ -47,6 +47,7 @@ class CleanExpiredTelegramCodes extends Command
 
         } catch (\Exception $e) {
             $this->error("Error al limpiar códigos expirados: {$e->getMessage()}");
+
             return Command::FAILURE;
         }
     }

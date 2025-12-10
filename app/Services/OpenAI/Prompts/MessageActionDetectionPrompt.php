@@ -2,8 +2,6 @@
 
 namespace App\Services\OpenAI\Prompts;
 
-use App\Enums\MessageAction;
-
 class MessageActionDetectionPrompt
 {
     public static function getSystemPrompt(): string

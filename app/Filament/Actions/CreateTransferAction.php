@@ -42,7 +42,7 @@ class CreateTransferAction extends Action
                                     if ($get('destination_id') === $get('origin_id')) {
                                         $fail('Las cuentas no deben ser iguales.');
                                     }
-                                }
+                                },
                             ]),
                         Select::make('destination_id')
                             ->label('Destino')
@@ -58,7 +58,7 @@ class CreateTransferAction extends Action
                                     if ($get('destination_id') === $get('origin_id')) {
                                         $fail('Las cuentas no deben ser iguales.');
                                     }
-                                }
+                                },
                             ]),
                         TextInput::make('amount')
                             ->label('Cantidad')
@@ -85,7 +85,7 @@ class CreateTransferAction extends Action
                                             )
                                         );
                                     }
-                                }
+                                },
                             ]),
                         TextInput::make('concept')
                             ->label('Concepto')
@@ -96,7 +96,7 @@ class CreateTransferAction extends Action
                             ->prefixIcon('heroicon-o-calendar')
                             ->default(Carbon::now())
                             ->required(),
-                    ])
+                    ]),
             ])
             ->action(function (array $data, TransferCreator $transferCreator) {
                 $origin = Account::find($data['origin_id']);

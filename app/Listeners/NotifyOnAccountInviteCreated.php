@@ -6,8 +6,6 @@ use App\Events\AccountInviteCreated;
 use App\Models\NotificationType;
 use App\Models\User;
 use App\Notifications\InviteAccountEmail;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Notification;
 
 class NotifyOnAccountInviteCreated
@@ -27,7 +25,7 @@ class NotifyOnAccountInviteCreated
     {
         $user = User::withoutGlobalScopes()->where('email', $event->invite->email)->first();
 
-        if ($user && !$user->canReceiveNotification(NotificationType::INVITATION_NOTIFICATION)) {
+        if ($user && ! $user->canReceiveNotification(NotificationType::INVITATION_NOTIFICATION)) {
             return;
         }
 

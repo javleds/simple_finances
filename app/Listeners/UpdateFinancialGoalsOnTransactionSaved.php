@@ -2,15 +2,8 @@
 
 namespace App\Listeners;
 
-use App\Enums\FinancialGoalStatus;
 use App\Events\TransactionSaved;
-use App\Models\Account;
-use App\Models\FinancialGoal;
 use App\Models\Transaction;
-use Carbon\Carbon;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Queue\InteractsWithQueue;
 
 class UpdateFinancialGoalsOnTransactionSaved
 {

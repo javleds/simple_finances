@@ -2,25 +2,23 @@
 
 namespace App\Filament\Resources\AccountResource\RelationManagers;
 
-use App\Enums\TransactionStatus;
 use App\Filament\Tables\Columns\ProgressColumn;
 use App\Models\FinancialGoal;
 use App\Models\Transaction;
-use App\Models\User;
-use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class FinancialGoalsRelationManager extends RelationManager
 {
     protected static string $relationship = 'financialGoals';
+
     protected static ?string $title = 'Metas financieras';
+
     protected static ?string $modelLabel = 'Meta financiera';
+
     protected static ?string $pluralModelLabel = 'Metas financieras';
 
     public function isReadOnly(): bool
@@ -73,7 +71,7 @@ class FinancialGoalsRelationManager extends RelationManager
                     ->label('Progreso'),
                 Tables\Columns\TextColumn::make('must_completed_at')
                     ->label('Fecha límite')
-                    ->date()
+                    ->date(),
             ])
             ->filters([
                 //

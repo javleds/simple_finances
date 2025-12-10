@@ -16,18 +16,18 @@ class TextMessage
                     'first_name' => 'John',
                     'last_name' => 'Doe',
                     'username' => 'johndoe',
-                    'language_code' => 'es'
+                    'language_code' => 'es',
                 ],
                 'chat' => [
                     'id' => 123456789,
                     'first_name' => 'John',
                     'last_name' => 'Doe',
                     'username' => 'johndoe',
-                    'type' => 'private'
+                    'type' => 'private',
                 ],
                 'date' => 1640995200,
-                'text' => 'Hola mundo desde telegram!'
-            ]
+                'text' => 'Hola mundo desde telegram!',
+            ],
         ];
     }
 }

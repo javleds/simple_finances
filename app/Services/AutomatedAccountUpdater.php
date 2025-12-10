@@ -13,7 +13,7 @@ class AutomatedAccountUpdater
         $now = Carbon::now();
 
         foreach ($accounts as $account) {
-            if (!$account->isCreditCard()) {
+            if (! $account->isCreditCard()) {
                 continue;
             }
 
