@@ -24,9 +24,7 @@
         "pestphp/pest": "^3.7",
         "pestphp/pest-plugin-drift": "^3.0",
         "phpstan/phpstan-deprecation-rules": "^1.2",
-        "phpunit/phpunit": "^11.0.1",
-        "rector/rector": "^1.2",
-        "rector/rector-laravel": "^0.19"
+        "phpunit/phpunit": "^11.0.1"
     },
     "autoload": {
         "psr-4": {
@@ -62,9 +60,7 @@
         "stan:baseline": "phpstan analyse --memory-limit=512M --generate-baseline=phpstan-baseline.neon",
         "pint": "pint",
         "format": "php-cs-fixer fix",
-        "format:check": "php-cs-fixer fix --dry-run --diff",
-        "rector": "rector process",
-        "rector:dry": "rector process --dry-run --diff"
+        "format:check": "php-cs-fixer fix --dry-run --diff"
     },
     "extra": {
         "laravel": {
