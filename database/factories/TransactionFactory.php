@@ -21,15 +21,23 @@ class TransactionFactory extends Factory
      */
     public function definition(): array
     {
+        $user = User::factory();
+        $account = Account::factory()->state(fn () => ['user_id' => $user]);
+        $type = $this->faker->randomElement(TransactionType::cases());
+        $amount = $this->faker->randomFloat(2, 1.0, 10000.0);
+        $scheduledAt = Carbon::now()->subDays($this->faker->numberBetween(0, 30));
+
         return [
             'concept' => $this->faker->words(3, true),
-            'amount' => $this->faker->randomFloat(2, 1.0, 10000.0),
-            'percentage' => 100.0,
-            'type' => $this->faker->randomElement(TransactionType::values()),
+            'amount' => $amount,
+            'percentage' => $this->faker->randomFloat(2, 10.0, 100.0),
+            'type' => $type,
             'status' => TransactionStatus::Completed,
-            'user_id' => User::factory(),
-            'account_id' => Account::factory(),
-            'scheduled_at' => Carbon::now()->format('Y-m-d'),
+            'user_id' => $user,
+            'account_id' => $account,
+            'scheduled_at' => $scheduledAt,
+            'parent_transaction_id' => null,
+            'financial_goal_id' => null,
         ];
     }
 

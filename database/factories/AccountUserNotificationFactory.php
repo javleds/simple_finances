@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Account;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -16,8 +18,12 @@ class AccountUserNotificationFactory extends Factory
      */
     public function definition(): array
     {
+        $user = User::factory();
+        $account = Account::factory()->state(fn () => ['user_id' => $user]);
+
         return [
-            //
+            'user_id' => $user,
+            'account_id' => $account,
         ];
     }
 }

@@ -17,7 +17,8 @@ class NotificationTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->unique()->sentence(3),
+            'description' => $this->faker->sentence(8),
         ];
     }
 }
