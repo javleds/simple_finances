@@ -47,4 +47,25 @@ class TransactionFactory extends Factory
             'status' => TransactionStatus::Pending,
         ]);
     }
+
+    public function completed(): static
+    {
+        return $this->state(fn () => [
+            'status' => TransactionStatus::Completed,
+        ]);
+    }
+
+    public function income(): static
+    {
+        return $this->state(fn () => [
+            'type' => TransactionType::Income,
+        ]);
+    }
+
+    public function outcome(): static
+    {
+        return $this->state(fn () => [
+            'type' => TransactionType::Outcome,
+        ]);
+    }
 }
