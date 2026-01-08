@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\FixedIncomeResource\Pages;
 use App\Filament\Resources\FixedIncomeResource\RelationManagers;
 use App\Models\FixedIncome;
-use App\Enums\Frequency;
+use App\Enums\FixedIncomeFrequency;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -38,7 +38,7 @@ class FixedIncomeResource extends Resource
                     ->maxLength(255),
                 Forms\Components\Select::make('frequency')
                     ->label('Frecuencia')
-                    ->options(Frequency::class)
+                    ->options(FixedIncomeFrequency::class)
                     ->required(),
             ]);
     }
@@ -79,7 +79,8 @@ class FixedIncomeResource extends Resource
                         TextEntry::make('name')
                             ->label('Nombre'),
                         TextEntry::make('frequency')
-                             ->label('Frecuencia'),
+                             ->label('Frecuencia')
+                             ->badge(),
                         TextEntry::make('balance')
                             ->label('Balance')
                             ->getStateUsing(fn (FixedIncome $record): string => as_money(

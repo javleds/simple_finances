@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Enums\Frequency;
+use App\Enums\FixedIncomeFrequency;
 use App\Traits\BelongsToUser;
 
 class FixedIncome extends Model
@@ -18,7 +18,7 @@ class FixedIncome extends Model
     {
         return [
             'user_id' => 'integer',
-            'frequency' => Frequency::class,
+            'frequency' => FixedIncomeFrequency::class,
         ];
     }
 
