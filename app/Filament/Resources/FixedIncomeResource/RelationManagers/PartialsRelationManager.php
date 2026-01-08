@@ -9,6 +9,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Livewire\Component;
 
 class PartialsRelationManager extends RelationManager
 {
@@ -54,11 +55,20 @@ class PartialsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->after(function(Component $livewire) {
+                        $livewire->dispatch('refreshFixedIncome');
+                    }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->after(function(Component $livewire) {
+                        $livewire->dispatch('refreshFixedIncome');
+                    }),
+                Tables\Actions\DeleteAction::make()
+                    ->after(function(Component $livewire) {
+                        $livewire->dispatch('refreshFixedIncome');
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
