@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Traits\BelongsToUser;
+use App\Enums\FixedOutcomeType;
 
 class FixedOutcome extends Model
 {
@@ -19,6 +20,7 @@ class FixedOutcome extends Model
             'fixed_income_id' => 'integer',
             'user_id' => 'integer',
             'amount' => 'float',
+            'type' => FixedOutcomeType::class,
         ];
     }
 
