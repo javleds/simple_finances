@@ -68,7 +68,8 @@ class FixedIncomeResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\PartialsRelationManager::class,
+            RelationManagers\OutcomesRelationManager::class,
         ];
     }
 
