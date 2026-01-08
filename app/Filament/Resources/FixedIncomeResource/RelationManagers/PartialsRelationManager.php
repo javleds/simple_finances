@@ -17,6 +17,11 @@ class PartialsRelationManager extends RelationManager
     protected static ?string $pluralModelLabel = 'Ingresos parciales';
     protected static ?string $title = 'Ingresos parciales';
 
+    public function isReadOnly(): bool
+    {
+        return false;
+    }
+
     public function form(Form $form): Form
     {
         return $form

@@ -13,6 +13,9 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 
 class FixedIncomeResource extends Resource
 {
@@ -55,6 +58,7 @@ class FixedIncomeResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -65,11 +69,31 @@ class FixedIncomeResource extends Resource
             ]);
     }
 
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Section::make('Datos generales')
+                    ->columns(3)
+                    ->schema([
+                        TextEntry::make('name')
+                            ->label('Nombre'),
+                        TextEntry::make('frequency')
+                             ->label('Frecuencia'),
+                        TextEntry::make('balance')
+                            ->label('Balance')
+                            ->getStateUsing(fn (FixedIncome $record): string => as_money(
+                                $record->partials()->sum('amount') - $record->outcomes()->sum('amount')
+                            )),
+                    ]),
+            ]);
+    }
+
     public static function getRelations(): array
     {
         return [
-            RelationManagers\PartialsRelationManager::class,
             RelationManagers\OutcomesRelationManager::class,
+            RelationManagers\PartialsRelationManager::class,
         ];
     }
 
@@ -79,6 +103,7 @@ class FixedIncomeResource extends Resource
             'index' => Pages\ListFixedIncomes::route('/'),
             'create' => Pages\CreateFixedIncome::route('/create'),
             'edit' => Pages\EditFixedIncome::route('/{record}/edit'),
+            'view' => Pages\ViewFixedIncome::route('/{record}'),
         ];
     }
 }

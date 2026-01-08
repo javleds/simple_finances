@@ -21,4 +21,9 @@ class EditFixedIncome extends EditRecord
     {
         return FixedIncomeResource::getUrl();
     }
+
+    public function getRelationManagers(): array
+    {
+        return [];
+    }
 }
