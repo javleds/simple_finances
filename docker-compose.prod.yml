@@ -34,6 +34,7 @@ services:
             - /tmp
         volumes:
             - .:/app:ro
+            - ./vendor:/app/vendor:rw
             - ./storage:/app/storage:rw
             - ./bootstrap/cache:/app/bootstrap/cache:rw
         depends_on:
