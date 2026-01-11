@@ -10,6 +10,7 @@ RUN apt-get update \
         libpng-dev \
         libonig-dev \
         libxml2-dev \
+        libicu-dev \
     && docker-php-ext-install \
         pdo_mysql \
         mbstring \
@@ -18,6 +19,7 @@ RUN apt-get update \
         pcntl \
         bcmath \
         gd \
+        intl \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
