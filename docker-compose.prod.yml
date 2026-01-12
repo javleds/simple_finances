@@ -38,6 +38,7 @@ services:
         volumes:
             - .:/app:ro
             - ./vendor:/app/vendor:rw
+            - ./node_modules:/app/node_modules:rw
             - ./public:/app/public:rw
             - ./storage:/app/storage:rw
             - ./bootstrap/cache:/app/bootstrap/cache:rw
