@@ -5,9 +5,8 @@ services:
         container_name: simple_finances_nginx_prod
         image: nginx:alpine
         restart: unless-stopped
-        read_only: true
         volumes:
-            - .:/app:ro
+            - .:/app
             - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
         depends_on:
             - php
@@ -27,41 +26,13 @@ services:
             dockerfile: docker/php/Dockerfile
         restart: unless-stopped
         user: "1000:1000"
-        read_only: true
         env_file:
             - .env
-        tmpfs:
-            - /tmp
-            - /tmp/.config
-            - /tmp/.npm
-        environment:
-            XDG_CONFIG_HOME: /tmp/.config
-            HOME: /tmp
-            NPM_CONFIG_CACHE: /tmp/.npm
         volumes:
-            - .:/app:ro
-            - ./storage:/app/storage:rw
-            - ./bootstrap/cache:/app/bootstrap/cache:rw
+            - .:/app
         depends_on:
             - mysql
         working_dir: /app
-        networks:
-            - simple_finances_internal
-
-    tooling:
-        container_name: simple_finances_tooling_prod
-        build:
-            context: .
-            dockerfile: docker/php/Dockerfile
-        working_dir: /app
-        volumes:
-            - .:/app:rw
-            - ./node_modules:/app/node_modules:rw
-            - ./public/build:/app/public/build:rw
-            - ./public/hot:/app/public/hot:rw
-            - ./vendor:/app/vendor:rw
-            - ./package-lock.json:/app/package-lock.json:rw
-            - ./composer.lock:/app/composer.lock:rw
         networks:
             - simple_finances_internal
 
