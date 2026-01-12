@@ -33,8 +33,11 @@ services:
         tmpfs:
             - /tmp
             - /tmp/.config
+            - /tmp/.npm
         environment:
             XDG_CONFIG_HOME: /tmp/.config
+            HOME: /tmp
+            NPM_CONFIG_CACHE: /tmp/.npm
         volumes:
             - .:/app:ro
             - ./vendor:/app/vendor:rw
