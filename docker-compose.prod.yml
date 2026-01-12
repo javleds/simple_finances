@@ -32,6 +32,9 @@ services:
             - .env
         tmpfs:
             - /tmp
+            - /tmp/.config
+        environment:
+            XDG_CONFIG_HOME: /tmp/.config
         volumes:
             - .:/app:ro
             - ./vendor:/app/vendor:rw
