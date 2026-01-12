@@ -40,30 +40,28 @@ services:
             NPM_CONFIG_CACHE: /tmp/.npm
         volumes:
             - .:/app:ro
-            - ./vendor:/app/vendor:rw
-            - ./node_modules:/app/node_modules:rw
-            - ./public:/app/public:rw
-            - ./public/build:/app/public/build:rw
-            - ./public/hot:/app/public/hot:rw
             - ./storage:/app/storage:rw
             - ./bootstrap/cache:/app/bootstrap/cache:rw
-            - ./package-lock.json:/app/package-lock.json:rw
-            - ./composer.lock:/app/composer.lock:rw
         depends_on:
             - mysql
         working_dir: /app
         networks:
             - simple_finances_internal
 
-    node:
-        container_name: simple_finances_node_prod
-        image: node:20-alpine
+    tooling:
+        container_name: simple_finances_tooling_prod
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
         working_dir: /app
         volumes:
             - .:/app:rw
             - ./node_modules:/app/node_modules:rw
             - ./public/build:/app/public/build:rw
             - ./public/hot:/app/public/hot:rw
+            - ./vendor:/app/vendor:rw
+            - ./package-lock.json:/app/package-lock.json:rw
+            - ./composer.lock:/app/composer.lock:rw
         networks:
             - simple_finances_internal
 
