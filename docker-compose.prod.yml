@@ -43,8 +43,12 @@ services:
             - ./vendor:/app/vendor:rw
             - ./node_modules:/app/node_modules:rw
             - ./public:/app/public:rw
+            - ./public/build:/app/public/build:rw
+            - ./public/hot:/app/public/hot:rw
             - ./storage:/app/storage:rw
             - ./bootstrap/cache:/app/bootstrap/cache:rw
+            - ./package-lock.json:/app/package-lock.json:rw
+            - ./composer.lock:/app/composer.lock:rw
         depends_on:
             - mysql
         working_dir: /app
