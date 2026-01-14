@@ -3,8 +3,6 @@ services:
         container_name: simple_finances_nginx_local
         image: nginx:alpine
         restart: unless-stopped
-        ports:
-            - ${APP_PORT:-8080}:80
         volumes:
             - .:/app
             - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -53,4 +51,5 @@ volumes:
 
 networks:
     simple_finances_internal:
+        name: simple_finances_internal
         driver: bridge

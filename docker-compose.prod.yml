@@ -58,6 +58,7 @@ volumes:
 
 networks:
     simple_finances_internal:
+        name: simple_finances_internal
         driver: bridge
     proxy:
         external: true
