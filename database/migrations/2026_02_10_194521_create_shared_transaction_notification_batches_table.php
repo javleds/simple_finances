@@ -21,7 +21,7 @@ return new class extends Migration
             $table->timestamp('sent_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['user_id', 'account_id', 'status']);
+            $table->unique(['user_id', 'account_id', 'status'])->name('unique_pending_batch_per_user_account');
         });
     }
 
