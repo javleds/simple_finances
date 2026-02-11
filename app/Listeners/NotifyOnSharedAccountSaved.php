@@ -6,6 +6,8 @@ use App\Events\TransactionSaved;
 use App\Models\NotificationType;
 use App\Models\User;
 use App\Notifications\SharedTransactionChangedEmail;
+use App\Services\SharedTransactions\RegisterSharedTransactionNotificationAction;
+use App\Dto\SharedTransactionNotificationDto;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 
@@ -14,10 +16,7 @@ class NotifyOnSharedAccountSaved
     /**
      * Create the event listener.
      */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(private RegisterSharedTransactionNotificationAction $registerSharedTransactionNotificationAction) {}
 
     /**
      * Handle the event.
@@ -30,9 +29,14 @@ class NotifyOnSharedAccountSaved
             return;
         }
 
+        $modifier = $this->resolveModifier($event->transaction->user_id);
+        if (! $modifier) {
+            return;
+        }
+
         /** @var User $user */
         foreach ($users as $user) {
-            if ($user->id === auth()->id()) {
+            if ($user->id === $modifier->id) {
                 continue;
             }
 
@@ -44,10 +48,30 @@ class NotifyOnSharedAccountSaved
                 continue;
             }
 
-            Notification::send(
-                $user,
-                new SharedTransactionChangedEmail($user, $event->transaction, $event->action)
-            );
+            if (config('notifications.shared_transactions.mode') !== 'grouped') {
+                Notification::send(
+                    $user,
+                    new SharedTransactionChangedEmail($user, $event->transaction, $event->action)
+                );
+                continue;
+            }
+
+            $this->registerSharedTransactionNotificationAction->execute(new SharedTransactionNotificationDto(
+                recipient: $user,
+                modifier: $modifier,
+                transaction: $event->transaction,
+                action: $event->action,
+            ));
         }
+    }
+
+    private function resolveModifier(int $userId): ?User
+    {
+        $user = auth()->user();
+        if ($user) {
+            return $user;
+        }
+
+        return User::withoutGlobalScopes()->find($userId);
     }
 }
