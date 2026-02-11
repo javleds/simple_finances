@@ -6,7 +6,6 @@ use App\Enums\SharedTransactionNotificationBatchStatus;
 use App\Models\NotificationType;
 use App\Models\SharedTransactionNotificationBatch;
 use App\Notifications\SharedTransactionBatchChangedEmail;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class ProcessSharedTransactionNotificationBatchesAction
@@ -50,7 +49,7 @@ class ProcessSharedTransactionNotificationBatchesAction
 
         $batch = SharedTransactionNotificationBatch::query()
             ->with([
-                'items' => fn (Builder $query) => $query->orderBy('id'),
+                'items' => fn ($query) => $query->orderBy('id'),
                 'items.modifier',
                 'account',
                 'user',
