@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\AutomatedAccountUpdater;
+use App\Services\SharedTransactions\ProcessSharedTransactionNotificationBatchesAction;
 use App\Services\Subscriptions\DailyUpdater;
 use App\Services\WeeklySummaryProcessor;
 use Illuminate\Support\Facades\Schedule;
@@ -16,3 +17,7 @@ Schedule::call(function () {
 Schedule::call(function () {
     app(WeeklySummaryProcessor::class)->handle();
 })->sundays()->at('08:00');
+
+Schedule::call(function () {
+    app(ProcessSharedTransactionNotificationBatchesAction::class)->execute();
+})->everyMinute();
