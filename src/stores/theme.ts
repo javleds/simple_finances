@@ -1,20 +1,27 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
-export type ThemeMode = 'light' | 'dark';
+export const THEME_MODE = {
+  LIGHT: 'light',
+  DARK: 'dark',
+} as const;
+
+export type ThemeMode = (typeof THEME_MODE)[keyof typeof THEME_MODE];
 
 const THEME_STORAGE_KEY = 'theme-mode';
 
 function isThemeMode(value: string | null): value is ThemeMode {
-  return value === 'light' || value === 'dark';
+  return value === THEME_MODE.LIGHT || value === THEME_MODE.DARK;
 }
 
 function getSystemTheme(): ThemeMode {
   if (typeof window === 'undefined') {
-    return 'light';
+    return THEME_MODE.LIGHT;
   }
 
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? THEME_MODE.DARK
+    : THEME_MODE.LIGHT;
 }
 
 function applyTheme(mode: ThemeMode): void {
@@ -22,13 +29,13 @@ function applyTheme(mode: ThemeMode): void {
     return;
   }
 
-  document.documentElement.classList.toggle('dark', mode === 'dark');
+  document.documentElement.classList.toggle('dark', mode === THEME_MODE.DARK);
   document.documentElement.style.colorScheme = mode;
 }
 
 export const useThemeStore = defineStore('theme', () => {
-  const mode = ref<ThemeMode>('light');
-  const isDarkMode = computed(() => mode.value === 'dark');
+  const mode = ref<ThemeMode>(THEME_MODE.LIGHT);
+  const isDarkMode = computed(() => mode.value === THEME_MODE.DARK);
 
   function setTheme(nextMode: ThemeMode): void {
     mode.value = nextMode;
@@ -55,7 +62,7 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   function toggleTheme(): void {
-    setTheme(isDarkMode.value ? 'light' : 'dark');
+    setTheme(isDarkMode.value ? THEME_MODE.LIGHT : THEME_MODE.DARK);
   }
 
   return {

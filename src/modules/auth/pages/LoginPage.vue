@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useThemeStore } from '@/stores/theme';
+import { THEME_MODE, useThemeStore } from '@/stores/theme';
 
 const themeStore = useThemeStore();
 </script>
@@ -30,11 +30,11 @@ const themeStore = useThemeStore();
                 type="button"
                 class="rounded-full px-3 py-1.5 text-xs font-semibold transition"
                 :class="
-                  themeStore.mode === 'light'
+                  themeStore.mode === THEME_MODE.LIGHT
                     ? 'bg-slate-950 text-white dark:bg-slate-100 dark:text-slate-950'
                     : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
                 "
-                @click="themeStore.setTheme('light')"
+                @click="themeStore.setTheme(THEME_MODE.LIGHT)"
               >
                 Light
               </button>
@@ -42,11 +42,11 @@ const themeStore = useThemeStore();
                 type="button"
                 class="rounded-full px-3 py-1.5 text-xs font-semibold transition"
                 :class="
-                  themeStore.mode === 'dark'
+                  themeStore.mode === THEME_MODE.DARK
                     ? 'bg-slate-950 text-white dark:bg-emerald-400 dark:text-slate-950'
                     : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
                 "
-                @click="themeStore.setTheme('dark')"
+                @click="themeStore.setTheme(THEME_MODE.DARK)"
               >
                 Dark
               </button>
