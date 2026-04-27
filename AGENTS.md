@@ -33,6 +33,10 @@ Barrel export:
 
 - `src/modules/shared/components/index.ts`
 
+## Icons
+
+When a feature needs icons, use `@heroicons/vue` as the default icon library.
+
 ## Maintenance Rule
 
 Whenever a new reusable shared component is created, update this file in the same task so the index stays current.
