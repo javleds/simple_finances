@@ -45,7 +45,7 @@ function closeModal(): void {
   <Teleport to="body">
     <div
       v-if="props.open"
-      class="fixed inset-0 z-50 flex items-end bg-black/50 p-4 sm:items-center sm:justify-center"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="closeModal"
     >
       <div
