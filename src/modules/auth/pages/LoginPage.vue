@@ -1,15 +1,25 @@
 <script setup lang="ts">
-import { THEME_MODE, useThemeStore } from '@/stores/theme';
+import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
   AppCard,
   AppInput,
   AppLink,
   AppText,
+  AppToggleButton,
   AppTitle,
 } from '@/modules/shared/components';
 
 const themeStore = useThemeStore();
+
+const themeOptions = [
+  { value: THEME_MODE.LIGHT, label: 'Light' },
+  { value: THEME_MODE.DARK, label: 'Dark' },
+] as const;
+
+function updateTheme(nextTheme: string): void {
+  themeStore.setTheme(nextTheme as ThemeMode);
+}
 </script>
 
 <template>
@@ -39,35 +49,11 @@ const themeStore = useThemeStore();
                 </AppText>
               </div>
 
-              <div
-                class="inline-flex rounded-lg border bg-[var(--app-color-input-bg)] p-1"
-                :style="{ borderColor: 'var(--app-color-border-strong)' }"
-              >
-                <button
-                  type="button"
-                  class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
-                  :class="
-                    themeStore.mode === THEME_MODE.LIGHT
-                      ? 'bg-[var(--app-color-secondary)] text-[var(--app-color-secondary-foreground)]'
-                      : 'text-[var(--app-color-text-subtle)] hover:text-[var(--app-color-text)]'
-                  "
-                  @click="themeStore.setTheme(THEME_MODE.LIGHT)"
-                >
-                  Light
-                </button>
-                <button
-                  type="button"
-                  class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
-                  :class="
-                    themeStore.mode === THEME_MODE.DARK
-                      ? 'bg-[var(--app-color-secondary)] text-[var(--app-color-secondary-foreground)]'
-                      : 'text-[var(--app-color-text-subtle)] hover:text-[var(--app-color-text)]'
-                  "
-                  @click="themeStore.setTheme(THEME_MODE.DARK)"
-                >
-                  Dark
-                </button>
-              </div>
+              <AppToggleButton
+                :model-value="themeStore.mode"
+                :options="themeOptions"
+                @update:model-value="updateTheme"
+              />
             </div>
           </AppCard>
 

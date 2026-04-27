@@ -16,6 +16,8 @@ Current shared components:
   Path: `src/modules/shared/components/AppLink.vue`
 - `AppText`: shared paragraph/text primitive with tone and size options.
   Path: `src/modules/shared/components/AppText.vue`
+- `AppToggleButton`: segmented toggle button for selecting one option from a small set.
+  Path: `src/modules/shared/components/AppToggleButton.vue`
 - `AppTitle`: shared heading primitive with semantic tag and size options.
   Path: `src/modules/shared/components/AppTitle.vue`
 
