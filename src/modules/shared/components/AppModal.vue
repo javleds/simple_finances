@@ -3,6 +3,7 @@ import { onBeforeUnmount, watch } from 'vue';
 
 import AppButton from './AppButton.vue';
 import AppIconButton from './AppIconButton.vue';
+import AppTitle from './AppTitle.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -62,11 +63,9 @@ function closeModal(): void {
           class="flex items-center justify-between gap-4 border-b px-4 py-4 sm:px-6"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <h2
-            class="flex-1 text-left text-base font-semibold text-[var(--app-color-text)] sm:text-lg"
-          >
+          <AppTitle as="h2" size="sm" class="flex-1 text-left !text-base sm:!text-lg">
             {{ props.title }}
-          </h2>
+          </AppTitle>
           <AppIconButton ariaLabel="Cerrar modal" @click="closeModal">
             X
           </AppIconButton>
