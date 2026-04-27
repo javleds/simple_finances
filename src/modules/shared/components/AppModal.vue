@@ -59,6 +59,11 @@ function closeModal(): void {
           class="flex items-center justify-between gap-4 border-b px-4 py-4 sm:px-6"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
+          <h2
+            class="flex-1 text-left text-base font-semibold text-[var(--app-color-text)] sm:text-lg"
+          >
+            {{ props.title }}
+          </h2>
           <button
             type="button"
             class="inline-flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface-muted)]"
@@ -68,9 +73,6 @@ function closeModal(): void {
           >
             X
           </button>
-          <h2 class="flex-1 text-right text-base font-semibold text-[var(--app-color-text)] sm:text-lg">
-            {{ props.title }}
-          </h2>
         </header>
 
         <div class="overflow-y-auto px-4 py-5 sm:px-6">
