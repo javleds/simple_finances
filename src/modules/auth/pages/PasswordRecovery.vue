@@ -58,41 +58,38 @@ function updateTheme(nextTheme: string): void {
           </AppCard>
 
           <div class="space-y-2">
-            <AppTitle as="h1" size="md">Iniciar sesión</AppTitle>
-            <AppText>Ingresa con tus credenciales para continuar.</AppText>
+            <AppTitle as="h1" size="md">Recuperar contraseña</AppTitle>
+            <AppText>
+              Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu
+              contraseña.
+            </AppText>
           </div>
 
           <form class="space-y-5">
-            <AppInput id="email" type="email" label="Correo electrónico" placeholder="nombre@empresa.com" />
+            <AppInput
+              id="email"
+              type="email"
+              label="Correo electrónico"
+              placeholder="nombre@empresa.com"
+              autocomplete="email"
+            />
 
-            <div class="space-y-2">
-              <div class="flex items-center justify-between gap-4">
-                <label for="password" class="text-sm font-medium text-[var(--app-color-label)]">
-                  Contraseña
-                </label>
-                <AppLink
-                  :to="{ name: 'auth.password-recovery' }"
-                  variant="subtle"
-                  class="text-sm"
-                >
-                  ¿Olvidaste tu contraseña?
-                </AppLink>
-              </div>
-              <AppInput
-                id="password"
-                type="password"
-                placeholder="Ingresa tu contraseña"
-              />
-            </div>
+            <AppText size="sm" tone="subtle">
+              Si existe una cuenta asociada a ese correo, recibirás un enlace para continuar con la
+              recuperación.
+            </AppText>
 
-            <AppButton type="submit" variant="primary" full-width>Entrar</AppButton>
+            <AppButton type="submit" variant="primary" full-width>
+              Recuperar mi contraseña
+            </AppButton>
           </form>
 
           <div class="border-t pt-5" :style="{ borderColor: 'var(--app-color-border)' }">
             <AppText>
-              ¿Aún no tienes acceso?
-              <AppLink :to="{ name: 'auth.register' }" variant="primary" class="font-semibold">
-                Crear cuenta
+              ¿Recordaste tu contraseña?
+              {{ ' ' }}
+              <AppLink :to="{ name: 'auth.login' }" variant="primary" class="font-semibold">
+                Volver al login
               </AppLink>
             </AppText>
           </div>
