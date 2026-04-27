@@ -2,6 +2,7 @@
 import { onBeforeUnmount, watch } from 'vue';
 
 import AppButton from './AppButton.vue';
+import AppIconButton from './AppIconButton.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -66,15 +67,9 @@ function closeModal(): void {
           >
             {{ props.title }}
           </h2>
-          <button
-            type="button"
-            class="inline-flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface-muted)]"
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            aria-label="Cerrar modal"
-            @click="closeModal"
-          >
+          <AppIconButton ariaLabel="Cerrar modal" @click="closeModal">
             X
-          </button>
+          </AppIconButton>
         </header>
 
         <div class="overflow-y-auto px-4 py-5 sm:px-6">

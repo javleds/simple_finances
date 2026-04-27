@@ -10,6 +10,8 @@ Current shared components:
   Path: `src/modules/shared/components/AppButton.vue`
 - `AppCard`: bordered surface card with optional padding and muted surface mode.
   Path: `src/modules/shared/components/AppCard.vue`
+- `AppIconButton`: compact circular button for icon-only actions.
+  Path: `src/modules/shared/components/AppIconButton.vue`
 - `AppInput`: labeled input wrapper compatible with native input attributes via `$attrs`.
   Path: `src/modules/shared/components/AppInput.vue`
 - `AppLink`: shared link component compatible with `href` and Vue Router `to`, with variants `primary`, `secondary`, `subtle`.
