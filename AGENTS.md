@@ -14,6 +14,10 @@ Current shared components:
   Path: `src/modules/shared/components/AppInput.vue`
 - `AppLink`: shared link component compatible with `href` and Vue Router `to`, with variants `primary`, `secondary`, `subtle`.
   Path: `src/modules/shared/components/AppLink.vue`
+- `AppModal`: base modal mobile-first with header, content area and footer actions.
+  Path: `src/modules/shared/components/AppModal.vue`
+- `AppPasswordInput`: password input with show/hide action.
+  Path: `src/modules/shared/components/AppPasswordInput.vue`
 - `AppText`: shared paragraph/text primitive with tone and size options.
   Path: `src/modules/shared/components/AppText.vue`
 - `AppToggleButton`: segmented toggle button for selecting one option from a small set.
