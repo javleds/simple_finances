@@ -80,7 +80,11 @@ function updateTheme(nextTheme: string): void {
               <AppInput id="password" type="password" placeholder="Ingresa tu contraseña" />
             </div>
 
-            <AppButton type="submit" variant="primary" full-width>Entrar</AppButton>
+            <AppButton type="submit" variant="primary" full-width>
+              <RouterLink :to="{ name: 'admin.dashboard' }" class="w-full">
+                Iniciar sesión
+              </RouterLink>
+            </AppButton>
           </form>
 
           <div class="border-t pt-5" :style="{ borderColor: 'var(--app-color-border)' }">
