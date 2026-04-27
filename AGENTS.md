@@ -4,6 +4,8 @@
 
 Before creating new UI for features, review `src/modules/shared/components` and reuse these components when they fit the need.
 
+Reusing an existing shared component is mandatory when it already covers the need or can cover it with a small, reasonable extension. Do not create native UI elements or new components from scratch if a shared component already applies.
+
 Current shared components:
 
 - `AppButton`: base button with variants `primary`, `secondary`, `ghost`.
