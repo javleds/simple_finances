@@ -149,12 +149,12 @@ const loginPaletteStyle = computed<Record<string, string>>(() => {
 
     <div class="w-full max-w-md">
       <div
-        class="rounded-[28px] border bg-[var(--login-card-bg)] p-6 shadow-[var(--login-card-shadow)] sm:p-8"
+        class="rounded-2xl border bg-[var(--login-card-bg)] p-6 shadow-[var(--login-card-shadow)] sm:p-8"
         :style="{ borderColor: 'var(--login-card-border)' }"
       >
         <div class="space-y-6">
           <div
-            class="rounded-2xl border bg-[var(--login-panel-bg)] px-4 py-3"
+            class="rounded-xl border bg-[var(--login-panel-bg)] px-4 py-3"
             :style="{ borderColor: 'var(--login-panel-border)' }"
           >
             <div class="space-y-3">
@@ -167,12 +167,12 @@ const loginPaletteStyle = computed<Record<string, string>>(() => {
                 </div>
 
                 <div
-                  class="inline-flex rounded-full border bg-[var(--login-toggle-surface)] p-1"
+                  class="inline-flex rounded-lg border bg-[var(--login-toggle-surface)] p-1"
                   :style="{ borderColor: 'var(--login-toggle-border)' }"
                 >
                   <button
                     type="button"
-                    class="rounded-full px-3 py-1.5 text-xs font-semibold transition"
+                    class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
                     :class="
                       themeStore.mode === THEME_MODE.LIGHT
                         ? 'bg-[var(--login-toggle-active-bg)] text-[var(--login-toggle-active-text)]'
@@ -184,7 +184,7 @@ const loginPaletteStyle = computed<Record<string, string>>(() => {
                   </button>
                   <button
                     type="button"
-                    class="rounded-full px-3 py-1.5 text-xs font-semibold transition"
+                    class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
                     :class="
                       themeStore.mode === THEME_MODE.DARK
                         ? 'bg-[var(--login-toggle-active-bg)] text-[var(--login-toggle-active-text)]'
@@ -217,7 +217,7 @@ const loginPaletteStyle = computed<Record<string, string>>(() => {
                 id="email"
                 type="email"
                 placeholder="nombre@empresa.com"
-                class="h-12 w-full rounded-2xl border border-[var(--login-input-border)] bg-[var(--login-input-bg)] px-4 text-sm text-[var(--login-input-text)] outline-none placeholder:text-[var(--login-placeholder)] transition focus:border-[var(--login-focus-border)] focus:ring-4 focus:ring-[var(--login-focus-ring)]"
+                class="h-12 w-full rounded-lg border border-[var(--login-input-border)] bg-[var(--login-input-bg)] px-4 text-sm text-[var(--login-input-text)] outline-none placeholder:text-[var(--login-placeholder)] transition focus:border-[var(--login-focus-border)] focus:ring-4 focus:ring-[var(--login-focus-ring)]"
               />
             </div>
 
@@ -238,19 +238,19 @@ const loginPaletteStyle = computed<Record<string, string>>(() => {
                 id="password"
                 type="password"
                 placeholder="Ingresa tu contraseña"
-                class="h-12 w-full rounded-2xl border border-[var(--login-input-border)] bg-[var(--login-input-bg)] px-4 text-sm text-[var(--login-input-text)] outline-none placeholder:text-[var(--login-placeholder)] transition focus:border-[var(--login-focus-border)] focus:ring-4 focus:ring-[var(--login-focus-ring)]"
+                class="h-12 w-full rounded-lg border border-[var(--login-input-border)] bg-[var(--login-input-bg)] px-4 text-sm text-[var(--login-input-text)] outline-none placeholder:text-[var(--login-placeholder)] transition focus:border-[var(--login-focus-border)] focus:ring-4 focus:ring-[var(--login-focus-ring)]"
               />
             </div>
 
             <button
               type="submit"
-              class="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-[var(--login-button-bg)] px-4 text-sm font-semibold text-[var(--login-button-text)] transition hover:bg-[var(--login-button-hover)] focus:outline-none focus:ring-4 focus:ring-[var(--login-focus-ring)]"
+              class="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[var(--login-button-bg)] px-4 text-sm font-semibold text-[var(--login-button-text)] transition hover:bg-[var(--login-button-hover)] focus:outline-none focus:ring-4 focus:ring-[var(--login-focus-ring)]"
             >
               Entrar
             </button>
           </form>
 
-          <div class="border-t pt-5" :style="{ borderColor: 'var(--login-card-border)' }">
+          <div class="border-t-[0.5px] pt-5" :style="{ borderColor: 'var(--login-card-border)' }">
             <p class="text-sm text-[var(--login-body)]">
               ¿Aún no tienes acceso?
               <RouterLink
