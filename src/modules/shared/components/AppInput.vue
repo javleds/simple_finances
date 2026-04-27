@@ -17,14 +17,12 @@ const props = withDefaults(
 </script>
 
 <template>
-  <div class="space-y-2">
-    <label
-      v-if="props.label"
-      :for="props.id"
-      class="text-sm font-medium text-[var(--app-color-label)]"
-    >
-      {{ props.label }}
-    </label>
+  <div class="space-y-2.5">
+    <div v-if="props.label" class="flex min-h-5 items-center">
+      <label :for="props.id" class="text-sm font-medium text-[var(--app-color-label)]">
+        {{ props.label }}
+      </label>
+    </div>
     <input
       :id="props.id"
       :type="props.type"

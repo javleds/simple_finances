@@ -26,8 +26,8 @@ function toggleVisibility(): void {
 </script>
 
 <template>
-  <div class="space-y-2">
-    <div class="flex items-center justify-between gap-4">
+  <div class="space-y-2.5">
+    <div class="flex min-h-5 items-center justify-between gap-4">
       <label :for="props.id" class="text-sm font-medium text-[var(--app-color-label)]">
         {{ props.label }}
       </label>
