@@ -2,7 +2,7 @@
 const props = withDefaults(
   defineProps<{
     type?: 'button' | 'submit' | 'reset';
-    variant?: 'primary' | 'secondary' | 'ghost';
+    variant?: 'primary' | 'secondary' | 'ghost' | 'outline';
     fullWidth?: boolean;
   }>(),
   {
@@ -19,6 +19,8 @@ const variantClasses = {
     'bg-[var(--app-color-secondary)] text-[var(--app-color-secondary-foreground)] hover:bg-[var(--app-color-secondary-hover)]',
   ghost:
     'bg-transparent text-[var(--app-color-link)] hover:bg-[color-mix(in_srgb,var(--app-color-link)_8%,transparent)]',
+  outline:
+    'border border-[var(--app-color-border-strong)] bg-transparent text-[var(--app-color-text)] hover:bg-[var(--app-color-surface-muted)]',
 } as const;
 </script>
 

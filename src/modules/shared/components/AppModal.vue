@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onBeforeUnmount, watch } from 'vue';
 
+import AppButton from './AppButton.vue';
+
 const props = withDefaults(
   defineProps<{
     open: boolean;
@@ -83,14 +85,9 @@ function closeModal(): void {
           class="flex justify-center border-t px-4 py-4 sm:px-6"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <button
-            type="button"
-            class="inline-flex h-12 items-center justify-center rounded-lg border px-6 text-sm font-semibold text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface-muted)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
-            :style="{ borderColor: 'var(--app-color-border-strong)' }"
-            @click="closeModal"
-          >
+          <AppButton type="button" variant="outline" class="px-6" @click="closeModal">
             {{ props.closeLabel }}
-          </button>
+          </AppButton>
         </footer>
       </div>
     </div>
