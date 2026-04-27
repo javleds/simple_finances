@@ -44,9 +44,7 @@ function updateTheme(nextTheme: string): void {
                 <AppText as="div" tone="muted" class="font-medium text-[var(--app-color-text)]">
                   Tema visual
                 </AppText>
-                <AppText size="sm" tone="subtle">
-                  Cambia entre light y dark mode.
-                </AppText>
+                <AppText size="sm" tone="subtle"> Cambia entre light y dark mode. </AppText>
               </div>
 
               <AppToggleButton
@@ -63,26 +61,23 @@ function updateTheme(nextTheme: string): void {
           </div>
 
           <form class="space-y-5">
-            <AppInput id="email" type="email" label="Correo electrónico" placeholder="nombre@empresa.com" />
+            <AppInput
+              id="email"
+              type="email"
+              label="Correo electrónico"
+              placeholder="nombre@empresa.com"
+            />
 
             <div class="space-y-2">
               <div class="flex items-center justify-between gap-4">
                 <label for="password" class="text-sm font-medium text-[var(--app-color-label)]">
                   Contraseña
                 </label>
-                <AppLink
-                  :to="{ name: 'auth.password-recovery' }"
-                  variant="subtle"
-                  class="text-sm"
-                >
+                <AppLink :to="{ name: 'auth.password-recovery' }" variant="subtle" class="text-sm">
                   ¿Olvidaste tu contraseña?
                 </AppLink>
               </div>
-              <AppInput
-                id="password"
-                type="password"
-                placeholder="Ingresa tu contraseña"
-              />
+              <AppInput id="password" type="password" placeholder="Ingresa tu contraseña" />
             </div>
 
             <AppButton type="submit" variant="primary" full-width>Entrar</AppButton>
