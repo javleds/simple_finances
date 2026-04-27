@@ -23,51 +23,53 @@ const themeStore = useThemeStore();
     <div class="w-full max-w-md">
       <AppCard>
         <div class="space-y-6">
-          <div
-            class="rounded-xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
+          <AppCard
+            muted
+            :padded="false"
+            class="rounded-xl px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border-strong)' }"
           >
-            <div class="space-y-3">
-              <div class="flex items-center justify-between gap-4">
-                <div>
-                  <p class="text-sm font-medium text-[var(--app-color-text)]">Tema visual</p>
-                  <p class="text-xs text-[var(--app-color-text-subtle)]">
-                    Cambia entre light y dark mode.
-                  </p>
-                </div>
+            <div class="flex items-center justify-between gap-4">
+              <div class="space-y-1">
+                <AppText as="div" tone="muted" class="font-medium text-[var(--app-color-text)]">
+                  Tema visual
+                </AppText>
+                <AppText size="sm" tone="subtle">
+                  Cambia entre light y dark mode.
+                </AppText>
+              </div>
 
-                <div
-                  class="inline-flex rounded-lg border bg-[var(--app-color-input-bg)] p-1"
-                  :style="{ borderColor: 'var(--app-color-border-strong)' }"
+              <div
+                class="inline-flex rounded-lg border bg-[var(--app-color-input-bg)] p-1"
+                :style="{ borderColor: 'var(--app-color-border-strong)' }"
+              >
+                <button
+                  type="button"
+                  class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
+                  :class="
+                    themeStore.mode === THEME_MODE.LIGHT
+                      ? 'bg-[var(--app-color-secondary)] text-[var(--app-color-secondary-foreground)]'
+                      : 'text-[var(--app-color-text-subtle)] hover:text-[var(--app-color-text)]'
+                  "
+                  @click="themeStore.setTheme(THEME_MODE.LIGHT)"
                 >
-                  <button
-                    type="button"
-                    class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
-                    :class="
-                      themeStore.mode === THEME_MODE.LIGHT
-                        ? 'bg-[var(--app-color-secondary)] text-[var(--app-color-secondary-foreground)]'
-                        : 'text-[var(--app-color-text-subtle)] hover:text-[var(--app-color-text)]'
-                    "
-                    @click="themeStore.setTheme(THEME_MODE.LIGHT)"
-                  >
-                    Light
-                  </button>
-                  <button
-                    type="button"
-                    class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
-                    :class="
-                      themeStore.mode === THEME_MODE.DARK
-                        ? 'bg-[var(--app-color-secondary)] text-[var(--app-color-secondary-foreground)]'
-                        : 'text-[var(--app-color-text-subtle)] hover:text-[var(--app-color-text)]'
-                    "
-                    @click="themeStore.setTheme(THEME_MODE.DARK)"
-                  >
-                    Dark
-                  </button>
-                </div>
+                  Light
+                </button>
+                <button
+                  type="button"
+                  class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
+                  :class="
+                    themeStore.mode === THEME_MODE.DARK
+                      ? 'bg-[var(--app-color-secondary)] text-[var(--app-color-secondary-foreground)]'
+                      : 'text-[var(--app-color-text-subtle)] hover:text-[var(--app-color-text)]'
+                  "
+                  @click="themeStore.setTheme(THEME_MODE.DARK)"
+                >
+                  Dark
+                </button>
               </div>
             </div>
-          </div>
+          </AppCard>
 
           <div class="space-y-2">
             <AppTitle as="h1" size="md">Iniciar sesión</AppTitle>
