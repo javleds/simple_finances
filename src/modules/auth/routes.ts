@@ -22,12 +22,12 @@ const routes: RouteRecordRaw[] = [
       },
       {
         name: 'auth.terms',
-        path: 'terms',
+        path: 'terms-and-conditions',
         component: () => import('./pages/TermsAndConditions.vue'),
       },
       {
         name: 'auth.privacy',
-        path: 'privacy',
+        path: 'privacy-policy',
         component: () => import('./pages/PrivacyPolicy.vue'),
       },
     ],
