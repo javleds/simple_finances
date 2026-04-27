@@ -41,7 +41,7 @@ const navigationItems: AdminNavigationItem[] = [
     activeIcon: WalletSolidIcon,
   },
   {
-    label: 'Subscripciones',
+    label: 'Subs',
     routeName: 'admin.subscriptions',
     icon: CreditCardIcon,
     activeIcon: CreditCardSolidIcon,
@@ -59,7 +59,7 @@ const navigationItems: AdminNavigationItem[] = [
     activeIcon: Squares2X2SolidIcon,
   },
   {
-    label: 'Configuración',
+    label: 'Config',
     routeName: 'admin.settings',
     icon: AdjustmentsHorizontalIcon,
     activeIcon: AdjustmentsHorizontalSolidIcon,
@@ -88,10 +88,7 @@ function isActiveRoute(routeName: string): boolean {
         class="flex w-full flex-col overflow-hidden rounded-[32px] border bg-[var(--app-color-surface)] shadow-[var(--app-shadow-card)]"
         :style="{ borderColor: 'var(--app-color-border-strong)' }"
       >
-        <header
-          class="border-b px-5 pb-4 pt-5"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
+        <header class="border-b px-5 pb-4 pt-5" :style="{ borderColor: 'var(--app-color-border)' }">
           <div class="mb-4 flex items-start justify-between gap-4">
             <div class="space-y-1">
               <AppText size="sm" tone="subtle">Finsi Admin</AppText>
@@ -139,7 +136,7 @@ function isActiveRoute(routeName: string): boolean {
     </div>
 
     <nav
-      class="fixed bottom-3 left-1/2 z-20 w-[calc(100%-1.5rem)] max-w-[430px] -translate-x-1/2 rounded-[28px] border bg-[color-mix(in_srgb,var(--app-color-surface)_88%,transparent)] p-2 backdrop-blur sm:bottom-4 sm:w-[calc(100%-3rem)]"
+      class="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 rounded-t-[28px] border bg-[color-mix(in_srgb,var(--app-color-surface)_92%,transparent)] p-2 backdrop-blur"
       :style="{ borderColor: 'var(--app-color-border-strong)' }"
       aria-label="Primary"
     >
