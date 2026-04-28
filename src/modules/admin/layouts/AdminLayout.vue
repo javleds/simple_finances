@@ -20,8 +20,6 @@ import {
 } from '@heroicons/vue/24/solid';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
 
-import { AppText } from '@/modules/shared/components';
-
 type AdminNavigationItem = {
   label: string;
   routeName: string;

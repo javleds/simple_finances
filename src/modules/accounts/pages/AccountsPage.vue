@@ -1,103 +1,157 @@
 <script setup lang="ts">
-import { BuildingLibraryIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import {
+  AdjustmentsHorizontalIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+} from '@heroicons/vue/24/outline';
+import { computed, ref } from 'vue';
 
-import AccountBalanceCard from '@/modules/accounts/components/AccountBalanceCard.vue';
-import { AppButton, AppCard, AppText, AppTitle } from '@/modules/shared/components';
+import AccountListItem from '@/modules/accounts/components/AccountListItem.vue';
+import { accounts } from '@/modules/accounts/data/accounts';
+import {
+  AppButton,
+  AppCard,
+  AppIconButton,
+  AppInput,
+  AppModal,
+  AppText,
+  AppTitle,
+} from '@/modules/shared/components';
 
-const accounts = [
-  {
-    name: 'Cuenta concentradora',
-    type: 'Operación principal',
-    balance: '$184,220',
-    status: 'Activa',
-  },
-  {
-    name: 'Reserva tributaria',
-    type: 'Resguardo fiscal',
-    balance: '$62,080',
-    status: 'Alineada',
-  },
-  {
-    name: 'Pagos y nómina',
-    type: 'Dispersión semanal',
-    balance: '$44,697',
-    status: 'Programada',
-  },
-];
+const searchTerm = ref('');
+const isFiltersOpen = ref(false);
+const selectedStatuses = ref<string[]>([]);
+
+const statusOptions = ['Activa', 'Alineada', 'Programada', 'En revisión'] as const;
+
+const filteredAccounts = computed(() => {
+  const normalizedQuery = searchTerm.value.trim().toLowerCase();
+
+  return accounts.filter((account) => {
+    const matchesQuery = account.name.toLowerCase().includes(normalizedQuery);
+
+    if (!matchesQuery) {
+      return false;
+    }
+
+    if (selectedStatuses.value.length === 0) {
+      return true;
+    }
+
+    return selectedStatuses.value.includes(account.status);
+  });
+});
+
+function toggleStatus(status: string): void {
+  if (selectedStatuses.value.includes(status)) {
+    selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
+    return;
+  }
+
+  selectedStatuses.value = [...selectedStatuses.value, status];
+}
+
+function openFilters(): void {
+  isFiltersOpen.value = true;
+}
+
+function closeFilters(): void {
+  isFiltersOpen.value = false;
+}
+
+function clearFilters(): void {
+  selectedStatuses.value = [];
+}
 </script>
 
 <template>
   <div class="space-y-5">
-    <AppCard class="overflow-hidden !p-0">
-      <div class="relative px-5 py-6 sm:px-6">
-        <div
-          class="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,var(--app-color-primary),color-mix(in_srgb,var(--app-color-primary)_48%,white))] opacity-95"
-        />
-
-        <div class="relative space-y-4">
-          <div class="flex items-start justify-between gap-4">
-            <div class="space-y-1">
-              <AppText size="sm" tone="subtle" class="!text-[var(--app-color-primary-foreground)]/80">
-                Cuentas conectadas
-              </AppText>
-              <AppTitle as="h2" size="sm" class="!text-[var(--app-color-primary-foreground)]">
-                Gestión de cuentas
-              </AppTitle>
-            </div>
-
-            <div
-              class="rounded-2xl border border-white/20 bg-white/10 px-3 py-2 text-right backdrop-blur"
-            >
-              <p class="text-xs font-medium text-[var(--app-color-primary-foreground)]/75">
-                Total
-              </p>
-              <p class="text-sm font-semibold text-[var(--app-color-primary-foreground)]">3 cuentas</p>
-            </div>
-          </div>
-
-          <div
-            class="rounded-3xl border border-white/15 bg-[var(--app-color-surface)]/96 p-4 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]"
-          >
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <AppText size="sm" tone="subtle">Saldo agregado</AppText>
-                <p class="mt-2 text-3xl font-semibold tracking-tight text-[var(--app-color-text)]">
-                  $290,997
-                </p>
-              </div>
-
-              <div
-                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--app-color-primary)_12%,transparent)] text-[var(--app-color-primary)]"
-              >
-                <BuildingLibraryIcon class="h-6 w-6" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </AppCard>
-
     <div class="flex items-center justify-between gap-3">
       <div class="space-y-1">
-        <AppTitle as="h2" size="sm">Resumen</AppTitle>
-        <AppText>Consulta el estado operativo de cada cuenta de la facility.</AppText>
+        <AppTitle as="h2" size="sm">Gestión de cuentas</AppTitle>
+        <AppText>La navegación por default es entrar al detalle de cada cuenta.</AppText>
       </div>
 
-      <AppButton variant="outline">
-        <PlusIcon class="mr-2 h-4 w-4" />
-        Agregar
+      <AppButton variant="primary">
+        <PlusIcon class="h-4 w-4" />
       </AppButton>
     </div>
 
-    <section class="space-y-4">
-      <AccountBalanceCard
-        v-for="account in accounts"
-        :key="account.name"
-        :name="account.name"
-        :type="account.type"
-        :balance="account.balance"
-        :status="account.status"
-      />
+    <div class="flex items-end gap-3">
+      <div class="relative flex-1">
+        <div
+          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[var(--app-color-text-subtle)]"
+        >
+          <MagnifyingGlassIcon class="h-5 w-5" />
+        </div>
+        <AppInput
+          id="account-search"
+          v-model="searchTerm"
+          type="search"
+          placeholder="Buscar cuenta por nombre"
+          class="pl-11"
+        />
+      </div>
+
+      <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
+        <AdjustmentsHorizontalIcon class="h-5 w-5" />
+      </AppIconButton>
+    </div>
+
+    <section class="space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <AppText size="sm" tone="subtle"> {{ filteredAccounts.length }} cuentas visibles </AppText>
+        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
+      </div>
+
+      <div class="max-h-[30rem] space-y-4 overflow-y-auto pr-1">
+        <AccountListItem v-for="account in filteredAccounts" :key="account.id" :account="account" />
+
+        <div
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm">
+            Sigue desplazándote para explorar más cuentas cuando la facility crezca.
+          </AppText>
+        </div>
+      </div>
     </section>
+
+    <AppModal
+      :open="isFiltersOpen"
+      title="Filtros avanzados"
+      close-label="Cerrar"
+      @close="closeFilters"
+    >
+      <div class="space-y-5">
+        <div class="space-y-2">
+          <AppTitle as="h2" size="sm">Estatus</AppTitle>
+          <AppText>Refina la lista usando el estado operativo de la cuenta.</AppText>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="status in statusOptions"
+            :key="status"
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            :class="
+              selectedStatuses.includes(status)
+                ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
+                : 'bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)]'
+            "
+            :style="{ borderColor: 'var(--app-color-border)' }"
+            @click="toggleStatus(status)"
+          >
+            {{ status }}
+          </button>
+        </div>
+
+        <div class="flex justify-end">
+          <AppButton variant="outline" @click="clearFilters">Limpiar filtros</AppButton>
+        </div>
+      </div>
+    </AppModal>
   </div>
 </template>
