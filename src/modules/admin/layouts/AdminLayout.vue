@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import {
   AdjustmentsHorizontalIcon,
+  ArrowRightOnRectangleIcon,
   CreditCardIcon,
+  EnvelopeIcon,
   HomeIcon,
   Squares2X2Icon,
+  UserIcon,
   UserCircleIcon,
   WalletIcon,
 } from '@heroicons/vue/24/outline';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import {
   AdjustmentsHorizontalIcon as AdjustmentsHorizontalSolidIcon,
   CreditCardIcon as CreditCardSolidIcon,
@@ -26,13 +30,37 @@ type AdminNavigationItem = {
   activeIcon: typeof HomeSolidIcon;
 };
 
+type ProfileMenuAction = {
+  label: string;
+  icon: typeof UserIcon;
+  routeName?: string;
+};
+
 const route = useRoute();
 const themeStore = useThemeStore();
 const activeFacilityName = 'Facility Principal';
+const isProfileMenuOpen = ref(false);
+const profileMenuRef = ref<HTMLElement | null>(null);
 
 const themeOptions = [
   { value: THEME_MODE.LIGHT, label: 'Light' },
   { value: THEME_MODE.DARK, label: 'Dark' },
+] as const;
+
+const profileMenuActions: ProfileMenuAction[] = [
+  {
+    label: 'Perfil',
+    icon: UserIcon,
+  },
+  {
+    label: 'Invitaciones',
+    icon: EnvelopeIcon,
+  },
+  {
+    label: 'Salir',
+    icon: ArrowRightOnRectangleIcon,
+    routeName: 'auth.login',
+  },
 ] as const;
 
 const navigationItems: AdminNavigationItem[] = [
@@ -75,6 +103,36 @@ function updateTheme(nextTheme: string): void {
 function isActiveRoute(routeName: string): boolean {
   return route.name === routeName;
 }
+
+function toggleProfileMenu(): void {
+  isProfileMenuOpen.value = !isProfileMenuOpen.value;
+}
+
+function closeProfileMenu(): void {
+  isProfileMenuOpen.value = false;
+}
+
+function handleDocumentClick(event: MouseEvent): void {
+  const target = event.target;
+
+  if (!(target instanceof Node)) {
+    return;
+  }
+
+  if (profileMenuRef.value?.contains(target)) {
+    return;
+  }
+
+  closeProfileMenu();
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick);
+});
 </script>
 
 <template>
@@ -96,14 +154,38 @@ function isActiveRoute(routeName: string): boolean {
           </h1>
         </div>
 
-        <button
-          type="button"
-          aria-label="Perfil de usuario"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <UserCircleIcon class="h-7 w-7" />
-        </button>
+        <div ref="profileMenuRef" class="relative shrink-0">
+          <button
+            type="button"
+            aria-label="Perfil de usuario"
+            class="flex h-11 w-11 items-center justify-center rounded-full border bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            :style="{ borderColor: 'var(--app-color-border)' }"
+            @click.stop="toggleProfileMenu"
+          >
+            <UserCircleIcon class="h-7 w-7" />
+          </button>
+
+          <div
+            v-if="isProfileMenuOpen"
+            class="absolute right-0 top-[calc(100%+0.75rem)] w-52 rounded-2xl border bg-[var(--app-color-surface)] p-2 shadow-[var(--app-shadow-card)]"
+            :style="{ borderColor: 'var(--app-color-border-strong)' }"
+          >
+            <div class="space-y-1">
+              <component
+                :is="action.routeName ? RouterLink : 'button'"
+                v-for="action in profileMenuActions"
+                :key="action.label"
+                :to="action.routeName ? { name: action.routeName } : undefined"
+                type="button"
+                class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface-muted)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+                @click="closeProfileMenu"
+              >
+                <component :is="action.icon" class="h-5 w-5 text-[var(--app-color-text-subtle)]" />
+                <span>{{ action.label }}</span>
+              </component>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
