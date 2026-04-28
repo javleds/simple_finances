@@ -21,8 +21,8 @@ function statusClasses(status: AccountRecord['status']): string {
 <template>
   <RouterLink
     :to="{
-      name: 'admin.accounts.detail',
-      params: { accountId: props.account.id, section: 'transactions' },
+      name: 'admin.accounts.view',
+      params: { accountId: props.account.id },
     }"
     class="block"
   >
@@ -57,7 +57,9 @@ function statusClasses(status: AccountRecord['status']): string {
         </div>
 
         <div class="col-span-2 flex min-w-0 items-center justify-between">
-          <p class="text-[11px] font-medium uppercase tracking-[0.04em] text-[var(--app-color-text-subtle)]">
+          <p
+            class="text-[11px] font-medium uppercase tracking-[0.04em] text-[var(--app-color-text-subtle)]"
+          >
             Balance
           </p>
           <p

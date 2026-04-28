@@ -8,18 +8,34 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: 'accounts/:accountId',
-    redirect: (to) => ({
-      name: 'admin.accounts.detail',
-      params: {
-        accountId: to.params.accountId,
-        section: 'transactions',
+    component: () => import('./pages/AccountRelationshipsPage.vue'),
+    children: [
+      {
+        name: 'admin.accounts.view',
+        path: '',
+        component: () => import('./pages/AccountDetailsPage.vue'),
       },
-    }),
-  },
-  {
-    name: 'admin.accounts.detail',
-    path: 'accounts/:accountId/:section',
-    component: () => import('./pages/AccountDetailPage.vue'),
+      {
+        name: 'admin.accounts.transactions',
+        path: 'transactions',
+        component: () => import('./pages/AccountTransactionsPage.vue'),
+      },
+      {
+        name: 'admin.accounts.goals',
+        path: 'goals',
+        component: () => import('./pages/AccountGoalsPage.vue'),
+      },
+      {
+        name: 'admin.accounts.invitations',
+        path: 'invitations',
+        component: () => import('./pages/AccountInvitationsPage.vue'),
+      },
+      {
+        name: 'admin.accounts.users',
+        path: 'users',
+        component: () => import('./pages/AccountUsersPage.vue'),
+      },
+    ],
   },
 ];
 
