@@ -53,7 +53,7 @@ const navigationItems: AdminNavigationItem[] = [
     activeIcon: HomeSolidIcon,
   },
   {
-    label: 'Distribución',
+    label: 'Distro',
     routeName: 'admin.distribution',
     icon: Squares2X2Icon,
     activeIcon: Squares2X2SolidIcon,
