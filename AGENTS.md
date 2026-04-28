@@ -12,6 +12,8 @@ Current shared components:
   Path: `src/modules/shared/components/AppButton.vue`
 - `AppCard`: bordered surface card with optional padding and muted surface mode.
   Path: `src/modules/shared/components/AppCard.vue`
+- `AppContextTabs`: contextual horizontal tabs with optional icons and configurable top or bottom active indicator.
+  Path: `src/modules/shared/components/AppContextTabs.vue`
 - `AppIconButton`: compact circular button for icon-only actions.
   Path: `src/modules/shared/components/AppIconButton.vue`
 - `AppInput`: labeled input wrapper compatible with native input attributes via `$attrs`.

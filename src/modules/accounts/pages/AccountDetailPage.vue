@@ -11,7 +11,15 @@ import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { type AccountRecord, findAccountById } from '@/modules/accounts/data/accounts';
-import { AppButton, AppCard, AppLink, AppModal, AppText, AppTitle } from '@/modules/shared/components';
+import {
+  AppButton,
+  AppCard,
+  AppContextTabs,
+  AppLink,
+  AppModal,
+  AppText,
+  AppTitle,
+} from '@/modules/shared/components';
 
 type AccountRelationSection = 'transactions' | 'invitations' | 'goals' | 'users';
 
@@ -127,13 +135,6 @@ function statusClasses(status: AccountRecord['status']): string {
   return 'bg-slate-500/12 text-slate-600 dark:text-slate-300';
 }
 
-function sectionButtonClasses(section: AccountRelationSection): string {
-  if (activeSection.value === section) {
-    return 'text-[var(--app-color-text)] after:scale-x-100 after:opacity-100';
-  }
-
-  return 'text-[var(--app-color-text-subtle)] after:scale-x-0 after:opacity-0 hover:text-[var(--app-color-text)]';
-}
 </script>
 
 <template>
@@ -342,19 +343,12 @@ function sectionButtonClasses(section: AccountRelationSection): string {
     <div
       class="fixed bottom-[5.25rem] left-1/2 z-10 w-full max-w-[430px] -translate-x-1/2 border-t border-[var(--app-color-border)] bg-[color-mix(in_srgb,var(--app-color-surface)_96%,transparent)] backdrop-blur"
     >
-      <div class="flex overflow-x-auto px-1">
-        <button
-          v-for="section in relationshipSections"
-          :key="section.value"
-          type="button"
-          class="relative inline-flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-semibold transition focus:outline-none after:absolute after:left-2 after:right-2 after:top-0 after:h-1 after:origin-center after:rounded-full after:bg-[var(--app-color-primary)] after:shadow-[0_0_18px_rgba(29,78,216,0.45)] after:transition-all"
-          :class="sectionButtonClasses(section.value)"
-          @click="activeSection = section.value"
-        >
-          <component :is="section.icon" class="h-4 w-4" />
-          <span>{{ section.label }}</span>
-        </button>
-      </div>
+      <AppContextTabs
+        :model-value="activeSection"
+        :options="relationshipSections"
+        indicator-position="top"
+        @update:model-value="activeSection = $event as AccountRelationSection"
+      />
     </div>
 
     <AppModal :open="isDeleteModalOpen" title="Eliminar cuenta" close-label="Cancelar" @close="closeDeleteModal">
