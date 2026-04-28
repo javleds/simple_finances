@@ -103,7 +103,7 @@ function clearFilters(): void {
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
       </div>
 
-      <div class="max-h-[30rem] space-y-4 overflow-y-auto pr-1">
+      <div class="space-y-4">
         <AccountListItem v-for="account in filteredAccounts" :key="account.id" :account="account" />
 
         <div
