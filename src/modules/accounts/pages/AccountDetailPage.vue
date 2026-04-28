@@ -11,7 +11,7 @@ import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import AccountActionCard from '@/modules/accounts/components/AccountActionCard.vue';
-import { findAccountById } from '@/modules/accounts/data/accounts';
+import { type AccountRecord, findAccountById } from '@/modules/accounts/data/accounts';
 import { AppButton, AppCard, AppLink, AppModal, AppText, AppTitle } from '@/modules/shared/components';
 
 const route = useRoute();
@@ -52,6 +52,14 @@ function openDeleteModal(): void {
 function closeDeleteModal(): void {
   isDeleteModalOpen.value = false;
 }
+
+function statusClasses(status: AccountRecord['status']): string {
+  if (status === 'Activo') {
+    return 'bg-emerald-500/12 text-emerald-600';
+  }
+
+  return 'bg-slate-500/12 text-slate-600 dark:text-slate-300';
+}
 </script>
 
 <template>
@@ -74,10 +82,13 @@ function closeDeleteModal(): void {
           <div class="flex items-start justify-between gap-4">
             <div class="space-y-2">
               <div class="flex items-center gap-3">
-                <span class="h-4 w-4 rounded-full border border-white/30" :style="{ backgroundColor: account.color }" />
-                <AppText size="sm" tone="subtle" class="!text-white/80">
+                <span class="h-3 w-3 rounded-[4px]" :style="{ backgroundColor: account.color }" />
+                <span
+                  class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.04em]"
+                  :class="statusClasses(account.status)"
+                >
                   {{ account.status }}
-                </AppText>
+                </span>
               </div>
 
               <AppTitle as="h2" size="sm" class="!text-white">

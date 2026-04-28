@@ -1,4 +1,4 @@
-export type AccountStatus = 'Activa' | 'Alineada' | 'Programada' | 'En revisión';
+export type AccountStatus = 'Activo' | 'Inactivo';
 
 export type AccountRecord = {
   id: string;
@@ -16,8 +16,8 @@ export const accounts: AccountRecord[] = [
   {
     id: 'cuenta-concentradora',
     color: '#2563EB',
-    name: 'Cuenta concentradora',
-    status: 'Activa',
+    name: 'Ahorro para el retiro chcucho',
+    status: 'Activo',
     balance: '$184,220',
     totalSpent: '$42,860',
     availableCredit: '$96,500',
@@ -28,7 +28,7 @@ export const accounts: AccountRecord[] = [
     id: 'reserva-tributaria',
     color: '#0F766E',
     name: 'Reserva tributaria',
-    status: 'Alineada',
+    status: 'Activo',
     balance: '$62,080',
     totalSpent: '$8,420',
     availableCredit: '$31,300',
@@ -39,7 +39,7 @@ export const accounts: AccountRecord[] = [
     id: 'pagos-nomina',
     color: '#EA580C',
     name: 'Pagos y nómina',
-    status: 'Programada',
+    status: 'Activo',
     balance: '$44,697',
     totalSpent: '$18,960',
     availableCredit: '$22,000',
@@ -50,7 +50,7 @@ export const accounts: AccountRecord[] = [
     id: 'crecimiento-comercial',
     color: '#7C3AED',
     name: 'Crecimiento comercial',
-    status: 'En revisión',
+    status: 'Inactivo',
     balance: '$28,140',
     totalSpent: '$6,540',
     availableCredit: '$58,200',
@@ -61,7 +61,7 @@ export const accounts: AccountRecord[] = [
     id: 'inversiones-liquidas',
     color: '#D97706',
     name: 'Inversiones líquidas',
-    status: 'Activa',
+    status: 'Activo',
     balance: '$71,560',
     totalSpent: '$4,890',
     availableCredit: '$112,000',
@@ -72,7 +72,7 @@ export const accounts: AccountRecord[] = [
     id: 'operacion-regional',
     color: '#DC2626',
     name: 'Operación regional',
-    status: 'Activa',
+    status: 'Activo',
     balance: '$36,920',
     totalSpent: '$21,330',
     availableCredit: '$44,500',

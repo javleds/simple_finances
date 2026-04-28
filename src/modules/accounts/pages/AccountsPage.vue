@@ -10,7 +10,6 @@ import AccountListItem from '@/modules/accounts/components/AccountListItem.vue';
 import { accounts } from '@/modules/accounts/data/accounts';
 import {
   AppButton,
-  AppCard,
   AppIconButton,
   AppInput,
   AppModal,
@@ -22,7 +21,7 @@ const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const selectedStatuses = ref<string[]>([]);
 
-const statusOptions = ['Activa', 'Alineada', 'Programada', 'En revisión'] as const;
+const statusOptions = ['Activo', 'Inactivo'] as const;
 
 const filteredAccounts = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
