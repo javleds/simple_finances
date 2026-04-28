@@ -7,8 +7,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./pages/AccountsPage.vue'),
   },
   {
-    name: 'admin.accounts.detail',
     path: 'accounts/:accountId',
+    redirect: (to) => ({
+      name: 'admin.accounts.detail',
+      params: {
+        accountId: to.params.accountId,
+        section: 'transactions',
+      },
+    }),
+  },
+  {
+    name: 'admin.accounts.detail',
+    path: 'accounts/:accountId/:section',
     component: () => import('./pages/AccountDetailPage.vue'),
   },
 ];

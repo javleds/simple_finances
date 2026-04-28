@@ -8,7 +8,7 @@ import {
   UsersIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import { type AccountRecord, findAccountById } from '@/modules/accounts/data/accounts';
 import {
@@ -24,8 +24,8 @@ import {
 type AccountRelationSection = 'transactions' | 'invitations' | 'goals' | 'users';
 
 const route = useRoute();
+const router = useRouter();
 const isDeleteModalOpen = ref(false);
-const activeSection = ref<AccountRelationSection>('transactions');
 
 const account = computed(() => {
   const accountId = typeof route.params.accountId === 'string' ? route.params.accountId : '';
@@ -54,6 +54,22 @@ const relationshipSections = [
     icon: UsersIcon,
   },
 ] as const;
+
+const validSections = relationshipSections.map((section) => section.value);
+
+const activeSection = computed<AccountRelationSection>(() => {
+  const section = route.params.section;
+
+  if (typeof section !== 'string') {
+    return 'transactions';
+  }
+
+  if (validSections.includes(section as AccountRelationSection)) {
+    return section as AccountRelationSection;
+  }
+
+  return 'transactions';
+});
 
 const transactionItems = [
   {
@@ -133,6 +149,22 @@ function statusClasses(status: AccountRecord['status']): string {
   }
 
   return 'bg-slate-500/12 text-slate-600 dark:text-slate-300';
+}
+
+function updateActiveSection(nextSection: string): void {
+  const accountId = typeof route.params.accountId === 'string' ? route.params.accountId : '';
+
+  if (!accountId) {
+    return;
+  }
+
+  router.push({
+    name: 'admin.accounts.detail',
+    params: {
+      accountId,
+      section: nextSection,
+    },
+  });
 }
 
 </script>
@@ -347,7 +379,7 @@ function statusClasses(status: AccountRecord['status']): string {
         :model-value="activeSection"
         :options="relationshipSections"
         indicator-position="top"
-        @update:model-value="activeSection = $event as AccountRelationSection"
+        @update:model-value="updateActiveSection"
       />
     </div>
 

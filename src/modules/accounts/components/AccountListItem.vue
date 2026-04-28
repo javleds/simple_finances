@@ -19,7 +19,13 @@ function statusClasses(status: AccountRecord['status']): string {
 </script>
 
 <template>
-  <RouterLink :to="{ name: 'admin.accounts.detail', params: { accountId: props.account.id } }" class="block">
+  <RouterLink
+    :to="{
+      name: 'admin.accounts.detail',
+      params: { accountId: props.account.id, section: 'transactions' },
+    }"
+    class="block"
+  >
     <AppCard
       class="relative overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-[var(--app-color-border-strong)]"
     >
