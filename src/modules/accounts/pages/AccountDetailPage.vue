@@ -129,15 +129,15 @@ function statusClasses(status: AccountRecord['status']): string {
 
 function sectionButtonClasses(section: AccountRelationSection): string {
   if (activeSection.value === section) {
-    return 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]';
+    return 'text-[var(--app-color-text)] after:scale-x-100 after:opacity-100';
   }
 
-  return 'bg-[var(--app-color-surface-muted)] text-[var(--app-color-text-subtle)] hover:text-[var(--app-color-text)]';
+  return 'text-[var(--app-color-text-subtle)] after:scale-x-0 after:opacity-0 hover:text-[var(--app-color-text)]';
 }
 </script>
 
 <template>
-  <div v-if="account" class="space-y-5">
+  <div v-if="account" class="space-y-5 pb-28 pt-16">
     <div class="flex items-center justify-between gap-3">
       <AppLink :to="{ name: 'admin.accounts' }" variant="subtle">Volver a cuentas</AppLink>
       <AppText size="sm" tone="subtle">Detalle de cuenta</AppText>
@@ -231,30 +231,6 @@ function sectionButtonClasses(section: AccountRelationSection): string {
             </p>
           </div>
         </div>
-      </div>
-    </AppCard>
-
-    <div class="space-y-1">
-      <AppTitle as="h2" size="sm">Relaciones de la cuenta</AppTitle>
-      <AppText>
-        El bloque superior permanece fijo conceptualmente y esta navegación cambia solo las vistas
-        embebidas de la cuenta.
-      </AppText>
-    </div>
-
-    <AppCard class="rounded-3xl !p-3">
-      <div class="flex gap-2 overflow-x-auto pb-1">
-        <button
-          v-for="section in relationshipSections"
-          :key="section.value"
-          type="button"
-          class="inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
-          :class="sectionButtonClasses(section.value)"
-          @click="activeSection = section.value"
-        >
-          <component :is="section.icon" class="h-4 w-4" />
-          <span>{{ section.label }}</span>
-        </button>
       </div>
     </AppCard>
 
@@ -362,6 +338,24 @@ function sectionButtonClasses(section: AccountRelationSection): string {
         </div>
       </AppCard>
     </section>
+
+    <div
+      class="fixed left-1/2 top-[4.75rem] z-10 w-full max-w-[430px] -translate-x-1/2 border-b border-[var(--app-color-border)] bg-[color-mix(in_srgb,var(--app-color-surface)_96%,transparent)] backdrop-blur"
+    >
+      <div class="flex overflow-x-auto px-1">
+        <button
+          v-for="section in relationshipSections"
+          :key="section.value"
+          type="button"
+          class="relative inline-flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-semibold transition focus:outline-none after:absolute after:bottom-0 after:left-2 after:right-2 after:h-1 after:origin-center after:rounded-full after:bg-[var(--app-color-primary)] after:shadow-[0_0_18px_rgba(29,78,216,0.45)] after:transition-all"
+          :class="sectionButtonClasses(section.value)"
+          @click="activeSection = section.value"
+        >
+          <component :is="section.icon" class="h-4 w-4" />
+          <span>{{ section.label }}</span>
+        </button>
+      </div>
+    </div>
 
     <AppModal :open="isDeleteModalOpen" title="Eliminar cuenta" close-label="Cancelar" @close="closeDeleteModal">
       <div class="space-y-4">
