@@ -14,14 +14,14 @@ defineProps<{
   <RouterLink :to="{ name: 'admin.accounts.detail', params: { accountId: account.id } }" class="block">
     <AppCard
       muted
-      class="rounded-xl border-l-4 shadow-none transition hover:bg-[var(--app-color-surface)] hover:border-[var(--app-color-border-strong)]"
+      class="rounded-xl border-l-4 !p-4 shadow-none transition hover:bg-[var(--app-color-surface)] hover:border-[var(--app-color-border-strong)]"
       :style="{ borderLeftColor: account.color }"
     >
-      <div class="grid grid-cols-[minmax(0,1fr)_1.25rem] gap-x-3 gap-y-3 sm:gap-x-4">
+      <div class="grid grid-cols-[minmax(0,1fr)_1rem] gap-x-3 gap-y-2.5">
         <div class="min-w-0">
           <div class="min-w-0 flex-1">
             <p
-              class="overflow-hidden text-sm font-semibold leading-5 text-[var(--app-color-text)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+              class="overflow-hidden text-sm font-semibold leading-4.5 text-[var(--app-color-text)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
             >
               {{ account.name }}
             </p>
@@ -29,16 +29,16 @@ defineProps<{
         </div>
 
         <div class="row-span-2 flex items-center justify-end">
-          <ChevronRightIcon class="h-5 w-5 shrink-0 text-[var(--app-color-text-subtle)]" />
+          <ChevronRightIcon class="h-4 w-4 shrink-0 text-[var(--app-color-text-subtle)]" />
         </div>
 
         <div class="flex min-w-0 items-end justify-between gap-3">
-          <AppText size="sm" tone="subtle" class="truncate">{{ account.status }}</AppText>
+          <AppText size="sm" tone="subtle" class="truncate !text-xs">{{ account.status }}</AppText>
 
           <div class="shrink-0 text-right">
-            <AppText size="sm" tone="subtle">Balance</AppText>
+            <AppText size="sm" tone="subtle" class="!text-xs">Balance</AppText>
             <p
-              class="whitespace-nowrap text-base font-semibold tracking-tight tabular-nums text-[var(--app-color-text)] sm:text-lg"
+              class="whitespace-nowrap text-sm font-semibold tracking-tight tabular-nums text-[var(--app-color-text)] sm:text-base"
             >
               {{ account.balance }}
             </p>
