@@ -198,7 +198,7 @@ onBeforeUnmount(() => {
     </div>
 
     <nav
-      class="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 rounded-t-[28px] border bg-[color-mix(in_srgb,var(--app-color-surface)_92%,transparent)] p-2 backdrop-blur"
+      class="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-x border-t bg-[color-mix(in_srgb,var(--app-color-surface)_92%,transparent)] px-2 pb-2 pt-1 backdrop-blur"
       :style="{ borderColor: 'var(--app-color-border-strong)' }"
       aria-label="Primary"
     >

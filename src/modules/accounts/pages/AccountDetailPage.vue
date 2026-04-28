@@ -341,7 +341,7 @@ function statusClasses(status: AccountRecord['status']): string {
     </section>
 
     <div
-      class="fixed bottom-[5.25rem] left-1/2 z-10 w-full max-w-[430px] -translate-x-1/2 border-t border-[var(--app-color-border)] bg-[color-mix(in_srgb,var(--app-color-surface)_96%,transparent)] backdrop-blur"
+      class="fixed bottom-[5rem] left-1/2 z-10 w-full max-w-[430px] -translate-x-1/2 border-t border-[var(--app-color-border)] bg-[color-mix(in_srgb,var(--app-color-surface)_96%,transparent)] backdrop-blur"
     >
       <AppContextTabs
         :model-value="activeSection"
