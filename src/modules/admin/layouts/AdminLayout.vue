@@ -4,6 +4,7 @@ import {
   CreditCardIcon,
   HomeIcon,
   Squares2X2Icon,
+  UserCircleIcon,
   WalletIcon,
 } from '@heroicons/vue/24/outline';
 import {
@@ -27,6 +28,7 @@ type AdminNavigationItem = {
 
 const route = useRoute();
 const themeStore = useThemeStore();
+const activeFacilityName = 'Facility Principal';
 
 const themeOptions = [
   { value: THEME_MODE.LIGHT, label: 'Light' },
@@ -83,29 +85,36 @@ function isActiveRoute(routeName: string): boolean {
       class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--app-color-page-glow),_transparent_52%)]"
     />
 
-    <div class="relative mx-auto flex min-h-[calc(100vh-9rem)] max-w-[430px] sm:min-h-[820px]">
+    <header
+      class="fixed left-1/2 top-0 z-20 w-full max-w-[430px] -translate-x-1/2 border-b bg-[color-mix(in_srgb,var(--app-color-surface)_94%,transparent)] px-5 pb-4 pt-5 backdrop-blur"
+      :style="{ borderColor: 'var(--app-color-border)' }"
+    >
+      <div class="flex items-center justify-between gap-4">
+        <div class="min-w-0 space-y-1">
+          <h1 class="truncate text-lg font-semibold tracking-tight text-[var(--app-color-text)]">
+            {{ activeFacilityName }}
+          </h1>
+        </div>
+
+        <button
+          type="button"
+          aria-label="Perfil de usuario"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <UserCircleIcon class="h-7 w-7" />
+        </button>
+      </div>
+    </header>
+
+    <div
+      class="relative mx-auto flex min-h-[calc(100vh-9rem)] max-w-[430px] pt-[5.5rem] sm:min-h-[820px]"
+    >
       <div
         class="flex w-full flex-col overflow-hidden rounded-[32px] border bg-[var(--app-color-surface)] shadow-[var(--app-shadow-card)]"
         :style="{ borderColor: 'var(--app-color-border-strong)' }"
       >
         <header class="border-b px-5 pb-4 pt-5" :style="{ borderColor: 'var(--app-color-border)' }">
-          <div class="mb-4 flex items-start justify-between gap-4">
-            <div class="space-y-1">
-              <AppText size="sm" tone="subtle">Finsi Admin</AppText>
-              <h1 class="text-lg font-semibold tracking-tight text-[var(--app-color-text)]">
-                Panel principal
-              </h1>
-            </div>
-
-            <div
-              class="rounded-2xl border px-3 py-2 text-right"
-              :style="{ borderColor: 'var(--app-color-border)' }"
-            >
-              <AppText size="sm" tone="subtle">Estado</AppText>
-              <p class="text-sm font-semibold text-emerald-500">Operando</p>
-            </div>
-          </div>
-
           <div
             class="rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
