@@ -88,7 +88,15 @@ const navigationItems: AdminNavigationItem[] = [
 ];
 
 function isActiveRoute(routeName: string): boolean {
-  return route.name === routeName;
+  if (typeof route.name !== 'string') {
+    return false;
+  }
+
+  if (route.name === routeName) {
+    return true;
+  }
+
+  return route.name.startsWith(`${routeName}.`);
 }
 
 function toggleProfileMenu(): void {
