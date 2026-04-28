@@ -1,5 +1,10 @@
 import type { RouteRecordRaw } from 'vue-router';
 
+import accountsRoutes from '@/modules/accounts/routes';
+import distributionRoutes from '@/modules/distribution/routes';
+import settingsRoutes from '@/modules/settings/routes';
+import subscriptionsRoutes from '@/modules/subscriptions/routes';
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/admin',
@@ -11,26 +16,10 @@ const routes: RouteRecordRaw[] = [
         path: 'dashboard',
         component: () => import('./pages/DashboardPage.vue'),
       },
-      {
-        name: 'admin.accounts',
-        path: 'accounts',
-        component: () => import('./pages/DashboardPage.vue'),
-      },
-      {
-        name: 'admin.subscriptions',
-        path: 'subscriptions',
-        component: () => import('./pages/DashboardPage.vue'),
-      },
-      {
-        name: 'admin.distribution',
-        path: 'distribution',
-        component: () => import('./pages/DashboardPage.vue'),
-      },
-      {
-        name: 'admin.settings',
-        path: 'settings',
-        component: () => import('./pages/DashboardPage.vue'),
-      },
+      ...accountsRoutes,
+      ...subscriptionsRoutes,
+      ...distributionRoutes,
+      ...settingsRoutes,
     ],
   },
 ];
