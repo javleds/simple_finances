@@ -340,14 +340,14 @@ function sectionButtonClasses(section: AccountRelationSection): string {
     </section>
 
     <div
-      class="fixed left-1/2 top-[4.75rem] z-10 w-full max-w-[430px] -translate-x-1/2 border-b border-[var(--app-color-border)] bg-[color-mix(in_srgb,var(--app-color-surface)_96%,transparent)] backdrop-blur"
+      class="fixed bottom-[5.25rem] left-1/2 z-10 w-full max-w-[430px] -translate-x-1/2 border-t border-[var(--app-color-border)] bg-[color-mix(in_srgb,var(--app-color-surface)_96%,transparent)] backdrop-blur"
     >
       <div class="flex overflow-x-auto px-1">
         <button
           v-for="section in relationshipSections"
           :key="section.value"
           type="button"
-          class="relative inline-flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-semibold transition focus:outline-none after:absolute after:bottom-0 after:left-2 after:right-2 after:h-1 after:origin-center after:rounded-full after:bg-[var(--app-color-primary)] after:shadow-[0_0_18px_rgba(29,78,216,0.45)] after:transition-all"
+          class="relative inline-flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-semibold transition focus:outline-none after:absolute after:left-2 after:right-2 after:top-0 after:h-1 after:origin-center after:rounded-full after:bg-[var(--app-color-primary)] after:shadow-[0_0_18px_rgba(29,78,216,0.45)] after:transition-all"
           :class="sectionButtonClasses(section.value)"
           @click="activeSection = section.value"
         >
