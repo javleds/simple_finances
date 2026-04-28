@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { Cog6ToothIcon, ShieldCheckIcon } from '@heroicons/vue/24/outline';
 
+import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import SettingsSectionCard from '@/modules/settings/components/SettingsSectionCard.vue';
-import { AppCard, AppText, AppTitle } from '@/modules/shared/components';
+import { AppCard, AppText, AppTitle, AppToggleButton } from '@/modules/shared/components';
+
+const themeStore = useThemeStore();
+
+const themeOptions = [
+  { value: THEME_MODE.LIGHT, label: 'Light' },
+  { value: THEME_MODE.DARK, label: 'Dark' },
+] as const;
 
 const sections = [
   {
@@ -18,6 +26,10 @@ const sections = [
     description: 'Revisa políticas de acceso y sesiones activas.',
   },
 ];
+
+function updateTheme(nextTheme: string): void {
+  themeStore.setTheme(nextTheme as ThemeMode);
+}
 </script>
 
 <template>
@@ -45,6 +57,21 @@ const sections = [
       >
         <ShieldCheckIcon class="h-5 w-5 shrink-0 text-emerald-600" />
         <AppText size="sm">La autenticación reforzada está habilitada para administradores.</AppText>
+      </div>
+    </AppCard>
+
+    <AppCard class="rounded-3xl">
+      <div class="flex items-center justify-between gap-4">
+        <div class="space-y-1">
+          <AppTitle as="h2" size="sm">Tema visual</AppTitle>
+          <AppText>Cambia entre light y dark mode para toda la experiencia administrativa.</AppText>
+        </div>
+
+        <AppToggleButton
+          :model-value="themeStore.mode"
+          :options="themeOptions"
+          @update:model-value="updateTheme"
+        />
       </div>
     </AppCard>
 

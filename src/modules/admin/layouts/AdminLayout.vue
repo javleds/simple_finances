@@ -20,8 +20,7 @@ import {
 } from '@heroicons/vue/24/solid';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
 
-import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
-import { AppText, AppToggleButton } from '@/modules/shared/components';
+import { AppText } from '@/modules/shared/components';
 
 type AdminNavigationItem = {
   label: string;
@@ -37,15 +36,9 @@ type ProfileMenuAction = {
 };
 
 const route = useRoute();
-const themeStore = useThemeStore();
 const activeFacilityName = 'Facility Principal';
 const isProfileMenuOpen = ref(false);
 const profileMenuRef = ref<HTMLElement | null>(null);
-
-const themeOptions = [
-  { value: THEME_MODE.LIGHT, label: 'Light' },
-  { value: THEME_MODE.DARK, label: 'Dark' },
-] as const;
 
 const profileMenuActions: ProfileMenuAction[] = [
   {
@@ -95,10 +88,6 @@ const navigationItems: AdminNavigationItem[] = [
     activeIcon: AdjustmentsHorizontalSolidIcon,
   },
 ];
-
-function updateTheme(nextTheme: string): void {
-  themeStore.setTheme(nextTheme as ThemeMode);
-}
 
 function isActiveRoute(routeName: string): boolean {
   return route.name === routeName;
@@ -196,30 +185,6 @@ onBeforeUnmount(() => {
         class="flex w-full flex-col overflow-hidden rounded-[32px] border bg-[var(--app-color-surface)] shadow-[var(--app-shadow-card)]"
         :style="{ borderColor: 'var(--app-color-border-strong)' }"
       >
-        <header class="border-b px-5 pb-4 pt-5" :style="{ borderColor: 'var(--app-color-border)' }">
-          <div
-            class="rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
-            :style="{ borderColor: 'var(--app-color-border)' }"
-          >
-            <div class="flex items-center justify-between gap-3">
-              <div class="space-y-1">
-                <AppText as="div" tone="muted" class="font-medium text-[var(--app-color-text)]">
-                  Tema visual
-                </AppText>
-                <AppText size="sm" tone="subtle">
-                  Mantiene el mismo modo que el flujo de autenticación.
-                </AppText>
-              </div>
-
-              <AppToggleButton
-                :model-value="themeStore.mode"
-                :options="themeOptions"
-                @update:model-value="updateTheme"
-              />
-            </div>
-          </div>
-        </header>
-
         <main class="flex-1 overflow-y-auto px-5 pb-8 pt-5">
           <RouterView />
         </main>
