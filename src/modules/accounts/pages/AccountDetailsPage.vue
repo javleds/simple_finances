@@ -55,7 +55,7 @@ function statusClasses(status: AccountRecord['status']): string {
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0 space-y-2">
             <div class="flex items-center gap-3">
-              <span class="h-3 w-3 rounded-[4px]" :style="{ backgroundColor: account.color }" />
+              <span class="h-3 w-3 rounded-sm" :style="{ backgroundColor: account.color }" />
               <span
                 class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.04em]"
                 :class="statusClasses(account.status)"
@@ -69,7 +69,7 @@ function statusClasses(status: AccountRecord['status']): string {
 
           <div class="shrink-0 text-right">
             <AppText size="sm" tone="subtle">Balance</AppText>
-            <p class="mt-1 text-2xl font-semibold tracking-tight text-[var(--app-color-text)]">
+            <p class="mt-1 text-2xl font-semibold tracking-tight text-(--app-color-text)">
               {{ account.balance }}
             </p>
           </div>
@@ -77,21 +77,21 @@ function statusClasses(status: AccountRecord['status']): string {
 
         <div v-if="account.accountType === 'credito'" class="grid grid-cols-2 gap-3">
           <div
-            class="rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
+            class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <AppText size="sm" tone="subtle">Línea de crédito</AppText>
-            <p class="mt-1 text-lg font-semibold text-[var(--app-color-text)]">
+            <p class="mt-1 text-lg font-semibold text-(--app-color-text)">
               {{ account.creditLine }}
             </p>
           </div>
 
           <div
-            class="rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
+            class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <AppText size="sm" tone="subtle">Crédito disponible</AppText>
-            <p class="mt-1 text-lg font-semibold text-[var(--app-color-text)]">
+            <p class="mt-1 text-lg font-semibold text-(--app-color-text)">
               {{ account.availableCredit }}
             </p>
           </div>
@@ -108,49 +108,49 @@ function statusClasses(status: AccountRecord['status']): string {
 
         <div class="grid grid-cols-2 gap-3">
           <div
-            class="rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
+            class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <AppText size="sm" tone="subtle">Color</AppText>
             <div class="mt-2 flex items-center gap-3">
               <span
-                class="h-4 w-4 rounded-[4px] border border-white/30"
+                class="h-4 w-4 rounded-sm border border-white/30"
                 :style="{ backgroundColor: account.color }"
               />
-              <p class="text-sm font-semibold text-[var(--app-color-text)]">
+              <p class="text-sm font-semibold text-(--app-color-text)">
                 {{ account.color }}
               </p>
             </div>
           </div>
 
           <div
-            class="rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
+            class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <AppText size="sm" tone="subtle">Tipo de cuenta</AppText>
-            <p class="mt-2 text-sm font-semibold text-[var(--app-color-text)]">
+            <p class="mt-2 text-sm font-semibold text-(--app-color-text)">
               {{ account.accountType === 'credito' ? 'Crédito' : 'Débito' }}
             </p>
           </div>
 
           <div
-            class="rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
+            class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <AppText size="sm" tone="subtle">Cuenta virtual</AppText>
-            <p class="mt-2 text-sm font-semibold text-[var(--app-color-text)]">
+            <p class="mt-2 text-sm font-semibold text-(--app-color-text)">
               {{ account.isVirtual ? 'Sí' : 'No' }}
             </p>
           </div>
 
           <div
-            class="rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
+            class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <div class="flex items-center justify-between gap-3">
               <div class="space-y-1">
                 <AppText size="sm" tone="subtle">Cuenta de alimentación</AppText>
-                <p class="text-sm font-semibold text-[var(--app-color-text)]">
+                <p class="text-sm font-semibold text-(--app-color-text)">
                   {{ account.fundingAccount ?? 'No configurada' }}
                 </p>
               </div>
@@ -180,7 +180,7 @@ function statusClasses(status: AccountRecord['status']): string {
             </AppText>
           </div>
           <div class="text-right">
-            <p class="text-sm font-semibold text-[var(--app-color-text)]">
+            <p class="text-sm font-semibold text-(--app-color-text)">
               {{ account.users.length }}
             </p>
             <AppText size="sm" tone="subtle">usuarios</AppText>
@@ -189,21 +189,21 @@ function statusClasses(status: AccountRecord['status']): string {
 
         <div class="grid grid-cols-2 gap-3">
           <div
-            class="rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
+            class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <AppText size="sm" tone="subtle">Con saldo pendiente</AppText>
-            <p class="mt-1 text-lg font-semibold text-[var(--app-color-text)]">
+            <p class="mt-1 text-lg font-semibold text-(--app-color-text)">
               {{ usersPendingSummary }}
             </p>
           </div>
 
           <div
-            class="rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
+            class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <AppText size="sm" tone="subtle">Reparto base</AppText>
-            <p class="mt-1 text-lg font-semibold text-[var(--app-color-text)]">
+            <p class="mt-1 text-lg font-semibold text-(--app-color-text)">
               {{ account.users.length > 0 ? 'Activo' : 'Sin usuarios' }}
             </p>
           </div>
@@ -213,19 +213,19 @@ function statusClasses(status: AccountRecord['status']): string {
           <div
             v-for="user in account.users"
             :key="user.id"
-            class="rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-4"
+            class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-4"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <div class="flex items-start justify-between gap-4">
               <div class="min-w-0 space-y-1">
-                <p class="truncate text-sm font-semibold text-[var(--app-color-text)]">
+                <p class="truncate text-sm font-semibold text-(--app-color-text)">
                   {{ user.name }}
                 </p>
                 <AppText size="sm" class="truncate">{{ user.email }}</AppText>
               </div>
 
               <div class="shrink-0 text-right">
-                <p class="text-sm font-semibold text-[var(--app-color-text)]">
+                <p class="text-sm font-semibold text-(--app-color-text)">
                   {{ user.allocationPercentage }}%
                 </p>
                 <AppText size="sm" tone="subtle">reparto</AppText>
@@ -234,7 +234,7 @@ function statusClasses(status: AccountRecord['status']): string {
 
             <div class="mt-4 flex items-center justify-between gap-3">
               <AppText size="sm" tone="subtle">Egresos pendientes</AppText>
-              <p class="text-sm font-semibold tabular-nums text-[var(--app-color-text)]">
+              <p class="text-sm font-semibold tabular-nums text-(--app-color-text)">
                 {{ user.pendingExpenses }}
               </p>
             </div>
