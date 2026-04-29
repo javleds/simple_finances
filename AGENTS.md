@@ -24,6 +24,8 @@ Current shared components:
   Path: `src/modules/shared/components/AppModal.vue`
 - `AppPasswordInput`: password input with show/hide action.
   Path: `src/modules/shared/components/AppPasswordInput.vue`
+- `AppSearchSelect`: single-select searchable dropdown styled as an input, with option filtering and one-item selection.
+  Path: `src/modules/shared/components/AppSearchSelect.vue`
 - `AppText`: shared paragraph/text primitive with tone and size options.
   Path: `src/modules/shared/components/AppText.vue`
 - `AppToggleButton`: segmented toggle button for selecting one option from a small set.
