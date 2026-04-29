@@ -21,6 +21,9 @@
   --app-color-primary: #1d4ed8;
   --app-color-primary-hover: #1e40af;
   --app-color-primary-foreground: #eff6ff;
+  --app-color-success: #15803d;
+  --app-color-warning: #b45309;
+  --app-color-danger: #b91c1c;
   --app-color-secondary: #0f172a;
   --app-color-secondary-hover: #1e293b;
   --app-color-secondary-foreground: #ffffff;
@@ -49,6 +52,9 @@
   --app-color-primary: #1e40af;
   --app-color-primary-hover: #1d4ed8;
   --app-color-primary-foreground: #eff6ff;
+  --app-color-success: #4ade80;
+  --app-color-warning: #fbbf24;
+  --app-color-danger: #f87171;
   --app-color-secondary: #dbe4ff;
   --app-color-secondary-hover: #bfdbfe;
   --app-color-secondary-foreground: #101215;

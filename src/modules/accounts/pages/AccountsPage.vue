@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import {
   AdjustmentsHorizontalIcon,
+  ArrowPathIcon,
   MagnifyingGlassIcon,
   PlusIcon,
+  XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref } from 'vue';
 
@@ -60,6 +62,17 @@ function closeFilters(): void {
 
 function clearFilters(): void {
   selectedStatuses.value = [];
+}
+
+function handleFiltersModalAction(actionKey: string): void {
+  if (actionKey === 'clear') {
+    clearFilters();
+    return;
+  }
+
+  if (actionKey === 'close') {
+    closeFilters();
+  }
 }
 </script>
 
@@ -119,8 +132,13 @@ function clearFilters(): void {
 
     <AppModal
       :open="isFiltersOpen"
+      :actions="[
+        { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Filtros avanzados"
-      close-label="Cerrar"
+      variant="default"
+      @action="handleFiltersModalAction"
       @close="closeFilters"
     >
       <div class="space-y-5">
@@ -145,10 +163,6 @@ function clearFilters(): void {
           >
             {{ status }}
           </button>
-        </div>
-
-        <div class="flex justify-end">
-          <AppButton variant="outline" @click="clearFilters">Limpiar filtros</AppButton>
         </div>
       </div>
     </AppModal>

@@ -4,14 +4,15 @@ import {
   EnvelopeIcon,
   FlagIcon,
   InformationCircleIcon,
+  TrashIcon,
   UsersIcon,
+  XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { findAccountById } from '@/modules/accounts/data/accounts';
 import {
-  AppButton,
   AppCard,
   AppContextTabs,
   AppLink,
@@ -67,6 +68,17 @@ function closeDeleteModal(): void {
   isDeleteModalOpen.value = false;
 }
 
+function handleDeleteModalAction(actionKey: string): void {
+  if (actionKey === 'cancel') {
+    closeDeleteModal();
+    return;
+  }
+
+  if (actionKey === 'confirm-delete') {
+    closeDeleteModal();
+  }
+}
+
 function updateActiveSection(nextSection: string): void {
   const accountId = typeof route.params.accountId === 'string' ? route.params.accountId : '';
 
@@ -100,8 +112,18 @@ function updateActiveSection(nextSection: string): void {
 
     <AppModal
       :open="isDeleteModalOpen"
+      :actions="[
+        { key: 'cancel', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        {
+          key: 'confirm-delete',
+          label: 'Confirmar eliminación',
+          tone: 'primary',
+          icon: TrashIcon,
+        },
+      ]"
       title="Eliminar cuenta"
-      close-label="Cancelar"
+      variant="danger"
+      @action="handleDeleteModalAction"
       @close="closeDeleteModal"
     >
       <div class="space-y-4">
@@ -110,12 +132,6 @@ function updateActiveSection(nextSection: string): void {
           >. Esta acción debe confirmar dependencias, usuarios y metas financieras antes de
           ejecutarse.
         </AppText>
-
-        <div class="flex justify-end">
-          <AppButton type="button" variant="primary" @click="closeDeleteModal">
-            Confirmar eliminación
-          </AppButton>
-        </div>
       </div>
     </AppModal>
   </div>
