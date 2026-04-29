@@ -89,7 +89,7 @@ function handleFiltersModalAction(actionKey: string): void {
       </AppButton>
     </div>
 
-    <div class="flex items-end gap-3">
+    <div class="flex items-center gap-3">
       <div class="relative flex-1">
         <div
           class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[var(--app-color-text-subtle)]"
