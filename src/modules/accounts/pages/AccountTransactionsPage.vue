@@ -196,22 +196,35 @@ function handleTransactionSubmit(): void {
       </AppIconButton>
     </div>
 
-    <div class="flex items-center justify-between gap-3">
-      <AppText size="sm" tone="subtle">
-        {{ filteredTransactionItems.length }} transacciones visibles
-      </AppText>
-      <AppText size="sm" tone="subtle">Actividad reciente</AppText>
-    </div>
+    <section class="space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <AppText size="sm" tone="subtle">
+          {{ filteredTransactionItems.length }} transacciones visibles
+        </AppText>
+        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
+      </div>
 
-    <TransactionListItem
-      v-for="transaction in filteredTransactionItems"
-      :key="`${transaction.concept}-${transaction.dateLabel}`"
-      :amount="transaction.amount"
-      :concept="transaction.concept"
-      :date-label="transaction.dateLabel"
-      :status="transaction.status"
-      :type="transaction.type"
-    />
+      <div class="space-y-4">
+        <TransactionListItem
+          v-for="transaction in filteredTransactionItems"
+          :key="`${transaction.concept}-${transaction.dateLabel}`"
+          :amount="transaction.amount"
+          :concept="transaction.concept"
+          :date-label="transaction.dateLabel"
+          :status="transaction.status"
+          :type="transaction.type"
+        />
+
+        <div
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm">
+            Sigue desplazándote para revisar más actividad conforme la cuenta acumule movimientos.
+          </AppText>
+        </div>
+      </div>
+    </section>
 
     <AppModal
       :open="isFiltersOpen"
