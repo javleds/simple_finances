@@ -23,20 +23,12 @@ function formattedAmount(amount: number): string {
   return currencyFormatter.format(amount);
 }
 
-function typeLabel(type: TransactionItemType): string {
-  if (type === 'income') {
-    return 'Ingreso';
-  }
-
-  return 'Egreso';
-}
-
 function amountClasses(type: TransactionItemType): string {
   if (type === 'income') {
     return 'text-emerald-700 dark:text-emerald-300';
   }
 
-  return 'text-[var(--app-color-text)]';
+  return 'text-red-700 dark:text-red-300';
 }
 
 function signLabel(type: TransactionItemType): string {
@@ -87,24 +79,26 @@ function statusLabel(status: TransactionItemStatus): string {
         </p>
       </div>
 
-      <p
-        class="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums tracking-tight sm:text-base"
-        :class="amountClasses(props.type)"
-      >
-        <span class="mr-1">{{ signLabel(props.type) }}</span>{{ formattedAmount(props.amount) }}
-      </p>
+      <div class="flex flex-col items-end gap-1">
+        <p
+          class="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums tracking-tight sm:text-base"
+          :class="amountClasses(props.type)"
+        >
+          <span class="mr-1">{{ signLabel(props.type) }}</span>{{ formattedAmount(props.amount) }}
+        </p>
+      </div>
 
       <div class="flex min-w-0 items-center gap-2">
+        <p class="truncate text-[11px] font-medium uppercase tracking-[0.04em] text-[var(--app-color-text-subtle)]">
+          {{ props.dateLabel }}
+        </p>
+
         <span
           class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em]"
           :class="statusClasses(props.status)"
         >
           {{ statusLabel(props.status) }}
         </span>
-
-        <p class="truncate text-[11px] font-medium uppercase tracking-[0.04em] text-[var(--app-color-text-subtle)]">
-          {{ typeLabel(props.type) }} · {{ props.dateLabel }}
-        </p>
       </div>
     </div>
   </AppCard>
