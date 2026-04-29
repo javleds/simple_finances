@@ -12,24 +12,31 @@ import {
   AppTitle,
 } from '@/modules/shared/components';
 import TransactionsForm from '@/modules/transactions/components/TransactionsForm.vue';
+import TransactionListItem from '@/modules/transactions/components/TransactionListItem.vue';
 
 const transactionItems = [
   {
-    title: 'Pago a proveedor logístico',
-    amount: '-$12,480',
-    meta: 'Hoy · Conciliada',
+    concept: 'Pago a proveedor logístico con referencia operativa y validación de entrega regional',
+    amount: 12480,
+    type: 'expense',
+    status: 'completed',
+    dateLabel: 'Hoy',
   },
   {
-    title: 'Dispersión interna desde facility',
-    amount: '+$35,000',
-    meta: 'Ayer · Entrada',
+    concept: 'Dispersión interna desde facility para reforzar la bolsa operativa del siguiente corte',
+    amount: 35000,
+    type: 'income',
+    status: 'completed',
+    dateLabel: 'Ayer',
   },
   {
-    title: 'Consumo operativo regional',
-    amount: '-$4,860',
-    meta: '22 Abr · Pendiente de revisión',
+    concept: 'Consumo operativo regional pendiente de conciliación con comprobantes de viaje',
+    amount: 4860,
+    type: 'expense',
+    status: 'pending',
+    dateLabel: '22 Abr',
   },
-];
+] as const;
 
 const financialGoals = [
   {
@@ -85,19 +92,15 @@ function handleTransactionSubmit(): void {
       </div>
     </AppCard>
 
-    <AppCard v-for="transaction in transactionItems" :key="transaction.title" class="rounded-3xl">
-      <div class="flex items-start justify-between gap-4">
-        <div class="space-y-1">
-          <p class="text-sm font-semibold text-[var(--app-color-text)]">
-            {{ transaction.title }}
-          </p>
-          <AppText size="sm">{{ transaction.meta }}</AppText>
-        </div>
-        <p class="shrink-0 text-sm font-semibold tabular-nums text-[var(--app-color-text)]">
-          {{ transaction.amount }}
-        </p>
-      </div>
-    </AppCard>
+    <TransactionListItem
+      v-for="transaction in transactionItems"
+      :key="`${transaction.concept}-${transaction.dateLabel}`"
+      :amount="transaction.amount"
+      :concept="transaction.concept"
+      :date-label="transaction.dateLabel"
+      :status="transaction.status"
+      :type="transaction.type"
+    />
 
     <AppModal
       :open="isCreateTransactionModalOpen"
