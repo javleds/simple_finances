@@ -8,6 +8,7 @@ import {
 } from '@heroicons/vue/24/outline';
 import { computed, ref } from 'vue';
 
+import AccountsForm from '@/modules/accounts/components/AccountsForm.vue';
 import AccountListItem from '@/modules/accounts/components/AccountListItem.vue';
 import { accounts } from '@/modules/accounts/data/accounts';
 import {
@@ -20,6 +21,7 @@ import {
 } from '@/modules/shared/components';
 
 const searchTerm = ref('');
+const isCreateAccountOpen = ref(false);
 const isFiltersOpen = ref(false);
 const selectedStatuses = ref<string[]>([]);
 
@@ -56,6 +58,14 @@ function openFilters(): void {
   isFiltersOpen.value = true;
 }
 
+function openCreateAccount(): void {
+  isCreateAccountOpen.value = true;
+}
+
+function closeCreateAccount(): void {
+  isCreateAccountOpen.value = false;
+}
+
 function closeFilters(): void {
   isFiltersOpen.value = false;
 }
@@ -74,6 +84,10 @@ function handleFiltersModalAction(actionKey: string): void {
     closeFilters();
   }
 }
+
+function handleCreateAccountSubmit(): void {
+  closeCreateAccount();
+}
 </script>
 
 <template>
@@ -84,7 +98,7 @@ function handleFiltersModalAction(actionKey: string): void {
         <AppText>La navegación por default es entrar al detalle de cada cuenta.</AppText>
       </div>
 
-      <AppButton variant="primary">
+      <AppButton variant="primary" @click="openCreateAccount">
         <PlusIcon class="h-4 w-4" />
       </AppButton>
     </div>
@@ -165,6 +179,25 @@ function handleFiltersModalAction(actionKey: string): void {
           </button>
         </div>
       </div>
+    </AppModal>
+
+    <AppModal
+      :open="isCreateAccountOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        {
+          key: 'submit-account',
+          label: 'Crear cuenta',
+          tone: 'primary',
+          type: 'submit',
+          form: 'account-form',
+        },
+      ]"
+      title="Nueva cuenta"
+      variant="default"
+      @close="closeCreateAccount"
+    >
+      <AccountsForm form-id="account-form" @submit="handleCreateAccountSubmit" />
     </AppModal>
   </div>
 </template>
