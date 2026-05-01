@@ -78,7 +78,7 @@ function openAccountDetails(): void {
         @edit.prevent.stop="handleEdit"
       />
 
-      <div class="row-span-2 flex items-center justify-end pt-0.5">
+      <div class="row-span-2 flex h-full items-center justify-end self-center">
         <ChevronRightIcon class="h-4 w-4 shrink-0 text-[var(--app-color-text-subtle)]" />
       </div>
 
