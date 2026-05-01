@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { AppCard } from '@/modules/shared/components';
+import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type UserAccessStatus = 'active' | 'invited';
 
 const props = defineProps<{
+  itemId: string;
   name: string;
   email: string;
   roleLabel: string;
@@ -11,6 +12,11 @@ const props = defineProps<{
   allocationPercentage: number;
   pendingExpenses: string;
   status: UserAccessStatus;
+}>();
+
+const emit = defineEmits<{
+  edit: [itemId: string];
+  delete: [itemId: string];
 }>();
 
 function statusLabel(status: UserAccessStatus): string {
@@ -36,6 +42,14 @@ function accentStyle(status: UserAccessStatus): string {
 
   return 'linear-gradient(90deg, color-mix(in srgb, var(--app-color-primary) 12%, transparent), transparent 78%)';
 }
+
+function handleEdit(): void {
+  emit('edit', props.itemId);
+}
+
+function handleDelete(): void {
+  emit('delete', props.itemId);
+}
 </script>
 
 <template>
@@ -48,7 +62,7 @@ function accentStyle(status: UserAccessStatus): string {
     />
 
     <div class="relative space-y-3">
-      <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+      <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3">
         <div class="min-w-0 space-y-1">
           <p
             class="overflow-hidden text-sm font-semibold leading-5 text-[var(--app-color-text)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
@@ -68,6 +82,8 @@ function accentStyle(status: UserAccessStatus): string {
             Participación
           </p>
         </div>
+
+        <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
       </div>
 
       <div class="flex items-center justify-between gap-3">

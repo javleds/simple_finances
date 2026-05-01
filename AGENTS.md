@@ -8,6 +8,8 @@ Reusing an existing shared component is mandatory when it already covers the nee
 
 Current shared components:
 
+- `AppActionMenu`: compact contextual actions menu for secondary item actions such as edit and delete.
+  Path: `src/modules/shared/components/AppActionMenu.vue`
 - `AppButton`: base button with variants `primary`, `secondary`, `ghost`.
   Path: `src/modules/shared/components/AppButton.vue`
 - `AppCard`: bordered surface card with optional padding and muted surface mode.

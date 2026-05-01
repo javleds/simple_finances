@@ -208,6 +208,7 @@ function closeCreateUser(): void {
           :access-label="user.accessLabel"
           :allocation-percentage="user.allocationPercentage"
           :email="user.email"
+          :item-id="user.id"
           :name="user.name"
           :pending-expenses="user.pendingExpenses"
           :role-label="user.roleLabel"

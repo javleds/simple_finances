@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { AppCard } from '@/modules/shared/components';
+import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type GoalStatus = 'on-track' | 'at-risk' | 'completed';
 
 const props = defineProps<{
+  itemId: string;
   title: string;
   detail: string;
   currentAmount: number;
@@ -11,6 +12,11 @@ const props = defineProps<{
   progress: number;
   status: GoalStatus;
   cadenceLabel: string;
+}>();
+
+const emit = defineEmits<{
+  edit: [itemId: string];
+  delete: [itemId: string];
 }>();
 
 const currencyFormatter = new Intl.NumberFormat('es-MX', {
@@ -71,6 +77,14 @@ function progressBarStyle(status: GoalStatus): string {
 function formattedAmount(amount: number): string {
   return currencyFormatter.format(amount);
 }
+
+function handleEdit(): void {
+  emit('edit', props.itemId);
+}
+
+function handleDelete(): void {
+  emit('delete', props.itemId);
+}
 </script>
 
 <template>
@@ -83,7 +97,7 @@ function formattedAmount(amount: number): string {
     />
 
     <div class="relative space-y-3">
-      <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+      <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3">
         <div class="min-w-0 space-y-1">
           <p
             class="overflow-hidden text-sm font-semibold leading-5 text-[var(--app-color-text)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
@@ -103,6 +117,8 @@ function formattedAmount(amount: number): string {
             de {{ formattedAmount(props.targetAmount) }}
           </p>
         </div>
+
+        <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
       </div>
 
       <div class="flex items-center justify-between gap-3">

@@ -211,6 +211,7 @@ function handleTransactionSubmit(): void {
           :amount="transaction.amount"
           :concept="transaction.concept"
           :date-label="transaction.dateLabel"
+          :item-id="`${transaction.concept}-${transaction.dateLabel}`"
           :status="transaction.status"
           :type="transaction.type"
         />

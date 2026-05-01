@@ -210,6 +210,7 @@ function closeCreateGoal(): void {
           :cadence-label="goal.cadenceLabel"
           :current-amount="goal.currentAmount"
           :detail="goal.detail"
+          :item-id="goal.id"
           :progress="goal.progress"
           :status="goal.status"
           :target-amount="goal.targetAmount"

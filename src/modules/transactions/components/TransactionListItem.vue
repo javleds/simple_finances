@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import { AppCard } from '@/modules/shared/components';
+import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type TransactionItemType = 'income' | 'expense';
 type TransactionItemStatus = 'completed' | 'pending';
 
 const props = defineProps<{
+  itemId: string;
   concept: string;
   amount: number;
   type: TransactionItemType;
   status: TransactionItemStatus;
   dateLabel: string;
+}>();
+
+const emit = defineEmits<{
+  edit: [itemId: string];
+  delete: [itemId: string];
 }>();
 
 const currencyFormatter = new Intl.NumberFormat('es-MX', {
@@ -54,6 +60,14 @@ function statusLabel(status: TransactionItemStatus): string {
 
   return 'Pendiente';
 }
+
+function handleEdit(): void {
+  emit('edit', props.itemId);
+}
+
+function handleDelete(): void {
+  emit('delete', props.itemId);
+}
 </script>
 
 <template>
@@ -70,7 +84,7 @@ function statusLabel(status: TransactionItemStatus): string {
       }"
     />
 
-    <div class="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2">
+    <div class="relative grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-x-3 gap-y-2">
       <div class="min-w-0">
         <p
           class="overflow-hidden text-sm font-semibold leading-5 text-[var(--app-color-text)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
@@ -88,7 +102,9 @@ function statusLabel(status: TransactionItemStatus): string {
         </p>
       </div>
 
-      <div class="flex min-w-0 items-center gap-2">
+      <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
+
+      <div class="col-span-2 flex min-w-0 items-center gap-2">
         <p class="truncate text-[11px] font-medium uppercase tracking-[0.04em] text-[var(--app-color-text-subtle)]">
           {{ props.dateLabel }}
         </p>
