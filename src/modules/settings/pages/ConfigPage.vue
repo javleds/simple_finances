@@ -3,7 +3,13 @@ import { reactive } from 'vue';
 
 import { accounts } from '@/modules/accounts/data/accounts';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
-import { AppCard, AppText, AppTitle, AppToggleButton } from '@/modules/shared/components';
+import {
+  AppCard,
+  AppSwitch,
+  AppText,
+  AppTitle,
+  AppToggleButton,
+} from '@/modules/shared/components';
 
 type NotificationSetting = {
   id: string;
@@ -119,20 +125,11 @@ function toggleAccountSetting(accountId: string): void {
               <AppText size="sm">{{ setting.description }}</AppText>
             </div>
 
-            <button
-              type="button"
-              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-              :class="
-                setting.enabled ? 'bg-(--app-color-primary)' : 'bg-(--app-color-border-strong)'
-              "
-              :aria-pressed="setting.enabled"
-              @click="toggleGlobalSetting(setting.id)"
-            >
-              <span
-                class="inline-block h-5 w-5 rounded-full bg-white shadow-sm transition"
-                :class="setting.enabled ? 'translate-x-6' : 'translate-x-1'"
-              />
-            </button>
+            <AppSwitch
+              :model-value="setting.enabled"
+              :aria-label="`Alternar ${setting.title}`"
+              @update:model-value="toggleGlobalSetting(setting.id)"
+            />
           </div>
         </AppCard>
       </div>
@@ -159,20 +156,11 @@ function toggleAccountSetting(accountId: string): void {
               </p>
             </div>
 
-            <button
-              type="button"
-              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-              :class="
-                setting.enabled ? 'bg-(--app-color-primary)' : 'bg-(--app-color-border-strong)'
-              "
-              :aria-pressed="setting.enabled"
-              @click="toggleAccountSetting(setting.id)"
-            >
-              <span
-                class="inline-block h-5 w-5 rounded-full bg-white shadow-sm transition"
-                :class="setting.enabled ? 'translate-x-6' : 'translate-x-1'"
-              />
-            </button>
+            <AppSwitch
+              :model-value="setting.enabled"
+              :aria-label="`Alternar notificaciones de ${setting.accountName}`"
+              @update:model-value="toggleAccountSetting(setting.id)"
+            />
           </div>
         </AppCard>
       </div>
