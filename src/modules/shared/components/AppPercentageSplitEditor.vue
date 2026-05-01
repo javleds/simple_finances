@@ -403,36 +403,33 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <div class="grid gap-3">
+      <div class="grid gap-2.5">
         <div
           v-for="user in userItems"
           :key="user.id"
-          class="rounded-xl border bg-(--app-color-surface-muted) px-3 py-3"
+          class="rounded-xl border bg-(--app-color-surface-muted) px-3 py-2.5"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_7rem] sm:items-end">
+          <div class="grid grid-cols-[minmax(0,1fr)_6.5rem] items-center gap-3">
             <div class="flex min-w-0 items-center gap-3">
               <span
                 class="h-3 w-3 shrink-0 rounded-full"
                 :style="{ backgroundColor: user.color }"
               />
-              <div class="min-w-0">
-                <p class="truncate text-sm font-semibold text-(--app-color-text)">
-                  {{ user.name }}
-                </p>
-                <AppText size="sm">{{ user.percentage.toFixed(2) }}%</AppText>
-              </div>
+              <p class="truncate text-sm font-semibold text-(--app-color-text)">
+                {{ user.name }}
+              </p>
             </div>
 
             <AppInput
               :id="`percentage-split-${user.id}`"
               :model-value="user.percentage.toFixed(2)"
-              :label="`Porcentaje de ${user.name}`"
               type="number"
               inputmode="decimal"
               min="0"
               max="100"
               step="0.01"
+              class="[&_input]:h-10 [&_input]:px-3"
               @update:model-value="updateUserPercentage(user.id, $event)"
             />
           </div>
