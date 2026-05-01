@@ -26,6 +26,8 @@ Current shared components:
   Path: `src/modules/shared/components/AppModal.vue`
 - `AppPasswordInput`: password input with show/hide action.
   Path: `src/modules/shared/components/AppPasswordInput.vue`
+- `AppPercentageSplitEditor`: interactive horizontal percentage splitter with drag handles and exact numeric adjustment that keeps the total at 100%.
+  Path: `src/modules/shared/components/AppPercentageSplitEditor.vue`
 - `AppSearchSelect`: single-select searchable dropdown styled as an input, with option filtering and one-item selection.
   Path: `src/modules/shared/components/AppSearchSelect.vue`
 - `AppSwitch`: boolean on/off switch for compact settings and per-item activation controls.

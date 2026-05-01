@@ -2,7 +2,13 @@
 import { UserGroupIcon } from '@heroicons/vue/24/outline';
 import { computed, reactive, watch } from 'vue';
 
-import { AppInput, AppSearchSelect, AppText, AppToggleButton } from '@/modules/shared/components';
+import {
+  AppInput,
+  AppPercentageSplitEditor,
+  AppSearchSelect,
+  AppText,
+  AppToggleButton,
+} from '@/modules/shared/components';
 
 type TransactionType = 'income' | 'expense';
 type TransactionIncomeStatus = 'pending' | 'completed';
@@ -171,10 +177,8 @@ function updateAmount(event: Event): void {
   state.amount = nextValue;
 }
 
-function updateUserPercentage(userId: string, event: Event): void {
-  const nextValue = Number((event.target as HTMLInputElement).value);
-
-  state.userPercentages[userId] = Number.isNaN(nextValue) ? 0 : nextValue;
+function updateUserPercentages(nextValues: Record<string, number>): void {
+  state.userPercentages = { ...nextValues };
 }
 
 function submitForm(): void {
@@ -268,21 +272,12 @@ function submitForm(): void {
               </div>
             </label>
 
-            <div v-if="showUserSplitInputs" class="grid gap-4 sm:grid-cols-2">
-              <AppInput
-                v-for="user in props.accountUsers"
-                :id="`transaction-user-percentage-${user.id}`"
-                :key="user.id"
-                :model-value="state.userPercentages[user.id] ?? 0"
-                :label="`Porcentaje de ${user.name}`"
-                type="number"
-                inputmode="decimal"
-                min="0"
-                step="0.01"
-                placeholder="0"
-                @input="updateUserPercentage(user.id, $event)"
-              />
-            </div>
+            <AppPercentageSplitEditor
+              v-if="showUserSplitInputs"
+              :users="props.accountUsers"
+              :model-value="state.userPercentages"
+              @update:model-value="updateUserPercentages"
+            />
           </section>
         </div>
 

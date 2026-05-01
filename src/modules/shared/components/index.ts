@@ -7,6 +7,7 @@ export { default as AppInput } from './AppInput.vue';
 export { default as AppLink } from './AppLink.vue';
 export { default as AppModal } from './AppModal.vue';
 export { default as AppPasswordInput } from './AppPasswordInput.vue';
+export { default as AppPercentageSplitEditor } from './AppPercentageSplitEditor.vue';
 export { default as AppSearchSelect } from './AppSearchSelect.vue';
 export { default as AppSwitch } from './AppSwitch.vue';
 export { default as AppText } from './AppText.vue';
