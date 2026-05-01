@@ -28,9 +28,9 @@ const componentProps = computed(() => {
 });
 
 const variantClasses = {
-  primary: 'text-[var(--app-color-link)] hover:text-[var(--app-color-link-hover)]',
-  secondary: 'text-[var(--app-color-text)] hover:text-[var(--app-color-link)]',
-  subtle: 'text-[var(--app-color-text-subtle)] hover:text-[var(--app-color-link)]',
+  primary: 'text-(--app-color-link) hover:text-(--app-color-link-hover)',
+  secondary: 'text-(--app-color-text) hover:text-(--app-color-link)',
+  subtle: 'text-(--app-color-text-subtle) hover:text-(--app-color-link)',
 } as const;
 </script>
 
@@ -38,7 +38,7 @@ const variantClasses = {
   <component
     :is="componentTag"
     v-bind="componentProps"
-    class="font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+    class="font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
     :class="variantClasses[props.variant]"
   >
     <slot />

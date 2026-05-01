@@ -13,9 +13,9 @@ const props = withDefaults(
 );
 
 const toneClasses = {
-  default: 'text-[var(--app-color-text-muted)]',
-  muted: 'text-[var(--app-color-label)]',
-  subtle: 'text-[var(--app-color-text-subtle)]',
+  default: 'text-(--app-color-text-muted)',
+  muted: 'text-(--app-color-label)',
+  subtle: 'text-(--app-color-text-subtle)',
 } as const;
 
 const sizeClasses = {

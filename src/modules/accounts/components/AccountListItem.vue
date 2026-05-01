@@ -42,7 +42,7 @@ function openAccountDetails(): void {
 
 <template>
   <AppCard
-    class="relative block cursor-pointer overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-[var(--app-color-border-strong)]"
+    class="relative block cursor-pointer overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-(--app-color-border-strong)"
     role="link"
     tabindex="0"
     @click="openAccountDetails"
@@ -59,7 +59,7 @@ function openAccountDetails(): void {
     <div class="relative grid grid-cols-[minmax(0,1fr)_auto_auto_1rem] items-start gap-x-3 gap-y-2">
       <div class="min-w-0">
         <p
-          class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-[var(--app-color-text)] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+          class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
         >
           {{ props.account.name }}
         </p>
@@ -79,17 +79,17 @@ function openAccountDetails(): void {
       />
 
       <div class="row-span-2 flex h-full items-center justify-end self-center">
-        <ChevronRightIcon class="h-4 w-4 shrink-0 text-[var(--app-color-text-subtle)]" />
+        <ChevronRightIcon class="h-4 w-4 shrink-0 text-(--app-color-text-subtle)" />
       </div>
 
       <div class="col-span-3 flex min-w-0 items-center justify-between">
         <p
-          class="text-[11px] font-medium tracking-[0.04em] text-[var(--app-color-text-subtle)] uppercase"
+          class="text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
         >
           Balance
         </p>
         <p
-          class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap text-[var(--app-color-text)] tabular-nums sm:text-base"
+          class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap text-(--app-color-text) tabular-nums sm:text-base"
         >
           {{ props.account.balance }}
         </p>

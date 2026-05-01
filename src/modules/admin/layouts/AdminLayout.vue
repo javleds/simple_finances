@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
 
 <template>
   <section
-    class="relative min-h-screen overflow-hidden bg-[var(--app-color-page)] px-3 pt-4 pb-28 text-[var(--app-color-text)] sm:px-6 sm:pt-8 sm:pb-32"
+    class="relative min-h-screen overflow-hidden bg-(--app-color-page) px-3 pt-4 pb-28 text-(--app-color-text) sm:px-6 sm:pt-8 sm:pb-32"
   >
     <div
       class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--app-color-page-glow),_transparent_52%)]"
@@ -193,7 +193,7 @@ onBeforeUnmount(() => {
                 ? { name: 'admin.distribution' }
                 : { name: 'admin.accounts' }
             "
-            class="flex h-11 w-11 items-center justify-center rounded-full border bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+            class="flex h-11 w-11 items-center justify-center rounded-full border bg-(--app-color-surface-muted) text-(--app-color-text) transition hover:bg-(--app-color-surface) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
             :style="{ borderColor: 'var(--app-color-border)' }"
             :aria-label="
               route.name === 'admin.distribution.detail'
@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
 
         <div class="min-w-0">
           <h1
-            class="truncate text-left text-lg font-semibold tracking-tight text-[var(--app-color-text)]"
+            class="truncate text-left text-lg font-semibold tracking-tight text-(--app-color-text)"
           >
             {{ activeFacilityName }}
           </h1>
@@ -217,7 +217,7 @@ onBeforeUnmount(() => {
           <button
             type="button"
             aria-label="Perfil de usuario"
-            class="flex h-11 w-11 items-center justify-center rounded-full border bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+            class="flex h-11 w-11 items-center justify-center rounded-full border bg-(--app-color-surface-muted) text-(--app-color-text) transition hover:bg-(--app-color-surface) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click.stop="toggleProfileMenu"
           >
@@ -226,7 +226,7 @@ onBeforeUnmount(() => {
 
           <div
             v-if="isProfileMenuOpen"
-            class="absolute top-[calc(100%+0.75rem)] right-0 w-52 rounded-2xl border bg-[var(--app-color-surface)] p-2 shadow-[var(--app-shadow-card)]"
+            class="absolute top-[calc(100%+0.75rem)] right-0 w-52 rounded-2xl border bg-(--app-color-surface) p-2 shadow-(--app-shadow-card)"
             :style="{ borderColor: 'var(--app-color-border-strong)' }"
           >
             <div class="space-y-1">
@@ -236,10 +236,10 @@ onBeforeUnmount(() => {
                 :key="action.label"
                 :to="action.routeName ? { name: action.routeName } : undefined"
                 type="button"
-                class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface-muted)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+                class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-(--app-color-text) transition hover:bg-(--app-color-surface-muted) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
                 @click="handleProfileMenuAction(action)"
               >
-                <component :is="action.icon" class="h-5 w-5 text-[var(--app-color-text-subtle)]" />
+                <component :is="action.icon" class="h-5 w-5 text-(--app-color-text-subtle)" />
                 <span>{{ action.label }}</span>
               </component>
             </div>
@@ -252,7 +252,7 @@ onBeforeUnmount(() => {
       class="relative mx-auto flex min-h-[calc(100vh-9rem)] max-w-[430px] pt-[5.5rem] sm:min-h-[820px]"
     >
       <div
-        class="flex w-full flex-col overflow-hidden rounded-[32px] border bg-[var(--app-color-surface)] shadow-[var(--app-shadow-card)]"
+        class="flex w-full flex-col overflow-hidden rounded-[32px] border bg-(--app-color-surface) shadow-(--app-shadow-card)"
         :style="{ borderColor: 'var(--app-color-border-strong)' }"
       >
         <main class="flex-1 overflow-y-auto px-5 pt-5 pb-8">
@@ -289,11 +289,11 @@ onBeforeUnmount(() => {
         <li v-for="item in navigationItems" :key="item.routeName">
           <RouterLink
             :to="{ name: item.routeName }"
-            class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+            class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
             :class="
               isActiveRoute(item.routeName)
-                ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
-                : 'text-[var(--app-color-text-subtle)] hover:bg-[var(--app-color-surface-muted)] hover:text-[var(--app-color-text)]'
+                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
+                : 'text-(--app-color-text-subtle) hover:bg-(--app-color-surface-muted) hover:text-(--app-color-text)'
             "
           >
             <component

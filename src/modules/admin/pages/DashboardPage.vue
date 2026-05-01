@@ -76,14 +76,10 @@ const recentActivity = [
         <div class="relative space-y-4">
           <div class="flex items-start justify-between gap-4">
             <div class="space-y-1">
-              <AppText
-                size="sm"
-                tone="subtle"
-                class="!text-[var(--app-color-primary-foreground)]/80"
-              >
+              <AppText size="sm" tone="subtle" class="!text-(--app-color-primary-foreground)/80">
                 Resumen de hoy
               </AppText>
-              <AppTitle as="h2" size="sm" class="!text-[var(--app-color-primary-foreground)]">
+              <AppTitle as="h2" size="sm" class="!text-(--app-color-primary-foreground)">
                 Tu escritorio financiero
               </AppTitle>
             </div>
@@ -91,22 +87,20 @@ const recentActivity = [
             <div
               class="rounded-2xl border border-white/20 bg-white/10 px-3 py-2 text-right backdrop-blur"
             >
-              <p class="text-xs font-medium text-[var(--app-color-primary-foreground)]/75">
+              <p class="text-xs font-medium text-(--app-color-primary-foreground)/75">
                 Próximo corte
               </p>
-              <p class="text-sm font-semibold text-[var(--app-color-primary-foreground)]">
-                Hoy 18:00
-              </p>
+              <p class="text-sm font-semibold text-(--app-color-primary-foreground)">Hoy 18:00</p>
             </div>
           </div>
 
           <div
-            class="rounded-3xl border border-white/15 bg-[var(--app-color-surface)]/96 p-4 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]"
+            class="rounded-3xl border border-white/15 bg-(--app-color-surface)/96 p-4 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]"
           >
             <div class="flex items-end justify-between gap-4">
               <div>
                 <AppText size="sm" tone="subtle">Balance consolidado</AppText>
-                <p class="mt-2 text-3xl font-semibold tracking-tight text-[var(--app-color-text)]">
+                <p class="mt-2 text-3xl font-semibold tracking-tight text-(--app-color-text)">
                   $481,912
                 </p>
               </div>
@@ -126,14 +120,14 @@ const recentActivity = [
       <AppCard v-for="metric in metricCards" :key="metric.title" muted class="rounded-3xl">
         <div class="flex items-start gap-4">
           <div
-            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--app-color-primary)_12%,transparent)] text-[var(--app-color-primary)]"
+            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--app-color-primary)_12%,transparent)] text-(--app-color-primary)"
           >
             <component :is="metric.icon" class="h-6 w-6" />
           </div>
 
           <div class="min-w-0 space-y-1">
             <AppText size="sm" tone="subtle">{{ metric.title }}</AppText>
-            <p class="text-2xl font-semibold tracking-tight text-[var(--app-color-text)]">
+            <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
               {{ metric.value }}
             </p>
             <AppText size="sm">{{ metric.caption }}</AppText>
@@ -157,17 +151,15 @@ const recentActivity = [
           <div v-for="item in distributionItems" :key="item.name" class="space-y-2">
             <div class="flex items-center justify-between gap-3">
               <div>
-                <p class="text-sm font-semibold text-[var(--app-color-text)]">{{ item.name }}</p>
+                <p class="text-sm font-semibold text-(--app-color-text)">{{ item.name }}</p>
                 <AppText size="sm" tone="subtle">{{ item.amount }}</AppText>
               </div>
-              <p class="text-sm font-semibold text-[var(--app-color-text)]">
-                {{ item.percentage }}%
-              </p>
+              <p class="text-sm font-semibold text-(--app-color-text)">{{ item.percentage }}%</p>
             </div>
 
-            <div class="h-2 rounded-full bg-[var(--app-color-surface-muted)]">
+            <div class="h-2 rounded-full bg-(--app-color-surface-muted)">
               <div
-                class="h-2 rounded-full bg-[var(--app-color-primary)]"
+                class="h-2 rounded-full bg-(--app-color-primary)"
                 :style="{ width: `${item.percentage}%` }"
               />
             </div>
@@ -187,21 +179,21 @@ const recentActivity = [
           <div
             v-for="activity in recentActivity"
             :key="activity.title"
-            class="flex gap-3 rounded-2xl border bg-[var(--app-color-surface-muted)] p-4"
+            class="flex gap-3 rounded-2xl border bg-(--app-color-surface-muted) p-4"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <div
-              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--app-color-surface)] text-[var(--app-color-primary)]"
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-(--app-color-surface) text-(--app-color-primary)"
             >
               <component :is="activity.icon" class="h-5 w-5" />
             </div>
 
             <div class="min-w-0 space-y-1">
               <div class="flex items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-[var(--app-color-text)]">
+                <p class="text-sm font-semibold text-(--app-color-text)">
                   {{ activity.title }}
                 </p>
-                <span class="text-xs font-medium text-[var(--app-color-text-subtle)]">
+                <span class="text-xs font-medium text-(--app-color-text-subtle)">
                   {{ activity.status }}
                 </span>
               </div>

@@ -54,7 +54,7 @@ function handleDelete(): void {
 
 <template>
   <AppCard
-    class="relative overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-[var(--app-color-border-strong)]"
+    class="relative overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-(--app-color-border-strong)"
   >
     <div
       class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
@@ -65,21 +65,21 @@ function handleDelete(): void {
       <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3">
         <div class="min-w-0 space-y-1">
           <p
-            class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-[var(--app-color-text)] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+            class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
           >
             {{ props.name }}
           </p>
-          <p class="truncate text-sm leading-5 text-[var(--app-color-text-muted)]">
+          <p class="truncate text-sm leading-5 text-(--app-color-text-muted)">
             {{ props.email }}
           </p>
         </div>
 
         <div class="space-y-1 text-right">
-          <p class="text-sm font-semibold tracking-tight text-[var(--app-color-text)] tabular-nums">
+          <p class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums">
             {{ props.allocationPercentage }}%
           </p>
           <p
-            class="text-[11px] font-medium tracking-[0.04em] text-[var(--app-color-text-subtle)] uppercase"
+            class="text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
           >
             Participación
           </p>
@@ -97,14 +97,14 @@ function handleDelete(): void {
             {{ statusLabel(props.status) }}
           </span>
           <p
-            class="truncate text-[11px] font-medium tracking-[0.04em] text-[var(--app-color-text-subtle)] uppercase"
+            class="truncate text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
           >
             {{ props.roleLabel }} · {{ props.accessLabel }}
           </p>
         </div>
 
         <p
-          class="shrink-0 text-[11px] font-semibold tracking-[0.04em] text-[var(--app-color-text)] uppercase"
+          class="shrink-0 text-[11px] font-semibold tracking-[0.04em] text-(--app-color-text) uppercase"
         >
           {{ props.pendingExpenses }}
         </p>

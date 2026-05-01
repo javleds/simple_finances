@@ -72,7 +72,7 @@ function handleDelete(): void {
 
 <template>
   <AppCard
-    class="relative overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-[var(--app-color-border-strong)]"
+    class="relative overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-(--app-color-border-strong)"
   >
     <div
       class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
@@ -87,7 +87,7 @@ function handleDelete(): void {
     <div class="relative grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-x-3 gap-y-2">
       <div class="min-w-0">
         <p
-          class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-[var(--app-color-text)] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+          class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
         >
           {{ props.concept }}
         </p>
@@ -107,7 +107,7 @@ function handleDelete(): void {
 
       <div class="col-span-2 flex min-w-0 items-center gap-2">
         <p
-          class="truncate text-[11px] font-medium tracking-[0.04em] text-[var(--app-color-text-subtle)] uppercase"
+          class="truncate text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
         >
           {{ props.dateLabel }}
         </p>

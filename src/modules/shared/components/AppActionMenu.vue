@@ -50,11 +50,11 @@ const defaultActions: ReadonlyArray<ActionMenuItem> = [
 ] as const;
 
 const toneClasses = {
-  default: 'text-[var(--app-color-text)] hover:bg-[var(--app-color-surface-muted)]',
+  default: 'text-(--app-color-text) hover:bg-(--app-color-surface-muted)',
   danger:
-    'text-[var(--app-color-danger)] hover:bg-[color-mix(in_srgb,var(--app-color-danger)_8%,transparent)]',
+    'text-(--app-color-danger) hover:bg-[color-mix(in_srgb,var(--app-color-danger)_8%,transparent)]',
   success:
-    'text-[var(--app-color-success)] hover:bg-[color-mix(in_srgb,var(--app-color-success)_8%,transparent)]',
+    'text-(--app-color-success) hover:bg-[color-mix(in_srgb,var(--app-color-success)_8%,transparent)]',
 } as const;
 
 async function toggleMenu(): Promise<void> {
@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
     <button
       ref="triggerRef"
       type="button"
-      class="inline-flex h-6 items-center justify-center rounded-md px-1 text-[var(--app-color-text-subtle)] transition hover:text-[var(--app-color-text)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+      class="inline-flex h-6 items-center justify-center rounded-md px-1 text-(--app-color-text-subtle) transition hover:text-(--app-color-text) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
       aria-label="Abrir acciones"
       @click.prevent.stop="toggleMenu"
     >
@@ -190,7 +190,7 @@ onBeforeUnmount(() => {
       <div
         v-if="isOpen"
         ref="menuRef"
-        class="fixed z-50 min-w-40 overflow-hidden rounded-xl border bg-[var(--app-color-surface)] shadow-[var(--app-shadow-card)]"
+        class="fixed z-50 min-w-40 overflow-hidden rounded-xl border bg-(--app-color-surface) shadow-(--app-shadow-card)"
         :style="{
           top: `${menuPosition.top}px`,
           left: `${menuPosition.left}px`,
@@ -203,7 +203,7 @@ onBeforeUnmount(() => {
           v-for="(action, index) in resolvedActions()"
           :key="action.key"
           type="button"
-          class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+          class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
           :class="[
             toneClasses[action.tone ?? 'default'],
             index < resolvedActions().length - 1 ? 'border-b' : '',

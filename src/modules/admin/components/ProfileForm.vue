@@ -54,11 +54,11 @@ function submitForm(): void {
     </section>
 
     <section
-      class="space-y-4 rounded-xl border bg-[var(--app-color-surface-muted)] px-4 py-4"
+      class="space-y-4 rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
       :style="{ borderColor: 'var(--app-color-border)' }"
     >
       <div class="space-y-1">
-        <p class="text-sm font-semibold text-[var(--app-color-text)]">Seguridad</p>
+        <p class="text-sm font-semibold text-(--app-color-text)">Seguridad</p>
         <AppText size="sm">
           Deja la contraseña vacía si no quieres actualizarla en este momento.
         </AppText>

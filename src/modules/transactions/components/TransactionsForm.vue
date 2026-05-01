@@ -194,11 +194,11 @@ function submitForm(): void {
 <template>
   <form :id="props.formId" class="space-y-6" @submit.prevent="submitForm">
     <section
-      class="space-y-4 rounded-xl border bg-[var(--app-color-surface-muted)] px-4 py-4"
+      class="space-y-4 rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
       :style="{ borderColor: 'var(--app-color-border)' }"
     >
       <div class="space-y-2">
-        <label for="transaction-type" class="text-sm font-medium text-[var(--app-color-label)]">
+        <label for="transaction-type" class="text-sm font-medium text-(--app-color-label)">
           Tipo
         </label>
         <AppToggleButton
@@ -210,7 +210,7 @@ function submitForm(): void {
       </div>
 
       <div v-if="isIncome" class="space-y-2">
-        <label for="transaction-status" class="text-sm font-medium text-[var(--app-color-label)]">
+        <label for="transaction-status" class="text-sm font-medium text-(--app-color-label)">
           Estatus
         </label>
         <AppToggleButton
@@ -255,10 +255,10 @@ function submitForm(): void {
               <input
                 v-model="state.splitBetweenUsers"
                 type="checkbox"
-                class="mt-1 h-4 w-4 rounded border-[var(--app-color-input-border)] text-[var(--app-color-primary)] focus:ring-[var(--app-color-focus-ring)]"
+                class="mt-1 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
               />
               <div class="space-y-1">
-                <span class="block text-sm font-medium text-[var(--app-color-label)]">
+                <span class="block text-sm font-medium text-(--app-color-label)">
                   Dividir entre usuarios de la cuenta
                 </span>
                 <AppText size="sm">
@@ -292,7 +292,7 @@ function submitForm(): void {
 
     <section class="space-y-3">
       <div
-        class="space-y-3 rounded-xl border bg-[var(--app-color-surface-muted)] px-4 py-4"
+        class="space-y-3 rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
         :style="{ borderColor: 'var(--app-color-border)' }"
       >
         <AppSearchSelect
@@ -310,7 +310,7 @@ function submitForm(): void {
           class="rounded-lg border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <UserGroupIcon class="mx-auto h-6 w-6 text-[var(--app-color-text-subtle)]" />
+          <UserGroupIcon class="mx-auto h-6 w-6 text-(--app-color-text-subtle)" />
           <AppText size="sm" class="mt-2">
             Esta cuenta aún no tiene metas financieras disponibles.
           </AppText>

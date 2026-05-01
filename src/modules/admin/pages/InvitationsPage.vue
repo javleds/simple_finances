@@ -137,7 +137,7 @@ function handleRejectInvitation(): void {}
     <div class="flex items-center gap-3">
       <div class="relative flex-1">
         <div
-          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[var(--app-color-text-subtle)]"
+          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
         >
           <MagnifyingGlassIcon class="h-5 w-5" />
         </div>
@@ -210,11 +210,11 @@ function handleRejectInvitation(): void {}
             v-for="status in invitationStatusOptions"
             :key="status.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
             :class="
               selectedStatuses.includes(status.value)
-                ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
-                : 'bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)]'
+                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
+                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
             "
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="toggleStatus(status.value)"
@@ -233,11 +233,11 @@ function handleRejectInvitation(): void {}
             v-for="source in invitationSourceOptions"
             :key="source.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
             :class="
               selectedSources.includes(source.value)
-                ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
-                : 'bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)]'
+                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
+                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
             "
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="toggleSource(source.value)"

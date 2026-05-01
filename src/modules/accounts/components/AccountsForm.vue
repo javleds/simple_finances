@@ -119,10 +119,7 @@ function submitForm(): void {
       <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
         <div class="space-y-2.5">
           <div class="flex min-h-5 items-center">
-            <label
-              for="account-description"
-              class="text-sm font-medium text-[var(--app-color-label)]"
-            >
+            <label for="account-description" class="text-sm font-medium text-(--app-color-label)">
               Descripción
             </label>
           </div>
@@ -132,19 +129,19 @@ function submitForm(): void {
             v-model="state.description"
             rows="4"
             placeholder="Describe el propósito y contexto de la cuenta"
-            class="w-full rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] px-4 py-3 text-sm text-[var(--app-color-input-text)] transition outline-none placeholder:text-[var(--app-color-input-placeholder)] focus:border-[var(--app-color-primary)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="w-full rounded-lg border border-(--app-color-input-border) bg-(--app-color-input-bg) px-4 py-3 text-sm text-(--app-color-input-text) transition outline-none placeholder:text-(--app-color-input-placeholder) focus:border-(--app-color-primary) focus:ring-4 focus:ring-(--app-color-focus-ring)"
           />
         </div>
 
         <div class="space-y-2.5">
           <div class="flex min-h-5 items-center">
-            <label for="account-color" class="text-sm font-medium text-[var(--app-color-label)]">
+            <label for="account-color" class="text-sm font-medium text-(--app-color-label)">
               Color
             </label>
           </div>
 
           <div
-            class="flex h-12 items-center gap-3 rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] px-3"
+            class="flex h-12 items-center gap-3 rounded-lg border border-(--app-color-input-border) bg-(--app-color-input-bg) px-3"
           >
             <input
               id="account-color"
@@ -152,7 +149,7 @@ function submitForm(): void {
               type="color"
               class="h-7 w-10 cursor-pointer rounded border-0 bg-transparent p-0"
             />
-            <span class="truncate text-sm text-[var(--app-color-text-subtle)]">
+            <span class="truncate text-sm text-(--app-color-text-subtle)">
               {{ state.color || 'Opcional' }}
             </span>
           </div>
@@ -161,12 +158,12 @@ function submitForm(): void {
     </section>
 
     <section
-      class="space-y-4 rounded-xl border bg-[var(--app-color-surface-muted)] px-4 py-4"
+      class="space-y-4 rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
       :style="{ borderColor: 'var(--app-color-border)' }"
     >
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <label for="account-is-virtual" class="text-sm font-medium text-[var(--app-color-label)]">
+          <label for="account-is-virtual" class="text-sm font-medium text-(--app-color-label)">
             Es virtual
           </label>
           <AppToggleButton
@@ -178,7 +175,7 @@ function submitForm(): void {
         </div>
 
         <div class="space-y-2">
-          <label for="account-is-credit" class="text-sm font-medium text-[var(--app-color-label)]">
+          <label for="account-is-credit" class="text-sm font-medium text-(--app-color-label)">
             Es de crédito
           </label>
           <AppToggleButton
@@ -202,7 +199,7 @@ function submitForm(): void {
       :style="{ borderColor: 'var(--app-color-border)' }"
     >
       <div class="space-y-1">
-        <p class="text-sm font-semibold text-[var(--app-color-text)]">Configuración de crédito</p>
+        <p class="text-sm font-semibold text-(--app-color-text)">Configuración de crédito</p>
         <AppText size="sm">
           Estos campos sólo aplican cuando la cuenta opera con línea de crédito.
         </AppText>

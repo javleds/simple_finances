@@ -24,7 +24,7 @@ function selectValue(nextTheme: string): void {
 
 <template>
   <div
-    class="inline-flex rounded-lg border bg-[var(--app-color-input-bg)] p-1"
+    class="inline-flex rounded-lg border bg-(--app-color-input-bg) p-1"
     :style="{ borderColor: 'var(--app-color-border-strong)' }"
   >
     <button
@@ -34,8 +34,8 @@ function selectValue(nextTheme: string): void {
       class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
       :class="
         props.modelValue === option.value
-          ? 'bg-[var(--app-color-secondary)] text-[var(--app-color-secondary-foreground)]'
-          : 'text-[var(--app-color-text-subtle)] hover:text-[var(--app-color-text)]'
+          ? 'bg-(--app-color-secondary) text-(--app-color-secondary-foreground)'
+          : 'text-(--app-color-text-subtle) hover:text-(--app-color-text)'
       "
       @click="selectValue(option.value)"
     >

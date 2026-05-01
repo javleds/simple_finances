@@ -84,20 +84,20 @@ const modalVariantStyles = {
 const actionToneStyles = {
   primary: {
     buttonClass:
-      'text-[var(--app-color-primary)] hover:bg-[color-mix(in_srgb,var(--app-color-primary)_8%,transparent)]',
+      'text-(--app-color-primary) hover:bg-[color-mix(in_srgb,var(--app-color-primary)_8%,transparent)]',
     barStyle: {
       backgroundColor: 'var(--app-color-primary)',
     },
   },
   danger: {
     buttonClass:
-      'text-[var(--app-color-danger)] hover:bg-[color-mix(in_srgb,var(--app-color-danger)_8%,transparent)]',
+      'text-(--app-color-danger) hover:bg-[color-mix(in_srgb,var(--app-color-danger)_8%,transparent)]',
     barStyle: {
       backgroundColor: 'var(--app-color-danger)',
     },
   },
   neutral: {
-    buttonClass: 'text-[var(--app-color-text)] hover:bg-[var(--app-color-surface-muted)]',
+    buttonClass: 'text-(--app-color-text) hover:bg-(--app-color-surface-muted)',
     barStyle: {
       backgroundColor: 'var(--app-color-border-strong)',
     },
@@ -187,7 +187,7 @@ function isCloseAction(action: ModalAction): boolean {
       @click.self="closeModal"
     >
       <div
-        class="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border bg-[var(--app-color-surface)] shadow-[var(--app-shadow-card)]"
+        class="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border bg-(--app-color-surface) shadow-(--app-shadow-card)"
         :style="{ borderColor: 'var(--app-color-border)' }"
         role="dialog"
         aria-modal="true"
@@ -228,7 +228,7 @@ function isCloseAction(action: ModalAction): boolean {
             :type="action.type ?? 'button'"
             :form="action.form"
             :disabled="action.disabled"
-            class="relative flex min-w-0 flex-1 items-center justify-center gap-3 border-r px-4 py-4 text-sm font-semibold transition last:border-r-0 focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            class="relative flex min-w-0 flex-1 items-center justify-center gap-3 border-r px-4 py-4 text-sm font-semibold transition last:border-r-0 focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             :class="actionToneStyles[action.tone ?? 'primary'].buttonClass"
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="handleAction(action)"

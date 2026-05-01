@@ -135,7 +135,7 @@ onBeforeUnmount(() => {
 <template>
   <div ref="rootRef" class="space-y-2.5">
     <div v-if="props.label" class="flex min-h-5 items-center">
-      <label :for="props.id" class="text-sm font-medium text-[var(--app-color-label)]">
+      <label :for="props.id" class="text-sm font-medium text-(--app-color-label)">
         {{ props.label }}
       </label>
     </div>
@@ -144,8 +144,8 @@ onBeforeUnmount(() => {
       <button
         :id="props.id"
         type="button"
-        class="flex h-12 w-full items-center justify-between gap-3 rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] px-4 text-left text-sm text-[var(--app-color-input-text)] transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-        :class="isOpen ? 'border-[var(--app-color-primary)]' : ''"
+        class="flex h-12 w-full items-center justify-between gap-3 rounded-lg border border-(--app-color-input-border) bg-(--app-color-input-bg) px-4 text-left text-sm text-(--app-color-input-text) transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+        :class="isOpen ? 'border-(--app-color-primary)' : ''"
         :disabled="props.disabled"
         :aria-expanded="isOpen"
         aria-haspopup="listbox"
@@ -155,27 +155,27 @@ onBeforeUnmount(() => {
           class="min-w-0 flex-1 truncate"
           :class="
             selectedOption
-              ? 'text-[var(--app-color-input-text)]'
-              : 'text-[var(--app-color-input-placeholder)]'
+              ? 'text-(--app-color-input-text)'
+              : 'text-(--app-color-input-placeholder)'
           "
         >
           {{ selectedOption?.label ?? props.placeholder }}
         </span>
 
         <ChevronDownIcon
-          class="h-5 w-5 shrink-0 text-[var(--app-color-text-subtle)] transition"
+          class="h-5 w-5 shrink-0 text-(--app-color-text-subtle) transition"
           :class="isOpen ? 'rotate-180' : ''"
         />
       </button>
 
       <div
         v-if="isOpen"
-        class="absolute inset-x-0 top-[calc(100%+0.5rem)] z-20 space-y-3 rounded-xl border bg-[var(--app-color-surface)] p-3 shadow-[var(--app-shadow-card)]"
+        class="absolute inset-x-0 top-[calc(100%+0.5rem)] z-20 space-y-3 rounded-xl border bg-(--app-color-surface) p-3 shadow-(--app-shadow-card)"
         :style="{ borderColor: 'var(--app-color-border)' }"
       >
         <div class="relative">
           <div
-            class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[var(--app-color-text-subtle)]"
+            class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-(--app-color-text-subtle)"
           >
             <MagnifyingGlassIcon class="h-4 w-4" />
           </div>
@@ -185,14 +185,14 @@ onBeforeUnmount(() => {
             type="text"
             :placeholder="props.searchPlaceholder"
             :value="searchTerm"
-            class="h-11 w-full rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] pr-10 pl-9 text-sm text-[var(--app-color-input-text)] transition outline-none placeholder:text-[var(--app-color-input-placeholder)] focus:border-[var(--app-color-primary)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="h-11 w-full rounded-lg border border-(--app-color-input-border) bg-(--app-color-input-bg) pr-10 pl-9 text-sm text-(--app-color-input-text) transition outline-none placeholder:text-(--app-color-input-placeholder) focus:border-(--app-color-primary) focus:ring-4 focus:ring-(--app-color-focus-ring)"
             @input="searchTerm = ($event.target as HTMLInputElement).value"
           />
 
           <button
             v-if="props.modelValue"
             type="button"
-            class="absolute inset-y-0 right-2 flex items-center text-[var(--app-color-text-subtle)] transition hover:text-[var(--app-color-text)]"
+            class="absolute inset-y-0 right-2 flex items-center text-(--app-color-text-subtle) transition hover:text-(--app-color-text)"
             aria-label="Limpiar selección"
             @click="clearSelection"
           >
@@ -202,7 +202,7 @@ onBeforeUnmount(() => {
 
         <div class="max-h-56 overflow-y-auto">
           <div v-if="filteredOptions.length === 0" class="rounded-lg px-3 py-4 text-center">
-            <p class="text-sm text-[var(--app-color-text-subtle)]">
+            <p class="text-sm text-(--app-color-text-subtle)">
               {{ props.emptyMessage }}
             </p>
           </div>
@@ -212,11 +212,11 @@ onBeforeUnmount(() => {
               v-for="option in filteredOptions"
               :key="option.value"
               type="button"
-              class="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-3 text-left transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+              class="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-3 text-left transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
               :class="
                 props.modelValue === option.value
-                  ? 'bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)]'
-                  : 'bg-transparent text-[var(--app-color-text-subtle)] hover:bg-[var(--app-color-surface-muted)] hover:text-[var(--app-color-text)]'
+                  ? 'bg-(--app-color-surface-muted) text-(--app-color-text)'
+                  : 'bg-transparent text-(--app-color-text-subtle) hover:bg-(--app-color-surface-muted) hover:text-(--app-color-text)'
               "
               :style="{ borderColor: 'var(--app-color-border)' }"
               @click="selectOption(option.value)"
@@ -225,7 +225,7 @@ onBeforeUnmount(() => {
                 <p class="truncate text-sm font-semibold">{{ option.label }}</p>
                 <p
                   v-if="option.description"
-                  class="text-sm leading-5 text-[var(--app-color-text-subtle)]"
+                  class="text-sm leading-5 text-(--app-color-text-subtle)"
                 >
                   {{ option.description }}
                 </p>
@@ -233,7 +233,7 @@ onBeforeUnmount(() => {
 
               <CheckIcon
                 v-if="props.modelValue === option.value"
-                class="mt-0.5 h-5 w-5 shrink-0 text-[var(--app-color-primary)]"
+                class="mt-0.5 h-5 w-5 shrink-0 text-(--app-color-primary)"
               />
             </button>
           </div>

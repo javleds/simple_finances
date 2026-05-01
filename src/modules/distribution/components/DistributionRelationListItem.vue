@@ -52,7 +52,7 @@ function handleDelete(): void {
 
 <template>
   <AppCard
-    class="relative overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-[var(--app-color-border-strong)]"
+    class="relative overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-(--app-color-border-strong)"
   >
     <div
       class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
@@ -68,7 +68,7 @@ function handleDelete(): void {
       <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3">
         <div class="min-w-0">
           <p
-            class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-[var(--app-color-text)] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+            class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
           >
             {{ props.concept }}
           </p>
@@ -76,7 +76,7 @@ function handleDelete(): void {
 
         <div class="space-y-1 text-right">
           <p
-            class="text-sm font-semibold tracking-tight text-[var(--app-color-text)] tabular-nums sm:text-base"
+            class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums sm:text-base"
           >
             {{ formattedAmount(props.amount) }}
           </p>

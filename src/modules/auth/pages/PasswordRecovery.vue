@@ -24,7 +24,7 @@ function updateTheme(nextTheme: string): void {
 
 <template>
   <section
-    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--app-color-page)] px-4 py-10 text-[var(--app-color-text)] sm:px-6 lg:px-8"
+    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-(--app-color-page) px-4 py-10 text-(--app-color-text) sm:px-6 lg:px-8"
   >
     <div
       class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--app-color-page-glow),_transparent_48%)]"
@@ -41,7 +41,7 @@ function updateTheme(nextTheme: string): void {
           >
             <div class="flex items-center justify-between gap-4">
               <div class="space-y-1">
-                <AppText as="div" tone="muted" class="font-medium text-[var(--app-color-text)]">
+                <AppText as="div" tone="muted" class="font-medium text-(--app-color-text)">
                   Tema visual
                 </AppText>
                 <AppText size="sm" tone="subtle"> Cambia entre light y dark mode. </AppText>

@@ -13,11 +13,8 @@ const props = withDefaults(
 
 <template>
   <div
-    class="rounded-2xl border bg-[var(--app-color-surface)] shadow-[var(--app-shadow-card)]"
-    :class="[
-      props.padded ? 'p-6 sm:p-8' : '',
-      props.muted ? 'bg-[var(--app-color-surface-muted)]' : '',
-    ]"
+    class="rounded-2xl border bg-(--app-color-surface) shadow-(--app-shadow-card)"
+    :class="[props.padded ? 'p-6 sm:p-8' : '', props.muted ? 'bg-(--app-color-surface-muted)' : '']"
     :style="{ borderColor: 'var(--app-color-border)' }"
   >
     <slot />

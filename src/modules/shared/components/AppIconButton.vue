@@ -14,7 +14,7 @@ const props = withDefaults(
   <button
     :type="props.type"
     :aria-label="props.ariaLabel"
-    class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--app-color-border)] text-sm font-semibold text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface-muted)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+    class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-(--app-color-border) text-sm font-semibold text-(--app-color-text) transition hover:bg-(--app-color-surface-muted) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
   >
     <slot />
   </button>

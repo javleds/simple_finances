@@ -109,11 +109,11 @@ function toggleAccountSetting(accountId: string): void {
         <AppCard
           v-for="setting in globalNotificationSettings"
           :key="setting.id"
-          class="rounded-xl !p-3.5 shadow-none transition hover:border-[var(--app-color-border-strong)]"
+          class="rounded-xl !p-3.5 shadow-none transition hover:border-(--app-color-border-strong)"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0 space-y-1">
-              <p class="text-sm font-semibold text-[var(--app-color-text)]">
+              <p class="text-sm font-semibold text-(--app-color-text)">
                 {{ setting.title }}
               </p>
               <AppText size="sm">{{ setting.description }}</AppText>
@@ -121,11 +121,9 @@ function toggleAccountSetting(accountId: string): void {
 
             <button
               type="button"
-              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
               :class="
-                setting.enabled
-                  ? 'bg-[var(--app-color-primary)]'
-                  : 'bg-[var(--app-color-border-strong)]'
+                setting.enabled ? 'bg-(--app-color-primary)' : 'bg-(--app-color-border-strong)'
               "
               :aria-pressed="setting.enabled"
               @click="toggleGlobalSetting(setting.id)"
@@ -150,12 +148,12 @@ function toggleAccountSetting(accountId: string): void {
         <AppCard
           v-for="setting in accountNotificationSettings"
           :key="setting.id"
-          class="rounded-xl !p-3.5 shadow-none transition hover:border-[var(--app-color-border-strong)]"
+          class="rounded-xl !p-3.5 shadow-none transition hover:border-(--app-color-border-strong)"
         >
           <div class="flex items-center justify-between gap-4">
             <div class="min-w-0">
               <p
-                class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-[var(--app-color-text)] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
               >
                 {{ setting.accountName }}
               </p>
@@ -163,11 +161,9 @@ function toggleAccountSetting(accountId: string): void {
 
             <button
               type="button"
-              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
+              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
               :class="
-                setting.enabled
-                  ? 'bg-[var(--app-color-primary)]'
-                  : 'bg-[var(--app-color-border-strong)]'
+                setting.enabled ? 'bg-(--app-color-primary)' : 'bg-(--app-color-border-strong)'
               "
               :aria-pressed="setting.enabled"
               @click="toggleAccountSetting(setting.id)"

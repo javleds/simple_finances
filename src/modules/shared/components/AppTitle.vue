@@ -20,7 +20,7 @@ const sizeClasses = {
 <template>
   <component
     :is="props.as"
-    class="font-semibold tracking-tight text-[var(--app-color-text)]"
+    class="font-semibold tracking-tight text-(--app-color-text)"
     :class="sizeClasses[props.size]"
   >
     <slot />
