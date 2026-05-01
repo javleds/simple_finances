@@ -1,9 +1,22 @@
 <script setup lang="ts">
-import { Cog6ToothIcon, ShieldCheckIcon } from '@heroicons/vue/24/outline';
+import { reactive } from 'vue';
 
+import { accounts } from '@/modules/accounts/data/accounts';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
-import SettingsSectionCard from '@/modules/settings/components/SettingsSectionCard.vue';
 import { AppCard, AppText, AppTitle, AppToggleButton } from '@/modules/shared/components';
+
+type NotificationSetting = {
+  id: string;
+  title: string;
+  description: string;
+  enabled: boolean;
+};
+
+type AccountNotificationSetting = {
+  id: string;
+  accountName: string;
+  enabled: boolean;
+};
 
 const themeStore = useThemeStore();
 
@@ -12,54 +25,62 @@ const themeOptions = [
   { value: THEME_MODE.DARK, label: 'Dark' },
 ] as const;
 
-const sections = [
+const globalNotificationSettings = reactive<NotificationSetting[]>([
   {
-    title: 'Usuarios y permisos',
-    description: 'Administra roles, accesos y responsables operativos.',
+    id: 'payment-reminders',
+    title: 'Recordatorios de pago',
+    description: 'Avisa cuando una cuenta esté cerca de su fecha de corte o pago programado.',
+    enabled: true,
   },
   {
-    title: 'Notificaciones',
-    description: 'Configura avisos de cargos, cortes y eventos relevantes.',
+    id: 'balance-alerts',
+    title: 'Alertas de saldo',
+    description: 'Notifica cuando una cuenta baje de su umbral operativo o requiera fondeo.',
+    enabled: true,
   },
   {
-    title: 'Seguridad',
-    description: 'Revisa políticas de acceso y sesiones activas.',
+    id: 'member-activity',
+    title: 'Actividad de colaboradores',
+    description: 'Envía avisos cuando un usuario realice movimientos relevantes o cambios de estado.',
+    enabled: false,
   },
-];
+]);
+
+const accountNotificationSettings = reactive<AccountNotificationSetting[]>(
+  accounts.map((account, index) => ({
+    id: account.id,
+    accountName: account.name,
+    enabled: index < 3,
+  })),
+);
 
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
+}
+
+function toggleGlobalSetting(settingId: string): void {
+  const setting = globalNotificationSettings.find((item) => item.id === settingId);
+
+  if (!setting) {
+    return;
+  }
+
+  setting.enabled = !setting.enabled;
+}
+
+function toggleAccountSetting(accountId: string): void {
+  const accountSetting = accountNotificationSettings.find((item) => item.id === accountId);
+
+  if (!accountSetting) {
+    return;
+  }
+
+  accountSetting.enabled = !accountSetting.enabled;
 }
 </script>
 
 <template>
   <div class="space-y-5">
-    <AppCard class="rounded-3xl">
-      <div class="flex items-start gap-4">
-        <div
-          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--app-color-primary)_12%,transparent)] text-[var(--app-color-primary)]"
-        >
-          <Cog6ToothIcon class="h-6 w-6" />
-        </div>
-
-        <div class="space-y-2">
-          <AppText size="sm" tone="subtle">Configuración general</AppText>
-          <AppTitle as="h2" size="sm">Preferencias de la facility</AppTitle>
-          <AppText>
-            Centraliza ajustes operativos, seguridad y experiencia del equipo.
-          </AppText>
-        </div>
-      </div>
-
-      <div
-        class="mt-5 flex items-center gap-3 rounded-2xl border bg-[var(--app-color-surface-muted)] px-4 py-3"
-        :style="{ borderColor: 'var(--app-color-border)' }"
-      >
-        <ShieldCheckIcon class="h-5 w-5 shrink-0 text-emerald-600" />
-        <AppText size="sm">La autenticación reforzada está habilitada para administradores.</AppText>
-      </div>
-    </AppCard>
-
     <AppCard class="rounded-3xl">
       <div class="flex items-center justify-between gap-4">
         <div class="space-y-1">
@@ -75,18 +96,87 @@ function updateTheme(nextTheme: string): void {
       </div>
     </AppCard>
 
-    <div class="space-y-1">
-      <AppTitle as="h2" size="sm">Secciones</AppTitle>
-      <AppText>Accesos rápidos a la configuración disponible en esta versión.</AppText>
-    </div>
+    <section class="space-y-3">
+      <div class="space-y-1">
+        <AppTitle as="h2" size="sm">Configuración de notificaciones</AppTitle>
+        <AppText>Controla qué avisos globales de cuenta se mantienen activos para la facility.</AppText>
+      </div>
 
-    <section class="space-y-4">
-      <SettingsSectionCard
-        v-for="section in sections"
-        :key="section.title"
-        :title="section.title"
-        :description="section.description"
-      />
+      <div class="space-y-4">
+        <AppCard
+          v-for="setting in globalNotificationSettings"
+          :key="setting.id"
+          class="rounded-xl !p-3.5 shadow-none transition hover:border-[var(--app-color-border-strong)]"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0 space-y-1">
+              <p class="text-sm font-semibold text-[var(--app-color-text)]">
+                {{ setting.title }}
+              </p>
+              <AppText size="sm">{{ setting.description }}</AppText>
+            </div>
+
+            <button
+              type="button"
+              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+              :class="
+                setting.enabled
+                  ? 'bg-[var(--app-color-primary)]'
+                  : 'bg-[var(--app-color-border-strong)]'
+              "
+              :aria-pressed="setting.enabled"
+              @click="toggleGlobalSetting(setting.id)"
+            >
+              <span
+                class="inline-block h-5 w-5 rounded-full bg-white shadow-sm transition"
+                :class="setting.enabled ? 'translate-x-6' : 'translate-x-1'"
+              />
+            </button>
+          </div>
+        </AppCard>
+      </div>
+    </section>
+
+    <section class="space-y-3">
+      <div class="space-y-1">
+        <AppTitle as="h2" size="sm">Notificación por cuentas</AppTitle>
+        <AppText>Activa o apaga avisos individuales según la cuenta que quieras seguir.</AppText>
+      </div>
+
+      <div class="space-y-4">
+        <AppCard
+          v-for="setting in accountNotificationSettings"
+          :key="setting.id"
+          class="rounded-xl !p-3.5 shadow-none transition hover:border-[var(--app-color-border-strong)]"
+        >
+          <div class="flex items-center justify-between gap-4">
+            <div class="min-w-0">
+              <p
+                class="overflow-hidden text-sm font-semibold leading-5 text-[var(--app-color-text)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+              >
+                {{ setting.accountName }}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+              :class="
+                setting.enabled
+                  ? 'bg-[var(--app-color-primary)]'
+                  : 'bg-[var(--app-color-border-strong)]'
+              "
+              :aria-pressed="setting.enabled"
+              @click="toggleAccountSetting(setting.id)"
+            >
+              <span
+                class="inline-block h-5 w-5 rounded-full bg-white shadow-sm transition"
+                :class="setting.enabled ? 'translate-x-6' : 'translate-x-1'"
+              />
+            </button>
+          </div>
+        </AppCard>
+      </div>
     </section>
   </div>
 </template>
