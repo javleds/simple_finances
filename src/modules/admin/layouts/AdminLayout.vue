@@ -47,6 +47,7 @@ const profileMenuActions: ProfileMenuAction[] = [
   {
     label: 'Invitaciones',
     icon: EnvelopeIcon,
+    routeName: 'admin.invitations',
   },
   {
     label: 'Salir',

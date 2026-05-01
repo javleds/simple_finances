@@ -1,8 +1,30 @@
 <script setup lang="ts">
-import { EllipsisHorizontalIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import type { Component } from 'vue';
+import {
+  EllipsisHorizontalIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from '@heroicons/vue/24/outline';
 import { nextTick, onBeforeUnmount, ref } from 'vue';
 
+type ActionMenuItem = {
+  key: string;
+  label: string;
+  icon: Component;
+  tone?: 'default' | 'danger' | 'success';
+};
+
+const props = withDefaults(
+  defineProps<{
+    actions?: ReadonlyArray<ActionMenuItem>;
+  }>(),
+  {
+    actions: () => [],
+  },
+);
+
 const emit = defineEmits<{
+  action: [key: string];
   edit: [];
   delete: [];
 }>();
@@ -14,6 +36,30 @@ const menuPosition = ref({
   top: 0,
   left: 0,
 });
+
+const defaultActions: ReadonlyArray<ActionMenuItem> = [
+  {
+    key: 'edit',
+    label: 'Editar',
+    icon: PencilSquareIcon,
+    tone: 'default',
+  },
+  {
+    key: 'delete',
+    label: 'Eliminar',
+    icon: TrashIcon,
+    tone: 'danger',
+  },
+] as const;
+
+const toneClasses = {
+  default:
+    'text-[var(--app-color-text)] hover:bg-[var(--app-color-surface-muted)]',
+  danger:
+    'text-[var(--app-color-danger)] hover:bg-[color-mix(in_srgb,var(--app-color-danger)_8%,transparent)]',
+  success:
+    'text-[var(--app-color-success)] hover:bg-[color-mix(in_srgb,var(--app-color-success)_8%,transparent)]',
+} as const;
 
 async function toggleMenu(): Promise<void> {
   isOpen.value = !isOpen.value;
@@ -37,6 +83,30 @@ function handleEdit(): void {
 
 function handleDelete(): void {
   emit('delete');
+  closeMenu();
+}
+
+function resolvedActions(): ReadonlyArray<ActionMenuItem> {
+  if (props.actions.length > 0) {
+    return props.actions;
+  }
+
+  return defaultActions;
+}
+
+function handleAction(actionKey: string): void {
+  emit('action', actionKey);
+
+  if (actionKey === 'edit') {
+    handleEdit();
+    return;
+  }
+
+  if (actionKey === 'delete') {
+    handleDelete();
+    return;
+  }
+
   closeMenu();
 }
 
@@ -126,22 +196,19 @@ onBeforeUnmount(() => {
         @click.stop
       >
         <button
+          v-for="(action, index) in resolvedActions()"
+          :key="action.key"
           type="button"
-          class="flex w-full items-center gap-3 border-b px-4 py-3 text-left text-sm font-medium text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface-muted)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+          class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+          :class="[
+            toneClasses[action.tone ?? 'default'],
+            index < resolvedActions().length - 1 ? 'border-b' : '',
+          ]"
           :style="{ borderColor: 'var(--app-color-border)' }"
-          @click="handleEdit"
+          @click="handleAction(action.key)"
         >
-          <PencilSquareIcon class="h-4 w-4 shrink-0" />
-          <span>Editar</span>
-        </button>
-
-        <button
-          type="button"
-          class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-[var(--app-color-danger)] transition hover:bg-[color-mix(in_srgb,var(--app-color-danger)_8%,transparent)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
-          @click="handleDelete"
-        >
-          <TrashIcon class="h-4 w-4 shrink-0" />
-          <span>Eliminar</span>
+          <component :is="action.icon" class="h-4 w-4 shrink-0" />
+          <span>{{ action.label }}</span>
         </button>
       </div>
     </Teleport>
