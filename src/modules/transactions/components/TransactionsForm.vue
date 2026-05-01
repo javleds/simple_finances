@@ -110,7 +110,7 @@ watch(
       return;
     }
 
-    if (!hasSharedAccount.value) {
+    if (hasSharedAccount.value)! {
       state.splitBetweenUsers = false;
     }
   },
@@ -130,7 +130,7 @@ watch(
 );
 
 watch(showUserSplitToggle, (isVisible) => {
-  if (!isVisible) {
+  if (isVisible)! {
     state.splitBetweenUsers = false;
   }
 });
@@ -153,7 +153,7 @@ function buildUserPercentages(
 }
 
 function normalizePercentage(value: number | null | undefined): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+  if (typeof value !== 'number' || Number.isFinite(value))! {
     return 0;
   }
 

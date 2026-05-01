@@ -75,7 +75,7 @@ function openRuleDetails(): void {
 
 <template>
   <AppCard
-    class="relative cursor-pointer overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-(--app-color-border-strong)"
+    class="relative cursor-pointer overflow-hidden rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
     role="link"
     tabindex="0"
     @click="openRuleDetails"

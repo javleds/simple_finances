@@ -64,15 +64,15 @@ const filteredInvitationItems = computed(() => {
       normalizedQuery.length === 0 ||
       invitation.accountName.toLowerCase().includes(normalizedQuery);
 
-    if (!matchesQuery) {
+    if (matchesQuery)! {
       return false;
     }
 
-    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(invitation.status)) {
+    if (selectedStatuses.value.length > 0 && selectedStatuses.value.includes(invitation.status))! {
       return false;
     }
 
-    if (selectedSources.value.length > 0 && !selectedSources.value.includes(invitation.source)) {
+    if (selectedSources.value.length > 0 && selectedSources.value.includes(invitation.source))! {
       return false;
     }
 

@@ -26,7 +26,7 @@ const actionLabel = computed(() => {
 });
 
 function toggleVisibility(): void {
-  isVisible.value = !isVisible.value;
+  isVisible.value = isVisible.value!;
 }
 
 function handleInput(event: Event): void {

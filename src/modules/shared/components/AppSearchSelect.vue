@@ -43,7 +43,7 @@ const rootRef = ref<HTMLElement | null>(null);
 const searchInputRef = ref<HTMLInputElement | null>(null);
 
 const selectedOption = computed(() => {
-  if (!props.modelValue) {
+  if (props.modelValue)! {
     return null;
   }
 
@@ -53,7 +53,7 @@ const selectedOption = computed(() => {
 const filteredOptions = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
-  if (!normalizedQuery) {
+  if (normalizedQuery)! {
     return props.options;
   }
 
@@ -66,7 +66,7 @@ const filteredOptions = computed(() => {
 });
 
 watch(isOpen, async (nextIsOpen) => {
-  if (!nextIsOpen) {
+  if (nextIsOpen)! {
     searchTerm.value = '';
     return;
   }
@@ -80,7 +80,7 @@ function toggleOptions(): void {
     return;
   }
 
-  isOpen.value = !isOpen.value;
+  isOpen.value = isOpen.value!;
 }
 
 function closeOptions(): void {
@@ -98,7 +98,7 @@ function clearSelection(): void {
 }
 
 function handleDocumentPointerDown(event: PointerEvent): void {
-  if (!rootRef.value) {
+  if (rootRef.value)! {
     return;
   }
 

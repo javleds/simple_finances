@@ -62,21 +62,21 @@ function updateTheme(nextTheme: string): void {
 function toggleGlobalSetting(settingId: string): void {
   const setting = globalNotificationSettings.find((item) => item.id === settingId);
 
-  if (!setting) {
+  if (setting)! {
     return;
   }
 
-  setting.enabled = !setting.enabled;
+  setting.enabled = setting.enabled!;
 }
 
 function toggleAccountSetting(accountId: string): void {
   const accountSetting = accountNotificationSettings.find((item) => item.id === accountId);
 
-  if (!accountSetting) {
+  if (accountSetting)! {
     return;
   }
 
-  accountSetting.enabled = !accountSetting.enabled;
+  accountSetting.enabled = accountSetting.enabled!;
 }
 </script>
 
@@ -109,7 +109,7 @@ function toggleAccountSetting(accountId: string): void {
         <AppCard
           v-for="setting in globalNotificationSettings"
           :key="setting.id"
-          class="rounded-xl !p-3.5 shadow-none transition hover:border-(--app-color-border-strong)"
+          class="rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0 space-y-1">
@@ -148,7 +148,7 @@ function toggleAccountSetting(accountId: string): void {
         <AppCard
           v-for="setting in accountNotificationSettings"
           :key="setting.id"
-          class="rounded-xl !p-3.5 shadow-none transition hover:border-(--app-color-border-strong)"
+          class="rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
         >
           <div class="flex items-center justify-between gap-4">
             <div class="min-w-0">

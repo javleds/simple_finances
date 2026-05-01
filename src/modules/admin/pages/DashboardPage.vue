@@ -68,7 +68,7 @@ const recentActivity = [
 
 <template>
   <div class="space-y-5">
-    <AppCard class="overflow-hidden !p-0">
+    <AppCard class="overflow-hidden p-0!">
       <div class="relative px-5 py-6 sm:px-6">
         <div
           class="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,var(--app-color-primary),color-mix(in_srgb,var(--app-color-primary)_58%,white))] opacity-95"
@@ -76,10 +76,10 @@ const recentActivity = [
         <div class="relative space-y-4">
           <div class="flex items-start justify-between gap-4">
             <div class="space-y-1">
-              <AppText size="sm" tone="subtle" class="!text-(--app-color-primary-foreground)/80">
+              <AppText size="sm" tone="subtle" class="text-(--app-color-primary-foreground)/80!">
                 Resumen de hoy
               </AppText>
-              <AppTitle as="h2" size="sm" class="!text-(--app-color-primary-foreground)">
+              <AppTitle as="h2" size="sm" class="text-(--app-color-primary-foreground)!">
                 Tu escritorio financiero
               </AppTitle>
             </div>

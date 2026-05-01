@@ -72,7 +72,7 @@ function handleDelete(): void {
 
 <template>
   <AppCard
-    class="relative overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-(--app-color-border-strong)"
+    class="relative overflow-hidden rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
   >
     <div
       class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"

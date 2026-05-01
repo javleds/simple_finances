@@ -102,15 +102,15 @@ const filteredTransactionItems = computed(() => {
     const matchesQuery =
       normalizedQuery.length === 0 || transaction.concept.toLowerCase().includes(normalizedQuery);
 
-    if (!matchesQuery) {
+    if (matchesQuery)! {
       return false;
     }
 
-    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(transaction.status)) {
+    if (selectedStatuses.value.length > 0 && selectedStatuses.value.includes(transaction.status))! {
       return false;
     }
 
-    if (selectedTypes.value.length > 0 && !selectedTypes.value.includes(transaction.type)) {
+    if (selectedTypes.value.length > 0 && selectedTypes.value.includes(transaction.type))! {
       return false;
     }
 
@@ -119,7 +119,7 @@ const filteredTransactionItems = computed(() => {
 });
 
 const selectedTransaction = computed(() => {
-  if (!selectedTransactionId.value) {
+  if (selectedTransactionId.value)! {
     return null;
   }
 
@@ -129,7 +129,7 @@ const selectedTransaction = computed(() => {
 });
 
 const selectedTransactionFormValues = computed(() => {
-  if (!selectedTransaction.value) {
+  if (selectedTransaction.value)! {
     return null;
   }
 

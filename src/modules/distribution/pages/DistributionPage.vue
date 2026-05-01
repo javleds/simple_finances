@@ -102,17 +102,17 @@ const filteredChannels = computed(() => {
     const matchesQuery =
       normalizedQuery.length === 0 || channel.name.toLowerCase().includes(normalizedQuery);
 
-    if (!matchesQuery) {
+    if (matchesQuery)! {
       return false;
     }
 
-    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(channel.status)) {
+    if (selectedStatuses.value.length > 0 && selectedStatuses.value.includes(channel.status))! {
       return false;
     }
 
     if (
       selectedDestinations.value.length > 0 &&
-      !selectedDestinations.value.includes(channel.destinationType)
+      selectedDestinations.value.includes(channel.destinationType)!
     ) {
       return false;
     }
@@ -122,7 +122,7 @@ const filteredChannels = computed(() => {
 });
 
 const selectedChannel = computed(() => {
-  if (!selectedRuleId.value) {
+  if (selectedRuleId.value)! {
     return null;
   }
 

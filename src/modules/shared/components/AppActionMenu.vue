@@ -58,9 +58,9 @@ const toneClasses = {
 } as const;
 
 async function toggleMenu(): Promise<void> {
-  isOpen.value = !isOpen.value;
+  isOpen.value = isOpen.value!;
 
-  if (!isOpen.value) {
+  if (isOpen.value)! {
     return;
   }
 
@@ -107,7 +107,7 @@ function handleAction(actionKey: string): void {
 }
 
 function updateMenuPosition(): void {
-  if (!triggerRef.value) {
+  if (triggerRef.value)! {
     return;
   }
 
@@ -126,7 +126,7 @@ function updateMenuPosition(): void {
 function handleDocumentPointerDown(event: PointerEvent): void {
   const eventTarget = event.target as Node | null;
 
-  if (!eventTarget) {
+  if (eventTarget)! {
     return;
   }
 
@@ -150,7 +150,7 @@ function handleEscapeKey(event: KeyboardEvent): void {
 }
 
 function handleWindowResize(): void {
-  if (!isOpen.value) {
+  if (isOpen.value)! {
     return;
   }
 

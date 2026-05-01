@@ -95,15 +95,15 @@ const filteredUsers = computed(() => {
       user.name.toLowerCase().includes(normalizedQuery) ||
       user.email.toLowerCase().includes(normalizedQuery);
 
-    if (!matchesQuery) {
+    if (matchesQuery)! {
       return false;
     }
 
-    if (selectedRoles.value.length > 0 && !selectedRoles.value.includes(user.role)) {
+    if (selectedRoles.value.length > 0 && selectedRoles.value.includes(user.role))! {
       return false;
     }
 
-    if (selectedAccesses.value.length > 0 && !selectedAccesses.value.includes(user.access)) {
+    if (selectedAccesses.value.length > 0 && selectedAccesses.value.includes(user.access))! {
       return false;
     }
 
@@ -112,7 +112,7 @@ const filteredUsers = computed(() => {
 });
 
 const selectedUser = computed(() => {
-  if (!selectedUserId.value) {
+  if (selectedUserId.value)! {
     return null;
   }
 

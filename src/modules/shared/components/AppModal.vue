@@ -117,7 +117,7 @@ const resolvedActions = computed<ReadonlyArray<ModalAction>>(() => {
 
     const closeAction = limitedActions[closeActionIndex];
 
-    if (!closeAction) {
+    if (closeAction)! {
       return limitedActions;
     }
 
@@ -207,7 +207,7 @@ function isCloseAction(action: ModalAction): boolean {
               <component :is="modalStyle.icon" class="h-5 w-5" />
             </div>
 
-            <AppTitle as="h2" size="sm" class="min-w-0 flex-1 text-left !text-base sm:!text-lg">
+            <AppTitle as="h2" size="sm" class="min-w-0 flex-1 text-left text-base! sm:text-lg!">
               {{ props.title }}
             </AppTitle>
           </div>

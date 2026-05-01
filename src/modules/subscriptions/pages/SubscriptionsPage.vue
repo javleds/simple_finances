@@ -91,18 +91,18 @@ const filteredSubscriptions = computed(() => {
     const matchesQuery =
       normalizedQuery.length === 0 || subscription.plan.toLowerCase().includes(normalizedQuery);
 
-    if (!matchesQuery) {
+    if (matchesQuery)! {
       return false;
     }
 
     if (
       selectedStatuses.value.length > 0 &&
-      !selectedStatuses.value.includes(subscription.status)
+      selectedStatuses.value.includes(subscription.status)!
     ) {
       return false;
     }
 
-    if (selectedCycles.value.length > 0 && !selectedCycles.value.includes(subscription.cycleType)) {
+    if (selectedCycles.value.length > 0 && selectedCycles.value.includes(subscription.cycleType))! {
       return false;
     }
 
@@ -111,7 +111,7 @@ const filteredSubscriptions = computed(() => {
 });
 
 const selectedSubscription = computed(() => {
-  if (!selectedSubscriptionId.value) {
+  if (selectedSubscriptionId.value)! {
     return null;
   }
 
@@ -199,7 +199,7 @@ function confirmDeleteSubscription(): void {
 
 <template>
   <div class="space-y-5">
-    <AppCard class="overflow-hidden !p-0">
+    <AppCard class="overflow-hidden p-0!">
       <div class="relative px-5 py-6 sm:px-6">
         <div
           class="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,#0f766e,color-mix(in_srgb,#0f766e_52%,white))] opacity-95"
@@ -208,10 +208,10 @@ function confirmDeleteSubscription(): void {
         <div class="relative space-y-4">
           <div class="flex items-start justify-between gap-4">
             <div class="space-y-1">
-              <AppText size="sm" tone="subtle" class="!text-white/80">
+              <AppText size="sm" tone="subtle" class="text-white/80!">
                 Cobertura contratada
               </AppText>
-              <AppTitle as="h2" size="sm" class="!text-white"> Subscripciones activas </AppTitle>
+              <AppTitle as="h2" size="sm" class="text-white!"> Subscripciones activas </AppTitle>
             </div>
 
             <div
