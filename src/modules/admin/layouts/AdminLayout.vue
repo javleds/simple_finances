@@ -5,11 +5,13 @@ import {
   ArrowRightOnRectangleIcon,
   CreditCardIcon,
   EnvelopeIcon,
+  PencilSquareIcon,
   HomeIcon,
   Squares2X2Icon,
   UserIcon,
   UserCircleIcon,
   WalletIcon,
+  XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import {
@@ -21,6 +23,9 @@ import {
 } from '@heroicons/vue/24/solid';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
 
+import ProfileForm from '@/modules/admin/components/ProfileForm.vue';
+import { AppModal } from '@/modules/shared/components';
+
 type AdminNavigationItem = {
   label: string;
   routeName: string;
@@ -31,18 +36,21 @@ type AdminNavigationItem = {
 type ProfileMenuAction = {
   label: string;
   icon: typeof UserIcon;
+  actionKey?: string;
   routeName?: string;
 };
 
 const route = useRoute();
 const activeFacilityName = 'Facility Principal';
 const isProfileMenuOpen = ref(false);
+const isProfileModalOpen = ref(false);
 const profileMenuRef = ref<HTMLElement | null>(null);
 
 const profileMenuActions: ProfileMenuAction[] = [
   {
     label: 'Perfil',
-    icon: UserIcon,
+    icon: PencilSquareIcon,
+    actionKey: 'profile',
   },
   {
     label: 'Invitaciones',
@@ -111,6 +119,26 @@ function toggleProfileMenu(): void {
 
 function closeProfileMenu(): void {
   isProfileMenuOpen.value = false;
+}
+
+function openProfileModal(): void {
+  isProfileModalOpen.value = true;
+}
+
+function closeProfileModal(): void {
+  isProfileModalOpen.value = false;
+}
+
+function handleProfileMenuAction(action: ProfileMenuAction): void {
+  closeProfileMenu();
+
+  if (action.actionKey === 'profile') {
+    openProfileModal();
+  }
+}
+
+function handleProfileSubmit(): void {
+  closeProfileModal();
 }
 
 function handleDocumentClick(event: MouseEvent): void {
@@ -191,7 +219,7 @@ onBeforeUnmount(() => {
                 :to="action.routeName ? { name: action.routeName } : undefined"
                 type="button"
                 class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface-muted)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
-                @click="closeProfileMenu"
+                @click="handleProfileMenuAction(action)"
               >
                 <component :is="action.icon" class="h-5 w-5 text-[var(--app-color-text-subtle)]" />
                 <span>{{ action.label }}</span>
@@ -214,6 +242,25 @@ onBeforeUnmount(() => {
         </main>
       </div>
     </div>
+
+    <AppModal
+      :open="isProfileModalOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        {
+          key: 'submit-profile',
+          label: 'Guardar perfil',
+          tone: 'primary',
+          type: 'submit',
+          form: 'profile-form',
+        },
+      ]"
+      title="Perfil"
+      variant="default"
+      @close="closeProfileModal"
+    >
+      <ProfileForm form-id="profile-form" initial-name="Hugo Díaz" @submit="handleProfileSubmit" />
+    </AppModal>
 
     <nav
       class="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-x border-t bg-[color-mix(in_srgb,var(--app-color-surface)_92%,transparent)] px-2 pb-2 pt-1 backdrop-blur"
