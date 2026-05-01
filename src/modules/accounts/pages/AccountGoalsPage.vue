@@ -37,7 +37,8 @@ const goalItems = [
   {
     id: 'monthly-operations',
     title: 'Fondo operativo mensual',
-    detail: 'Objetivo para cubrir gastos recurrentes del siguiente ciclo sin tensionar la caja principal.',
+    detail:
+      'Objetivo para cubrir gastos recurrentes del siguiente ciclo sin tensionar la caja principal.',
     currentAmount: 24500,
     targetAmount: 30000,
     progress: 82,
@@ -287,7 +288,7 @@ function confirmDeleteGoal(): void {
             v-for="status in goalStatusOptions"
             :key="status.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedStatuses.includes(status.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -310,7 +311,7 @@ function confirmDeleteGoal(): void {
             v-for="cadence in goalCadenceOptions"
             :key="cadence.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedCadences.includes(cadence.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -327,7 +328,9 @@ function confirmDeleteGoal(): void {
 
     <AppModal
       :open="isCreateGoalOpen"
-      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      :actions="[
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Crear meta"
       variant="default"
       @close="closeCreateGoal"
@@ -345,7 +348,9 @@ function confirmDeleteGoal(): void {
 
     <AppModal
       :open="isEditGoalOpen"
-      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      :actions="[
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Editar meta"
       variant="default"
       @close="closeEditGoal"
@@ -370,13 +375,14 @@ function confirmDeleteGoal(): void {
       ]"
       title="Eliminar meta"
       variant="danger"
-      @action="($event === 'confirm-delete-goal') && confirmDeleteGoal()"
+      @action="$event === 'confirm-delete-goal' && confirmDeleteGoal()"
       @close="closeDeleteGoal"
     >
       <div class="space-y-3">
         <AppText>
           Vas a eliminar
-          <strong>{{ selectedGoal?.title }}</strong>.
+          <strong>{{ selectedGoal?.title }}</strong
+          >.
         </AppText>
         <AppText size="sm" tone="subtle">
           La confirmación sigue el mismo patrón de borrado del resto de las facilities con listados.

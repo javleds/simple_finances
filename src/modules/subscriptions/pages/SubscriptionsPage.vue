@@ -95,7 +95,10 @@ const filteredSubscriptions = computed(() => {
       return false;
     }
 
-    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(subscription.status)) {
+    if (
+      selectedStatuses.value.length > 0 &&
+      !selectedStatuses.value.includes(subscription.status)
+    ) {
       return false;
     }
 
@@ -112,7 +115,11 @@ const selectedSubscription = computed(() => {
     return null;
   }
 
-  return normalizedSubscriptions.value.find((subscription) => subscription.id === selectedSubscriptionId.value) ?? null;
+  return (
+    normalizedSubscriptions.value.find(
+      (subscription) => subscription.id === selectedSubscriptionId.value,
+    ) ?? null
+  );
 });
 
 function openFilters(): void {
@@ -204,9 +211,7 @@ function confirmDeleteSubscription(): void {
               <AppText size="sm" tone="subtle" class="!text-white/80">
                 Cobertura contratada
               </AppText>
-              <AppTitle as="h2" size="sm" class="!text-white">
-                Subscripciones activas
-              </AppTitle>
+              <AppTitle as="h2" size="sm" class="!text-white"> Subscripciones activas </AppTitle>
             </div>
 
             <div
@@ -294,7 +299,8 @@ function confirmDeleteSubscription(): void {
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
           <AppText size="sm">
-            Sigue desplazándote para revisar más planes y complementos conforme crezca la cobertura contratada.
+            Sigue desplazándote para revisar más planes y complementos conforme crezca la cobertura
+            contratada.
           </AppText>
         </div>
       </div>
@@ -322,7 +328,7 @@ function confirmDeleteSubscription(): void {
             v-for="status in subscriptionStatusOptions"
             :key="status.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedStatuses.includes(status.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -345,7 +351,7 @@ function confirmDeleteSubscription(): void {
             v-for="cycle in subscriptionCycleOptions"
             :key="cycle.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedCycles.includes(cycle.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -362,14 +368,17 @@ function confirmDeleteSubscription(): void {
 
     <AppModal
       :open="isCreateSubscriptionOpen"
-      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      :actions="[
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Nueva suscripción"
       variant="default"
       @close="closeCreateSubscription"
     >
       <div class="space-y-3">
         <AppText>
-          La creación o ampliación de subscripciones puede integrarse aquí con el mismo patrón modal del resto de la app.
+          La creación o ampliación de subscripciones puede integrarse aquí con el mismo patrón modal
+          del resto de la app.
         </AppText>
         <AppText size="sm" tone="subtle">
           Por ahora dejamos preparado el flujo visual de búsqueda, filtros y acciones contextuales.
@@ -379,7 +388,9 @@ function confirmDeleteSubscription(): void {
 
     <AppModal
       :open="isEditSubscriptionOpen"
-      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      :actions="[
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Editar suscripción"
       variant="default"
       @close="closeEditSubscription"
@@ -401,13 +412,14 @@ function confirmDeleteSubscription(): void {
       ]"
       title="Eliminar suscripción"
       variant="danger"
-      @action="($event === 'confirm-delete-subscription') && confirmDeleteSubscription()"
+      @action="$event === 'confirm-delete-subscription' && confirmDeleteSubscription()"
       @close="closeDeleteSubscription"
     >
       <div class="space-y-3">
         <AppText>
           Vas a eliminar
-          <strong>{{ selectedSubscription?.plan }}</strong>.
+          <strong>{{ selectedSubscription?.plan }}</strong
+          >.
         </AppText>
       </div>
     </AppModal>

@@ -211,9 +211,7 @@ function confirmDeleteRule(): void {
         <div class="space-y-1">
           <AppText size="sm" tone="subtle">Motor de reglas</AppText>
           <AppTitle as="h2" size="sm">Distribución automática</AppTitle>
-          <AppText>
-            Define cómo se reparte el flujo disponible entre las cuentas destino.
-          </AppText>
+          <AppText> Define cómo se reparte el flujo disponible entre las cuentas destino. </AppText>
         </div>
 
         <div
@@ -268,9 +266,7 @@ function confirmDeleteRule(): void {
 
     <section class="space-y-3">
       <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">
-          {{ filteredChannels.length }} reglas visibles
-        </AppText>
+        <AppText size="sm" tone="subtle"> {{ filteredChannels.length }} reglas visibles </AppText>
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
       </div>
 
@@ -293,7 +289,8 @@ function confirmDeleteRule(): void {
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
           <AppText size="sm">
-            Sigue desplazándote para revisar más reglas conforme se expanda la distribución salarial.
+            Sigue desplazándote para revisar más reglas conforme se expanda la distribución
+            salarial.
           </AppText>
         </div>
       </div>
@@ -313,7 +310,9 @@ function confirmDeleteRule(): void {
       <div class="space-y-5">
         <div class="space-y-2">
           <AppTitle as="h2" size="sm">Estatus</AppTitle>
-          <AppText>Filtra reglas según su estado operativo dentro del motor de distribución.</AppText>
+          <AppText
+            >Filtra reglas según su estado operativo dentro del motor de distribución.</AppText
+          >
         </div>
 
         <div class="flex flex-wrap gap-2">
@@ -321,7 +320,7 @@ function confirmDeleteRule(): void {
             v-for="status in distributionStatusOptions"
             :key="status.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedStatuses.includes(status.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -344,7 +343,7 @@ function confirmDeleteRule(): void {
             v-for="destination in distributionDestinationOptions"
             :key="destination.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedDestinations.includes(destination.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -361,14 +360,17 @@ function confirmDeleteRule(): void {
 
     <AppModal
       :open="isCreateRuleOpen"
-      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      :actions="[
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Nueva regla"
       variant="default"
       @close="closeCreateRule"
     >
       <div class="space-y-3">
         <AppText>
-          La creación de reglas de distribución puede vivir aquí con el mismo patrón modal de la aplicación.
+          La creación de reglas de distribución puede vivir aquí con el mismo patrón modal de la
+          aplicación.
         </AppText>
         <AppText size="sm" tone="subtle">
           Por ahora dejamos lista la experiencia de búsqueda, filtros, acciones y scroll continuo.
@@ -378,7 +380,9 @@ function confirmDeleteRule(): void {
 
     <AppModal
       :open="isEditRuleOpen"
-      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      :actions="[
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Editar regla"
       variant="default"
       @close="closeEditRule"
@@ -400,13 +404,14 @@ function confirmDeleteRule(): void {
       ]"
       title="Eliminar regla"
       variant="danger"
-      @action="($event === 'confirm-delete-rule') && confirmDeleteRule()"
+      @action="$event === 'confirm-delete-rule' && confirmDeleteRule()"
       @close="closeDeleteRule"
     >
       <div class="space-y-3">
         <AppText>
           Vas a eliminar
-          <strong>{{ selectedChannel?.name }}</strong>.
+          <strong>{{ selectedChannel?.name }}</strong
+          >.
         </AppText>
       </div>
     </AppModal>

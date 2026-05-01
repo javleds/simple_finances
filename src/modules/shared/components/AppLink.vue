@@ -38,7 +38,7 @@ const variantClasses = {
   <component
     :is="componentTag"
     v-bind="componentProps"
-    class="font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+    class="font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
     :class="variantClasses[props.variant]"
   >
     <slot />

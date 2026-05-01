@@ -8,13 +8,7 @@ import {
 import { computed, ref } from 'vue';
 
 import FacilityInvitationListItem from '@/modules/admin/components/FacilityInvitationListItem.vue';
-import {
-  AppIconButton,
-  AppInput,
-  AppModal,
-  AppText,
-  AppTitle,
-} from '@/modules/shared/components';
+import { AppIconButton, AppInput, AppModal, AppText, AppTitle } from '@/modules/shared/components';
 
 type InvitationStatus = 'pending' | 'expiring';
 type InvitationSource = 'finance' | 'operations' | 'leadership';
@@ -187,7 +181,8 @@ function handleRejectInvitation(): void {}
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
           <AppText size="sm">
-            Sigue desplazándote para revisar más invitaciones conforme crezca la colaboración entre cuentas.
+            Sigue desplazándote para revisar más invitaciones conforme crezca la colaboración entre
+            cuentas.
           </AppText>
         </div>
       </div>
@@ -215,7 +210,7 @@ function handleRejectInvitation(): void {}
             v-for="status in invitationStatusOptions"
             :key="status.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedStatuses.includes(status.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -238,7 +233,7 @@ function handleRejectInvitation(): void {}
             v-for="source in invitationSourceOptions"
             :key="source.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedSources.includes(source.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'

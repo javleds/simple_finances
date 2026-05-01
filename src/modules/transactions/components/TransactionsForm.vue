@@ -262,7 +262,8 @@ function submitForm(): void {
                   Dividir entre usuarios de la cuenta
                 </span>
                 <AppText size="sm">
-                  Usa los porcentajes definidos por usuario o ajústalos manualmente para este egreso.
+                  Usa los porcentajes definidos por usuario o ajústalos manualmente para este
+                  egreso.
                 </AppText>
               </div>
             </label>
@@ -285,13 +286,7 @@ function submitForm(): void {
           </section>
         </div>
 
-        <AppInput
-          id="transaction-date"
-          v-model="state.date"
-          label="Fecha"
-          type="date"
-          required
-        />
+        <AppInput id="transaction-date" v-model="state.date" label="Fecha" type="date" required />
       </div>
     </section>
 

@@ -257,7 +257,8 @@ function confirmDeleteUser(): void {
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
           <AppText size="sm">
-            Sigue desplazándote para revisar más miembros conforme crezca la colaboración de la cuenta.
+            Sigue desplazándote para revisar más miembros conforme crezca la colaboración de la
+            cuenta.
           </AppText>
         </div>
       </div>
@@ -285,7 +286,7 @@ function confirmDeleteUser(): void {
             v-for="role in userRoleOptions"
             :key="role.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedRoles.includes(role.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -300,7 +301,9 @@ function confirmDeleteUser(): void {
 
         <div class="space-y-2">
           <AppTitle as="h2" size="sm">Acceso</AppTitle>
-          <AppText>Filtra entre niveles de permiso y operación disponibles para cada usuario.</AppText>
+          <AppText
+            >Filtra entre niveles de permiso y operación disponibles para cada usuario.</AppText
+          >
         </div>
 
         <div class="flex flex-wrap gap-2">
@@ -308,7 +311,7 @@ function confirmDeleteUser(): void {
             v-for="access in userAccessOptions"
             :key="access.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedAccesses.includes(access.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -325,14 +328,17 @@ function confirmDeleteUser(): void {
 
     <AppModal
       :open="isCreateUserOpen"
-      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      :actions="[
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Agregar usuario"
       variant="default"
       @close="closeCreateUser"
     >
       <div class="space-y-3">
         <AppText>
-          La invitación o asignación de usuarios puede integrarse aquí siguiendo la misma estructura modal.
+          La invitación o asignación de usuarios puede integrarse aquí siguiendo la misma estructura
+          modal.
         </AppText>
         <AppText size="sm" tone="subtle">
           Por ahora dejamos listo el flujo visual y el listado administrable con búsqueda y filtros.
@@ -342,7 +348,9 @@ function confirmDeleteUser(): void {
 
     <AppModal
       :open="isEditUserOpen"
-      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      :actions="[
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Editar usuario"
       variant="default"
       @close="closeEditUser"
@@ -367,7 +375,7 @@ function confirmDeleteUser(): void {
       ]"
       title="Eliminar usuario"
       variant="danger"
-      @action="($event === 'confirm-delete-user') && confirmDeleteUser()"
+      @action="$event === 'confirm-delete-user' && confirmDeleteUser()"
       @close="closeDeleteUser"
     >
       <div class="space-y-3">

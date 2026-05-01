@@ -42,7 +42,7 @@ function handleInput(event: Event): void {
       </label>
       <button
         type="button"
-        class="text-sm font-medium text-[var(--app-color-text-subtle)] transition hover:text-[var(--app-color-link)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+        class="text-sm font-medium text-[var(--app-color-text-subtle)] transition hover:text-[var(--app-color-link)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
         @click="toggleVisibility"
       >
         {{ actionLabel }}
@@ -53,7 +53,7 @@ function handleInput(event: Event): void {
       :id="props.id"
       :type="inputType"
       :value="props.modelValue ?? ''"
-      class="h-12 w-full rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] px-4 text-sm text-[var(--app-color-input-text)] outline-none placeholder:text-[var(--app-color-input-placeholder)] transition focus:border-[var(--app-color-primary)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+      class="h-12 w-full rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] px-4 text-sm text-[var(--app-color-input-text)] transition outline-none placeholder:text-[var(--app-color-input-placeholder)] focus:border-[var(--app-color-primary)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
       v-bind="$attrs"
       @input="handleInput"
     />

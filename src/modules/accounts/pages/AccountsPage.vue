@@ -238,7 +238,7 @@ function parseCurrencyValue(value: string): number | null {
             v-for="status in statusOptions"
             :key="status"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedStatuses.includes(status)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -308,16 +308,18 @@ function parseCurrencyValue(value: string): number | null {
       ]"
       title="Eliminar cuenta"
       variant="danger"
-      @action="($event === 'confirm-delete-account') && confirmDeleteAccount()"
+      @action="$event === 'confirm-delete-account' && confirmDeleteAccount()"
       @close="closeDeleteAccount"
     >
       <div class="space-y-3">
         <AppText>
           Vas a eliminar
-          <strong>{{ selectedAccount?.name }}</strong>.
+          <strong>{{ selectedAccount?.name }}</strong
+          >.
         </AppText>
         <AppText size="sm" tone="subtle">
-          Esta acción seguirá el mismo flujo de confirmación antes de conectarse a persistencia real.
+          Esta acción seguirá el mismo flujo de confirmación antes de conectarse a persistencia
+          real.
         </AppText>
       </div>
     </AppModal>

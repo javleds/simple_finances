@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
-import {
-  EllipsisHorizontalIcon,
-  PencilSquareIcon,
-  TrashIcon,
-} from '@heroicons/vue/24/outline';
+import { EllipsisHorizontalIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { nextTick, onBeforeUnmount, ref } from 'vue';
 
 type ActionMenuItem = {
@@ -54,8 +50,7 @@ const defaultActions: ReadonlyArray<ActionMenuItem> = [
 ] as const;
 
 const toneClasses = {
-  default:
-    'text-[var(--app-color-text)] hover:bg-[var(--app-color-surface-muted)]',
+  default: 'text-[var(--app-color-text)] hover:bg-[var(--app-color-surface-muted)]',
   danger:
     'text-[var(--app-color-danger)] hover:bg-[color-mix(in_srgb,var(--app-color-danger)_8%,transparent)]',
   success:
@@ -184,7 +179,7 @@ onBeforeUnmount(() => {
     <button
       ref="triggerRef"
       type="button"
-      class="inline-flex h-6 items-center justify-center rounded-md px-1 text-[var(--app-color-text-subtle)] transition hover:text-[var(--app-color-text)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+      class="inline-flex h-6 items-center justify-center rounded-md px-1 text-[var(--app-color-text-subtle)] transition hover:text-[var(--app-color-text)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
       aria-label="Abrir acciones"
       @click.prevent.stop="toggleMenu"
     >
@@ -208,7 +203,7 @@ onBeforeUnmount(() => {
           v-for="(action, index) in resolvedActions()"
           :key="action.key"
           type="button"
-          class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+          class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
           :class="[
             toneClasses[action.tone ?? 'default'],
             index < resolvedActions().length - 1 ? 'border-b' : '',

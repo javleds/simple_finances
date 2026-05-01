@@ -144,7 +144,7 @@ onBeforeUnmount(() => {
       <button
         :id="props.id"
         type="button"
-        class="flex h-12 w-full items-center justify-between gap-3 rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] px-4 text-left text-sm text-[var(--app-color-input-text)] transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+        class="flex h-12 w-full items-center justify-between gap-3 rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] px-4 text-left text-sm text-[var(--app-color-input-text)] transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
         :class="isOpen ? 'border-[var(--app-color-primary)]' : ''"
         :disabled="props.disabled"
         :aria-expanded="isOpen"
@@ -153,7 +153,11 @@ onBeforeUnmount(() => {
       >
         <span
           class="min-w-0 flex-1 truncate"
-          :class="selectedOption ? 'text-[var(--app-color-input-text)]' : 'text-[var(--app-color-input-placeholder)]'"
+          :class="
+            selectedOption
+              ? 'text-[var(--app-color-input-text)]'
+              : 'text-[var(--app-color-input-placeholder)]'
+          "
         >
           {{ selectedOption?.label ?? props.placeholder }}
         </span>
@@ -181,7 +185,7 @@ onBeforeUnmount(() => {
             type="text"
             :placeholder="props.searchPlaceholder"
             :value="searchTerm"
-            class="h-11 w-full rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] pl-9 pr-10 text-sm text-[var(--app-color-input-text)] outline-none placeholder:text-[var(--app-color-input-placeholder)] transition focus:border-[var(--app-color-primary)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="h-11 w-full rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] pr-10 pl-9 text-sm text-[var(--app-color-input-text)] transition outline-none placeholder:text-[var(--app-color-input-placeholder)] focus:border-[var(--app-color-primary)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
             @input="searchTerm = ($event.target as HTMLInputElement).value"
           />
 
@@ -208,7 +212,7 @@ onBeforeUnmount(() => {
               v-for="option in filteredOptions"
               :key="option.value"
               type="button"
-              class="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-3 text-left transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+              class="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-3 text-left transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
               :class="
                 props.modelValue === option.value
                   ? 'bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)]'

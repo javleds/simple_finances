@@ -59,14 +59,14 @@ function openAccountDetails(): void {
     <div class="relative grid grid-cols-[minmax(0,1fr)_auto_auto_1rem] items-start gap-x-3 gap-y-2">
       <div class="min-w-0">
         <p
-          class="overflow-hidden text-sm font-semibold leading-5 text-[var(--app-color-text)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+          class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-[var(--app-color-text)] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
         >
           {{ props.account.name }}
         </p>
       </div>
 
       <span
-        class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em]"
+        class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
         :class="statusClasses(props.account.status)"
       >
         {{ props.account.status }}
@@ -84,12 +84,12 @@ function openAccountDetails(): void {
 
       <div class="col-span-3 flex min-w-0 items-center justify-between">
         <p
-          class="text-[11px] font-medium uppercase tracking-[0.04em] text-[var(--app-color-text-subtle)]"
+          class="text-[11px] font-medium tracking-[0.04em] text-[var(--app-color-text-subtle)] uppercase"
         >
           Balance
         </p>
         <p
-          class="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums tracking-tight text-[var(--app-color-text)] sm:text-base"
+          class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap text-[var(--app-color-text)] tabular-nums sm:text-base"
         >
           {{ props.account.balance }}
         </p>

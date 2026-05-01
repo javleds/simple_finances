@@ -113,14 +113,17 @@ function confirmDeleteRelation(): void {
 
     <AppModal
       :open="isEditRelationOpen"
-      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      :actions="[
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Editar relación"
       variant="default"
       @close="closeEditRelation"
     >
       <div class="space-y-3">
         <AppText>
-          El formulario de edición para esta relación de distribución se mostrará aquí eventualmente.
+          El formulario de edición para esta relación de distribución se mostrará aquí
+          eventualmente.
         </AppText>
       </div>
     </AppModal>
@@ -133,13 +136,14 @@ function confirmDeleteRelation(): void {
       ]"
       title="Eliminar relación"
       variant="danger"
-      @action="($event === 'confirm-delete-relation') && confirmDeleteRelation()"
+      @action="$event === 'confirm-delete-relation' && confirmDeleteRelation()"
       @close="closeDeleteRelation"
     >
       <div class="space-y-3">
         <AppText>
           Vas a eliminar
-          <strong>{{ distributionRule.relation.concept }}</strong>.
+          <strong>{{ distributionRule.relation.concept }}</strong
+          >.
         </AppText>
       </div>
     </AppModal>

@@ -78,8 +78,7 @@ const filteredInvitationItems = computed(() => {
 
   return invitationItems.filter((invitation) => {
     const matchesQuery =
-      normalizedQuery.length === 0 ||
-      invitation.name.toLowerCase().includes(normalizedQuery);
+      normalizedQuery.length === 0 || invitation.name.toLowerCase().includes(normalizedQuery);
 
     if (!matchesQuery) {
       return false;
@@ -270,7 +269,7 @@ function confirmDeleteInvitation(): void {
             v-for="status in invitationStatusOptions"
             :key="status.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedStatuses.includes(status.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -285,7 +284,9 @@ function confirmDeleteInvitation(): void {
 
         <div class="space-y-2">
           <AppTitle as="h2" size="sm">Rol</AppTitle>
-          <AppText>Filtra por el tipo de invitación que se está enviando a cada colaborador.</AppText>
+          <AppText
+            >Filtra por el tipo de invitación que se está enviando a cada colaborador.</AppText
+          >
         </div>
 
         <div class="flex flex-wrap gap-2">
@@ -293,7 +294,7 @@ function confirmDeleteInvitation(): void {
             v-for="role in invitationRoleOptions"
             :key="role.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedRoles.includes(role.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -310,14 +311,17 @@ function confirmDeleteInvitation(): void {
 
     <AppModal
       :open="isCreateInvitationOpen"
-      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      :actions="[
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Nueva invitación"
       variant="default"
       @close="closeCreateInvitation"
     >
       <div class="space-y-3">
         <AppText>
-          La creación de invitaciones puede integrarse aquí siguiendo el mismo patrón modal del resto del módulo.
+          La creación de invitaciones puede integrarse aquí siguiendo el mismo patrón modal del
+          resto del módulo.
         </AppText>
         <AppText size="sm" tone="subtle">
           Por ahora dejamos preparado el flujo visual con búsqueda, filtros y acciones de lista.
@@ -327,7 +331,9 @@ function confirmDeleteInvitation(): void {
 
     <AppModal
       :open="isEditInvitationOpen"
-      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      :actions="[
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
       title="Editar invitación"
       variant="default"
       @close="closeEditInvitation"
@@ -349,13 +355,14 @@ function confirmDeleteInvitation(): void {
       ]"
       title="Eliminar invitación"
       variant="danger"
-      @action="($event === 'confirm-delete-invitation') && confirmDeleteInvitation()"
+      @action="$event === 'confirm-delete-invitation' && confirmDeleteInvitation()"
       @close="closeDeleteInvitation"
     >
       <div class="space-y-3">
         <AppText>
           Vas a eliminar la invitación de
-          <strong>{{ selectedInvitation?.name }}</strong>.
+          <strong>{{ selectedInvitation?.name }}</strong
+          >.
         </AppText>
       </div>
     </AppModal>

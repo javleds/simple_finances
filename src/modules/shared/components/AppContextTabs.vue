@@ -53,7 +53,7 @@ function indicatorPositionClasses(): string {
       v-for="option in props.options"
       :key="option.value"
       type="button"
-      class="relative inline-flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-semibold transition focus:outline-none after:absolute after:left-2 after:right-2 after:h-1 after:origin-center after:rounded-full after:bg-[var(--app-color-primary)] after:shadow-[0_0_18px_rgba(29,78,216,0.45)] after:transition-all"
+      class="relative inline-flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-semibold transition after:absolute after:right-2 after:left-2 after:h-1 after:origin-center after:rounded-full after:bg-[var(--app-color-primary)] after:shadow-[0_0_18px_rgba(29,78,216,0.45)] after:transition-all focus:outline-none"
       :class="[tabClasses(option.value), indicatorPositionClasses()]"
       @click="selectTab(option.value)"
     >

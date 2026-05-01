@@ -86,7 +86,7 @@ function handleDelete(): void {
       <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3">
         <div class="min-w-0 space-y-1">
           <p
-            class="overflow-hidden text-sm font-semibold leading-5 text-[var(--app-color-text)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+            class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-[var(--app-color-text)] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
           >
             {{ props.plan }}
           </p>
@@ -96,10 +96,12 @@ function handleDelete(): void {
         </div>
 
         <div class="space-y-1 text-right">
-          <p class="text-sm font-semibold tabular-nums tracking-tight text-[var(--app-color-text)]">
+          <p class="text-sm font-semibold tracking-tight text-[var(--app-color-text)] tabular-nums">
             {{ formattedAmount(props.amount) }}
           </p>
-          <p class="text-[11px] font-medium uppercase tracking-[0.04em] text-[var(--app-color-text-subtle)]">
+          <p
+            class="text-[11px] font-medium tracking-[0.04em] text-[var(--app-color-text-subtle)] uppercase"
+          >
             Próximo cargo
           </p>
         </div>
@@ -110,12 +112,14 @@ function handleDelete(): void {
       <div class="flex items-center justify-between gap-3">
         <div class="flex min-w-0 items-center gap-2">
           <span
-            class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em]"
+            class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
             :class="statusClasses(props.status)"
           >
             {{ statusLabel(props.status) }}
           </span>
-          <p class="truncate text-[11px] font-medium uppercase tracking-[0.04em] text-[var(--app-color-text-subtle)]">
+          <p
+            class="truncate text-[11px] font-medium tracking-[0.04em] text-[var(--app-color-text-subtle)] uppercase"
+          >
             {{ props.nextCharge }}
           </p>
         </div>

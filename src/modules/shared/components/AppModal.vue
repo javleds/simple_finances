@@ -228,7 +228,7 @@ function isCloseAction(action: ModalAction): boolean {
             :type="action.type ?? 'button'"
             :form="action.form"
             :disabled="action.disabled"
-            class="relative flex min-w-0 flex-1 items-center justify-center gap-3 border-r px-4 py-4 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-50 last:border-r-0"
+            class="relative flex min-w-0 flex-1 items-center justify-center gap-3 border-r px-4 py-4 text-sm font-semibold transition last:border-r-0 focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             :class="actionToneStyles[action.tone ?? 'primary'].buttonClass"
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="handleAction(action)"

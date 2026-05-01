@@ -174,24 +174,32 @@ onBeforeUnmount(() => {
 
 <template>
   <section
-    class="relative min-h-screen overflow-hidden bg-[var(--app-color-page)] px-3 pb-28 pt-4 text-[var(--app-color-text)] sm:px-6 sm:pb-32 sm:pt-8"
+    class="relative min-h-screen overflow-hidden bg-[var(--app-color-page)] px-3 pt-4 pb-28 text-[var(--app-color-text)] sm:px-6 sm:pt-8 sm:pb-32"
   >
     <div
       class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--app-color-page-glow),_transparent_52%)]"
     />
 
     <header
-      class="fixed left-1/2 top-0 z-20 w-full max-w-[430px] -translate-x-1/2 border-b bg-[color-mix(in_srgb,var(--app-color-surface)_94%,transparent)] px-5 pb-4 pt-5 backdrop-blur"
+      class="fixed top-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-b bg-[color-mix(in_srgb,var(--app-color-surface)_94%,transparent)] px-5 pt-5 pb-4 backdrop-blur"
       :style="{ borderColor: 'var(--app-color-border)' }"
     >
       <div class="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-3">
         <div class="flex justify-start">
           <RouterLink
             v-if="showBackButton()"
-            :to="route.name === 'admin.distribution.detail' ? { name: 'admin.distribution' } : { name: 'admin.accounts' }"
-            class="flex h-11 w-11 items-center justify-center rounded-full border bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            :to="
+              route.name === 'admin.distribution.detail'
+                ? { name: 'admin.distribution' }
+                : { name: 'admin.accounts' }
+            "
+            class="flex h-11 w-11 items-center justify-center rounded-full border bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :style="{ borderColor: 'var(--app-color-border)' }"
-            :aria-label="route.name === 'admin.distribution.detail' ? 'Volver a distribución' : 'Volver a cuentas'"
+            :aria-label="
+              route.name === 'admin.distribution.detail'
+                ? 'Volver a distribución'
+                : 'Volver a cuentas'
+            "
           >
             <ArrowLeftIcon class="h-5 w-5" />
           </RouterLink>
@@ -209,7 +217,7 @@ onBeforeUnmount(() => {
           <button
             type="button"
             aria-label="Perfil de usuario"
-            class="flex h-11 w-11 items-center justify-center rounded-full border bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="flex h-11 w-11 items-center justify-center rounded-full border bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click.stop="toggleProfileMenu"
           >
@@ -218,7 +226,7 @@ onBeforeUnmount(() => {
 
           <div
             v-if="isProfileMenuOpen"
-            class="absolute right-0 top-[calc(100%+0.75rem)] w-52 rounded-2xl border bg-[var(--app-color-surface)] p-2 shadow-[var(--app-shadow-card)]"
+            class="absolute top-[calc(100%+0.75rem)] right-0 w-52 rounded-2xl border bg-[var(--app-color-surface)] p-2 shadow-[var(--app-shadow-card)]"
             :style="{ borderColor: 'var(--app-color-border-strong)' }"
           >
             <div class="space-y-1">
@@ -228,7 +236,7 @@ onBeforeUnmount(() => {
                 :key="action.label"
                 :to="action.routeName ? { name: action.routeName } : undefined"
                 type="button"
-                class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface-muted)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+                class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface-muted)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
                 @click="handleProfileMenuAction(action)"
               >
                 <component :is="action.icon" class="h-5 w-5 text-[var(--app-color-text-subtle)]" />
@@ -247,7 +255,7 @@ onBeforeUnmount(() => {
         class="flex w-full flex-col overflow-hidden rounded-[32px] border bg-[var(--app-color-surface)] shadow-[var(--app-shadow-card)]"
         :style="{ borderColor: 'var(--app-color-border-strong)' }"
       >
-        <main class="flex-1 overflow-y-auto px-5 pb-8 pt-5">
+        <main class="flex-1 overflow-y-auto px-5 pt-5 pb-8">
           <RouterView />
         </main>
       </div>
@@ -273,7 +281,7 @@ onBeforeUnmount(() => {
     </AppModal>
 
     <nav
-      class="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-x border-t bg-[color-mix(in_srgb,var(--app-color-surface)_92%,transparent)] px-2 pb-2 pt-1 backdrop-blur"
+      class="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-x border-t bg-[color-mix(in_srgb,var(--app-color-surface)_92%,transparent)] px-2 pt-1 pb-2 backdrop-blur"
       :style="{ borderColor: 'var(--app-color-border-strong)' }"
       aria-label="Primary"
     >
@@ -281,7 +289,7 @@ onBeforeUnmount(() => {
         <li v-for="item in navigationItems" :key="item.routeName">
           <RouterLink
             :to="{ name: item.routeName }"
-            class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               isActiveRoute(item.routeName)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -292,7 +300,7 @@ onBeforeUnmount(() => {
               :is="isActiveRoute(item.routeName) ? item.activeIcon : item.icon"
               class="h-5 w-5 shrink-0"
             />
-            <span class="text-[11px] font-medium leading-4">{{ item.label }}</span>
+            <span class="text-[11px] leading-4 font-medium">{{ item.label }}</span>
           </RouterLink>
         </li>
       </ul>

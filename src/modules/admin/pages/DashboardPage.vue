@@ -76,7 +76,11 @@ const recentActivity = [
         <div class="relative space-y-4">
           <div class="flex items-start justify-between gap-4">
             <div class="space-y-1">
-              <AppText size="sm" tone="subtle" class="!text-[var(--app-color-primary-foreground)]/80">
+              <AppText
+                size="sm"
+                tone="subtle"
+                class="!text-[var(--app-color-primary-foreground)]/80"
+              >
                 Resumen de hoy
               </AppText>
               <AppTitle as="h2" size="sm" class="!text-[var(--app-color-primary-foreground)]">
@@ -119,12 +123,7 @@ const recentActivity = [
     </AppCard>
 
     <section class="grid gap-4">
-      <AppCard
-        v-for="metric in metricCards"
-        :key="metric.title"
-        muted
-        class="rounded-3xl"
-      >
+      <AppCard v-for="metric in metricCards" :key="metric.title" muted class="rounded-3xl">
         <div class="flex items-start gap-4">
           <div
             class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--app-color-primary)_12%,transparent)] text-[var(--app-color-primary)]"
@@ -161,7 +160,9 @@ const recentActivity = [
                 <p class="text-sm font-semibold text-[var(--app-color-text)]">{{ item.name }}</p>
                 <AppText size="sm" tone="subtle">{{ item.amount }}</AppText>
               </div>
-              <p class="text-sm font-semibold text-[var(--app-color-text)]">{{ item.percentage }}%</p>
+              <p class="text-sm font-semibold text-[var(--app-color-text)]">
+                {{ item.percentage }}%
+              </p>
             </div>
 
             <div class="h-2 rounded-full bg-[var(--app-color-surface-muted)]">
@@ -197,7 +198,9 @@ const recentActivity = [
 
             <div class="min-w-0 space-y-1">
               <div class="flex items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-[var(--app-color-text)]">{{ activity.title }}</p>
+                <p class="text-sm font-semibold text-[var(--app-color-text)]">
+                  {{ activity.title }}
+                </p>
                 <span class="text-xs font-medium text-[var(--app-color-text-subtle)]">
                   {{ activity.status }}
                 </span>

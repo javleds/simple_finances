@@ -119,7 +119,10 @@ function submitForm(): void {
       <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
         <div class="space-y-2.5">
           <div class="flex min-h-5 items-center">
-            <label for="account-description" class="text-sm font-medium text-[var(--app-color-label)]">
+            <label
+              for="account-description"
+              class="text-sm font-medium text-[var(--app-color-label)]"
+            >
               Descripción
             </label>
           </div>
@@ -129,7 +132,7 @@ function submitForm(): void {
             v-model="state.description"
             rows="4"
             placeholder="Describe el propósito y contexto de la cuenta"
-            class="w-full rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] px-4 py-3 text-sm text-[var(--app-color-input-text)] outline-none placeholder:text-[var(--app-color-input-placeholder)] transition focus:border-[var(--app-color-primary)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="w-full rounded-lg border border-[var(--app-color-input-border)] bg-[var(--app-color-input-bg)] px-4 py-3 text-sm text-[var(--app-color-input-text)] transition outline-none placeholder:text-[var(--app-color-input-placeholder)] focus:border-[var(--app-color-primary)] focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
           />
         </div>
 
@@ -188,8 +191,8 @@ function submitForm(): void {
       </div>
 
       <AppText size="sm">
-        Define si la cuenta es virtual y si opera bajo una línea de crédito para mostrar los
-        campos financieros correspondientes.
+        Define si la cuenta es virtual y si opera bajo una línea de crédito para mostrar los campos
+        financieros correspondientes.
       </AppText>
     </section>
 

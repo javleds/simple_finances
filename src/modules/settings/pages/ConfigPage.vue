@@ -41,7 +41,8 @@ const globalNotificationSettings = reactive<NotificationSetting[]>([
   {
     id: 'member-activity',
     title: 'Actividad de colaboradores',
-    description: 'Envía avisos cuando un usuario realice movimientos relevantes o cambios de estado.',
+    description:
+      'Envía avisos cuando un usuario realice movimientos relevantes o cambios de estado.',
     enabled: false,
   },
 ]);
@@ -99,7 +100,9 @@ function toggleAccountSetting(accountId: string): void {
     <section class="space-y-3">
       <div class="space-y-1">
         <AppTitle as="h2" size="sm">Configuración de notificaciones</AppTitle>
-        <AppText>Controla qué avisos globales de cuenta se mantienen activos para la facility.</AppText>
+        <AppText
+          >Controla qué avisos globales de cuenta se mantienen activos para la facility.</AppText
+        >
       </div>
 
       <div class="space-y-4">
@@ -118,7 +121,7 @@ function toggleAccountSetting(accountId: string): void {
 
             <button
               type="button"
-              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
               :class="
                 setting.enabled
                   ? 'bg-[var(--app-color-primary)]'
@@ -152,7 +155,7 @@ function toggleAccountSetting(accountId: string): void {
           <div class="flex items-center justify-between gap-4">
             <div class="min-w-0">
               <p
-                class="overflow-hidden text-sm font-semibold leading-5 text-[var(--app-color-text)] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-[var(--app-color-text)] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
               >
                 {{ setting.accountName }}
               </p>
@@ -160,7 +163,7 @@ function toggleAccountSetting(accountId: string): void {
 
             <button
               type="button"
-              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+              class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
               :class="
                 setting.enabled
                   ? 'bg-[var(--app-color-primary)]'

@@ -57,7 +57,7 @@ function statusClasses(status: AccountRecord['status']): string {
             <div class="flex items-center gap-3">
               <span class="h-3 w-3 rounded-sm" :style="{ backgroundColor: account.color }" />
               <span
-                class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.04em]"
+                class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.04em] uppercase"
                 :class="statusClasses(account.status)"
               >
                 {{ account.status }}
@@ -155,7 +155,7 @@ function statusClasses(status: AccountRecord['status']): string {
                 </p>
               </div>
               <span
-                class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.04em]"
+                class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.04em] uppercase"
                 :class="
                   account.fundingAccount
                     ? 'bg-emerald-500/12 text-emerald-600'
@@ -234,7 +234,7 @@ function statusClasses(status: AccountRecord['status']): string {
 
             <div class="mt-4 flex items-center justify-between gap-3">
               <AppText size="sm" tone="subtle">Egresos pendientes</AppText>
-              <p class="text-sm font-semibold tabular-nums text-(--app-color-text)">
+              <p class="text-sm font-semibold text-(--app-color-text) tabular-nums">
                 {{ user.pendingExpenses }}
               </p>
             </div>

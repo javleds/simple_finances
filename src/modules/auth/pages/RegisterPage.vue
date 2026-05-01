@@ -61,9 +61,7 @@ function closeDocument(): void {
                 <AppText as="div" tone="muted" class="font-medium text-[var(--app-color-text)]">
                   Tema visual
                 </AppText>
-                <AppText size="sm" tone="subtle">
-                  Cambia entre light y dark mode.
-                </AppText>
+                <AppText size="sm" tone="subtle"> Cambia entre light y dark mode. </AppText>
               </div>
 
               <AppToggleButton

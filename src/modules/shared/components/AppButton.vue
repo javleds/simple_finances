@@ -27,7 +27,7 @@ const variantClasses = {
 <template>
   <button
     :type="props.type"
-    class="inline-flex h-12 items-center justify-center rounded-lg px-4 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+    class="inline-flex h-12 items-center justify-center rounded-lg px-4 text-sm font-semibold transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
     :class="[variantClasses[props.variant], props.fullWidth ? 'w-full' : '']"
   >
     <slot />

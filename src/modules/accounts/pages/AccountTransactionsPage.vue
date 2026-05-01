@@ -15,7 +15,11 @@ import {
 } from '@/modules/shared/components';
 import TransactionsForm from '@/modules/transactions/components/TransactionsForm.vue';
 import TransactionListItem from '@/modules/transactions/components/TransactionListItem.vue';
-import { AdjustmentsHorizontalIcon, ArrowPathIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
+import {
+  AdjustmentsHorizontalIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/vue/24/outline';
 
 const transactionItems = [
   {
@@ -29,7 +33,8 @@ const transactionItems = [
   },
   {
     id: 'facility-disbursement',
-    concept: 'Dispersión interna desde facility para reforzar la bolsa operativa del siguiente corte',
+    concept:
+      'Dispersión interna desde facility para reforzar la bolsa operativa del siguiente corte',
     amount: 35000,
     type: 'income',
     status: 'completed',
@@ -95,8 +100,7 @@ const filteredTransactionItems = computed(() => {
 
   return transactionItems.filter((transaction) => {
     const matchesQuery =
-      normalizedQuery.length === 0 ||
-      transaction.concept.toLowerCase().includes(normalizedQuery);
+      normalizedQuery.length === 0 || transaction.concept.toLowerCase().includes(normalizedQuery);
 
     if (!matchesQuery) {
       return false;
@@ -119,7 +123,9 @@ const selectedTransaction = computed(() => {
     return null;
   }
 
-  return transactionItems.find((transaction) => transaction.id === selectedTransactionId.value) ?? null;
+  return (
+    transactionItems.find((transaction) => transaction.id === selectedTransactionId.value) ?? null
+  );
 });
 
 const selectedTransactionFormValues = computed(() => {
@@ -313,7 +319,7 @@ function confirmDeleteTransaction(): void {
             v-for="status in transactionStatusOptions"
             :key="status.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedStatuses.includes(status.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -336,7 +342,7 @@ function confirmDeleteTransaction(): void {
             v-for="type in transactionTypeOptions"
             :key="type.value"
             type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-[var(--app-color-focus-ring)] focus:outline-none"
             :class="
               selectedTypes.includes(type.value)
                 ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
@@ -414,13 +420,14 @@ function confirmDeleteTransaction(): void {
       ]"
       title="Eliminar transacción"
       variant="danger"
-      @action="($event === 'confirm-delete-transaction') && confirmDeleteTransaction()"
+      @action="$event === 'confirm-delete-transaction' && confirmDeleteTransaction()"
       @close="closeDeleteTransactionModal"
     >
       <div class="space-y-3">
         <AppText>
           Vas a eliminar
-          <strong>{{ selectedTransaction?.concept }}</strong>.
+          <strong>{{ selectedTransaction?.concept }}</strong
+          >.
         </AppText>
         <AppText size="sm" tone="subtle">
           La confirmación ya sigue el patrón de borrado del resto del sistema.
