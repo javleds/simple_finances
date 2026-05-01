@@ -22,8 +22,11 @@ import {
 
 const searchTerm = ref('');
 const isCreateAccountOpen = ref(false);
+const isDeleteAccountOpen = ref(false);
+const isEditAccountOpen = ref(false);
 const isFiltersOpen = ref(false);
 const selectedStatuses = ref<string[]>([]);
+const selectedAccountId = ref<string | null>(null);
 
 const statusOptions = ['Activo', 'Inactivo'] as const;
 
@@ -43,6 +46,30 @@ const filteredAccounts = computed(() => {
 
     return selectedStatuses.value.includes(account.status);
   });
+});
+
+const selectedAccount = computed(() => {
+  if (!selectedAccountId.value) {
+    return null;
+  }
+
+  return accounts.find((account) => account.id === selectedAccountId.value) ?? null;
+});
+
+const selectedAccountFormValues = computed(() => {
+  if (!selectedAccount.value) {
+    return null;
+  }
+
+  return {
+    name: selectedAccount.value.name,
+    color: selectedAccount.value.color,
+    description: selectedAccount.value.description,
+    isVirtual: selectedAccount.value.isVirtual,
+    isCredit: selectedAccount.value.accountType === 'credito',
+    creditLine: parseCurrencyValue(selectedAccount.value.creditLine),
+    closingDay: 15,
+  };
 });
 
 function toggleStatus(status: string): void {
@@ -66,6 +93,26 @@ function closeCreateAccount(): void {
   isCreateAccountOpen.value = false;
 }
 
+function openEditAccount(accountId: string): void {
+  selectedAccountId.value = accountId;
+  isEditAccountOpen.value = true;
+}
+
+function closeEditAccount(): void {
+  isEditAccountOpen.value = false;
+  selectedAccountId.value = null;
+}
+
+function openDeleteAccount(accountId: string): void {
+  selectedAccountId.value = accountId;
+  isDeleteAccountOpen.value = true;
+}
+
+function closeDeleteAccount(): void {
+  isDeleteAccountOpen.value = false;
+  selectedAccountId.value = null;
+}
+
 function closeFilters(): void {
   isFiltersOpen.value = false;
 }
@@ -87,6 +134,25 @@ function handleFiltersModalAction(actionKey: string): void {
 
 function handleCreateAccountSubmit(): void {
   closeCreateAccount();
+}
+
+function handleEditAccountSubmit(): void {
+  closeEditAccount();
+}
+
+function confirmDeleteAccount(): void {
+  closeDeleteAccount();
+}
+
+function parseCurrencyValue(value: string): number | null {
+  const normalizedValue = value.replace(/[^0-9.-]/g, '');
+  const nextValue = Number(normalizedValue);
+
+  if (Number.isNaN(nextValue)) {
+    return null;
+  }
+
+  return nextValue;
 }
 </script>
 
@@ -131,7 +197,13 @@ function handleCreateAccountSubmit(): void {
       </div>
 
       <div class="space-y-4">
-        <AccountListItem v-for="account in filteredAccounts" :key="account.id" :account="account" />
+        <AccountListItem
+          v-for="account in filteredAccounts"
+          :key="account.id"
+          :account="account"
+          @delete="openDeleteAccount"
+          @edit="openEditAccount"
+        />
 
         <div
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
@@ -198,6 +270,56 @@ function handleCreateAccountSubmit(): void {
       @close="closeCreateAccount"
     >
       <AccountsForm form-id="account-form" @submit="handleCreateAccountSubmit" />
+    </AppModal>
+
+    <AppModal
+      :open="isEditAccountOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        {
+          key: 'submit-edit-account',
+          label: 'Guardar cambios',
+          tone: 'primary',
+          type: 'submit',
+          form: 'edit-account-form',
+        },
+      ]"
+      title="Editar cuenta"
+      variant="default"
+      @close="closeEditAccount"
+    >
+      <AccountsForm
+        v-if="selectedAccountFormValues"
+        form-id="edit-account-form"
+        :initial-values="selectedAccountFormValues"
+        @submit="handleEditAccountSubmit"
+      />
+    </AppModal>
+
+    <AppModal
+      :open="isDeleteAccountOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        {
+          key: 'confirm-delete-account',
+          label: 'Eliminar cuenta',
+          tone: 'primary',
+        },
+      ]"
+      title="Eliminar cuenta"
+      variant="danger"
+      @action="($event === 'confirm-delete-account') && confirmDeleteAccount()"
+      @close="closeDeleteAccount"
+    >
+      <div class="space-y-3">
+        <AppText>
+          Vas a eliminar
+          <strong>{{ selectedAccount?.name }}</strong>.
+        </AppText>
+        <AppText size="sm" tone="subtle">
+          Esta acción seguirá el mismo flujo de confirmación antes de conectarse a persistencia real.
+        </AppText>
+      </div>
     </AppModal>
   </div>
 </template>

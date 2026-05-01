@@ -62,8 +62,11 @@ type DistributionDestination = 'core' | 'tax' | 'payroll' | 'regional';
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateRuleOpen = ref(false);
+const isEditRuleOpen = ref(false);
+const isDeleteRuleOpen = ref(false);
 const selectedStatuses = ref<DistributionStatus[]>([]);
 const selectedDestinations = ref<DistributionDestination[]>([]);
+const selectedRuleId = ref<string | null>(null);
 
 const distributionStatusOptions = [
   { value: 'active', label: 'Activa' },
@@ -118,6 +121,14 @@ const filteredChannels = computed(() => {
   });
 });
 
+const selectedChannel = computed(() => {
+  if (!selectedRuleId.value) {
+    return null;
+  }
+
+  return normalizedChannels.value.find((channel) => channel.id === selectedRuleId.value) ?? null;
+});
+
 function openFilters(): void {
   isFiltersOpen.value = true;
 }
@@ -166,6 +177,30 @@ function openCreateRule(): void {
 
 function closeCreateRule(): void {
   isCreateRuleOpen.value = false;
+}
+
+function openEditRule(ruleId: string): void {
+  selectedRuleId.value = ruleId;
+  isEditRuleOpen.value = true;
+}
+
+function closeEditRule(): void {
+  isEditRuleOpen.value = false;
+  selectedRuleId.value = null;
+}
+
+function openDeleteRule(ruleId: string): void {
+  selectedRuleId.value = ruleId;
+  isDeleteRuleOpen.value = true;
+}
+
+function closeDeleteRule(): void {
+  isDeleteRuleOpen.value = false;
+  selectedRuleId.value = null;
+}
+
+function confirmDeleteRule(): void {
+  closeDeleteRule();
 }
 </script>
 
@@ -249,6 +284,8 @@ function closeCreateRule(): void {
           :item-id="channel.id"
           :name="channel.name"
           :status="channel.status"
+          @delete="openDeleteRule"
+          @edit="openEditRule"
         />
 
         <div
@@ -335,6 +372,41 @@ function closeCreateRule(): void {
         </AppText>
         <AppText size="sm" tone="subtle">
           Por ahora dejamos lista la experiencia de búsqueda, filtros, acciones y scroll continuo.
+        </AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isEditRuleOpen"
+      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      title="Editar regla"
+      variant="default"
+      @close="closeEditRule"
+    >
+      <div class="space-y-3">
+        <AppText>
+          El formulario de edición para
+          <strong>{{ selectedChannel?.name }}</strong>
+          se mostrará aquí eventualmente.
+        </AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isDeleteRuleOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        { key: 'confirm-delete-rule', label: 'Eliminar regla', tone: 'primary' },
+      ]"
+      title="Eliminar regla"
+      variant="danger"
+      @action="($event === 'confirm-delete-rule') && confirmDeleteRule()"
+      @close="closeDeleteRule"
+    >
+      <div class="space-y-3">
+        <AppText>
+          Vas a eliminar
+          <strong>{{ selectedChannel?.name }}</strong>.
         </AppText>
       </div>
     </AppModal>

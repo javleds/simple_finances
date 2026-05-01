@@ -35,11 +35,13 @@ const props = withDefaults(
     formId?: string;
     accountUsers?: ReadonlyArray<TransactionAccountUser>;
     financialGoals?: ReadonlyArray<TransactionFinancialGoal>;
+    initialValues?: Partial<TransactionFormSubmit> | null;
   }>(),
   {
     formId: 'transaction-form',
     accountUsers: () => [],
     financialGoals: () => [],
+    initialValues: null,
   },
 );
 
@@ -82,6 +84,21 @@ const financialGoalOptions = computed(() =>
     label: goal.name,
     description: goal.description,
   })),
+);
+
+watch(
+  () => props.initialValues,
+  (nextValues) => {
+    state.type = nextValues?.type ?? 'expense';
+    state.status = nextValues?.status ?? 'completed';
+    state.concept = nextValues?.concept ?? '';
+    state.amount = nextValues?.amount ?? null;
+    state.date = nextValues?.date ?? today;
+    state.splitBetweenUsers = nextValues?.splitBetweenUsers ?? false;
+    state.financialGoalId = nextValues?.financialGoalId ?? null;
+    state.userPercentages = { ...(nextValues?.userPercentages ?? {}) };
+  },
+  { immediate: true },
 );
 
 watch(

@@ -19,25 +19,31 @@ import { AdjustmentsHorizontalIcon, ArrowPathIcon, MagnifyingGlassIcon } from '@
 
 const transactionItems = [
   {
+    id: 'supplier-payment',
     concept: 'Pago a proveedor logístico con referencia operativa y validación de entrega regional',
     amount: 12480,
     type: 'expense',
     status: 'completed',
     dateLabel: 'Hoy',
+    date: '2026-05-01',
   },
   {
+    id: 'facility-disbursement',
     concept: 'Dispersión interna desde facility para reforzar la bolsa operativa del siguiente corte',
     amount: 35000,
     type: 'income',
     status: 'completed',
     dateLabel: 'Ayer',
+    date: '2026-04-30',
   },
   {
+    id: 'regional-expense',
     concept: 'Consumo operativo regional pendiente de conciliación con comprobantes de viaje',
     amount: 4860,
     type: 'expense',
     status: 'pending',
     dateLabel: '22 Abr',
+    date: '2026-04-22',
   },
 ] as const;
 
@@ -61,10 +67,13 @@ const financialGoals = [
 
 const route = useRoute();
 const isCreateTransactionModalOpen = ref(false);
+const isEditTransactionModalOpen = ref(false);
+const isDeleteTransactionModalOpen = ref(false);
 const isFiltersOpen = ref(false);
 const searchTerm = ref('');
 const selectedStatuses = ref<Array<'completed' | 'pending'>>([]);
 const selectedTypes = ref<Array<'income' | 'expense'>>([]);
+const selectedTransactionId = ref<string | null>(null);
 
 const transactionStatusOptions = [
   { value: 'completed', label: 'Completado' },
@@ -105,12 +114,57 @@ const filteredTransactionItems = computed(() => {
   });
 });
 
+const selectedTransaction = computed(() => {
+  if (!selectedTransactionId.value) {
+    return null;
+  }
+
+  return transactionItems.find((transaction) => transaction.id === selectedTransactionId.value) ?? null;
+});
+
+const selectedTransactionFormValues = computed(() => {
+  if (!selectedTransaction.value) {
+    return null;
+  }
+
+  return {
+    type: selectedTransaction.value.type,
+    status: selectedTransaction.value.status,
+    concept: selectedTransaction.value.concept,
+    amount: selectedTransaction.value.amount,
+    date: selectedTransaction.value.date,
+    splitBetweenUsers: false,
+    financialGoalId: null,
+    userPercentages: {},
+  };
+});
+
 function openCreateTransactionModal(): void {
   isCreateTransactionModalOpen.value = true;
 }
 
 function closeCreateTransactionModal(): void {
   isCreateTransactionModalOpen.value = false;
+}
+
+function openEditTransaction(transactionId: string): void {
+  selectedTransactionId.value = transactionId;
+  isEditTransactionModalOpen.value = true;
+}
+
+function closeEditTransactionModal(): void {
+  isEditTransactionModalOpen.value = false;
+  selectedTransactionId.value = null;
+}
+
+function openDeleteTransaction(transactionId: string): void {
+  selectedTransactionId.value = transactionId;
+  isDeleteTransactionModalOpen.value = true;
+}
+
+function closeDeleteTransactionModal(): void {
+  isDeleteTransactionModalOpen.value = false;
+  selectedTransactionId.value = null;
 }
 
 function openFilters(): void {
@@ -157,6 +211,14 @@ function handleFiltersModalAction(actionKey: string): void {
 
 function handleTransactionSubmit(): void {
   closeCreateTransactionModal();
+}
+
+function handleEditTransactionSubmit(): void {
+  closeEditTransactionModal();
+}
+
+function confirmDeleteTransaction(): void {
+  closeDeleteTransactionModal();
 }
 </script>
 
@@ -207,13 +269,15 @@ function handleTransactionSubmit(): void {
       <div class="space-y-4">
         <TransactionListItem
           v-for="transaction in filteredTransactionItems"
-          :key="`${transaction.concept}-${transaction.dateLabel}`"
+          :key="transaction.id"
           :amount="transaction.amount"
           :concept="transaction.concept"
           :date-label="transaction.dateLabel"
-          :item-id="`${transaction.concept}-${transaction.dateLabel}`"
+          :item-id="transaction.id"
           :status="transaction.status"
           :type="transaction.type"
+          @delete="openDeleteTransaction"
+          @edit="openEditTransaction"
         />
 
         <div
@@ -310,6 +374,58 @@ function handleTransactionSubmit(): void {
         form-id="transaction-form"
         @submit="handleTransactionSubmit"
       />
+    </AppModal>
+
+    <AppModal
+      :open="isEditTransactionModalOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        {
+          key: 'submit-edit-transaction',
+          label: 'Guardar cambios',
+          tone: 'primary',
+          type: 'submit',
+          form: 'edit-transaction-form',
+        },
+      ]"
+      title="Editar transacción"
+      variant="default"
+      @close="closeEditTransactionModal"
+    >
+      <TransactionsForm
+        v-if="account && selectedTransactionFormValues"
+        :account-users="account.users"
+        :financial-goals="financialGoals"
+        :initial-values="selectedTransactionFormValues"
+        form-id="edit-transaction-form"
+        @submit="handleEditTransactionSubmit"
+      />
+    </AppModal>
+
+    <AppModal
+      :open="isDeleteTransactionModalOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        {
+          key: 'confirm-delete-transaction',
+          label: 'Eliminar transacción',
+          tone: 'primary',
+        },
+      ]"
+      title="Eliminar transacción"
+      variant="danger"
+      @action="($event === 'confirm-delete-transaction') && confirmDeleteTransaction()"
+      @close="closeDeleteTransactionModal"
+    >
+      <div class="space-y-3">
+        <AppText>
+          Vas a eliminar
+          <strong>{{ selectedTransaction?.concept }}</strong>.
+        </AppText>
+        <AppText size="sm" tone="subtle">
+          La confirmación ya sigue el patrón de borrado del resto del sistema.
+        </AppText>
+      </div>
     </AppModal>
   </section>
 </template>

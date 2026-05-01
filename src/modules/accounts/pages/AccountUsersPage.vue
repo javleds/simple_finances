@@ -29,8 +29,11 @@ const route = useRoute();
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateUserOpen = ref(false);
+const isEditUserOpen = ref(false);
+const isDeleteUserOpen = ref(false);
 const selectedRoles = ref<UserRole[]>([]);
 const selectedAccesses = ref<UserAccess[]>([]);
+const selectedUserId = ref<string | null>(null);
 
 const account = computed(() => {
   const accountId = typeof route.params.accountId === 'string' ? route.params.accountId : '';
@@ -108,6 +111,14 @@ const filteredUsers = computed(() => {
   });
 });
 
+const selectedUser = computed(() => {
+  if (!selectedUserId.value) {
+    return null;
+  }
+
+  return accountUsers.value.find((user) => user.id === selectedUserId.value) ?? null;
+});
+
 function openFilters(): void {
   isFiltersOpen.value = true;
 }
@@ -156,6 +167,30 @@ function openCreateUser(): void {
 
 function closeCreateUser(): void {
   isCreateUserOpen.value = false;
+}
+
+function openEditUser(userId: string): void {
+  selectedUserId.value = userId;
+  isEditUserOpen.value = true;
+}
+
+function closeEditUser(): void {
+  isEditUserOpen.value = false;
+  selectedUserId.value = null;
+}
+
+function openDeleteUser(userId: string): void {
+  selectedUserId.value = userId;
+  isDeleteUserOpen.value = true;
+}
+
+function closeDeleteUser(): void {
+  isDeleteUserOpen.value = false;
+  selectedUserId.value = null;
+}
+
+function confirmDeleteUser(): void {
+  closeDeleteUser();
 }
 </script>
 
@@ -213,6 +248,8 @@ function closeCreateUser(): void {
           :pending-expenses="user.pendingExpenses"
           :role-label="user.roleLabel"
           :status="user.status"
+          @delete="openDeleteUser"
+          @edit="openEditUser"
         />
 
         <div
@@ -299,6 +336,48 @@ function closeCreateUser(): void {
         </AppText>
         <AppText size="sm" tone="subtle">
           Por ahora dejamos listo el flujo visual y el listado administrable con búsqueda y filtros.
+        </AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isEditUserOpen"
+      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      title="Editar usuario"
+      variant="default"
+      @close="closeEditUser"
+    >
+      <div class="space-y-3">
+        <AppText>
+          El formulario de edición para
+          <strong>{{ selectedUser?.name }}</strong>
+          se mostrará aquí eventualmente.
+        </AppText>
+        <AppText size="sm" tone="subtle">
+          Dejamos listo el punto de integración para mantener el mismo patrón modal de edición.
+        </AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isDeleteUserOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        { key: 'confirm-delete-user', label: 'Eliminar usuario', tone: 'primary' },
+      ]"
+      title="Eliminar usuario"
+      variant="danger"
+      @action="($event === 'confirm-delete-user') && confirmDeleteUser()"
+      @close="closeDeleteUser"
+    >
+      <div class="space-y-3">
+        <AppText>
+          Vas a eliminar a
+          <strong>{{ selectedUser?.name }}</strong>
+          de esta cuenta.
+        </AppText>
+        <AppText size="sm" tone="subtle">
+          La confirmación sigue el mismo patrón del resto de módulos con acciones contextuales.
         </AppText>
       </div>
     </AppModal>

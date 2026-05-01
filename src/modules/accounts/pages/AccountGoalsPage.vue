@@ -72,8 +72,11 @@ const goalItems = [
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateGoalOpen = ref(false);
+const isEditGoalOpen = ref(false);
+const isDeleteGoalOpen = ref(false);
 const selectedStatuses = ref<GoalStatus[]>([]);
 const selectedCadences = ref<GoalCadence[]>([]);
+const selectedGoalId = ref<string | null>(null);
 
 const goalStatusOptions = [
   { value: 'on-track', label: 'En curso' },
@@ -108,6 +111,14 @@ const filteredGoalItems = computed(() => {
 
     return true;
   });
+});
+
+const selectedGoal = computed(() => {
+  if (!selectedGoalId.value) {
+    return null;
+  }
+
+  return goalItems.find((goal) => goal.id === selectedGoalId.value) ?? null;
 });
 
 function openFilters(): void {
@@ -158,6 +169,30 @@ function openCreateGoal(): void {
 
 function closeCreateGoal(): void {
   isCreateGoalOpen.value = false;
+}
+
+function openEditGoal(goalId: string): void {
+  selectedGoalId.value = goalId;
+  isEditGoalOpen.value = true;
+}
+
+function closeEditGoal(): void {
+  isEditGoalOpen.value = false;
+  selectedGoalId.value = null;
+}
+
+function openDeleteGoal(goalId: string): void {
+  selectedGoalId.value = goalId;
+  isDeleteGoalOpen.value = true;
+}
+
+function closeDeleteGoal(): void {
+  isDeleteGoalOpen.value = false;
+  selectedGoalId.value = null;
+}
+
+function confirmDeleteGoal(): void {
+  closeDeleteGoal();
 }
 </script>
 
@@ -215,6 +250,8 @@ function closeCreateGoal(): void {
           :status="goal.status"
           :target-amount="goal.targetAmount"
           :title="goal.title"
+          @delete="openDeleteGoal"
+          @edit="openEditGoal"
         />
 
         <div
@@ -302,6 +339,47 @@ function closeCreateGoal(): void {
         </AppText>
         <AppText size="sm" tone="subtle">
           Por ahora dejamos el flujo visual preparado mientras se define el formulario específico.
+        </AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isEditGoalOpen"
+      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      title="Editar meta"
+      variant="default"
+      @close="closeEditGoal"
+    >
+      <div class="space-y-3">
+        <AppText>
+          El formulario de edición para
+          <strong>{{ selectedGoal?.title }}</strong>
+          se mostrará aquí en una siguiente iteración.
+        </AppText>
+        <AppText size="sm" tone="subtle">
+          El flujo modal ya quedó reservado para mantener consistencia con el resto del sistema.
+        </AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isDeleteGoalOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        { key: 'confirm-delete-goal', label: 'Eliminar meta', tone: 'primary' },
+      ]"
+      title="Eliminar meta"
+      variant="danger"
+      @action="($event === 'confirm-delete-goal') && confirmDeleteGoal()"
+      @close="closeDeleteGoal"
+    >
+      <div class="space-y-3">
+        <AppText>
+          Vas a eliminar
+          <strong>{{ selectedGoal?.title }}</strong>.
+        </AppText>
+        <AppText size="sm" tone="subtle">
+          La confirmación sigue el mismo patrón de borrado del resto de las facilities con listados.
         </AppText>
       </div>
     </AppModal>

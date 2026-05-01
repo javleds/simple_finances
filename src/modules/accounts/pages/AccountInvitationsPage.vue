@@ -55,8 +55,11 @@ const invitationItems = [
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateInvitationOpen = ref(false);
+const isEditInvitationOpen = ref(false);
+const isDeleteInvitationOpen = ref(false);
 const selectedStatuses = ref<InvitationStatus[]>([]);
 const selectedRoles = ref<InvitationRole[]>([]);
+const selectedInvitationId = ref<string | null>(null);
 
 const invitationStatusOptions = [
   { value: 'pending', label: 'Pendiente' },
@@ -92,6 +95,14 @@ const filteredInvitationItems = computed(() => {
 
     return true;
   });
+});
+
+const selectedInvitation = computed(() => {
+  if (!selectedInvitationId.value) {
+    return null;
+  }
+
+  return invitationItems.find((invitation) => invitation.id === selectedInvitationId.value) ?? null;
 });
 
 function openFilters(): void {
@@ -142,6 +153,30 @@ function openCreateInvitation(): void {
 
 function closeCreateInvitation(): void {
   isCreateInvitationOpen.value = false;
+}
+
+function openEditInvitation(invitationId: string): void {
+  selectedInvitationId.value = invitationId;
+  isEditInvitationOpen.value = true;
+}
+
+function closeEditInvitation(): void {
+  isEditInvitationOpen.value = false;
+  selectedInvitationId.value = null;
+}
+
+function openDeleteInvitation(invitationId: string): void {
+  selectedInvitationId.value = invitationId;
+  isDeleteInvitationOpen.value = true;
+}
+
+function closeDeleteInvitation(): void {
+  isDeleteInvitationOpen.value = false;
+  selectedInvitationId.value = null;
+}
+
+function confirmDeleteInvitation(): void {
+  closeDeleteInvitation();
 }
 </script>
 
@@ -198,6 +233,8 @@ function closeCreateInvitation(): void {
           :name="invitation.name"
           :role-label="invitation.roleLabel"
           :status="invitation.status"
+          @delete="openDeleteInvitation"
+          @edit="openEditInvitation"
         />
 
         <div
@@ -284,6 +321,41 @@ function closeCreateInvitation(): void {
         </AppText>
         <AppText size="sm" tone="subtle">
           Por ahora dejamos preparado el flujo visual con búsqueda, filtros y acciones de lista.
+        </AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isEditInvitationOpen"
+      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      title="Editar invitación"
+      variant="default"
+      @close="closeEditInvitation"
+    >
+      <div class="space-y-3">
+        <AppText>
+          El formulario de edición para la invitación de
+          <strong>{{ selectedInvitation?.name }}</strong>
+          se mostrará aquí eventualmente.
+        </AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isDeleteInvitationOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        { key: 'confirm-delete-invitation', label: 'Eliminar invitación', tone: 'primary' },
+      ]"
+      title="Eliminar invitación"
+      variant="danger"
+      @action="($event === 'confirm-delete-invitation') && confirmDeleteInvitation()"
+      @close="closeDeleteInvitation"
+    >
+      <div class="space-y-3">
+        <AppText>
+          Vas a eliminar la invitación de
+          <strong>{{ selectedInvitation?.name }}</strong>.
         </AppText>
       </div>
     </AppModal>

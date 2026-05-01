@@ -54,8 +54,11 @@ type SubscriptionCycle = 'annual' | 'monthly' | 'add-on';
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateSubscriptionOpen = ref(false);
+const isEditSubscriptionOpen = ref(false);
+const isDeleteSubscriptionOpen = ref(false);
 const selectedStatuses = ref<SubscriptionStatus[]>([]);
 const selectedCycles = ref<SubscriptionCycle[]>([]);
+const selectedSubscriptionId = ref<string | null>(null);
 
 const subscriptionStatusOptions = [
   { value: 'active', label: 'Activa' },
@@ -102,6 +105,14 @@ const filteredSubscriptions = computed(() => {
 
     return true;
   });
+});
+
+const selectedSubscription = computed(() => {
+  if (!selectedSubscriptionId.value) {
+    return null;
+  }
+
+  return normalizedSubscriptions.value.find((subscription) => subscription.id === selectedSubscriptionId.value) ?? null;
 });
 
 function openFilters(): void {
@@ -152,6 +163,30 @@ function openCreateSubscription(): void {
 
 function closeCreateSubscription(): void {
   isCreateSubscriptionOpen.value = false;
+}
+
+function openEditSubscription(subscriptionId: string): void {
+  selectedSubscriptionId.value = subscriptionId;
+  isEditSubscriptionOpen.value = true;
+}
+
+function closeEditSubscription(): void {
+  isEditSubscriptionOpen.value = false;
+  selectedSubscriptionId.value = null;
+}
+
+function openDeleteSubscription(subscriptionId: string): void {
+  selectedSubscriptionId.value = subscriptionId;
+  isDeleteSubscriptionOpen.value = true;
+}
+
+function closeDeleteSubscription(): void {
+  isDeleteSubscriptionOpen.value = false;
+  selectedSubscriptionId.value = null;
+}
+
+function confirmDeleteSubscription(): void {
+  closeDeleteSubscription();
 }
 </script>
 
@@ -250,6 +285,8 @@ function closeCreateSubscription(): void {
           :next-charge="subscription.nextCharge"
           :plan="subscription.plan"
           :status="subscription.status"
+          @delete="openDeleteSubscription"
+          @edit="openEditSubscription"
         />
 
         <div
@@ -336,6 +373,41 @@ function closeCreateSubscription(): void {
         </AppText>
         <AppText size="sm" tone="subtle">
           Por ahora dejamos preparado el flujo visual de búsqueda, filtros y acciones contextuales.
+        </AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isEditSubscriptionOpen"
+      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      title="Editar suscripción"
+      variant="default"
+      @close="closeEditSubscription"
+    >
+      <div class="space-y-3">
+        <AppText>
+          El formulario de edición para
+          <strong>{{ selectedSubscription?.plan }}</strong>
+          se mostrará aquí eventualmente.
+        </AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isDeleteSubscriptionOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        { key: 'confirm-delete-subscription', label: 'Eliminar suscripción', tone: 'primary' },
+      ]"
+      title="Eliminar suscripción"
+      variant="danger"
+      @action="($event === 'confirm-delete-subscription') && confirmDeleteSubscription()"
+      @close="closeDeleteSubscription"
+    >
+      <div class="space-y-3">
+        <AppText>
+          Vas a eliminar
+          <strong>{{ selectedSubscription?.plan }}</strong>.
         </AppText>
       </div>
     </AppModal>

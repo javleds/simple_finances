@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import DistributionRelationListItem from '@/modules/distribution/components/DistributionRelationListItem.vue';
-import { AppCard, AppText, AppTitle } from '@/modules/shared/components';
+import { AppCard, AppModal, AppText, AppTitle } from '@/modules/shared/components';
 
 const route = useRoute();
 
@@ -50,6 +51,29 @@ const distributionRule = computed(() => {
   const ruleId = typeof route.params.ruleId === 'string' ? route.params.ruleId : '';
   return distributionRelations[ruleId as keyof typeof distributionRelations] ?? null;
 });
+
+const isEditRelationOpen = ref(false);
+const isDeleteRelationOpen = ref(false);
+
+function openEditRelation(): void {
+  isEditRelationOpen.value = true;
+}
+
+function closeEditRelation(): void {
+  isEditRelationOpen.value = false;
+}
+
+function openDeleteRelation(): void {
+  isDeleteRelationOpen.value = true;
+}
+
+function closeDeleteRelation(): void {
+  isDeleteRelationOpen.value = false;
+}
+
+function confirmDeleteRelation(): void {
+  closeDeleteRelation();
+}
 </script>
 
 <template>
@@ -72,6 +96,8 @@ const distributionRule = computed(() => {
           :amount="distributionRule.relation.amount"
           :concept="distributionRule.relation.concept"
           :type="distributionRule.relation.type"
+          @delete="openDeleteRelation"
+          @edit="openEditRelation"
         />
 
         <div
@@ -84,6 +110,39 @@ const distributionRule = computed(() => {
         </div>
       </div>
     </section>
+
+    <AppModal
+      :open="isEditRelationOpen"
+      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      title="Editar relación"
+      variant="default"
+      @close="closeEditRelation"
+    >
+      <div class="space-y-3">
+        <AppText>
+          El formulario de edición para esta relación de distribución se mostrará aquí eventualmente.
+        </AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isDeleteRelationOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        { key: 'confirm-delete-relation', label: 'Eliminar relación', tone: 'primary' },
+      ]"
+      title="Eliminar relación"
+      variant="danger"
+      @action="($event === 'confirm-delete-relation') && confirmDeleteRelation()"
+      @close="closeDeleteRelation"
+    >
+      <div class="space-y-3">
+        <AppText>
+          Vas a eliminar
+          <strong>{{ distributionRule.relation.concept }}</strong>.
+        </AppText>
+      </div>
+    </AppModal>
   </section>
 
   <AppCard v-else class="rounded-3xl">

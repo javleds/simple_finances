@@ -18,9 +18,11 @@ type AccountFormSubmit = {
 const props = withDefaults(
   defineProps<{
     formId?: string;
+    initialValues?: Partial<AccountFormSubmit> | null;
   }>(),
   {
     formId: 'account-form',
+    initialValues: null,
   },
 );
 
@@ -44,6 +46,20 @@ const state = reactive({
 });
 
 const showCreditFields = computed(() => state.isCredit === 'yes');
+
+watch(
+  () => props.initialValues,
+  (nextValues) => {
+    state.name = nextValues?.name ?? '';
+    state.color = nextValues?.color ?? '';
+    state.description = nextValues?.description ?? '';
+    state.isVirtual = nextValues?.isVirtual ? 'yes' : 'no';
+    state.isCredit = nextValues?.isCredit ? 'yes' : 'no';
+    state.creditLine = nextValues?.creditLine ?? null;
+    state.closingDay = nextValues?.closingDay ?? null;
+  },
+  { immediate: true },
+);
 
 watch(showCreditFields, (isVisible) => {
   if (isVisible) {
