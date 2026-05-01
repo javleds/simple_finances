@@ -32,6 +32,7 @@ const emit = defineEmits<{
 const isOpen = ref(false);
 const rootRef = ref<HTMLElement | null>(null);
 const triggerRef = ref<HTMLButtonElement | null>(null);
+const menuRef = ref<HTMLElement | null>(null);
 const menuPosition = ref({
   top: 0,
   left: 0,
@@ -128,11 +129,17 @@ function updateMenuPosition(): void {
 }
 
 function handleDocumentPointerDown(event: PointerEvent): void {
-  if (!rootRef.value) {
+  const eventTarget = event.target as Node | null;
+
+  if (!eventTarget) {
     return;
   }
 
-  if (rootRef.value.contains(event.target as Node)) {
+  if (rootRef.value?.contains(eventTarget)) {
+    return;
+  }
+
+  if (menuRef.value?.contains(eventTarget)) {
     return;
   }
 
@@ -187,6 +194,7 @@ onBeforeUnmount(() => {
     <Teleport to="body">
       <div
         v-if="isOpen"
+        ref="menuRef"
         class="fixed z-50 min-w-40 overflow-hidden rounded-xl border bg-[var(--app-color-surface)] shadow-[var(--app-shadow-card)]"
         :style="{
           top: `${menuPosition.top}px`,
@@ -194,6 +202,7 @@ onBeforeUnmount(() => {
           borderColor: 'var(--app-color-border)',
         }"
         @click.stop
+        @pointerdown.stop
       >
         <button
           v-for="(action, index) in resolvedActions()"
