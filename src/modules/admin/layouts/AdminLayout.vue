@@ -98,7 +98,15 @@ const navigationItems: AdminNavigationItem[] = [
 ];
 
 function showBackButton(): boolean {
-  return route.name === 'admin.accounts.detail';
+  if (typeof route.name !== 'string') {
+    return false;
+  }
+
+  if (route.name === 'admin.distribution.detail') {
+    return true;
+  }
+
+  return route.name.startsWith('admin.accounts.') && route.name !== 'admin.accounts';
 }
 
 function isActiveRoute(routeName: string): boolean {
@@ -176,7 +184,19 @@ onBeforeUnmount(() => {
       class="fixed left-1/2 top-0 z-20 w-full max-w-[430px] -translate-x-1/2 border-b bg-[color-mix(in_srgb,var(--app-color-surface)_94%,transparent)] px-5 pb-4 pt-5 backdrop-blur"
       :style="{ borderColor: 'var(--app-color-border)' }"
     >
-      <div class="grid grid-cols-[minmax(0,1fr)_2.75rem] items-center gap-3">
+      <div class="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-3">
+        <div class="flex justify-start">
+          <RouterLink
+            v-if="showBackButton()"
+            :to="route.name === 'admin.distribution.detail' ? { name: 'admin.distribution' } : { name: 'admin.accounts' }"
+            class="flex h-11 w-11 items-center justify-center rounded-full border bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)] transition hover:bg-[var(--app-color-surface)] focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            :style="{ borderColor: 'var(--app-color-border)' }"
+            :aria-label="route.name === 'admin.distribution.detail' ? 'Volver a distribución' : 'Volver a cuentas'"
+          >
+            <ArrowLeftIcon class="h-5 w-5" />
+          </RouterLink>
+        </div>
+
         <div class="min-w-0">
           <h1
             class="truncate text-left text-lg font-semibold tracking-tight text-[var(--app-color-text)]"

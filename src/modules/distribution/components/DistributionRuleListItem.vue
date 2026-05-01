@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
+
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type DistributionStatus = 'active' | 'draft' | 'paused';
@@ -16,6 +18,8 @@ const emit = defineEmits<{
   edit: [itemId: string];
   delete: [itemId: string];
 }>();
+
+const router = useRouter();
 
 function statusLabel(status: DistributionStatus): string {
   if (status === 'paused') {
@@ -60,11 +64,23 @@ function handleEdit(): void {
 function handleDelete(): void {
   emit('delete', props.itemId);
 }
+
+function openRuleDetails(): void {
+  router.push({
+    name: 'admin.distribution.detail',
+    params: { ruleId: props.itemId },
+  });
+}
 </script>
 
 <template>
   <AppCard
-    class="relative overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-[var(--app-color-border-strong)]"
+    class="relative cursor-pointer overflow-hidden rounded-xl !p-3.5 shadow-none transition hover:border-[var(--app-color-border-strong)]"
+    role="link"
+    tabindex="0"
+    @click="openRuleDetails"
+    @keydown.enter="openRuleDetails"
+    @keydown.space.prevent="openRuleDetails"
   >
     <div
       class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
@@ -93,7 +109,11 @@ function handleDelete(): void {
           </p>
         </div>
 
-        <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
+        <AppActionMenu
+          class="shrink-0"
+          @delete.prevent.stop="handleDelete"
+          @edit.prevent.stop="handleEdit"
+        />
       </div>
 
       <div class="flex items-center justify-between gap-3">

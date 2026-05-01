@@ -6,6 +6,11 @@ const routes: RouteRecordRaw[] = [
     path: 'distribution',
     component: () => import('./pages/DistributionPage.vue'),
   },
+  {
+    name: 'admin.distribution.detail',
+    path: 'distribution/:ruleId',
+    component: () => import('./pages/DistributionDetailPage.vue'),
+  },
 ];
 
 export default routes;
