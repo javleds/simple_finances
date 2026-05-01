@@ -1,21 +1,148 @@
 <script setup lang="ts">
-import AppButton from '@/modules/shared/components/AppButton.vue';
-import AppCard from '@/modules/shared/components/AppCard.vue';
-import AppText from '@/modules/shared/components/AppText.vue';
-import AppTitle from '@/modules/shared/components/AppTitle.vue';
+import {
+  AdjustmentsHorizontalIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  XMarkIcon,
+} from '@heroicons/vue/24/outline';
+import { computed, ref } from 'vue';
+
+import AccountInvitationListItem from '@/modules/accounts/components/AccountInvitationListItem.vue';
+import {
+  AppButton,
+  AppCard,
+  AppIconButton,
+  AppInput,
+  AppModal,
+  AppText,
+  AppTitle,
+} from '@/modules/shared/components';
+
+type InvitationStatus = 'pending' | 'resent' | 'accepted';
+type InvitationRole = 'admin' | 'approver' | 'finance';
 
 const invitationItems = [
   {
-    title: 'Carlos Mendoza',
-    detail: 'Pendiente de aceptar invitación como aprobador.',
-    meta: 'Expira en 3 días',
+    id: 'carlos-mendoza',
+    name: 'Carlos Mendoza',
+    email: 'carlos@empresa.com',
+    role: 'approver',
+    roleLabel: 'Aprobador',
+    metaLabel: 'Expira en 3 días',
+    status: 'pending',
   },
   {
-    title: 'María Torres',
-    detail: 'Invitación enviada para seguimiento financiero.',
-    meta: 'Reenviada ayer',
+    id: 'maria-torres',
+    name: 'María Torres',
+    email: 'maria@empresa.com',
+    role: 'finance',
+    roleLabel: 'Seguimiento financiero',
+    metaLabel: 'Reenviada ayer',
+    status: 'resent',
   },
-];
+  {
+    id: 'paola-garcia',
+    name: 'Paola García',
+    email: 'paola@empresa.com',
+    role: 'admin',
+    roleLabel: 'Administrador',
+    metaLabel: 'Aceptada hace 2 días',
+    status: 'accepted',
+  },
+] as const;
+
+const searchTerm = ref('');
+const isFiltersOpen = ref(false);
+const isCreateInvitationOpen = ref(false);
+const selectedStatuses = ref<InvitationStatus[]>([]);
+const selectedRoles = ref<InvitationRole[]>([]);
+
+const invitationStatusOptions = [
+  { value: 'pending', label: 'Pendiente' },
+  { value: 'resent', label: 'Reenviada' },
+  { value: 'accepted', label: 'Aceptada' },
+] as const;
+
+const invitationRoleOptions = [
+  { value: 'admin', label: 'Administrador' },
+  { value: 'approver', label: 'Aprobador' },
+  { value: 'finance', label: 'Finanzas' },
+] as const;
+
+const filteredInvitationItems = computed(() => {
+  const normalizedQuery = searchTerm.value.trim().toLowerCase();
+
+  return invitationItems.filter((invitation) => {
+    const matchesQuery =
+      normalizedQuery.length === 0 ||
+      invitation.name.toLowerCase().includes(normalizedQuery);
+
+    if (!matchesQuery) {
+      return false;
+    }
+
+    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(invitation.status)) {
+      return false;
+    }
+
+    if (selectedRoles.value.length > 0 && !selectedRoles.value.includes(invitation.role)) {
+      return false;
+    }
+
+    return true;
+  });
+});
+
+function openFilters(): void {
+  isFiltersOpen.value = true;
+}
+
+function closeFilters(): void {
+  isFiltersOpen.value = false;
+}
+
+function clearFilters(): void {
+  selectedStatuses.value = [];
+  selectedRoles.value = [];
+}
+
+function toggleStatus(status: InvitationStatus): void {
+  if (selectedStatuses.value.includes(status)) {
+    selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
+    return;
+  }
+
+  selectedStatuses.value = [...selectedStatuses.value, status];
+}
+
+function toggleRole(role: InvitationRole): void {
+  if (selectedRoles.value.includes(role)) {
+    selectedRoles.value = selectedRoles.value.filter((item) => item !== role);
+    return;
+  }
+
+  selectedRoles.value = [...selectedRoles.value, role];
+}
+
+function handleFiltersModalAction(actionKey: string): void {
+  if (actionKey === 'clear') {
+    clearFilters();
+    return;
+  }
+
+  if (actionKey === 'close') {
+    closeFilters();
+  }
+}
+
+function openCreateInvitation(): void {
+  isCreateInvitationOpen.value = true;
+}
+
+function closeCreateInvitation(): void {
+  isCreateInvitationOpen.value = false;
+}
 </script>
 
 <template>
@@ -26,16 +153,139 @@ const invitationItems = [
           <AppTitle as="h2" size="sm">Invitaciones</AppTitle>
           <AppText>Invita usuarios a colaborar dentro de esta cuenta.</AppText>
         </div>
-        <AppButton variant="outline">Nueva invitación</AppButton>
+        <AppButton variant="primary" @click="openCreateInvitation">
+          <PlusIcon class="h-4 w-4" />
+        </AppButton>
       </div>
     </AppCard>
 
-    <AppCard v-for="invitation in invitationItems" :key="invitation.title" class="rounded-3xl">
-      <div class="space-y-1">
-        <p class="text-sm font-semibold text-[var(--app-color-text)]">{{ invitation.title }}</p>
-        <AppText size="sm">{{ invitation.detail }}</AppText>
-        <AppText size="sm" tone="subtle">{{ invitation.meta }}</AppText>
+    <div class="flex items-center gap-3">
+      <div class="relative flex-1">
+        <div
+          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[var(--app-color-text-subtle)]"
+        >
+          <MagnifyingGlassIcon class="h-5 w-5" />
+        </div>
+        <AppInput
+          id="invitation-search"
+          v-model="searchTerm"
+          type="search"
+          placeholder="Buscar invitación por nombre"
+          class="pl-11"
+        />
       </div>
-    </AppCard>
+
+      <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
+        <AdjustmentsHorizontalIcon class="h-5 w-5" />
+      </AppIconButton>
+    </div>
+
+    <section class="space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <AppText size="sm" tone="subtle">
+          {{ filteredInvitationItems.length }} invitaciones visibles
+        </AppText>
+        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
+      </div>
+
+      <div class="space-y-4">
+        <AccountInvitationListItem
+          v-for="invitation in filteredInvitationItems"
+          :key="invitation.id"
+          :email="invitation.email"
+          :item-id="invitation.id"
+          :meta-label="invitation.metaLabel"
+          :name="invitation.name"
+          :role-label="invitation.roleLabel"
+          :status="invitation.status"
+        />
+
+        <div
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm">
+            Sigue desplazándote para revisar más invitaciones conforme se amplíe la colaboración.
+          </AppText>
+        </div>
+      </div>
+    </section>
+
+    <AppModal
+      :open="isFiltersOpen"
+      :actions="[
+        { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
+      title="Filtros avanzados"
+      variant="default"
+      @action="handleFiltersModalAction"
+      @close="closeFilters"
+    >
+      <div class="space-y-5">
+        <div class="space-y-2">
+          <AppTitle as="h2" size="sm">Estatus</AppTitle>
+          <AppText>Refina las invitaciones según su momento dentro del flujo de acceso.</AppText>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="status in invitationStatusOptions"
+            :key="status.value"
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            :class="
+              selectedStatuses.includes(status.value)
+                ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
+                : 'bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)]'
+            "
+            :style="{ borderColor: 'var(--app-color-border)' }"
+            @click="toggleStatus(status.value)"
+          >
+            {{ status.label }}
+          </button>
+        </div>
+
+        <div class="space-y-2">
+          <AppTitle as="h2" size="sm">Rol</AppTitle>
+          <AppText>Filtra por el tipo de invitación que se está enviando a cada colaborador.</AppText>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="role in invitationRoleOptions"
+            :key="role.value"
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            :class="
+              selectedRoles.includes(role.value)
+                ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
+                : 'bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)]'
+            "
+            :style="{ borderColor: 'var(--app-color-border)' }"
+            @click="toggleRole(role.value)"
+          >
+            {{ role.label }}
+          </button>
+        </div>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isCreateInvitationOpen"
+      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      title="Nueva invitación"
+      variant="default"
+      @close="closeCreateInvitation"
+    >
+      <div class="space-y-3">
+        <AppText>
+          La creación de invitaciones puede integrarse aquí siguiendo el mismo patrón modal del resto del módulo.
+        </AppText>
+        <AppText size="sm" tone="subtle">
+          Por ahora dejamos preparado el flujo visual con búsqueda, filtros y acciones de lista.
+        </AppText>
+      </div>
+    </AppModal>
   </section>
 </template>

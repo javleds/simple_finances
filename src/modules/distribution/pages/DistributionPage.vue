@@ -1,29 +1,172 @@
 <script setup lang="ts">
-import { FunnelIcon, PlayCircleIcon } from '@heroicons/vue/24/outline';
+import {
+  AdjustmentsHorizontalIcon,
+  ArrowPathIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  PlayCircleIcon,
+  PlusIcon,
+  XMarkIcon,
+} from '@heroicons/vue/24/outline';
+import { computed, ref } from 'vue';
 
-import DistributionChannelCard from '@/modules/distribution/components/DistributionChannelCard.vue';
-import { AppButton, AppCard, AppText, AppTitle } from '@/modules/shared/components';
+import DistributionRuleListItem from '@/modules/distribution/components/DistributionRuleListItem.vue';
+import {
+  AppButton,
+  AppCard,
+  AppIconButton,
+  AppInput,
+  AppModal,
+  AppText,
+  AppTitle,
+} from '@/modules/shared/components';
 
 const channels = [
   {
+    id: 'daily-operations',
     name: 'Operación diaria',
     description: 'Fondeo de la cuenta principal para ejecución inmediata.',
     allocation: 42,
     destination: 'Cuenta concentradora',
+    status: 'active',
   },
   {
+    id: 'tax-reserve',
     name: 'Reserva fiscal',
     description: 'Separación preventiva para obligaciones del siguiente corte.',
     allocation: 25,
     destination: 'Reserva tributaria',
+    status: 'active',
   },
   {
+    id: 'payroll',
     name: 'Nómina',
     description: 'Distribución automática para pagos recurrentes.',
     allocation: 18,
     destination: 'Pagos y nómina',
+    status: 'draft',
   },
-];
+  {
+    id: 'regional-buffer',
+    name: 'Bolsa regional de contingencia',
+    description: 'Asignación temporal para imprevistos de operación distribuida.',
+    allocation: 15,
+    destination: 'Operación regional',
+    status: 'paused',
+  },
+] as const;
+
+type DistributionStatus = 'active' | 'draft' | 'paused';
+type DistributionDestination = 'core' | 'tax' | 'payroll' | 'regional';
+
+const searchTerm = ref('');
+const isFiltersOpen = ref(false);
+const isCreateRuleOpen = ref(false);
+const selectedStatuses = ref<DistributionStatus[]>([]);
+const selectedDestinations = ref<DistributionDestination[]>([]);
+
+const distributionStatusOptions = [
+  { value: 'active', label: 'Activa' },
+  { value: 'draft', label: 'Borrador' },
+  { value: 'paused', label: 'Pausada' },
+] as const;
+
+const distributionDestinationOptions = [
+  { value: 'core', label: 'Concentradora' },
+  { value: 'tax', label: 'Fiscal' },
+  { value: 'payroll', label: 'Nómina' },
+  { value: 'regional', label: 'Regional' },
+] as const;
+
+const normalizedChannels = computed(() =>
+  channels.map((channel) => ({
+    ...channel,
+    destinationType:
+      channel.id === 'daily-operations'
+        ? ('core' as DistributionDestination)
+        : channel.id === 'tax-reserve'
+          ? ('tax' as DistributionDestination)
+          : channel.id === 'payroll'
+            ? ('payroll' as DistributionDestination)
+            : ('regional' as DistributionDestination),
+  })),
+);
+
+const filteredChannels = computed(() => {
+  const normalizedQuery = searchTerm.value.trim().toLowerCase();
+
+  return normalizedChannels.value.filter((channel) => {
+    const matchesQuery =
+      normalizedQuery.length === 0 || channel.name.toLowerCase().includes(normalizedQuery);
+
+    if (!matchesQuery) {
+      return false;
+    }
+
+    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(channel.status)) {
+      return false;
+    }
+
+    if (
+      selectedDestinations.value.length > 0 &&
+      !selectedDestinations.value.includes(channel.destinationType)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+});
+
+function openFilters(): void {
+  isFiltersOpen.value = true;
+}
+
+function closeFilters(): void {
+  isFiltersOpen.value = false;
+}
+
+function clearFilters(): void {
+  selectedStatuses.value = [];
+  selectedDestinations.value = [];
+}
+
+function toggleStatus(status: DistributionStatus): void {
+  if (selectedStatuses.value.includes(status)) {
+    selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
+    return;
+  }
+
+  selectedStatuses.value = [...selectedStatuses.value, status];
+}
+
+function toggleDestination(destination: DistributionDestination): void {
+  if (selectedDestinations.value.includes(destination)) {
+    selectedDestinations.value = selectedDestinations.value.filter((item) => item !== destination);
+    return;
+  }
+
+  selectedDestinations.value = [...selectedDestinations.value, destination];
+}
+
+function handleFiltersModalAction(actionKey: string): void {
+  if (actionKey === 'clear') {
+    clearFilters();
+    return;
+  }
+
+  if (actionKey === 'close') {
+    closeFilters();
+  }
+}
+
+function openCreateRule(): void {
+  isCreateRuleOpen.value = true;
+}
+
+function closeCreateRule(): void {
+  isCreateRuleOpen.value = false;
+}
 </script>
 
 <template>
@@ -54,20 +197,146 @@ const channels = [
       </div>
     </AppCard>
 
-    <div class="space-y-1">
-      <AppTitle as="h2" size="sm">Canales activos</AppTitle>
-      <AppText>Cada regla determina prioridad, porcentaje y cuenta destino.</AppText>
+    <AppCard class="rounded-3xl">
+      <div class="flex items-center justify-between gap-3">
+        <div class="space-y-1">
+          <AppTitle as="h2" size="sm">Canales activos</AppTitle>
+          <AppText>Cada regla determina prioridad, porcentaje y cuenta destino.</AppText>
+        </div>
+
+        <AppButton variant="primary" @click="openCreateRule">
+          <PlusIcon class="h-4 w-4" />
+        </AppButton>
+      </div>
+    </AppCard>
+
+    <div class="flex items-center gap-3">
+      <div class="relative flex-1">
+        <div
+          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[var(--app-color-text-subtle)]"
+        >
+          <MagnifyingGlassIcon class="h-5 w-5" />
+        </div>
+        <AppInput
+          id="distribution-search"
+          v-model="searchTerm"
+          type="search"
+          placeholder="Buscar regla por nombre"
+          class="pl-11"
+        />
+      </div>
+
+      <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
+        <AdjustmentsHorizontalIcon class="h-5 w-5" />
+      </AppIconButton>
     </div>
 
-    <section class="space-y-4">
-      <DistributionChannelCard
-        v-for="channel in channels"
-        :key="channel.name"
-        :name="channel.name"
-        :description="channel.description"
-        :allocation="channel.allocation"
-        :destination="channel.destination"
-      />
+    <section class="space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <AppText size="sm" tone="subtle">
+          {{ filteredChannels.length }} reglas visibles
+        </AppText>
+        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
+      </div>
+
+      <div class="space-y-4">
+        <DistributionRuleListItem
+          v-for="channel in filteredChannels"
+          :key="channel.id"
+          :allocation="channel.allocation"
+          :description="channel.description"
+          :destination="channel.destination"
+          :item-id="channel.id"
+          :name="channel.name"
+          :status="channel.status"
+        />
+
+        <div
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm">
+            Sigue desplazándote para revisar más reglas conforme se expanda la distribución salarial.
+          </AppText>
+        </div>
+      </div>
     </section>
+
+    <AppModal
+      :open="isFiltersOpen"
+      :actions="[
+        { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
+        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+      ]"
+      title="Filtros avanzados"
+      variant="default"
+      @action="handleFiltersModalAction"
+      @close="closeFilters"
+    >
+      <div class="space-y-5">
+        <div class="space-y-2">
+          <AppTitle as="h2" size="sm">Estatus</AppTitle>
+          <AppText>Filtra reglas según su estado operativo dentro del motor de distribución.</AppText>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="status in distributionStatusOptions"
+            :key="status.value"
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            :class="
+              selectedStatuses.includes(status.value)
+                ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
+                : 'bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)]'
+            "
+            :style="{ borderColor: 'var(--app-color-border)' }"
+            @click="toggleStatus(status.value)"
+          >
+            {{ status.label }}
+          </button>
+        </div>
+
+        <div class="space-y-2">
+          <AppTitle as="h2" size="sm">Destino</AppTitle>
+          <AppText>Refina la lista según la bolsa o cuenta objetivo de cada regla.</AppText>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="destination in distributionDestinationOptions"
+            :key="destination.value"
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-[var(--app-color-focus-ring)]"
+            :class="
+              selectedDestinations.includes(destination.value)
+                ? 'bg-[var(--app-color-primary)] text-[var(--app-color-primary-foreground)]'
+                : 'bg-[var(--app-color-surface-muted)] text-[var(--app-color-text)]'
+            "
+            :style="{ borderColor: 'var(--app-color-border)' }"
+            @click="toggleDestination(destination.value)"
+          >
+            {{ destination.label }}
+          </button>
+        </div>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isCreateRuleOpen"
+      :actions="[{ key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true }]"
+      title="Nueva regla"
+      variant="default"
+      @close="closeCreateRule"
+    >
+      <div class="space-y-3">
+        <AppText>
+          La creación de reglas de distribución puede vivir aquí con el mismo patrón modal de la aplicación.
+        </AppText>
+        <AppText size="sm" tone="subtle">
+          Por ahora dejamos lista la experiencia de búsqueda, filtros, acciones y scroll continuo.
+        </AppText>
+      </div>
+    </AppModal>
   </div>
 </template>
