@@ -82,7 +82,7 @@ function handleDeleteModalAction(actionKey: string): void {
 function updateActiveSection(nextSection: string): void {
   const accountId = typeof route.params.accountId === 'string' ? route.params.accountId : '';
 
-  if (accountId)! {
+  if (!accountId) {
     return;
   }
 

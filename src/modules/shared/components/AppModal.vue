@@ -117,7 +117,7 @@ const resolvedActions = computed<ReadonlyArray<ModalAction>>(() => {
 
     const closeAction = limitedActions[closeActionIndex];
 
-    if (closeAction)! {
+    if (!closeAction) {
       return limitedActions;
     }
 

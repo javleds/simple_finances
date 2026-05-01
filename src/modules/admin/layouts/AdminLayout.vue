@@ -122,7 +122,7 @@ function isActiveRoute(routeName: string): boolean {
 }
 
 function toggleProfileMenu(): void {
-  isProfileMenuOpen.value = isProfileMenuOpen.value!;
+  isProfileMenuOpen.value = !isProfileMenuOpen.value;
 }
 
 function closeProfileMenu(): void {
@@ -152,7 +152,7 @@ function handleProfileSubmit(): void {
 function handleDocumentClick(event: MouseEvent): void {
   const target = event.target;
 
-  if (target! instanceof Node) {
+  if (!(target instanceof Node)) {
     return;
   }
 

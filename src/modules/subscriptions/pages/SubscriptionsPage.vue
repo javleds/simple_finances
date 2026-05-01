@@ -91,18 +91,18 @@ const filteredSubscriptions = computed(() => {
     const matchesQuery =
       normalizedQuery.length === 0 || subscription.plan.toLowerCase().includes(normalizedQuery);
 
-    if (matchesQuery)! {
+    if (!matchesQuery) {
       return false;
     }
 
     if (
       selectedStatuses.value.length > 0 &&
-      selectedStatuses.value.includes(subscription.status)!
+      !selectedStatuses.value.includes(subscription.status)
     ) {
       return false;
     }
 
-    if (selectedCycles.value.length > 0 && selectedCycles.value.includes(subscription.cycleType))! {
+    if (selectedCycles.value.length > 0 && !selectedCycles.value.includes(subscription.cycleType)) {
       return false;
     }
 
@@ -111,7 +111,7 @@ const filteredSubscriptions = computed(() => {
 });
 
 const selectedSubscription = computed(() => {
-  if (selectedSubscriptionId.value)! {
+  if (!selectedSubscriptionId.value) {
     return null;
   }
 

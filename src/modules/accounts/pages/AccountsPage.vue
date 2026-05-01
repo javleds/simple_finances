@@ -36,7 +36,7 @@ const filteredAccounts = computed(() => {
   return accounts.filter((account) => {
     const matchesQuery = account.name.toLowerCase().includes(normalizedQuery);
 
-    if (matchesQuery)! {
+    if (!matchesQuery) {
       return false;
     }
 
@@ -49,7 +49,7 @@ const filteredAccounts = computed(() => {
 });
 
 const selectedAccount = computed(() => {
-  if (selectedAccountId.value)! {
+  if (!selectedAccountId.value) {
     return null;
   }
 
@@ -57,7 +57,7 @@ const selectedAccount = computed(() => {
 });
 
 const selectedAccountFormValues = computed(() => {
-  if (selectedAccount.value)! {
+  if (!selectedAccount.value) {
     return null;
   }
 

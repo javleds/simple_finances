@@ -98,15 +98,15 @@ const filteredGoalItems = computed(() => {
     const matchesQuery =
       normalizedQuery.length === 0 || goal.title.toLowerCase().includes(normalizedQuery);
 
-    if (matchesQuery)! {
+    if (!matchesQuery) {
       return false;
     }
 
-    if (selectedStatuses.value.length > 0 && selectedStatuses.value.includes(goal.status))! {
+    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(goal.status)) {
       return false;
     }
 
-    if (selectedCadences.value.length > 0 && selectedCadences.value.includes(goal.cadence))! {
+    if (selectedCadences.value.length > 0 && !selectedCadences.value.includes(goal.cadence)) {
       return false;
     }
 
@@ -115,7 +115,7 @@ const filteredGoalItems = computed(() => {
 });
 
 const selectedGoal = computed(() => {
-  if (selectedGoalId.value)! {
+  if (!selectedGoalId.value) {
     return null;
   }
 

@@ -62,21 +62,21 @@ function updateTheme(nextTheme: string): void {
 function toggleGlobalSetting(settingId: string): void {
   const setting = globalNotificationSettings.find((item) => item.id === settingId);
 
-  if (setting)! {
+  if (!setting) {
     return;
   }
 
-  setting.enabled = setting.enabled!;
+  setting.enabled = !setting.enabled;
 }
 
 function toggleAccountSetting(accountId: string): void {
   const accountSetting = accountNotificationSettings.find((item) => item.id === accountId);
 
-  if (accountSetting)! {
+  if (!accountSetting) {
     return;
   }
 
-  accountSetting.enabled = accountSetting.enabled!;
+  accountSetting.enabled = !accountSetting.enabled;
 }
 </script>
 

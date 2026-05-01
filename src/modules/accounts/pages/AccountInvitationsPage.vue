@@ -80,15 +80,15 @@ const filteredInvitationItems = computed(() => {
     const matchesQuery =
       normalizedQuery.length === 0 || invitation.name.toLowerCase().includes(normalizedQuery);
 
-    if (matchesQuery)! {
+    if (!matchesQuery) {
       return false;
     }
 
-    if (selectedStatuses.value.length > 0 && selectedStatuses.value.includes(invitation.status))! {
+    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(invitation.status)) {
       return false;
     }
 
-    if (selectedRoles.value.length > 0 && selectedRoles.value.includes(invitation.role))! {
+    if (selectedRoles.value.length > 0 && !selectedRoles.value.includes(invitation.role)) {
       return false;
     }
 
@@ -97,7 +97,7 @@ const filteredInvitationItems = computed(() => {
 });
 
 const selectedInvitation = computed(() => {
-  if (selectedInvitationId.value)! {
+  if (!selectedInvitationId.value) {
     return null;
   }
 

@@ -17,7 +17,7 @@ const account = computed(() => {
 });
 
 const usersPendingSummary = computed(() => {
-  if (account.value)! {
+  if (!account.value) {
     return 0;
   }
 
