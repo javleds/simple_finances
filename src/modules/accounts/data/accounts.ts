@@ -31,7 +31,8 @@ export const accounts: AccountRecord[] = [
     id: 'cuenta-concentradora',
     color: '#2563EB',
     name: 'Ahorro para el retiro chcucho',
-    description: 'Cuenta principal para concentrar saldo, cubrir gastos relevantes y repartir fondos hacia cuentas satélite.',
+    description:
+      'Cuenta principal para concentrar saldo, cubrir gastos relevantes y repartir fondos hacia cuentas satélite.',
     accountType: 'credito',
     isVirtual: false,
     status: 'Activo',
@@ -68,7 +69,8 @@ export const accounts: AccountRecord[] = [
     id: 'reserva-tributaria',
     color: '#0F766E',
     name: 'Reserva tributaria',
-    description: 'Cuenta dedicada a apartar flujo para obligaciones fiscales y pagos programados del siguiente corte.',
+    description:
+      'Cuenta dedicada a apartar flujo para obligaciones fiscales y pagos programados del siguiente corte.',
     accountType: 'debito',
     isVirtual: true,
     status: 'Activo',
@@ -98,7 +100,8 @@ export const accounts: AccountRecord[] = [
     id: 'pagos-nomina',
     color: '#EA580C',
     name: 'Pagos y nómina',
-    description: 'Cuenta operativa para dispersión periódica de pagos a empleados y compromisos recurrentes.',
+    description:
+      'Cuenta operativa para dispersión periódica de pagos a empleados y compromisos recurrentes.',
     accountType: 'debito',
     isVirtual: false,
     status: 'Activo',
@@ -135,7 +138,8 @@ export const accounts: AccountRecord[] = [
     id: 'crecimiento-comercial',
     color: '#7C3AED',
     name: 'Crecimiento comercial',
-    description: 'Bolsa destinada a campañas, alianzas y gastos tácticos para adquisición y expansión comercial.',
+    description:
+      'Bolsa destinada a campañas, alianzas y gastos tácticos para adquisición y expansión comercial.',
     accountType: 'credito',
     isVirtual: true,
     status: 'Inactivo',
@@ -165,7 +169,8 @@ export const accounts: AccountRecord[] = [
     id: 'inversiones-liquidas',
     color: '#D97706',
     name: 'Inversiones líquidas',
-    description: 'Cuenta para resguardar liquidez temporal con acceso controlado y metas de rendimiento de corto plazo.',
+    description:
+      'Cuenta para resguardar liquidez temporal con acceso controlado y metas de rendimiento de corto plazo.',
     accountType: 'credito',
     isVirtual: false,
     status: 'Activo',
@@ -195,7 +200,8 @@ export const accounts: AccountRecord[] = [
     id: 'operacion-regional',
     color: '#DC2626',
     name: 'Operación regional',
-    description: 'Cuenta de soporte para egresos en plaza, gastos imprevistos y operación distribuida de equipos regionales.',
+    description:
+      'Cuenta de soporte para egresos en plaza, gastos imprevistos y operación distribuida de equipos regionales.',
     accountType: 'debito',
     isVirtual: false,
     status: 'Activo',
