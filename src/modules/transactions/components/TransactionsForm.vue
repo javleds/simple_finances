@@ -293,30 +293,25 @@ function submitForm(): void {
     </section>
 
     <section class="space-y-3">
+      <AppSearchSelect
+        id="transaction-financial-goal"
+        v-model="state.financialGoalId"
+        label="Meta financiera"
+        :options="financialGoalOptions"
+        placeholder="Sin meta financiera"
+        search-placeholder="Buscar meta financiera"
+        empty-message="No encontramos metas con ese criterio. Puedes guardar la transacción sin asociarla."
+      />
+
       <div
-        class="space-y-3 rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
+        v-if="props.financialGoals.length === 0"
+        class="rounded-lg border border-dashed px-4 py-4 text-center"
         :style="{ borderColor: 'var(--app-color-border)' }"
       >
-        <AppSearchSelect
-          id="transaction-financial-goal"
-          v-model="state.financialGoalId"
-          label="Meta financiera"
-          :options="financialGoalOptions"
-          placeholder="Sin meta financiera"
-          search-placeholder="Buscar meta financiera"
-          empty-message="No encontramos metas con ese criterio. Puedes guardar la transacción sin asociarla."
-        />
-
-        <div
-          v-if="props.financialGoals.length === 0"
-          class="rounded-lg border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <UserGroupIcon class="mx-auto h-6 w-6 text-(--app-color-text-subtle)" />
-          <AppText size="sm" class="mt-2">
-            Esta cuenta aún no tiene metas financieras disponibles.
-          </AppText>
-        </div>
+        <UserGroupIcon class="mx-auto h-6 w-6 text-(--app-color-text-subtle)" />
+        <AppText size="sm" class="mt-2">
+          Esta cuenta aún no tiene metas financieras disponibles.
+        </AppText>
       </div>
     </section>
   </form>

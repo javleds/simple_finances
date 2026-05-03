@@ -141,9 +141,11 @@ function updateValue(nextValue: unknown): void {
 .app-search-select .multiselect {
   min-height: 3rem;
   box-shadow: none;
+  border-radius: 0.5rem;
 }
 
 .app-search-select .multiselect.is-active {
+  border-color: var(--app-color-primary);
   box-shadow: 0 0 0 4px var(--app-color-focus-ring);
 }
 
@@ -151,6 +153,7 @@ function updateValue(nextValue: unknown): void {
 .app-search-select .multiselect-single-label,
 .app-search-select .multiselect-placeholder {
   padding-left: 1rem;
+  padding-right: 2.75rem;
 }
 
 .app-search-select .multiselect-search::placeholder {
@@ -160,17 +163,18 @@ function updateValue(nextValue: unknown): void {
 
 .app-search-select .multiselect-search {
   color: var(--app-color-input-text);
+  padding-right: 2.75rem;
 }
 
 .app-search-select .multiselect-caret {
   background: none;
   width: 1.25rem;
   height: 1.25rem;
-  margin-right: 1rem;
+  margin-right: 0.875rem;
 }
 
 .app-search-select .multiselect-clear {
-  padding-right: 0.75rem;
+  padding-right: 0.875rem;
 }
 
 .app-search-select .multiselect-dropdown {
@@ -181,5 +185,9 @@ function updateValue(nextValue: unknown): void {
 .app-search-select .multiselect-option {
   border-radius: 0.5rem;
   margin: 0.125rem 0.5rem;
+}
+
+.app-search-select .multiselect-single-label-text {
+  color: var(--app-color-input-text);
 }
 </style>
