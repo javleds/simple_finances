@@ -2,10 +2,7 @@
 import { computed, ref } from 'vue';
 import { use } from 'echarts/core';
 import { BarChart } from 'echarts/charts';
-import {
-  GridComponent,
-  TooltipComponent,
-} from 'echarts/components';
+import { GridComponent, TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import VChart from 'vue-echarts';
 import type { CallbackDataParams } from 'echarts/types/src/util/types.js';
@@ -74,10 +71,7 @@ const pendingActions = computed(() =>
     .map((account) => ({
       id: account.id,
       accountName: account.name,
-      amount: account.users.reduce(
-        (sum, user) => sum + parseCurrency(user.pendingExpenses),
-        0,
-      ),
+      amount: account.users.reduce((sum, user) => sum + parseCurrency(user.pendingExpenses), 0),
     }))
     .filter((item) => item.amount > 0)
     .sort((left, right) => right.amount - left.amount),
@@ -122,9 +116,7 @@ const balanceChartOption = computed(() => ({
       }
 
       const value =
-        typeof firstItem.value === 'number'
-          ? firstItem.value
-          : Number(firstItem.value ?? 0);
+        typeof firstItem.value === 'number' ? firstItem.value : Number(firstItem.value ?? 0);
 
       return `
         <div style="min-width: 12rem;">
@@ -231,7 +223,7 @@ function completePendingAction(): void {}
           </AppText>
         </div>
 
-        <VChart :option="balanceChartOption" autoresize class="h-72 w-full" />
+        <VChart :option="balanceChartOption" autoresize class="h-72 max-h-[250px] w-full" />
       </div>
     </AppCard>
 
