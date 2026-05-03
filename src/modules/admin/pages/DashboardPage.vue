@@ -15,6 +15,7 @@ import {
   AppToggleButton,
   AppTitle,
 } from '@/modules/shared/components';
+import { useThemeStore } from '@/stores/theme';
 
 use([BarChart, CanvasRenderer, GridComponent, TooltipComponent]);
 
@@ -27,6 +28,7 @@ type SubscriptionSummary = {
 };
 
 const savingsCadence = ref<SavingsCadence>('monthly');
+const themeStore = useThemeStore();
 
 const cadenceOptions = [
   { value: 'monthly', label: 'Mensual' },
@@ -86,6 +88,28 @@ const recommendedSavings = computed(() => {
   return annualSubscriptionsSpend.value / divisor;
 });
 
+const chartColors = computed(() => {
+  themeStore.mode;
+
+  if (typeof window === 'undefined') {
+    return {
+      surface: '#ffffff',
+      border: '#dbe4f0',
+      text: '#0f172a',
+      textSubtle: '#64748b',
+    };
+  }
+
+  const styles = window.getComputedStyle(document.documentElement);
+
+  return {
+    surface: styles.getPropertyValue('--app-color-surface').trim(),
+    border: styles.getPropertyValue('--app-color-border').trim(),
+    text: styles.getPropertyValue('--app-color-text').trim(),
+    textSubtle: styles.getPropertyValue('--app-color-text-subtle').trim(),
+  };
+});
+
 const balanceChartOption = computed(() => ({
   animationDuration: 350,
   grid: {
@@ -100,11 +124,11 @@ const balanceChartOption = computed(() => ({
     axisPointer: {
       type: 'shadow',
     },
-    backgroundColor: 'var(--app-color-surface)',
-    borderColor: 'var(--app-color-border)',
+    backgroundColor: chartColors.value.surface,
+    borderColor: chartColors.value.border,
     borderWidth: 1,
     textStyle: {
-      color: 'var(--app-color-text)',
+      color: chartColors.value.text,
       fontFamily: 'inherit',
     },
     formatter: (params: CallbackDataParams | CallbackDataParams[]) => {
@@ -134,11 +158,11 @@ const balanceChartOption = computed(() => ({
     },
     axisLine: {
       lineStyle: {
-        color: 'var(--app-color-border)',
+        color: chartColors.value.border,
       },
     },
     axisLabel: {
-      color: 'var(--app-color-text-subtle)',
+      color: chartColors.value.textSubtle,
       fontSize: 11,
     },
   },
@@ -151,12 +175,12 @@ const balanceChartOption = computed(() => ({
     },
     splitLine: {
       lineStyle: {
-        color: 'var(--app-color-border)',
+        color: chartColors.value.border,
         opacity: 0.65,
       },
     },
     axisLabel: {
-      color: 'var(--app-color-text-subtle)',
+      color: chartColors.value.textSubtle,
       formatter: (value: number) => formatCompactCurrency(value),
     },
   },
@@ -223,7 +247,7 @@ function completePendingAction(): void {}
           </AppText>
         </div>
 
-        <VChart :option="balanceChartOption" autoresize class="h-72 max-h-[250px] w-full" />
+        <VChart :option="balanceChartOption" autoresize class="h-72 max-h-[200px] w-full" />
       </div>
     </AppCard>
 
