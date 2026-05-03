@@ -164,6 +164,8 @@ const balanceChartOption = computed(() => ({
     axisLabel: {
       color: chartColors.value.textSubtle,
       fontSize: 11,
+      interval: 0,
+      rotate: 90,
     },
   },
   yAxis: {
@@ -247,7 +249,7 @@ function completePendingAction(): void {}
           </AppText>
         </div>
 
-        <VChart :option="balanceChartOption" autoresize class="h-72 max-h-[200px] w-full" />
+        <VChart :option="balanceChartOption" autoresize class="h-72 max-h-[250px] w-full" />
       </div>
     </AppCard>
 
