@@ -51,6 +51,7 @@ const savingsCadence = ref<SavingsCadence>('monthly');
 const themeStore = useThemeStore();
 const isCompletePendingActionOpen = ref(false);
 const selectedPendingActionId = ref<string | null>(null);
+const selectedPendingAccountId = ref<string | null>(null);
 const selectedPendingActionIds = ref<string[]>([]);
 
 const cadenceOptions = [
@@ -159,6 +160,14 @@ const selectedPendingAction = computed(() => {
 const selectedPendingActions = computed(() =>
   pendingActions.value.filter((item) => selectedPendingActionIds.value.includes(item.id)),
 );
+
+const selectedPendingAccountActions = computed(() => {
+  if (!selectedPendingAccountId.value) {
+    return [];
+  }
+
+  return pendingActions.value.filter((item) => item.accountId === selectedPendingAccountId.value);
+});
 
 const annualSubscriptionsSpend = computed(() =>
   subscriptions.reduce((sum, subscription) => sum + subscription.annualCost, 0),
@@ -327,6 +336,14 @@ function shortenLabel(label: string): string {
 
 function openCompletePendingAction(actionId: string): void {
   selectedPendingActionId.value = actionId;
+  selectedPendingAccountId.value = null;
+  selectedPendingActionIds.value = [];
+  isCompletePendingActionOpen.value = true;
+}
+
+function openCompletePendingAccount(accountId: string): void {
+  selectedPendingActionId.value = null;
+  selectedPendingAccountId.value = accountId;
   selectedPendingActionIds.value = [];
   isCompletePendingActionOpen.value = true;
 }
@@ -337,12 +354,14 @@ function openBatchCompletePendingActions(): void {
   }
 
   selectedPendingActionId.value = null;
+  selectedPendingAccountId.value = null;
   isCompletePendingActionOpen.value = true;
 }
 
 function closeCompletePendingAction(): void {
   isCompletePendingActionOpen.value = false;
   selectedPendingActionId.value = null;
+  selectedPendingAccountId.value = null;
 }
 
 function confirmCompletePendingAction(): void {
@@ -452,6 +471,13 @@ function togglePendingActionSelection(actionId: string): void {
                   {{ group.items.length }} pendientes · {{ formatCurrency(group.totalAmount) }}
                 </p>
               </div>
+
+              <AppIconButton
+                ariaLabel="Completar movimientos pendientes de la cuenta"
+                @click="openCompletePendingAccount(group.accountId)"
+              >
+                <CheckIcon class="h-4 w-4" />
+              </AppIconButton>
             </div>
 
             <div class="space-y-1">
@@ -572,6 +598,19 @@ function togglePendingActionSelection(actionId: string): void {
             {{
               formatCurrency(
                 selectedPendingActions.reduce((sum, item) => sum + item.amount, 0),
+              )
+            }}
+          </strong>.
+        </AppText>
+
+        <AppText v-else-if="selectedPendingAccountActions.length > 0">
+          Vas a marcar como completados los
+          <strong>{{ selectedPendingAccountActions.length }} pendientes de esta cuenta</strong>
+          por un total de
+          <strong>
+            {{
+              formatCurrency(
+                selectedPendingAccountActions.reduce((sum, item) => sum + item.amount, 0),
               )
             }}
           </strong>.
