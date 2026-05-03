@@ -10,9 +10,7 @@ import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 import { accounts } from '@/modules/accounts/data/accounts';
 import {
-  AppButton,
   AppCard,
-  AppIconButton,
   AppModal,
   AppText,
   AppToggleButton,
@@ -52,7 +50,6 @@ const themeStore = useThemeStore();
 const isCompletePendingActionOpen = ref(false);
 const selectedPendingActionId = ref<string | null>(null);
 const selectedPendingAccountId = ref<string | null>(null);
-const selectedPendingActionIds = ref<string[]>([]);
 
 const cadenceOptions = [
   { value: 'monthly', label: 'Mensual' },
@@ -143,12 +140,6 @@ const pendingActionGroups = computed<PendingTransactionGroup[]>(() =>
     .sort((left, right) => parseDate(right.items[0]?.date) - parseDate(left.items[0]?.date)),
 );
 
-const pendingActionsCountLabel = computed(() => {
-  const count = selectedPendingActionIds.value.length;
-
-  return `${count} movimiento${count === 1 ? '' : 's'} seleccionado${count === 1 ? '' : 's'}`;
-});
-
 const selectedPendingAction = computed(() => {
   if (!selectedPendingActionId.value) {
     return null;
@@ -156,10 +147,6 @@ const selectedPendingAction = computed(() => {
 
   return pendingActions.value.find((item) => item.id === selectedPendingActionId.value) ?? null;
 });
-
-const selectedPendingActions = computed(() =>
-  pendingActions.value.filter((item) => selectedPendingActionIds.value.includes(item.id)),
-);
 
 const selectedPendingAccountActions = computed(() => {
   if (!selectedPendingAccountId.value) {
@@ -337,24 +324,12 @@ function shortenLabel(label: string): string {
 function openCompletePendingAction(actionId: string): void {
   selectedPendingActionId.value = actionId;
   selectedPendingAccountId.value = null;
-  selectedPendingActionIds.value = [];
   isCompletePendingActionOpen.value = true;
 }
 
 function openCompletePendingAccount(accountId: string): void {
   selectedPendingActionId.value = null;
   selectedPendingAccountId.value = accountId;
-  selectedPendingActionIds.value = [];
-  isCompletePendingActionOpen.value = true;
-}
-
-function openBatchCompletePendingActions(): void {
-  if (selectedPendingActionIds.value.length === 0) {
-    return;
-  }
-
-  selectedPendingActionId.value = null;
-  selectedPendingAccountId.value = null;
   isCompletePendingActionOpen.value = true;
 }
 
@@ -365,17 +340,7 @@ function closeCompletePendingAction(): void {
 }
 
 function confirmCompletePendingAction(): void {
-  selectedPendingActionIds.value = [];
   closeCompletePendingAction();
-}
-
-function togglePendingActionSelection(actionId: string): void {
-  if (selectedPendingActionIds.value.includes(actionId)) {
-    selectedPendingActionIds.value = selectedPendingActionIds.value.filter((id) => id !== actionId);
-    return;
-  }
-
-  selectedPendingActionIds.value = [...selectedPendingActionIds.value, actionId];
 }
 </script>
 
@@ -437,18 +402,6 @@ function togglePendingActionSelection(actionId: string): void {
           <AppText>Completa pagos pendientes sin salir del tablero principal.</AppText>
         </div>
 
-        <div
-          v-if="selectedPendingActionIds.length > 0"
-          class="flex items-center justify-between gap-3 rounded-xl border bg-[color-mix(in_srgb,var(--app-color-primary)_8%,transparent)] px-3 py-3"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">{{ pendingActionsCountLabel }}</AppText>
-
-          <AppButton variant="outline" class="h-9! px-3!" @click="openBatchCompletePendingActions">
-            Completar selección
-          </AppButton>
-        </div>
-
         <div class="space-y-2">
           <div
             v-for="group in pendingActionGroups"
@@ -472,46 +425,43 @@ function togglePendingActionSelection(actionId: string): void {
                 </p>
               </div>
 
-              <AppIconButton
-                ariaLabel="Completar movimientos pendientes de la cuenta"
+              <button
+                type="button"
+                class="shrink-0 text-(--app-color-link) transition hover:text-(--app-color-link-hover) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                aria-label="Completar movimientos pendientes de la cuenta"
                 @click="openCompletePendingAccount(group.accountId)"
               >
-                <CheckIcon class="h-4 w-4" />
-              </AppIconButton>
+                <CheckIcon class="h-5 w-5" />
+              </button>
             </div>
 
             <div class="space-y-1">
               <div
                 v-for="action in group.items"
                 :key="action.id"
-                class="flex items-start gap-3 rounded-xl px-1 py-2"
+                class="rounded-xl px-1 py-2"
               >
-                <input
-                  :checked="selectedPendingActionIds.includes(action.id)"
-                  type="checkbox"
-                  class="mt-0.5 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
-                  @change="togglePendingActionSelection(action.id)"
-                />
-
-                <div class="min-w-0 flex-1 space-y-2">
-                  <p
-                    class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-                  >
-                    {{ action.concept }}
-                  </p>
-
-                  <div class="flex items-center justify-between gap-3">
-                    <p class="text-sm font-semibold whitespace-nowrap text-(--app-color-text)">
-                      {{ formatCurrency(action.amount) }}
+                <div class="min-w-0 space-y-2">
+                  <div class="flex items-start justify-between gap-3">
+                    <p
+                      class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                    >
+                      {{ action.concept }}
                     </p>
 
-                    <AppIconButton
-                      ariaLabel="Completar movimiento pendiente"
+                    <button
+                      type="button"
+                      class="mt-0.5 shrink-0 text-(--app-color-link) transition hover:text-(--app-color-link-hover) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                      aria-label="Completar movimiento pendiente"
                       @click="openCompletePendingAction(action.id)"
                     >
                       <CheckIcon class="h-4 w-4" />
-                    </AppIconButton>
+                    </button>
                   </div>
+
+                  <p class="text-sm font-semibold whitespace-nowrap text-(--app-color-text)">
+                    {{ formatCurrency(action.amount) }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -588,19 +538,6 @@ function togglePendingActionSelection(actionId: string): void {
           <strong>{{ selectedPendingAction.accountName }}</strong>
           por
           <strong>{{ formatCurrency(selectedPendingAction.amount) }}</strong>.
-        </AppText>
-
-        <AppText v-else-if="selectedPendingActions.length > 0">
-          Vas a marcar como completados
-          <strong>{{ selectedPendingActions.length }} movimientos pendientes</strong>
-          por un total de
-          <strong>
-            {{
-              formatCurrency(
-                selectedPendingActions.reduce((sum, item) => sum + item.amount, 0),
-              )
-            }}
-          </strong>.
         </AppText>
 
         <AppText v-else-if="selectedPendingAccountActions.length > 0">
