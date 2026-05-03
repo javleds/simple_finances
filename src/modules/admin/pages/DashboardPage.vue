@@ -1,159 +1,352 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue';
+import { use } from 'echarts/core';
+import { BarChart } from 'echarts/charts';
 import {
-  ArrowTrendingUpIcon,
-  BanknotesIcon,
-  ChartBarIcon,
-  CheckCircleIcon,
-  ClockIcon,
-} from '@heroicons/vue/24/outline';
+  GridComponent,
+  TooltipComponent,
+} from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+import VChart from 'vue-echarts';
+import type { CallbackDataParams } from 'echarts/types/src/util/types.js';
 
-import { AppButton, AppCard, AppText, AppTitle } from '@/modules/shared/components';
+import { accounts } from '@/modules/accounts/data/accounts';
+import {
+  AppButton,
+  AppCard,
+  AppText,
+  AppToggleButton,
+  AppTitle,
+} from '@/modules/shared/components';
 
-type MetricCard = {
-  title: string;
-  value: string;
-  caption: string;
-  icon: typeof BanknotesIcon;
+use([BarChart, CanvasRenderer, GridComponent, TooltipComponent]);
+
+type SavingsCadence = 'monthly' | 'biweekly';
+
+type SubscriptionSummary = {
+  id: string;
+  plan: string;
+  annualCost: number;
 };
 
-type DistributionItem = {
-  name: string;
-  percentage: number;
-  amount: string;
-};
+const savingsCadence = ref<SavingsCadence>('monthly');
 
-const metricCards: MetricCard[] = [
+const cadenceOptions = [
+  { value: 'monthly', label: 'Mensual' },
+  { value: 'biweekly', label: 'Quincenal' },
+] as const;
+
+const subscriptions: SubscriptionSummary[] = [
   {
-    title: 'Saldo disponible',
-    value: '$248,320',
-    caption: '+8.4% frente al cierre anterior',
-    icon: BanknotesIcon,
+    id: 'premium-facility',
+    plan: 'Plan Premium Facility',
+    annualCost: 12000,
   },
   {
-    title: 'Ingresos del mes',
-    value: '$92,400',
-    caption: '17 depósitos conciliados hoy',
-    icon: ArrowTrendingUpIcon,
+    id: 'additional-users',
+    plan: 'Usuarios adicionales',
+    annualCost: 1280 * 12,
   },
   {
-    title: 'Cobertura activa',
-    value: '96.2%',
-    caption: 'Distribución en 12 cuentas',
-    icon: ChartBarIcon,
+    id: 'advanced-analytics',
+    plan: 'Analítica avanzada',
+    annualCost: 860 * 12,
   },
 ];
 
-const distributionItems: DistributionItem[] = [
-  { name: 'Cuenta operativa', percentage: 42, amount: '$104,294' },
-  { name: 'Reserva fiscal', percentage: 25, amount: '$62,080' },
-  { name: 'Nómina y pagos', percentage: 18, amount: '$44,697' },
-  { name: 'Inversiones', percentage: 15, amount: '$37,249' },
-];
+const activeAccounts = computed(() => accounts.filter((account) => account.status === 'Activo'));
 
-const recentActivity = [
-  {
-    title: 'Distribución semanal ejecutada',
-    detail: 'Se enviaron fondos a 4 cuentas objetivo sin incidencias.',
-    status: 'Completado',
-    icon: CheckCircleIcon,
+const sharedAccountsCount = computed(
+  () => accounts.filter((account) => account.users.length > 1).length,
+);
+
+const totalPendingPayments = computed(() =>
+  accounts.reduce((sum, account) => {
+    return (
+      sum +
+      account.users.reduce((usersSum, user) => usersSum + parseCurrency(user.pendingExpenses), 0)
+    );
+  }, 0),
+);
+
+const pendingActions = computed(() =>
+  accounts
+    .map((account) => ({
+      id: account.id,
+      accountName: account.name,
+      amount: account.users.reduce(
+        (sum, user) => sum + parseCurrency(user.pendingExpenses),
+        0,
+      ),
+    }))
+    .filter((item) => item.amount > 0)
+    .sort((left, right) => right.amount - left.amount),
+);
+
+const annualSubscriptionsSpend = computed(() =>
+  subscriptions.reduce((sum, subscription) => sum + subscription.annualCost, 0),
+);
+
+const recommendedSavings = computed(() => {
+  const divisor = savingsCadence.value === 'monthly' ? 12 : 24;
+  return annualSubscriptionsSpend.value / divisor;
+});
+
+const balanceChartOption = computed(() => ({
+  animationDuration: 350,
+  grid: {
+    left: 12,
+    right: 12,
+    top: 18,
+    bottom: 36,
+    containLabel: true,
   },
-  {
-    title: 'Nueva subscripción premium activada',
-    detail: 'Plan anual aplicado para la organización principal.',
-    status: 'Hace 2 horas',
-    icon: ClockIcon,
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: {
+      type: 'shadow',
+    },
+    backgroundColor: 'var(--app-color-surface)',
+    borderColor: 'var(--app-color-border)',
+    borderWidth: 1,
+    textStyle: {
+      color: 'var(--app-color-text)',
+      fontFamily: 'inherit',
+    },
+    formatter: (params: CallbackDataParams | CallbackDataParams[]) => {
+      const items = Array.isArray(params) ? params : [params];
+      const firstItem = items[0];
+
+      if (!firstItem || typeof firstItem !== 'object' || !('name' in firstItem)) {
+        return '';
+      }
+
+      const value =
+        typeof firstItem.value === 'number'
+          ? firstItem.value
+          : Number(firstItem.value ?? 0);
+
+      return `
+        <div style="min-width: 12rem;">
+          <div style="font-weight: 600; margin-bottom: 0.25rem;">${String(firstItem.name)}</div>
+          <div>Balance: ${formatCurrency(value)}</div>
+        </div>
+      `;
+    },
   },
-];
+  xAxis: {
+    type: 'category',
+    data: accounts.map((account) => shortenLabel(account.name)),
+    axisTick: {
+      show: false,
+    },
+    axisLine: {
+      lineStyle: {
+        color: 'var(--app-color-border)',
+      },
+    },
+    axisLabel: {
+      color: 'var(--app-color-text-subtle)',
+      fontSize: 11,
+    },
+  },
+  yAxis: {
+    type: 'log',
+    logBase: 10,
+    min: 1000,
+    axisLine: {
+      show: false,
+    },
+    splitLine: {
+      lineStyle: {
+        color: 'var(--app-color-border)',
+        opacity: 0.65,
+      },
+    },
+    axisLabel: {
+      color: 'var(--app-color-text-subtle)',
+      formatter: (value: number) => formatCompactCurrency(value),
+    },
+  },
+  series: [
+    {
+      type: 'bar',
+      barMaxWidth: 26,
+      data: accounts.map((account) => ({
+        value: parseCurrency(account.balance),
+        itemStyle: {
+          color: account.color,
+          borderRadius: [10, 10, 0, 0],
+        },
+      })),
+    },
+  ],
+}));
+
+function parseCurrency(value: string): number {
+  return Number(value.replace(/[^0-9.-]/g, '')) || 0;
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatCompactCurrency(value: number): string {
+  if (value >= 100000) {
+    return `$${Math.round(value / 1000)}k`;
+  }
+
+  if (value >= 1000) {
+    return `$${(value / 1000).toFixed(0)}k`;
+  }
+
+  return formatCurrency(value);
+}
+
+function shortenLabel(label: string): string {
+  if (label.length <= 14) {
+    return label;
+  }
+
+  return `${label.slice(0, 12)}…`;
+}
+
+function completePendingAction(): void {}
 </script>
 
 <template>
   <div class="space-y-5">
-    <section class="grid gap-4">
-      <AppCard v-for="metric in metricCards" :key="metric.title" muted class="rounded-3xl">
-        <div class="flex items-start gap-4">
-          <div
-            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--app-color-primary)_12%,transparent)] text-(--app-color-primary)"
-          >
-            <component :is="metric.icon" class="h-6 w-6" />
-          </div>
+    <AppCard class="rounded-3xl">
+      <div class="space-y-4">
+        <div class="space-y-1">
+          <AppTitle as="h2" size="sm">Balance por cuenta</AppTitle>
+          <AppText>
+            Vista comparativa con escala logarítmica para leer cuentas grandes y chicas sin perder
+            proporción.
+          </AppText>
+        </div>
 
-          <div class="min-w-0 space-y-1">
-            <AppText size="sm" tone="subtle">{{ metric.title }}</AppText>
-            <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
-              {{ metric.value }}
-            </p>
-            <AppText size="sm">{{ metric.caption }}</AppText>
-          </div>
+        <VChart :option="balanceChartOption" autoresize class="h-72 w-full" />
+      </div>
+    </AppCard>
+
+    <section class="grid gap-3 sm:grid-cols-3">
+      <AppCard
+        class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-primary)_10%,transparent),transparent)] p-4!"
+      >
+        <div class="space-y-1">
+          <AppText size="sm" tone="subtle">Cuentas activas</AppText>
+          <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
+            {{ activeAccounts.length }}
+          </p>
+        </div>
+      </AppCard>
+
+      <AppCard
+        class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-success)_10%,transparent),transparent)] p-4!"
+      >
+        <div class="space-y-1">
+          <AppText size="sm" tone="subtle">Cuentas compartidas</AppText>
+          <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
+            {{ sharedAccountsCount }}
+          </p>
+        </div>
+      </AppCard>
+
+      <AppCard
+        class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-warning)_10%,transparent),transparent)] p-4!"
+      >
+        <div class="space-y-1">
+          <AppText size="sm" tone="subtle">Por pagar</AppText>
+          <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
+            {{ formatCurrency(totalPendingPayments) }}
+          </p>
         </div>
       </AppCard>
     </section>
 
     <AppCard class="rounded-3xl">
       <div class="space-y-4">
-        <div class="flex items-center justify-between gap-3">
-          <div class="space-y-1">
-            <AppTitle as="h2" size="sm">Distribución</AppTitle>
-            <AppText>Así se reparte el capital disponible entre tus bolsillos activos.</AppText>
-          </div>
-
-          <AppButton variant="outline">Ajustar</AppButton>
+        <div class="space-y-1">
+          <AppTitle as="h2" size="sm">Acciones pendientes</AppTitle>
+          <AppText>Completa pagos pendientes sin salir del tablero principal.</AppText>
         </div>
 
-        <div class="space-y-4">
-          <div v-for="item in distributionItems" :key="item.name" class="space-y-2">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="text-sm font-semibold text-(--app-color-text)">{{ item.name }}</p>
-                <AppText size="sm" tone="subtle">{{ item.amount }}</AppText>
-              </div>
-              <p class="text-sm font-semibold text-(--app-color-text)">{{ item.percentage }}%</p>
-            </div>
+        <div class="space-y-2">
+          <div
+            v-for="action in pendingActions"
+            :key="action.id"
+            class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-xl border bg-(--app-color-surface-muted) px-3 py-3"
+            :style="{ borderColor: 'var(--app-color-border)' }"
+          >
+            <p class="truncate text-sm font-semibold text-(--app-color-text)">
+              {{ action.accountName }}
+            </p>
+            <p class="text-sm font-semibold whitespace-nowrap text-(--app-color-text)">
+              {{ formatCurrency(action.amount) }}
+            </p>
+            <AppButton variant="outline" class="h-9! px-3!" @click="completePendingAction">
+              Completar
+            </AppButton>
+          </div>
 
-            <div class="h-2 rounded-full bg-(--app-color-surface-muted)">
-              <div
-                class="h-2 rounded-full bg-(--app-color-primary)"
-                :style="{ width: `${item.percentage}%` }"
-              />
-            </div>
+          <div
+            v-if="pendingActions.length === 0"
+            class="rounded-xl border border-dashed px-4 py-4 text-center"
+            :style="{ borderColor: 'var(--app-color-border)' }"
+          >
+            <AppText size="sm">No hay acciones pendientes por ahora.</AppText>
           </div>
         </div>
       </div>
     </AppCard>
 
     <AppCard class="rounded-3xl">
-      <div class="space-y-4">
+      <div class="flex items-center justify-between gap-4">
         <div class="space-y-1">
-          <AppTitle as="h2" size="sm">Actividad reciente</AppTitle>
-          <AppText>Eventos importantes del escritorio en las últimas horas.</AppText>
+          <AppTitle as="h2" size="sm">Planeación de subscripciones</AppTitle>
+          <AppText>
+            Cambia la cadencia recomendada para separar el gasto sin acumular golpes fuertes.
+          </AppText>
         </div>
 
-        <div class="space-y-3">
-          <div
-            v-for="activity in recentActivity"
-            :key="activity.title"
-            class="flex gap-3 rounded-2xl border bg-(--app-color-surface-muted) p-4"
-            :style="{ borderColor: 'var(--app-color-border)' }"
-          >
-            <div
-              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-(--app-color-surface) text-(--app-color-primary)"
-            >
-              <component :is="activity.icon" class="h-5 w-5" />
-            </div>
-
-            <div class="min-w-0 space-y-1">
-              <div class="flex items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-(--app-color-text)">
-                  {{ activity.title }}
-                </p>
-                <span class="text-xs font-medium text-(--app-color-text-subtle)">
-                  {{ activity.status }}
-                </span>
-              </div>
-              <AppText size="sm">{{ activity.detail }}</AppText>
-            </div>
-          </div>
-        </div>
+        <AppToggleButton
+          :model-value="savingsCadence"
+          :options="cadenceOptions"
+          @update:model-value="savingsCadence = $event as SavingsCadence"
+        />
       </div>
     </AppCard>
+
+    <section class="grid gap-3 sm:grid-cols-2">
+      <AppCard
+        class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-primary)_8%,transparent),transparent)] p-4!"
+      >
+        <div class="space-y-1">
+          <AppText size="sm" tone="subtle">Gasto anual en subscripciones</AppText>
+          <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
+            {{ formatCurrency(annualSubscriptionsSpend) }}
+          </p>
+        </div>
+      </AppCard>
+
+      <AppCard
+        class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-secondary)_10%,transparent),transparent)] p-4!"
+      >
+        <div class="space-y-1">
+          <AppText size="sm" tone="subtle">
+            Ahorro {{ savingsCadence === 'monthly' ? 'mensual' : 'quincenal' }} recomendado
+          </AppText>
+          <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
+            {{ formatCurrency(recommendedSavings) }}
+          </p>
+        </div>
+      </AppCard>
+    </section>
   </div>
 </template>
