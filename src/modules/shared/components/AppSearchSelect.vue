@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  ChevronDownIcon,
-  MagnifyingGlassIcon,
-  XMarkIcon,
-} from '@heroicons/vue/24/outline';
+import { ChevronDownIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import Multiselect from '@vueform/multiselect';
 
 type SearchSelectOption = {
@@ -60,7 +56,6 @@ function updateValue(nextValue: unknown): void {
       :searchable="true"
       :placeholder="props.placeholder"
       :disabled="props.disabled"
-      :append-to-body="true"
       :close-on-select="true"
       :clear-on-search="false"
       :clear-on-select="false"
@@ -72,25 +67,19 @@ function updateValue(nextValue: unknown): void {
       @update:model-value="updateValue"
     >
       <template #caret>
-        <ChevronDownIcon class="h-5 w-5 text-(--app-color-text-subtle)" />
+        <ChevronDownIcon class="h-5 w-5" />
       </template>
 
       <template #clear="{ clear }">
         <button
           type="button"
-          class="flex items-center text-(--app-color-text-subtle) transition hover:text-(--app-color-text)"
+          class="flex items-center"
           aria-label="Limpiar selección"
           @mousedown.prevent
           @click.prevent="clear"
         >
           <XMarkIcon class="h-4 w-4" />
         </button>
-      </template>
-
-      <template #singlelabel="{ value }">
-        <span class="block max-w-full truncate text-sm text-(--app-color-input-text)">
-          {{ value.label }}
-        </span>
       </template>
 
       <template #option="{ option }">
@@ -106,27 +95,11 @@ function updateValue(nextValue: unknown): void {
           </p>
         </div>
       </template>
-
-      <template #nooptions>
-        <div class="px-3 py-4 text-center text-sm text-(--app-color-text-subtle)">
-          {{ props.emptyMessage }}
-        </div>
-      </template>
-
-      <template #noresults>
-        <div class="px-3 py-4 text-center text-sm text-(--app-color-text-subtle)">
-          {{ props.emptyMessage }}
-        </div>
-      </template>
     </Multiselect>
-
-    <div class="pointer-events-none relative -mt-[3.125rem] ml-3 h-0">
-      <MagnifyingGlassIcon class="h-4 w-4 text-(--app-color-text-subtle)" />
-    </div>
   </div>
 </template>
 
-<style scoped>
+<style>
 .app-search-select {
   --ms-font-size: 0.875rem;
   --ms-line-height: 1.25rem;
@@ -138,7 +111,7 @@ function updateValue(nextValue: unknown): void {
   --ms-border-width-active: 1px;
   --ms-radius: 0.5rem;
   --ms-py: 0.75rem;
-  --ms-px: 0.875rem;
+  --ms-px: 1rem;
   --ms-placeholder-color: var(--app-color-input-placeholder);
   --ms-color: var(--app-color-input-text);
   --ms-caret-color: var(--app-color-text-subtle);
@@ -165,48 +138,48 @@ function updateValue(nextValue: unknown): void {
   --ms-max-height: 14rem;
 }
 
-.app-search-select :deep(.multiselect) {
+.app-search-select .multiselect {
   min-height: 3rem;
   box-shadow: none;
 }
 
-.app-search-select :deep(.multiselect.is-active) {
+.app-search-select .multiselect.is-active {
   box-shadow: 0 0 0 4px var(--app-color-focus-ring);
 }
 
-.app-search-select :deep(.multiselect-placeholder),
-.app-search-select :deep(.multiselect-single-label) {
-  padding-left: 2.35rem;
+.app-search-select .multiselect-search,
+.app-search-select .multiselect-single-label,
+.app-search-select .multiselect-placeholder {
+  padding-left: 1rem;
 }
 
-.app-search-select :deep(.multiselect-search) {
-  padding-left: 2.35rem;
+.app-search-select .multiselect-search::placeholder {
+  color: var(--app-color-input-placeholder);
+  opacity: 1;
+}
+
+.app-search-select .multiselect-search {
   color: var(--app-color-input-text);
 }
 
-.app-search-select :deep(.multiselect-search::placeholder) {
-  color: var(--app-color-input-placeholder);
-}
-
-.app-search-select :deep(.multiselect-caret) {
+.app-search-select .multiselect-caret {
   background: none;
   width: 1.25rem;
   height: 1.25rem;
-  margin-right: 0.75rem;
+  margin-right: 1rem;
 }
 
-.app-search-select :deep(.multiselect-clear) {
-  padding-right: 0.5rem;
+.app-search-select .multiselect-clear {
+  padding-right: 0.75rem;
 }
 
-.app-search-select :deep(.multiselect-option) {
-  border-radius: 0.5rem;
-  margin: 0.125rem 0.5rem;
-}
-
-.app-search-select :deep(.multiselect-dropdown) {
+.app-search-select .multiselect-dropdown {
   margin-top: 0.5rem;
   box-shadow: var(--app-shadow-card);
-  overflow-x: hidden;
+}
+
+.app-search-select .multiselect-option {
+  border-radius: 0.5rem;
+  margin: 0.125rem 0.5rem;
 }
 </style>
