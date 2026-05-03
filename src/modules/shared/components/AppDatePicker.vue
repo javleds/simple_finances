@@ -2,6 +2,7 @@
 import { CalendarDaysIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed } from 'vue';
 import { VueDatePicker } from '@vuepic/vue-datepicker';
+import { useThemeStore } from '@/stores/theme';
 
 defineOptions({
   inheritAttrs: false,
@@ -15,6 +16,7 @@ const props = withDefaults(
     placeholder?: string;
     disabled?: boolean;
     clearable?: boolean;
+    enableTimePicker?: boolean;
     minDate?: Date | string | number;
     maxDate?: Date | string | number;
   }>(),
@@ -24,6 +26,7 @@ const props = withDefaults(
     placeholder: 'Seleccionar fecha',
     disabled: false,
     clearable: true,
+    enableTimePicker: false,
     minDate: undefined,
     maxDate: undefined,
   },
@@ -33,12 +36,22 @@ const emit = defineEmits<{
   'update:modelValue': [value: string | null];
 }>();
 
+const themeStore = useThemeStore();
+
 const dateValue = computed({
   get: () => props.modelValue,
   set: (value: unknown) => {
     emit('update:modelValue', typeof value === 'string' ? value : null);
   },
 });
+
+const datePickerUi = computed(() => ({
+  input: 'app-date-picker__input',
+  menu: props.enableTimePicker
+    ? 'app-date-picker__menu app-date-picker__menu--time-enabled'
+    : 'app-date-picker__menu app-date-picker__menu--time-disabled',
+  calendar: 'app-date-picker__calendar',
+}));
 </script>
 
 <template>
@@ -53,10 +66,12 @@ const dateValue = computed({
       :id="props.id"
       v-model="dateValue"
       class="w-full"
+      :ui="datePickerUi"
+      :dark="themeStore.isDarkMode"
       model-type="yyyy-MM-dd"
       :formats="{ input: 'yyyy-MM-dd' }"
       :teleport="true"
-      :enable-time-picker="false"
+      :time-picker="props.enableTimePicker"
       :auto-apply="true"
       :placeholder="props.placeholder"
       :disabled="props.disabled"
@@ -84,7 +99,7 @@ const dateValue = computed({
   </div>
 </template>
 
-<style scoped>
+<style>
 .app-date-picker {
   --dp-font-family: inherit;
   --dp-font-size: 0.875rem;
@@ -128,11 +143,12 @@ const dateValue = computed({
   --dp-action-row-padding: 0.75rem;
 }
 
-.app-date-picker :deep(.dp__main) {
+.app-date-picker .dp__main {
   width: 100%;
 }
 
-.app-date-picker :deep(.dp__input) {
+.app-date-picker .dp__input,
+.app-date-picker .app-date-picker__input {
   min-height: 3rem;
   box-shadow: none;
   color: var(--app-color-input-text);
@@ -140,61 +156,97 @@ const dateValue = computed({
   border-color: var(--app-color-input-border);
 }
 
-.app-date-picker :deep(.dp__input::placeholder) {
+.app-date-picker .dp__input::placeholder,
+.app-date-picker .app-date-picker__input::placeholder {
   color: var(--app-color-input-placeholder);
   opacity: 1;
 }
 
-.app-date-picker :deep(.dp__input_icon) {
+.app-date-picker .dp__input_icon {
   inset-inline-start: 0.75rem;
 }
 
-.app-date-picker :deep(.dp__input_icons) {
+.app-date-picker .dp__input_icons {
   padding: 0;
   width: 1rem;
   height: 1rem;
 }
 
-.app-date-picker :deep(.dp--clear-btn) {
+.app-date-picker .dp--clear-btn {
   inset-inline-end: 0.75rem;
 }
 
-.app-date-picker :deep(.dp__menu),
-.app-date-picker :deep(.dp__overlay) {
-  background-color: var(--app-color-surface);
+.app-date-picker__menu,
+.app-date-picker__menu .dp__overlay {
+  background-color: var(--app-color-surface-muted);
   color: var(--app-color-text);
   border-color: var(--app-color-border);
 }
 
-.app-date-picker :deep(.dp__calendar_header),
-.app-date-picker :deep(.dp__calendar_item),
-.app-date-picker :deep(.dp__month_year_select),
-.app-date-picker :deep(.dp--year-select),
-.app-date-picker :deep(.dp__selection_preview),
-.app-date-picker :deep(.dp__time_display),
-.app-date-picker :deep(.dp__overlay_cell),
-.app-date-picker :deep(.dp__tooltip_text) {
+.app-date-picker__menu .dp__menu_inner,
+.app-date-picker__menu .dp__calendar,
+.app-date-picker__menu .dp__month_year_row,
+.app-date-picker__menu .dp__action_row,
+.app-date-picker__calendar {
+  background-color: var(--app-color-surface-muted);
+}
+
+.app-date-picker__menu .dp__calendar_header,
+.app-date-picker__menu .dp__calendar_item,
+.app-date-picker__menu .dp__month_year_select,
+.app-date-picker__menu .dp--year-select,
+.app-date-picker__menu .dp__selection_preview,
+.app-date-picker__menu .dp__time_display,
+.app-date-picker__menu .dp__overlay_cell,
+.app-date-picker__menu .dp__tooltip_text,
+.app-date-picker__menu .dp__action_cancel {
   color: var(--app-color-text);
 }
 
-.app-date-picker :deep(.dp__cell_offset),
-.app-date-picker :deep(.dp__week_num),
-.app-date-picker :deep(.dp__calendar_header_item),
-.app-date-picker :deep(.dp__action_cancel),
-.app-date-picker :deep(.dp__secondary-color) {
+.app-date-picker__menu .dp__cell_offset,
+.app-date-picker__menu .dp__week_num,
+.app-date-picker__menu .dp__calendar_header_item {
   color: var(--app-color-text-subtle);
 }
 
-.app-date-picker :deep(.dp__input:focus),
-.app-date-picker :deep(.dp__input_focus) {
+.app-date-picker__menu .dp__today {
+  border-color: var(--app-color-primary);
+  color: var(--app-color-primary);
+}
+
+.app-date-picker__menu .dp__active_date,
+.app-date-picker__menu .dp__range_start,
+.app-date-picker__menu .dp__range_end,
+.app-date-picker__menu .dp__action_buttons .dp__action_select {
+  background-color: var(--app-color-primary);
+  color: var(--app-color-primary-foreground);
+}
+
+.app-date-picker__menu .dp__range_between {
+  background-color: color-mix(in srgb, var(--app-color-primary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--app-color-primary) 12%, transparent);
+  color: var(--app-color-text);
+}
+
+.app-date-picker .dp__input:focus,
+.app-date-picker .dp__input_focus,
+.app-date-picker .app-date-picker__input:focus {
   box-shadow: 0 0 0 4px var(--app-color-focus-ring);
 }
 
-.app-date-picker :deep(.dp__menu) {
+.app-date-picker__menu {
   box-shadow: var(--app-shadow-card);
 }
 
-.app-date-picker :deep(.dp__action_button) {
+.app-date-picker__menu .dp__action_button {
   font-size: 0.75rem;
+}
+
+.app-date-picker__menu--time-disabled .dp__tp-wrap,
+.app-date-picker__menu--time-disabled .dp__time_picker_inline_container,
+.app-date-picker__menu--time-disabled .dp__time_picker_overlay_container,
+.app-date-picker__menu--time-disabled [data-test-id='open-time-picker-btn'],
+.app-date-picker__menu--time-disabled [data-test-id='close-time-picker-btn'] {
+  display: none;
 }
 </style>
