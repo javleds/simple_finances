@@ -6,11 +6,12 @@ import {
   PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import AccountsForm from '@/modules/accounts/components/AccountsForm.vue';
 import AccountListItem from '@/modules/accounts/components/AccountListItem.vue';
-import { accounts } from '@/modules/accounts/data/accounts';
+import { useAccountsCrud } from '@/modules/accounts/composables/useAccountsCrud';
+import type { AccountStatus, AccountWritePayload } from '@/modules/accounts/types';
 import {
   AppButton,
   AppIconButton,
@@ -20,20 +21,44 @@ import {
   AppTitle,
 } from '@/modules/shared/components';
 
+type FormState = {
+  canSubmit: boolean;
+  isSubmitting: boolean;
+};
+
 const searchTerm = ref('');
 const isCreateAccountOpen = ref(false);
 const isDeleteAccountOpen = ref(false);
 const isEditAccountOpen = ref(false);
 const isFiltersOpen = ref(false);
-const selectedStatuses = ref<string[]>([]);
+const selectedStatuses = ref<AccountStatus[]>([]);
 const selectedAccountId = ref<string | null>(null);
+const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 
 const statusOptions = ['Activo', 'Inactivo'] as const;
+
+const {
+  accounts,
+  hasAccounts,
+  isLoading,
+  isSaving,
+  isDeleting,
+  loadError,
+  saveError,
+  deleteError,
+  clearSaveError,
+  clearDeleteError,
+  loadAccounts,
+  createAccount,
+  updateAccount,
+  deleteAccount,
+} = useAccountsCrud();
 
 const filteredAccounts = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
-  return accounts.filter((account) => {
+  return accounts.value.filter((account) => {
     const matchesQuery = account.name.toLowerCase().includes(normalizedQuery);
 
     if (!matchesQuery) {
@@ -53,26 +78,48 @@ const selectedAccount = computed(() => {
     return null;
   }
 
-  return accounts.find((account) => account.id === selectedAccountId.value) ?? null;
+  return accounts.value.find((account) => account.id === selectedAccountId.value) ?? null;
 });
 
-const selectedAccountFormValues = computed(() => {
-  if (!selectedAccount.value) {
-    return null;
-  }
+const createAccountActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'submit-account',
+    label: isSaving.value ? 'Guardando...' : 'Crear cuenta',
+    tone: 'primary' as const,
+    type: 'submit' as const,
+    form: 'account-form',
+    disabled: !createFormState.value.canSubmit || isSaving.value,
+  },
+]);
 
-  return {
-    name: selectedAccount.value.name,
-    color: selectedAccount.value.color,
-    description: selectedAccount.value.description,
-    isVirtual: selectedAccount.value.isVirtual,
-    isCredit: selectedAccount.value.accountType === 'credito',
-    creditLine: parseCurrencyValue(selectedAccount.value.creditLine),
-    closingDay: 15,
-  };
+const editAccountActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'submit-edit-account',
+    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
+    tone: 'primary' as const,
+    type: 'submit' as const,
+    form: 'edit-account-form',
+    disabled: !editFormState.value.canSubmit || isSaving.value,
+  },
+]);
+
+const deleteAccountActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'confirm-delete-account',
+    label: isDeleting.value ? 'Eliminando...' : 'Eliminar cuenta',
+    tone: 'primary' as const,
+    disabled: !selectedAccount.value || isDeleting.value,
+  },
+]);
+
+onMounted(() => {
+  void loadAccounts();
 });
 
-function toggleStatus(status: string): void {
+function toggleStatus(status: AccountStatus): void {
   if (selectedStatuses.value.includes(status)) {
     selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
     return;
@@ -86,24 +133,31 @@ function openFilters(): void {
 }
 
 function openCreateAccount(): void {
+  clearSaveError();
+  createFormState.value = { canSubmit: false, isSubmitting: false };
   isCreateAccountOpen.value = true;
 }
 
 function closeCreateAccount(): void {
   isCreateAccountOpen.value = false;
+  clearSaveError();
 }
 
 function openEditAccount(accountId: string): void {
+  clearSaveError();
   selectedAccountId.value = accountId;
+  editFormState.value = { canSubmit: false, isSubmitting: false };
   isEditAccountOpen.value = true;
 }
 
 function closeEditAccount(): void {
   isEditAccountOpen.value = false;
   selectedAccountId.value = null;
+  clearSaveError();
 }
 
 function openDeleteAccount(accountId: string): void {
+  clearDeleteError();
   selectedAccountId.value = accountId;
   isDeleteAccountOpen.value = true;
 }
@@ -111,6 +165,7 @@ function openDeleteAccount(accountId: string): void {
 function closeDeleteAccount(): void {
   isDeleteAccountOpen.value = false;
   selectedAccountId.value = null;
+  clearDeleteError();
 }
 
 function closeFilters(): void {
@@ -132,27 +187,44 @@ function handleFiltersModalAction(actionKey: string): void {
   }
 }
 
-function handleCreateAccountSubmit(): void {
-  closeCreateAccount();
+async function handleCreateAccountSubmit(payload: AccountWritePayload): Promise<void> {
+  const wasCreated = await createAccount(payload);
+
+  if (wasCreated) {
+    closeCreateAccount();
+  }
 }
 
-function handleEditAccountSubmit(): void {
-  closeEditAccount();
-}
-
-function confirmDeleteAccount(): void {
-  closeDeleteAccount();
-}
-
-function parseCurrencyValue(value: string): number | null {
-  const normalizedValue = value.replace(/[^0-9.-]/g, '');
-  const nextValue = Number(normalizedValue);
-
-  if (Number.isNaN(nextValue)) {
-    return null;
+async function handleEditAccountSubmit(payload: AccountWritePayload): Promise<void> {
+  if (!selectedAccount.value) {
+    return;
   }
 
-  return nextValue;
+  const wasUpdated = await updateAccount(selectedAccount.value.id, payload);
+
+  if (wasUpdated) {
+    closeEditAccount();
+  }
+}
+
+async function confirmDeleteAccount(): Promise<void> {
+  if (!selectedAccount.value) {
+    return;
+  }
+
+  const wasDeleted = await deleteAccount(selectedAccount.value.id);
+
+  if (wasDeleted) {
+    closeDeleteAccount();
+  }
+}
+
+function handleCreateFormStateChange(state: FormState): void {
+  createFormState.value = state;
+}
+
+function handleEditFormStateChange(state: FormState): void {
+  editFormState.value = state;
 }
 </script>
 
@@ -190,7 +262,29 @@ function parseCurrencyValue(value: string): number | null {
       </AppIconButton>
     </div>
 
-    <section class="space-y-3">
+    <section v-if="loadError && hasAccounts" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+      <AppText class="text-(--app-color-danger)!">
+        {{ loadError }}
+      </AppText>
+    </section>
+
+    <section v-if="isLoading && !hasAccounts" class="rounded-2xl border px-4 py-10 text-center">
+      <AppText>Cargando cuentas...</AppText>
+    </section>
+
+    <section
+      v-else-if="loadError && !hasAccounts"
+      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    >
+      <AppText>{{ loadError }}</AppText>
+      <div class="flex justify-center">
+        <AppButton variant="outline" @click="loadAccounts">
+          Reintentar
+        </AppButton>
+      </div>
+    </section>
+
+    <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle"> {{ filteredAccounts.length }} cuentas visibles </AppText>
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
@@ -204,6 +298,16 @@ function parseCurrencyValue(value: string): number | null {
           @delete="openDeleteAccount"
           @edit="openEditAccount"
         />
+
+        <div
+          v-if="filteredAccounts.length === 0"
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm">
+            No hay cuentas que coincidan con la búsqueda o los filtros actuales.
+          </AppText>
+        </div>
 
         <div
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
@@ -255,67 +359,52 @@ function parseCurrencyValue(value: string): number | null {
 
     <AppModal
       :open="isCreateAccountOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        {
-          key: 'submit-account',
-          label: 'Crear cuenta',
-          tone: 'primary',
-          type: 'submit',
-          form: 'account-form',
-        },
-      ]"
+      :actions="createAccountActions"
       title="Nueva cuenta"
       variant="default"
       @close="closeCreateAccount"
     >
-      <AccountsForm form-id="account-form" @submit="handleCreateAccountSubmit" />
+      <AccountsForm
+        form-id="account-form"
+        :server-error="saveError"
+        @state-change="handleCreateFormStateChange"
+        @submit="handleCreateAccountSubmit"
+      />
     </AppModal>
 
     <AppModal
       :open="isEditAccountOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        {
-          key: 'submit-edit-account',
-          label: 'Guardar cambios',
-          tone: 'primary',
-          type: 'submit',
-          form: 'edit-account-form',
-        },
-      ]"
+      :actions="editAccountActions"
       title="Editar cuenta"
       variant="default"
       @close="closeEditAccount"
     >
       <AccountsForm
-        v-if="selectedAccountFormValues"
+        v-if="selectedAccount"
         form-id="edit-account-form"
-        :initial-values="selectedAccountFormValues"
+        :initial-values="selectedAccount"
+        :server-error="saveError"
+        @state-change="handleEditFormStateChange"
         @submit="handleEditAccountSubmit"
       />
     </AppModal>
 
     <AppModal
       :open="isDeleteAccountOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        {
-          key: 'confirm-delete-account',
-          label: 'Eliminar cuenta',
-          tone: 'primary',
-        },
-      ]"
+      :actions="deleteAccountActions"
       title="Eliminar cuenta"
       variant="danger"
       @action="$event === 'confirm-delete-account' && confirmDeleteAccount()"
       @close="closeDeleteAccount"
     >
       <div class="space-y-3">
-        <AppText>
+        <AppText v-if="selectedAccount">
           Vas a eliminar
-          <strong>{{ selectedAccount?.name }}</strong
+          <strong>{{ selectedAccount.name }}</strong
           >.
+        </AppText>
+        <AppText v-if="deleteError" class="text-(--app-color-danger)!">
+          {{ deleteError }}
         </AppText>
         <AppText size="sm" tone="subtle">
           Esta acción seguirá el mismo flujo de confirmación antes de conectarse a persistencia

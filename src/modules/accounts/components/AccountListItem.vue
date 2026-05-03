@@ -2,11 +2,11 @@
 import { ChevronRightIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
 
-import type { AccountRecord } from '@/modules/accounts/data/accounts';
+import type { Account } from '@/modules/accounts/types';
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 const props = defineProps<{
-  account: AccountRecord;
+  account: Account;
 }>();
 
 const emit = defineEmits<{
@@ -16,7 +16,16 @@ const emit = defineEmits<{
 
 const router = useRouter();
 
-function statusClasses(status: AccountRecord['status']): string {
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function statusClasses(status: Account['status']): string {
   if (status === 'Activo') {
     return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
   }
@@ -52,7 +61,7 @@ function openAccountDetails(): void {
     <div
       class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
       :style="{
-        background: `linear-gradient(90deg, color-mix(in srgb, ${props.account.color} 14%, transparent), transparent 78%)`,
+        background: `linear-gradient(90deg, color-mix(in srgb, ${props.account.color ?? '#94A3B8'} 14%, transparent), transparent 78%)`,
       }"
     />
 
@@ -91,7 +100,7 @@ function openAccountDetails(): void {
         <p
           class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap text-(--app-color-text) tabular-nums sm:text-base"
         >
-          {{ props.account.balance }}
+          {{ formatCurrency(props.account.balance) }}
         </p>
       </div>
     </div>
