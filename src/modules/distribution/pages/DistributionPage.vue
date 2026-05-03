@@ -207,30 +207,6 @@ function confirmDeleteRule(): void {
 <template>
   <div class="space-y-5">
     <AppCard class="rounded-3xl">
-      <div class="flex items-start justify-between gap-4">
-        <div class="space-y-1">
-          <AppText size="sm" tone="subtle">Motor de reglas</AppText>
-          <AppTitle as="h2" size="sm">Distribución automática</AppTitle>
-          <AppText> Define cómo se reparte el flujo disponible entre las cuentas destino. </AppText>
-        </div>
-
-        <div
-          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--app-color-primary)_12%,transparent)] text-(--app-color-primary)"
-        >
-          <FunnelIcon class="h-6 w-6" />
-        </div>
-      </div>
-
-      <div class="mt-5 flex items-center gap-3">
-        <AppButton variant="primary">
-          <PlayCircleIcon class="mr-2 h-4 w-4" />
-          Ejecutar ahora
-        </AppButton>
-        <AppButton variant="outline">Editar reglas</AppButton>
-      </div>
-    </AppCard>
-
-    <AppCard class="rounded-3xl">
       <div class="flex items-center justify-between gap-3">
         <div class="space-y-1">
           <AppTitle as="h2" size="sm">Canales activos</AppTitle>

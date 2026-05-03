@@ -68,54 +68,6 @@ const recentActivity = [
 
 <template>
   <div class="space-y-5">
-    <AppCard class="overflow-hidden p-0!">
-      <div class="relative px-5 py-6 sm:px-6">
-        <div
-          class="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,var(--app-color-primary),color-mix(in_srgb,var(--app-color-primary)_58%,white))] opacity-95"
-        />
-        <div class="relative space-y-4">
-          <div class="flex items-start justify-between gap-4">
-            <div class="space-y-1">
-              <AppText size="sm" tone="subtle" class="text-(--app-color-primary-foreground)/80!">
-                Resumen de hoy
-              </AppText>
-              <AppTitle as="h2" size="sm" class="text-(--app-color-primary-foreground)!">
-                Tu escritorio financiero
-              </AppTitle>
-            </div>
-
-            <div
-              class="rounded-2xl border border-white/20 bg-white/10 px-3 py-2 text-right backdrop-blur"
-            >
-              <p class="text-xs font-medium text-(--app-color-primary-foreground)/75">
-                Próximo corte
-              </p>
-              <p class="text-sm font-semibold text-(--app-color-primary-foreground)">Hoy 18:00</p>
-            </div>
-          </div>
-
-          <div
-            class="rounded-3xl border border-white/15 bg-(--app-color-surface)/96 p-4 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]"
-          >
-            <div class="flex items-end justify-between gap-4">
-              <div>
-                <AppText size="sm" tone="subtle">Balance consolidado</AppText>
-                <p class="mt-2 text-3xl font-semibold tracking-tight text-(--app-color-text)">
-                  $481,912
-                </p>
-              </div>
-
-              <span
-                class="rounded-full bg-emerald-500/12 px-3 py-1 text-xs font-semibold text-emerald-600"
-              >
-                +12.8%
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </AppCard>
-
     <section class="grid gap-4">
       <AppCard v-for="metric in metricCards" :key="metric.title" muted class="rounded-3xl">
         <div class="flex items-start gap-4">
