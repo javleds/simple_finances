@@ -18,6 +18,7 @@ const props = withDefaults(
     searchPlaceholder?: string;
     emptyMessage?: string;
     disabled?: boolean;
+    openDirection?: 'top' | 'bottom';
   }>(),
   {
     label: undefined,
@@ -25,6 +26,7 @@ const props = withDefaults(
     searchPlaceholder: 'Buscar opción',
     emptyMessage: 'No hay resultados disponibles.',
     disabled: false,
+    openDirection: 'top',
   },
 );
 
@@ -55,6 +57,7 @@ function updateValue(nextValue: unknown): void {
       track-by="label"
       :searchable="true"
       :placeholder="props.placeholder"
+      :open-direction="props.openDirection"
       :disabled="props.disabled"
       :close-on-select="true"
       :clear-on-search="false"

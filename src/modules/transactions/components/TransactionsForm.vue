@@ -298,6 +298,7 @@ function submitForm(): void {
         v-model="state.financialGoalId"
         label="Meta financiera"
         :options="financialGoalOptions"
+        open-direction="top"
         placeholder="Sin meta financiera"
         search-placeholder="Buscar meta financiera"
         empty-message="No encontramos metas con ese criterio. Puedes guardar la transacción sin asociarla."
