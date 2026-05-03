@@ -1,0 +1,44 @@
+@startuml
+title CRUD Module Flow
+
+actor User
+
+rectangle "Page" {
+  [AccountsPage.vue]
+}
+
+rectangle "Form Layer" {
+  [AccountsForm.vue]
+  [useAccountForm.ts]
+  [accountFormSchema]
+}
+
+rectangle "State Layer" {
+  [useAccountsCrud.ts]
+}
+
+rectangle "Data Layer" {
+  [accountsRepository.ts]
+  [accountApiSchema]
+  [apiClient.ts]
+}
+
+database "Backend API" {
+  [REST endpoints]
+}
+
+User --> [AccountsPage.vue]
+[AccountsPage.vue] --> [AccountsForm.vue] : props\ninitialValues\nserverError
+[AccountsForm.vue] --> [useAccountForm.ts]
+[useAccountForm.ts] --> [accountFormSchema]
+[AccountsForm.vue] --> [AccountsPage.vue] : submit\nstateChange
+
+[AccountsPage.vue] --> [useAccountsCrud.ts] : load/create/update/delete
+[useAccountsCrud.ts] --> [accountsRepository.ts]
+[accountsRepository.ts] --> [apiClient.ts]
+[accountsRepository.ts] --> [accountApiSchema]
+[apiClient.ts] --> [REST endpoints]
+
+[useAccountsCrud.ts] --> [AccountsPage.vue] : entities\nloading\nerrors
+
+@enduml
