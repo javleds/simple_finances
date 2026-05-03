@@ -47,6 +47,24 @@ Barrel export:
 
 When a feature needs icons, use `@heroicons/vue` as the default icon library.
 
+## Preferred Feature Libraries
+
+When a new feature needs one of these capabilities, prefer these installed libraries before introducing alternatives:
+
+- Date picker: use `@vuepic/vue-datepicker`.
+  Prefer it for date selection inside forms and modals. It supports teleport/overlay scenarios and can be themed to match the app.
+
+- Searchable select / single select with search: use `@vueform/multiselect`.
+  Prefer it for searchable selectors such as financial goals and similar fields that need option filtering inside forms or modals.
+
+- Form validation: use `vee-validate` with `zod` and `@vee-validate/zod`.
+  Prefer this stack for new form validation work, including required fields, typed schemas, error messages, and integration with existing Vue form components.
+
+- Charts: use `vue-echarts` with `echarts`.
+  Prefer this stack for dashboard charts, especially bar charts and other analytic visualizations that need theming and responsive behavior.
+
+Before adding a different library for any of these concerns, justify why the installed option is not a fit.
+
 ## Maintenance Rule
 
 Whenever a new reusable shared component is created, update this file in the same task so the index stays current.
