@@ -3,6 +3,7 @@ import { UserGroupIcon } from '@heroicons/vue/24/outline';
 import { computed, reactive, watch } from 'vue';
 
 import {
+  AppDatePicker,
   AppInput,
   AppPercentageSplitEditor,
   AppSearchSelect,
@@ -281,7 +282,13 @@ function submitForm(): void {
           </section>
         </div>
 
-        <AppInput id="transaction-date" v-model="state.date" label="Fecha" type="date" required />
+        <AppDatePicker
+          id="transaction-date"
+          v-model="state.date"
+          label="Fecha"
+          placeholder="AAAA-MM-DD"
+          required
+        />
       </div>
     </section>
 

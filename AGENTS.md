@@ -16,6 +16,8 @@ Current shared components:
   Path: `src/modules/shared/components/AppCard.vue`
 - `AppContextTabs`: contextual horizontal tabs with optional icons and configurable top or bottom active indicator.
   Path: `src/modules/shared/components/AppContextTabs.vue`
+- `AppDatePicker`: app-styled wrapper around `@vuepic/vue-datepicker` for date fields that need to work well inside forms and modals.
+  Path: `src/modules/shared/components/AppDatePicker.vue`
 - `AppIconButton`: compact circular button for icon-only actions.
   Path: `src/modules/shared/components/AppIconButton.vue`
 - `AppInput`: labeled input wrapper compatible with native input attributes via `$attrs`.
@@ -28,7 +30,7 @@ Current shared components:
   Path: `src/modules/shared/components/AppPasswordInput.vue`
 - `AppPercentageSplitEditor`: interactive horizontal percentage splitter with drag handles and exact numeric adjustment that keeps the total at 100%.
   Path: `src/modules/shared/components/AppPercentageSplitEditor.vue`
-- `AppSearchSelect`: single-select searchable dropdown styled as an input, with option filtering and one-item selection.
+- `AppSearchSelect`: app-styled single-select searchable dropdown wrapper built on `@vueform/multiselect`.
   Path: `src/modules/shared/components/AppSearchSelect.vue`
 - `AppSwitch`: boolean on/off switch for compact settings and per-item activation controls.
   Path: `src/modules/shared/components/AppSwitch.vue`

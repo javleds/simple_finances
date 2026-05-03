@@ -1,6 +1,8 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import './main.css';
+import '@vueform/multiselect/themes/default.css';
+import '@vuepic/vue-datepicker/dist/main.css';
 
 import App from './App.vue';
 import router from './router';

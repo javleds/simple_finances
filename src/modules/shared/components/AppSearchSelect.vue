@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import {
-  CheckIcon,
   ChevronDownIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import Multiselect from '@vueform/multiselect';
 
 type SearchSelectOption = {
   value: string;
@@ -37,208 +36,177 @@ const emit = defineEmits<{
   'update:modelValue': [value: string | null];
 }>();
 
-const isOpen = ref(false);
-const searchTerm = ref('');
-const rootRef = ref<HTMLElement | null>(null);
-const searchInputRef = ref<HTMLInputElement | null>(null);
-
-const selectedOption = computed(() => {
-  if (!props.modelValue) {
-    return null;
-  }
-
-  return props.options.find((option) => option.value === props.modelValue) ?? null;
-});
-
-const filteredOptions = computed(() => {
-  const normalizedQuery = searchTerm.value.trim().toLowerCase();
-
-  if (!normalizedQuery) {
-    return props.options;
-  }
-
-  return props.options.filter((option) => {
-    const matchesLabel = option.label.toLowerCase().includes(normalizedQuery);
-    const matchesDescription = option.description?.toLowerCase().includes(normalizedQuery) ?? false;
-
-    return matchesLabel || matchesDescription;
-  });
-});
-
-watch(isOpen, async (nextIsOpen) => {
-  if (!nextIsOpen) {
-    searchTerm.value = '';
-    return;
-  }
-
-  await nextTick();
-  searchInputRef.value?.focus();
-});
-
-function toggleOptions(): void {
-  if (props.disabled) {
-    return;
-  }
-
-  isOpen.value = !isOpen.value;
+function updateValue(nextValue: unknown): void {
+  emit('update:modelValue', typeof nextValue === 'string' ? nextValue : null);
 }
-
-function closeOptions(): void {
-  isOpen.value = false;
-}
-
-function selectOption(optionValue: string): void {
-  emit('update:modelValue', optionValue);
-  closeOptions();
-}
-
-function clearSelection(): void {
-  emit('update:modelValue', null);
-  closeOptions();
-}
-
-function handleDocumentPointerDown(event: PointerEvent): void {
-  if (!rootRef.value) {
-    return;
-  }
-
-  if (rootRef.value.contains(event.target as Node)) {
-    return;
-  }
-
-  closeOptions();
-}
-
-function handleEscapeKey(event: KeyboardEvent): void {
-  if (event.key !== 'Escape') {
-    return;
-  }
-
-  closeOptions();
-}
-
-if (typeof document !== 'undefined') {
-  document.addEventListener('pointerdown', handleDocumentPointerDown);
-  document.addEventListener('keydown', handleEscapeKey);
-}
-
-onBeforeUnmount(() => {
-  if (typeof document === 'undefined') {
-    return;
-  }
-
-  document.removeEventListener('pointerdown', handleDocumentPointerDown);
-  document.removeEventListener('keydown', handleEscapeKey);
-});
 </script>
 
 <template>
-  <div ref="rootRef" class="space-y-2.5">
+  <div class="app-search-select space-y-2.5">
     <div v-if="props.label" class="flex min-h-5 items-center">
       <label :for="props.id" class="text-sm font-medium text-(--app-color-label)">
         {{ props.label }}
       </label>
     </div>
 
-    <div class="relative">
-      <button
-        :id="props.id"
-        type="button"
-        class="flex h-12 w-full items-center justify-between gap-3 rounded-lg border border-(--app-color-input-border) bg-(--app-color-input-bg) px-4 text-left text-sm text-(--app-color-input-text) transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-        :class="isOpen ? 'border-(--app-color-primary)' : ''"
-        :disabled="props.disabled"
-        :aria-expanded="isOpen"
-        aria-haspopup="listbox"
-        @click="toggleOptions"
-      >
-        <span
-          class="min-w-0 flex-1 truncate"
-          :class="
-            selectedOption
-              ? 'text-(--app-color-input-text)'
-              : 'text-(--app-color-input-placeholder)'
-          "
+    <Multiselect
+      :id="props.id"
+      :model-value="props.modelValue"
+      mode="single"
+      :options="props.options as SearchSelectOption[]"
+      value-prop="value"
+      label="label"
+      track-by="label"
+      :searchable="true"
+      :placeholder="props.placeholder"
+      :disabled="props.disabled"
+      :append-to-body="true"
+      :close-on-select="true"
+      :clear-on-search="false"
+      :clear-on-select="false"
+      :clear-on-blur="false"
+      :can-clear="true"
+      :can-deselect="true"
+      :no-options-text="props.emptyMessage"
+      :no-results-text="props.emptyMessage"
+      @update:model-value="updateValue"
+    >
+      <template #caret>
+        <ChevronDownIcon class="h-5 w-5 text-(--app-color-text-subtle)" />
+      </template>
+
+      <template #clear="{ clear }">
+        <button
+          type="button"
+          class="flex items-center text-(--app-color-text-subtle) transition hover:text-(--app-color-text)"
+          aria-label="Limpiar selección"
+          @mousedown.prevent
+          @click.prevent="clear"
         >
-          {{ selectedOption?.label ?? props.placeholder }}
+          <XMarkIcon class="h-4 w-4" />
+        </button>
+      </template>
+
+      <template #singlelabel="{ value }">
+        <span class="block max-w-full truncate text-sm text-(--app-color-input-text)">
+          {{ value.label }}
         </span>
+      </template>
 
-        <ChevronDownIcon
-          class="h-5 w-5 shrink-0 text-(--app-color-text-subtle) transition"
-          :class="isOpen ? 'rotate-180' : ''"
-        />
-      </button>
-
-      <div
-        v-if="isOpen"
-        class="absolute inset-x-0 top-[calc(100%+0.5rem)] z-20 space-y-3 rounded-xl border bg-(--app-color-surface) p-3 shadow-(--app-shadow-card)"
-        :style="{ borderColor: 'var(--app-color-border)' }"
-      >
-        <div class="relative">
-          <div
-            class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-(--app-color-text-subtle)"
+      <template #option="{ option }">
+        <div class="min-w-0 space-y-0.5">
+          <p class="truncate text-sm font-semibold text-(--app-color-text)">
+            {{ option.label }}
+          </p>
+          <p
+            v-if="option.description"
+            class="line-clamp-2 text-xs leading-5 text-(--app-color-text-subtle)"
           >
-            <MagnifyingGlassIcon class="h-4 w-4" />
-          </div>
-
-          <input
-            ref="searchInputRef"
-            type="text"
-            :placeholder="props.searchPlaceholder"
-            :value="searchTerm"
-            class="h-11 w-full rounded-lg border border-(--app-color-input-border) bg-(--app-color-input-bg) pr-10 pl-9 text-sm text-(--app-color-input-text) transition outline-none placeholder:text-(--app-color-input-placeholder) focus:border-(--app-color-primary) focus:ring-4 focus:ring-(--app-color-focus-ring)"
-            @input="searchTerm = ($event.target as HTMLInputElement).value"
-          />
-
-          <button
-            v-if="props.modelValue"
-            type="button"
-            class="absolute inset-y-0 right-2 flex items-center text-(--app-color-text-subtle) transition hover:text-(--app-color-text)"
-            aria-label="Limpiar selección"
-            @click="clearSelection"
-          >
-            <XMarkIcon class="h-4 w-4" />
-          </button>
+            {{ option.description }}
+          </p>
         </div>
+      </template>
 
-        <div class="max-h-56 overflow-y-auto">
-          <div v-if="filteredOptions.length === 0" class="rounded-lg px-3 py-4 text-center">
-            <p class="text-sm text-(--app-color-text-subtle)">
-              {{ props.emptyMessage }}
-            </p>
-          </div>
-
-          <div v-else class="space-y-2">
-            <button
-              v-for="option in filteredOptions"
-              :key="option.value"
-              type="button"
-              class="flex w-full items-start justify-between gap-3 rounded-lg border px-3 py-3 text-left transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-              :class="
-                props.modelValue === option.value
-                  ? 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-                  : 'bg-transparent text-(--app-color-text-subtle) hover:bg-(--app-color-surface-muted) hover:text-(--app-color-text)'
-              "
-              :style="{ borderColor: 'var(--app-color-border)' }"
-              @click="selectOption(option.value)"
-            >
-              <div class="min-w-0 flex-1 space-y-1">
-                <p class="truncate text-sm font-semibold">{{ option.label }}</p>
-                <p
-                  v-if="option.description"
-                  class="text-sm leading-5 text-(--app-color-text-subtle)"
-                >
-                  {{ option.description }}
-                </p>
-              </div>
-
-              <CheckIcon
-                v-if="props.modelValue === option.value"
-                class="mt-0.5 h-5 w-5 shrink-0 text-(--app-color-primary)"
-              />
-            </button>
-          </div>
+      <template #nooptions>
+        <div class="px-3 py-4 text-center text-sm text-(--app-color-text-subtle)">
+          {{ props.emptyMessage }}
         </div>
-      </div>
+      </template>
+
+      <template #noresults>
+        <div class="px-3 py-4 text-center text-sm text-(--app-color-text-subtle)">
+          {{ props.emptyMessage }}
+        </div>
+      </template>
+    </Multiselect>
+
+    <div class="pointer-events-none relative -mt-[3.125rem] ml-3 h-0">
+      <MagnifyingGlassIcon class="h-4 w-4 text-(--app-color-text-subtle)" />
     </div>
   </div>
 </template>
+
+<style scoped>
+.app-search-select {
+  --ms-font-size: 0.875rem;
+  --ms-line-height: 1.25rem;
+  --ms-bg: var(--app-color-input-bg);
+  --ms-bg-disabled: var(--app-color-surface-muted);
+  --ms-border-color: var(--app-color-input-border);
+  --ms-border-color-active: var(--app-color-primary);
+  --ms-border-width: 1px;
+  --ms-border-width-active: 1px;
+  --ms-radius: 0.5rem;
+  --ms-py: 0.75rem;
+  --ms-px: 0.875rem;
+  --ms-placeholder-color: var(--app-color-input-placeholder);
+  --ms-color: var(--app-color-input-text);
+  --ms-caret-color: var(--app-color-text-subtle);
+  --ms-clear-color: var(--app-color-text-subtle);
+  --ms-clear-color-hover: var(--app-color-text);
+  --ms-spinner-color: var(--app-color-primary);
+  --ms-ring-width: 4px;
+  --ms-ring-color: var(--app-color-focus-ring);
+  --ms-dropdown-bg: var(--app-color-surface);
+  --ms-dropdown-border-color: var(--app-color-border);
+  --ms-dropdown-border-width: 1px;
+  --ms-dropdown-radius: 0.75rem;
+  --ms-option-font-size: 0.875rem;
+  --ms-option-line-height: 1.25rem;
+  --ms-option-py: 0.75rem;
+  --ms-option-px: 0.875rem;
+  --ms-option-bg-pointed: var(--app-color-surface-muted);
+  --ms-option-color-pointed: var(--app-color-text);
+  --ms-option-bg-selected: color-mix(in srgb, var(--app-color-primary) 10%, transparent);
+  --ms-option-color-selected: var(--app-color-text);
+  --ms-option-bg-selected-pointed: color-mix(in srgb, var(--app-color-primary) 14%, transparent);
+  --ms-option-color-selected-pointed: var(--app-color-text);
+  --ms-empty-color: var(--app-color-text-subtle);
+  --ms-max-height: 14rem;
+}
+
+.app-search-select :deep(.multiselect) {
+  min-height: 3rem;
+  box-shadow: none;
+}
+
+.app-search-select :deep(.multiselect.is-active) {
+  box-shadow: 0 0 0 4px var(--app-color-focus-ring);
+}
+
+.app-search-select :deep(.multiselect-placeholder),
+.app-search-select :deep(.multiselect-single-label) {
+  padding-left: 2.35rem;
+}
+
+.app-search-select :deep(.multiselect-search) {
+  padding-left: 2.35rem;
+  color: var(--app-color-input-text);
+}
+
+.app-search-select :deep(.multiselect-search::placeholder) {
+  color: var(--app-color-input-placeholder);
+}
+
+.app-search-select :deep(.multiselect-caret) {
+  background: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.75rem;
+}
+
+.app-search-select :deep(.multiselect-clear) {
+  padding-right: 0.5rem;
+}
+
+.app-search-select :deep(.multiselect-option) {
+  border-radius: 0.5rem;
+  margin: 0.125rem 0.5rem;
+}
+
+.app-search-select :deep(.multiselect-dropdown) {
+  margin-top: 0.5rem;
+  box-shadow: var(--app-shadow-card);
+  overflow-x: hidden;
+}
+</style>
