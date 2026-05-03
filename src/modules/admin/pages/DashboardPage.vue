@@ -32,9 +32,19 @@ type SubscriptionSummary = {
 
 type PendingTransactionItem = {
   id: string;
+  accountId: string;
   accountName: string;
   concept: string;
   amount: number;
+  date: string;
+};
+
+type PendingTransactionGroup = {
+  accountId: string;
+  accountName: string;
+  accountColor: string;
+  totalAmount: number;
+  items: PendingTransactionItem[];
 };
 
 const savingsCadence = ref<SavingsCadence>('monthly');
@@ -66,6 +76,15 @@ const subscriptions: SubscriptionSummary[] = [
   },
 ];
 
+const pendingTransactionDates = [
+  '2026-05-02T10:30:00.000Z',
+  '2026-05-01T18:15:00.000Z',
+  '2026-04-30T12:00:00.000Z',
+  '2026-04-29T09:45:00.000Z',
+  '2026-04-28T16:20:00.000Z',
+  '2026-04-27T14:10:00.000Z',
+] as const;
+
 const activeAccounts = computed(() => accounts.filter((account) => account.status === 'Activo'));
 
 const sharedAccountsCount = computed(
@@ -86,15 +105,48 @@ const pendingActions = computed<PendingTransactionItem[]>(() =>
     .flatMap((account) =>
       account.users
         .filter((user) => parseCurrency(user.pendingExpenses) > 0)
-        .map((user) => ({
-          id: `${account.id}-${user.id}`,
-          accountName: account.name,
-          concept: `Egreso pendiente por comprobar de ${user.name}`,
-          amount: parseCurrency(user.pendingExpenses),
-        })),
+        .map((user, index) => {
+          return {
+            id: `${account.id}-${user.id}`,
+            accountId: account.id,
+            accountName: account.name,
+            concept: `Egreso pendiente por comprobar de ${user.name}`,
+            amount: parseCurrency(user.pendingExpenses),
+            date: pendingTransactionDates[index % pendingTransactionDates.length] ?? pendingTransactionDates[0],
+          };
+        }),
     )
-    .sort((left, right) => right.amount - left.amount),
+    .sort((left, right) => parseDate(right.date) - parseDate(left.date)),
 );
+
+const pendingActionGroups = computed<PendingTransactionGroup[]>(() =>
+  accounts
+    .map((account) => {
+      const items = pendingActions.value
+        .filter((item) => item.accountId === account.id)
+        .sort((left, right) => parseDate(right.date) - parseDate(left.date));
+
+      if (items.length === 0) {
+        return null;
+      }
+
+      return {
+        accountId: account.id,
+        accountName: account.name,
+        accountColor: account.color,
+        totalAmount: items.reduce((sum, item) => sum + item.amount, 0),
+        items,
+      };
+    })
+    .filter((group): group is PendingTransactionGroup => group !== null)
+    .sort((left, right) => parseDate(right.items[0]?.date) - parseDate(left.items[0]?.date)),
+);
+
+const pendingActionsCountLabel = computed(() => {
+  const count = selectedPendingActionIds.value.length;
+
+  return `${count} movimiento${count === 1 ? '' : 's'} seleccionado${count === 1 ? '' : 's'}`;
+});
 
 const selectedPendingAction = computed(() => {
   if (!selectedPendingActionId.value) {
@@ -236,6 +288,14 @@ function parseCurrency(value: string): number {
   return Number(value.replace(/[^0-9.-]/g, '')) || 0;
 }
 
+function parseDate(value?: string): number {
+  if (!value) {
+    return 0;
+  }
+
+  return Date.parse(value);
+}
+
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
@@ -363,9 +423,7 @@ function togglePendingActionSelection(actionId: string): void {
           class="flex items-center justify-between gap-3 rounded-xl border bg-[color-mix(in_srgb,var(--app-color-primary)_8%,transparent)] px-3 py-3"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <AppText size="sm">
-            {{ selectedPendingActionIds.length }} movimientos seleccionados
-          </AppText>
+          <AppText size="sm">{{ pendingActionsCountLabel }}</AppText>
 
           <AppButton variant="outline" class="h-9! px-3!" @click="openBatchCompletePendingActions">
             Completar selección
@@ -374,47 +432,67 @@ function togglePendingActionSelection(actionId: string): void {
 
         <div class="space-y-2">
           <div
-            v-for="action in pendingActions"
-            :key="action.id"
-            class="space-y-2 rounded-xl border bg-(--app-color-surface-muted) px-3 py-3"
+            v-for="group in pendingActionGroups"
+            :key="group.accountId"
+            class="space-y-2 rounded-2xl border bg-(--app-color-surface-muted) px-3 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
-            <div class="flex items-start gap-3">
-              <input
-                :checked="selectedPendingActionIds.includes(action.id)"
-                type="checkbox"
-                class="mt-0.5 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
-                @change="togglePendingActionSelection(action.id)"
-              />
-
-              <div class="min-w-0 flex-1 space-y-1">
-                <p class="truncate text-xs font-medium uppercase tracking-[0.04em] text-(--app-color-text-subtle)">
-                  {{ action.accountName }}
-                </p>
-                <p
-                  class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-                >
-                  {{ action.concept }}
+            <div class="flex items-start justify-between gap-3 border-b pb-2" :style="{ borderColor: 'var(--app-color-border)' }">
+              <div class="min-w-0 space-y-1">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="h-2.5 w-2.5 shrink-0 rounded-full"
+                    :style="{ backgroundColor: group.accountColor }"
+                  />
+                  <p class="truncate text-sm font-semibold text-(--app-color-text)">
+                    {{ group.accountName }}
+                  </p>
+                </div>
+                <p class="text-xs text-(--app-color-text-subtle)">
+                  {{ group.items.length }} pendientes · {{ formatCurrency(group.totalAmount) }}
                 </p>
               </div>
             </div>
 
-            <div class="flex items-center justify-between gap-3">
-              <p class="text-sm font-semibold whitespace-nowrap text-(--app-color-text)">
-                {{ formatCurrency(action.amount) }}
-              </p>
-
-              <AppIconButton
-                ariaLabel="Completar movimiento pendiente"
-                @click="openCompletePendingAction(action.id)"
+            <div class="space-y-1">
+              <div
+                v-for="action in group.items"
+                :key="action.id"
+                class="flex items-start gap-3 rounded-xl px-1 py-2"
               >
-                <CheckIcon class="h-4 w-4" />
-              </AppIconButton>
+                <input
+                  :checked="selectedPendingActionIds.includes(action.id)"
+                  type="checkbox"
+                  class="mt-0.5 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
+                  @change="togglePendingActionSelection(action.id)"
+                />
+
+                <div class="min-w-0 flex-1 space-y-2">
+                  <p
+                    class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                  >
+                    {{ action.concept }}
+                  </p>
+
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-sm font-semibold whitespace-nowrap text-(--app-color-text)">
+                      {{ formatCurrency(action.amount) }}
+                    </p>
+
+                    <AppIconButton
+                      ariaLabel="Completar movimiento pendiente"
+                      @click="openCompletePendingAction(action.id)"
+                    >
+                      <CheckIcon class="h-4 w-4" />
+                    </AppIconButton>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           <div
-            v-if="pendingActions.length === 0"
+            v-if="pendingActionGroups.length === 0"
             class="rounded-xl border border-dashed px-4 py-4 text-center"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
