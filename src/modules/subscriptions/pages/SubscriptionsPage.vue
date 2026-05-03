@@ -2,10 +2,8 @@
 import {
   AdjustmentsHorizontalIcon,
   ArrowPathIcon,
-  CheckBadgeIcon,
   MagnifyingGlassIcon,
   PlusIcon,
-  SparklesIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref } from 'vue';

@@ -2,9 +2,7 @@
 import {
   AdjustmentsHorizontalIcon,
   ArrowPathIcon,
-  FunnelIcon,
   MagnifyingGlassIcon,
-  PlayCircleIcon,
   PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
