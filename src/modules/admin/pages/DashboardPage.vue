@@ -6,11 +6,14 @@ import { GridComponent, TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import VChart from 'vue-echarts';
 import type { CallbackDataParams } from 'echarts/types/src/util/types.js';
+import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 import { accounts } from '@/modules/accounts/data/accounts';
 import {
   AppButton,
   AppCard,
+  AppIconButton,
+  AppModal,
   AppText,
   AppToggleButton,
   AppTitle,
@@ -27,8 +30,18 @@ type SubscriptionSummary = {
   annualCost: number;
 };
 
+type PendingTransactionItem = {
+  id: string;
+  accountName: string;
+  concept: string;
+  amount: number;
+};
+
 const savingsCadence = ref<SavingsCadence>('monthly');
 const themeStore = useThemeStore();
+const isCompletePendingActionOpen = ref(false);
+const selectedPendingActionId = ref<string | null>(null);
+const selectedPendingActionIds = ref<string[]>([]);
 
 const cadenceOptions = [
   { value: 'monthly', label: 'Mensual' },
@@ -68,15 +81,31 @@ const totalPendingPayments = computed(() =>
   }, 0),
 );
 
-const pendingActions = computed(() =>
+const pendingActions = computed<PendingTransactionItem[]>(() =>
   accounts
-    .map((account) => ({
-      id: account.id,
-      accountName: account.name,
-      amount: account.users.reduce((sum, user) => sum + parseCurrency(user.pendingExpenses), 0),
-    }))
-    .filter((item) => item.amount > 0)
+    .flatMap((account) =>
+      account.users
+        .filter((user) => parseCurrency(user.pendingExpenses) > 0)
+        .map((user) => ({
+          id: `${account.id}-${user.id}`,
+          accountName: account.name,
+          concept: `Egreso pendiente por comprobar de ${user.name}`,
+          amount: parseCurrency(user.pendingExpenses),
+        })),
+    )
     .sort((left, right) => right.amount - left.amount),
+);
+
+const selectedPendingAction = computed(() => {
+  if (!selectedPendingActionId.value) {
+    return null;
+  }
+
+  return pendingActions.value.find((item) => item.id === selectedPendingActionId.value) ?? null;
+});
+
+const selectedPendingActions = computed(() =>
+  pendingActions.value.filter((item) => selectedPendingActionIds.value.includes(item.id)),
 );
 
 const annualSubscriptionsSpend = computed(() =>
@@ -236,7 +265,39 @@ function shortenLabel(label: string): string {
   return `${label.slice(0, 12)}…`;
 }
 
-function completePendingAction(): void {}
+function openCompletePendingAction(actionId: string): void {
+  selectedPendingActionId.value = actionId;
+  selectedPendingActionIds.value = [];
+  isCompletePendingActionOpen.value = true;
+}
+
+function openBatchCompletePendingActions(): void {
+  if (selectedPendingActionIds.value.length === 0) {
+    return;
+  }
+
+  selectedPendingActionId.value = null;
+  isCompletePendingActionOpen.value = true;
+}
+
+function closeCompletePendingAction(): void {
+  isCompletePendingActionOpen.value = false;
+  selectedPendingActionId.value = null;
+}
+
+function confirmCompletePendingAction(): void {
+  selectedPendingActionIds.value = [];
+  closeCompletePendingAction();
+}
+
+function togglePendingActionSelection(actionId: string): void {
+  if (selectedPendingActionIds.value.includes(actionId)) {
+    selectedPendingActionIds.value = selectedPendingActionIds.value.filter((id) => id !== actionId);
+    return;
+  }
+
+  selectedPendingActionIds.value = [...selectedPendingActionIds.value, actionId];
+}
 </script>
 
 <template>
@@ -297,22 +358,59 @@ function completePendingAction(): void {}
           <AppText>Completa pagos pendientes sin salir del tablero principal.</AppText>
         </div>
 
+        <div
+          v-if="selectedPendingActionIds.length > 0"
+          class="flex items-center justify-between gap-3 rounded-xl border bg-[color-mix(in_srgb,var(--app-color-primary)_8%,transparent)] px-3 py-3"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm">
+            {{ selectedPendingActionIds.length }} movimientos seleccionados
+          </AppText>
+
+          <AppButton variant="outline" class="h-9! px-3!" @click="openBatchCompletePendingActions">
+            Completar selección
+          </AppButton>
+        </div>
+
         <div class="space-y-2">
           <div
             v-for="action in pendingActions"
             :key="action.id"
-            class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-xl border bg-(--app-color-surface-muted) px-3 py-3"
+            class="space-y-2 rounded-xl border bg-(--app-color-surface-muted) px-3 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
-            <p class="truncate text-sm font-semibold text-(--app-color-text)">
-              {{ action.accountName }}
-            </p>
-            <p class="text-sm font-semibold whitespace-nowrap text-(--app-color-text)">
-              {{ formatCurrency(action.amount) }}
-            </p>
-            <AppButton variant="outline" class="h-9! px-3!" @click="completePendingAction">
-              Completar
-            </AppButton>
+            <div class="flex items-start gap-3">
+              <input
+                :checked="selectedPendingActionIds.includes(action.id)"
+                type="checkbox"
+                class="mt-0.5 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
+                @change="togglePendingActionSelection(action.id)"
+              />
+
+              <div class="min-w-0 flex-1 space-y-1">
+                <p class="truncate text-xs font-medium uppercase tracking-[0.04em] text-(--app-color-text-subtle)">
+                  {{ action.accountName }}
+                </p>
+                <p
+                  class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                >
+                  {{ action.concept }}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm font-semibold whitespace-nowrap text-(--app-color-text)">
+                {{ formatCurrency(action.amount) }}
+              </p>
+
+              <AppIconButton
+                ariaLabel="Completar movimiento pendiente"
+                @click="openCompletePendingAction(action.id)"
+              >
+                <CheckIcon class="h-4 w-4" />
+              </AppIconButton>
+            </div>
           </div>
 
           <div
@@ -368,5 +466,43 @@ function completePendingAction(): void {}
         </div>
       </AppCard>
     </section>
+
+    <AppModal
+      :open="isCompletePendingActionOpen"
+      :actions="[
+        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
+        { key: 'confirm-complete', label: 'Completar movimiento', tone: 'primary', icon: CheckIcon },
+      ]"
+      title="Completar movimiento"
+      variant="warning"
+      @action="($event === 'confirm-complete') && confirmCompletePendingAction()"
+      @close="closeCompletePendingAction"
+    >
+      <div class="space-y-3">
+        <AppText v-if="selectedPendingAction">
+          Vas a marcar como completado el pendiente de
+          <strong>{{ selectedPendingAction.accountName }}</strong>
+          por
+          <strong>{{ formatCurrency(selectedPendingAction.amount) }}</strong>.
+        </AppText>
+
+        <AppText v-else-if="selectedPendingActions.length > 0">
+          Vas a marcar como completados
+          <strong>{{ selectedPendingActions.length }} movimientos pendientes</strong>
+          por un total de
+          <strong>
+            {{
+              formatCurrency(
+                selectedPendingActions.reduce((sum, item) => sum + item.amount, 0),
+              )
+            }}
+          </strong>.
+        </AppText>
+
+        <AppText v-else>
+          Confirma si quieres marcar este movimiento pendiente como completado.
+        </AppText>
+      </div>
+    </AppModal>
   </div>
 </template>
