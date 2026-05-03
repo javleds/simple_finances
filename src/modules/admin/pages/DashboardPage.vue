@@ -189,12 +189,14 @@ const balanceChartOption = computed(() => ({
   series: [
     {
       type: 'bar',
-      barMaxWidth: 26,
+      barMaxWidth: 13,
       data: accounts.map((account) => ({
         value: parseCurrency(account.balance),
         itemStyle: {
-          color: account.color,
-          borderRadius: [10, 10, 0, 0],
+          color: 'transparent',
+          borderColor: account.color,
+          borderWidth: 2,
+          borderRadius: 0,
         },
       })),
     },
