@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
-type SubscriptionStatus = 'active' | 'pending-renewal' | 'paused';
+type SubscriptionStatus = 'active' | 'cancelled';
 
 const props = defineProps<{
   itemId: string;
@@ -25,36 +25,24 @@ const currencyFormatter = new Intl.NumberFormat('es-MX', {
 });
 
 function statusLabel(status: SubscriptionStatus): string {
-  if (status === 'paused') {
-    return 'Pausada';
-  }
-
-  if (status === 'pending-renewal') {
-    return 'Por renovar';
+  if (status === 'cancelled') {
+    return 'Cancelada';
   }
 
   return 'Activa';
 }
 
 function statusClasses(status: SubscriptionStatus): string {
-  if (status === 'paused') {
+  if (status === 'cancelled') {
     return 'bg-slate-500/10 text-slate-600 dark:text-slate-300';
-  }
-
-  if (status === 'pending-renewal') {
-    return 'bg-amber-500/12 text-amber-700 dark:text-amber-300';
   }
 
   return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
 }
 
 function accentStyle(status: SubscriptionStatus): string {
-  if (status === 'paused') {
+  if (status === 'cancelled') {
     return 'linear-gradient(90deg, color-mix(in srgb, #64748b 14%, transparent), transparent 78%)';
-  }
-
-  if (status === 'pending-renewal') {
-    return 'linear-gradient(90deg, color-mix(in srgb, #f59e0b 16%, transparent), transparent 78%)';
   }
 
   return 'linear-gradient(90deg, color-mix(in srgb, #0f766e 18%, transparent), transparent 78%)';

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { UserGroupIcon } from '@heroicons/vue/24/outline';
-import { computed, reactive, watch } from 'vue';
+import { computed, watch } from 'vue';
 
+import type { AccountMember } from '@/modules/accounts/types';
+import { useTransactionForm } from '@/modules/transactions/composables/useTransactionForm';
+import type { Transaction, TransactionWritePayload } from '@/modules/transactions/types';
 import {
   AppDatePicker,
   AppInput,
@@ -11,49 +14,43 @@ import {
   AppToggleButton,
 } from '@/modules/shared/components';
 
-type TransactionType = 'income' | 'expense';
-type TransactionIncomeStatus = 'pending' | 'completed';
-
-type TransactionAccountUser = {
-  id: string;
-  name: string;
-  allocationPercentage?: number | null;
-};
-
-type TransactionFinancialGoal = {
-  id: string;
-  name: string;
-  description?: string;
-};
-
-type TransactionFormSubmit = {
-  type: TransactionType;
-  status: TransactionIncomeStatus | null;
-  concept: string;
-  amount: number | null;
-  date: string;
-  splitBetweenUsers: boolean;
-  financialGoalId: string | null;
-  userPercentages: Record<string, number>;
+type FormState = {
+  canSubmit: boolean;
+  isSubmitting: boolean;
 };
 
 const props = withDefaults(
   defineProps<{
     formId?: string;
-    accountUsers?: ReadonlyArray<TransactionAccountUser>;
-    financialGoals?: ReadonlyArray<TransactionFinancialGoal>;
-    initialValues?: Partial<TransactionFormSubmit> | null;
+    accountUsers?: ReadonlyArray<AccountMember>;
+    financialGoals?: ReadonlyArray<{
+      id: string;
+      name: string;
+      description?: string | null;
+    }>;
+    accountOptions?: ReadonlyArray<{
+      value: string;
+      label: string;
+      description?: string;
+    }>;
+    initialValues?: Partial<Transaction> | null;
+    lockedAccountId?: string | null;
+    serverError?: string | null;
   }>(),
   {
     formId: 'transaction-form',
     accountUsers: () => [],
     financialGoals: () => [],
+    accountOptions: () => [],
     initialValues: null,
+    lockedAccountId: null,
+    serverError: null,
   },
 );
 
 const emit = defineEmits<{
-  submit: [payload: TransactionFormSubmit];
+  submit: [payload: TransactionWritePayload];
+  stateChange: [payload: FormState];
 }>();
 
 const transactionTypeOptions = [
@@ -66,138 +63,91 @@ const transactionStatusOptions = [
   { value: 'completed', label: 'Completado' },
 ] as const;
 
-const today = new Date().toISOString().slice(0, 10);
-
-const state = reactive({
-  type: 'expense' as TransactionType,
-  status: 'completed' as TransactionIncomeStatus,
-  concept: '',
-  amount: null as number | null,
-  date: today,
-  splitBetweenUsers: false,
-  financialGoalId: null as string | null,
-  userPercentages: {} as Record<string, number>,
+const {
+  type,
+  status,
+  concept,
+  amount,
+  accountId,
+  splitBetweenUsers,
+  date,
+  financialGoalId,
+  userPayments,
+  errors,
+  isSubmitting,
+  isSubmitDisabled,
+  meta,
+  isIncome,
+  isExpense,
+  submitForm,
+} = useTransactionForm({
+  initialValues: () => props.initialValues,
+  lockedAccountId: props.lockedAccountId,
 });
 
-const isIncome = computed(() => state.type === 'income');
-const isExpense = computed(() => state.type === 'expense');
 const hasSharedAccount = computed(() => props.accountUsers.length > 1);
 const showUserSplitToggle = computed(() => isExpense.value && hasSharedAccount.value);
-const showUserSplitInputs = computed(() => showUserSplitToggle.value && state.splitBetweenUsers);
+const showUserSplitInputs = computed(() => showUserSplitToggle.value && splitBetweenUsers.value);
 
 const financialGoalOptions = computed(() =>
   props.financialGoals.map((goal) => ({
     value: goal.id,
     label: goal.name,
-    description: goal.description,
+    description: goal.description ?? undefined,
   })),
 );
 
 watch(
-  () => props.initialValues,
-  (nextValues) => {
-    state.type = nextValues?.type ?? 'expense';
-    state.status = nextValues?.status ?? 'completed';
-    state.concept = nextValues?.concept ?? '';
-    state.amount = nextValues?.amount ?? null;
-    state.date = nextValues?.date ?? today;
-    state.splitBetweenUsers = nextValues?.splitBetweenUsers ?? false;
-    state.financialGoalId = nextValues?.financialGoalId ?? null;
-    state.userPercentages = { ...(nextValues?.userPercentages ?? {}) };
+  [isSubmitDisabled, isSubmitting, meta],
+  () => {
+    emit('stateChange', {
+      canSubmit: !isSubmitDisabled.value,
+      isSubmitting: isSubmitting.value,
+    });
   },
-  { immediate: true },
-);
-
-watch(
-  () => state.type,
-  (nextType) => {
-    if (nextType === 'income') {
-      state.status = 'completed';
-      state.splitBetweenUsers = false;
-      return;
-    }
-
-    if (!hasSharedAccount.value) {
-      state.splitBetweenUsers = false;
-    }
-  },
-  { immediate: true },
+  { immediate: true, deep: true },
 );
 
 watch(
   () => props.accountUsers,
   (nextUsers) => {
-    state.userPercentages = buildUserPercentages(nextUsers, state.userPercentages);
-
-    if (nextUsers.length <= 1) {
-      state.splitBetweenUsers = false;
+    if (Object.keys(userPayments.value).length > 0) {
+      return;
     }
+
+    userPayments.value = nextUsers.reduce<Record<string, number>>((accumulator, user) => {
+      accumulator[user.id] = user.allocationPercentage ?? 0;
+      return accumulator;
+    }, {});
   },
   { immediate: true },
 );
 
 watch(showUserSplitToggle, (isVisible) => {
   if (!isVisible) {
-    state.splitBetweenUsers = false;
+    splitBetweenUsers.value = false;
   }
 });
 
-function buildUserPercentages(
-  users: ReadonlyArray<TransactionAccountUser>,
-  currentPercentages: Record<string, number>,
-): Record<string, number> {
-  return users.reduce<Record<string, number>>((percentages, user) => {
-    const currentValue = currentPercentages[user.id];
+async function handleSubmit(): Promise<void> {
+  const payload = await submitForm();
 
-    if (typeof currentValue === 'number' && Number.isFinite(currentValue)) {
-      percentages[user.id] = currentValue;
-      return percentages;
-    }
-
-    percentages[user.id] = normalizePercentage(user.allocationPercentage);
-    return percentages;
-  }, {});
-}
-
-function normalizePercentage(value: number | null | undefined): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return 0;
-  }
-
-  return value;
-}
-
-function updateAmount(event: Event): void {
-  const nextValue = Number((event.target as HTMLInputElement).value);
-
-  if (Number.isNaN(nextValue)) {
-    state.amount = null;
+  if (!payload) {
     return;
   }
 
-  state.amount = nextValue;
-}
-
-function updateUserPercentages(nextValues: Record<string, number>): void {
-  state.userPercentages = { ...nextValues };
-}
-
-function submitForm(): void {
-  emit('submit', {
-    type: state.type,
-    status: isIncome.value ? state.status : null,
-    concept: state.concept.trim(),
-    amount: state.amount,
-    date: state.date,
-    splitBetweenUsers: showUserSplitInputs.value,
-    financialGoalId: state.financialGoalId,
-    userPercentages: showUserSplitInputs.value ? { ...state.userPercentages } : {},
-  });
+  emit('submit', payload);
 }
 </script>
 
 <template>
-  <form :id="props.formId" class="space-y-6" @submit.prevent="submitForm">
+  <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
+    <section v-if="props.serverError" class="rounded-xl border border-(--app-color-danger) px-4 py-3">
+      <AppText size="sm" class="text-(--app-color-danger)!">
+        {{ props.serverError }}
+      </AppText>
+    </section>
+
     <section
       class="space-y-4 rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
       :style="{ borderColor: 'var(--app-color-border)' }"
@@ -208,9 +158,9 @@ function submitForm(): void {
         </label>
         <AppToggleButton
           id="transaction-type"
-          :model-value="state.type"
+          :model-value="type"
           :options="transactionTypeOptions"
-          @update:model-value="state.type = $event as TransactionType"
+          @update:model-value="type = $event as 'income' | 'expense'"
         />
       </div>
 
@@ -220,19 +170,33 @@ function submitForm(): void {
         </label>
         <AppToggleButton
           id="transaction-status"
-          :model-value="state.status"
+          :model-value="status"
           :options="transactionStatusOptions"
-          @update:model-value="state.status = $event as TransactionIncomeStatus"
+          @update:model-value="status = $event as 'pending' | 'completed'"
         />
       </div>
     </section>
 
     <section class="space-y-5">
+      <AppSearchSelect
+        id="transaction-account"
+        v-model="accountId"
+        label="Cuenta"
+        :options="props.accountOptions"
+        :disabled="Boolean(props.lockedAccountId)"
+        placeholder="Selecciona una cuenta"
+        search-placeholder="Buscar cuenta"
+        empty-message="No encontramos cuentas disponibles."
+      />
+
+      <p v-if="errors.accountId" class="text-sm text-(--app-color-danger)">{{ errors.accountId }}</p>
+
       <AppInput
         id="transaction-concept"
-        v-model="state.concept"
+        v-model="concept"
         label="Concepto"
         placeholder="Ej. Pago a proveedor de logística"
+        :error="errors.concept"
         required
       />
 
@@ -240,15 +204,15 @@ function submitForm(): void {
         <div class="space-y-4">
           <AppInput
             id="transaction-amount"
-            :model-value="state.amount ?? ''"
+            v-model="amount"
             label="Cantidad"
             type="number"
             inputmode="decimal"
             min="0"
             step="0.01"
             placeholder="0.00"
+            :error="errors.amount"
             required
-            @input="updateAmount"
           />
 
           <section
@@ -258,7 +222,7 @@ function submitForm(): void {
           >
             <label class="flex items-start gap-3">
               <input
-                v-model="state.splitBetweenUsers"
+                v-model="splitBetweenUsers"
                 type="checkbox"
                 class="mt-1 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
               />
@@ -267,8 +231,8 @@ function submitForm(): void {
                   Dividir entre usuarios de la cuenta
                 </span>
                 <AppText size="sm">
-                  Usa los porcentajes definidos por usuario o ajústalos manualmente para este
-                  egreso.
+                  Usa los porcentajes del pivote `account_user` como base y ajústalos si hace
+                  falta.
                 </AppText>
               </div>
             </label>
@@ -276,17 +240,22 @@ function submitForm(): void {
             <AppPercentageSplitEditor
               v-if="showUserSplitInputs"
               :users="props.accountUsers"
-              :model-value="state.userPercentages"
-              @update:model-value="updateUserPercentages"
+              :model-value="userPayments"
+              @update:model-value="userPayments = $event"
             />
+
+            <p v-if="errors.userPayments" class="text-sm text-(--app-color-danger)">
+              {{ errors.userPayments }}
+            </p>
           </section>
         </div>
 
         <AppDatePicker
           id="transaction-date"
-          v-model="state.date"
+          v-model="date"
           label="Fecha"
           placeholder="AAAA-MM-DD"
+          :error="errors.date"
           required
         />
       </div>
@@ -295,14 +264,19 @@ function submitForm(): void {
     <section class="space-y-3">
       <AppSearchSelect
         id="transaction-financial-goal"
-        v-model="state.financialGoalId"
+        v-model="financialGoalId"
         label="Meta financiera"
         :options="financialGoalOptions"
+        :disabled="isExpense"
         open-direction="top"
         placeholder="Sin meta financiera"
         search-placeholder="Buscar meta financiera"
-        empty-message="No encontramos metas con ese criterio. Puedes guardar la transacción sin asociarla."
+        empty-message="No encontramos metas con ese criterio."
       />
+
+      <p v-if="errors.financialGoalId" class="text-sm text-(--app-color-danger)">
+        {{ errors.financialGoalId }}
+      </p>
 
       <div
         v-if="props.financialGoals.length === 0"

@@ -17,6 +17,7 @@ const props = withDefaults(
     disabled?: boolean;
     clearable?: boolean;
     enableTimePicker?: boolean;
+    error?: string;
     minDate?: Date | string | number;
     maxDate?: Date | string | number;
   }>(),
@@ -27,6 +28,7 @@ const props = withDefaults(
     disabled: false,
     clearable: true,
     enableTimePicker: false,
+    error: undefined,
     minDate: undefined,
     maxDate: undefined,
   },
@@ -57,7 +59,11 @@ const datePickerUi = computed(() => ({
 <template>
   <div class="app-date-picker space-y-2.5">
     <div v-if="props.label" class="flex min-h-5 items-center">
-      <label :for="props.id" class="text-sm font-medium text-(--app-color-label)">
+      <label
+        :for="props.id"
+        class="text-sm font-medium"
+        :class="props.error ? 'text-(--app-color-danger)' : 'text-(--app-color-label)'"
+      >
         {{ props.label }}
       </label>
     </div>
@@ -78,6 +84,12 @@ const datePickerUi = computed(() => ({
       :clearable="props.clearable"
       :min-date="props.minDate"
       :max-date="props.maxDate"
+      :aria-invalid="Boolean(props.error)"
+      :class="
+        props.error
+          ? 'app-date-picker--error'
+          : ''
+      "
       text-input
       v-bind="$attrs"
     >
@@ -96,6 +108,10 @@ const datePickerUi = computed(() => ({
         </button>
       </template>
     </VueDatePicker>
+
+    <p v-if="props.error" class="text-sm text-(--app-color-danger)">
+      {{ props.error }}
+    </p>
   </div>
 </template>
 
@@ -232,6 +248,11 @@ const datePickerUi = computed(() => ({
 .app-date-picker .dp__input_focus,
 .app-date-picker .app-date-picker__input:focus {
   box-shadow: 0 0 0 4px var(--app-color-focus-ring);
+}
+
+.app-date-picker--error .dp__input,
+.app-date-picker--error .app-date-picker__input {
+  border-color: var(--app-color-danger);
 }
 
 .app-date-picker__menu {

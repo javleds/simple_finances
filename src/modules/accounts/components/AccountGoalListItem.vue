@@ -6,12 +6,13 @@ type GoalStatus = 'on-track' | 'at-risk' | 'completed';
 const props = defineProps<{
   itemId: string;
   title: string;
-  detail: string;
+  ownerLabel: string;
   currentAmount: number;
   targetAmount: number;
+  remainingAmount: number;
   progress: number;
   status: GoalStatus;
-  cadenceLabel: string;
+  deadlineLabel: string;
 }>();
 
 const emit = defineEmits<{
@@ -105,7 +106,7 @@ function handleDelete(): void {
             {{ props.title }}
           </p>
           <p class="text-sm leading-5 text-(--app-color-text-muted)">
-            {{ props.detail }}
+            {{ props.ownerLabel }}
           </p>
         </div>
 
@@ -116,7 +117,7 @@ function handleDelete(): void {
           <p
             class="text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
           >
-            de {{ formattedAmount(props.targetAmount) }}
+            faltan {{ formattedAmount(props.remainingAmount) }}
           </p>
         </div>
 
@@ -134,7 +135,7 @@ function handleDelete(): void {
           <p
             class="truncate text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
           >
-            {{ props.cadenceLabel }}
+            {{ props.deadlineLabel }}
           </p>
         </div>
 

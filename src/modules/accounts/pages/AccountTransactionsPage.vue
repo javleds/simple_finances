@@ -1,76 +1,40 @@
 <script setup lang="ts">
-import { PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-import { computed, ref } from 'vue';
+import {
+  AdjustmentsHorizontalIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  XMarkIcon,
+} from '@heroicons/vue/24/outline';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { findAccountById } from '@/modules/accounts/data/accounts';
+import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
+import { createAccountGoalsRepository } from '@/modules/accounts/repositories/accountGoalsRepository';
+import type { AccountMember } from '@/modules/accounts/types';
 import {
-  AppIconButton,
   AppButton,
   AppCard,
+  AppIconButton,
   AppInput,
   AppModal,
   AppText,
   AppTitle,
 } from '@/modules/shared/components';
+import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
 import TransactionsForm from '@/modules/transactions/components/TransactionsForm.vue';
 import TransactionListItem from '@/modules/transactions/components/TransactionListItem.vue';
-import {
-  AdjustmentsHorizontalIcon,
-  ArrowPathIcon,
-  MagnifyingGlassIcon,
-} from '@heroicons/vue/24/outline';
+import type { TransactionWritePayload } from '@/modules/transactions/types';
 
-const transactionItems = [
-  {
-    id: 'supplier-payment',
-    concept: 'Pago a proveedor logístico con referencia operativa y validación de entrega regional',
-    amount: 12480,
-    type: 'expense',
-    status: 'completed',
-    dateLabel: 'Hoy',
-    date: '2026-05-01',
-  },
-  {
-    id: 'facility-disbursement',
-    concept:
-      'Dispersión interna desde facility para reforzar la bolsa operativa del siguiente corte',
-    amount: 35000,
-    type: 'income',
-    status: 'completed',
-    dateLabel: 'Ayer',
-    date: '2026-04-30',
-  },
-  {
-    id: 'regional-expense',
-    concept: 'Consumo operativo regional pendiente de conciliación con comprobantes de viaje',
-    amount: 4860,
-    type: 'expense',
-    status: 'pending',
-    dateLabel: '22 Abr',
-    date: '2026-04-22',
-  },
-] as const;
-
-const financialGoals = [
-  {
-    id: 'cashflow-monthly',
-    name: 'Fondo operativo mensual',
-    description: 'Cobertura del siguiente ciclo operativo y dispersión de pagos recurrentes.',
-  },
-  {
-    id: 'tax-reserve',
-    name: 'Reserva tributaria',
-    description: 'Apartado para obligaciones fiscales y cierres programados.',
-  },
-  {
-    id: 'regional-expansion',
-    name: 'Expansión regional',
-    description: 'Bolsa para ejecución local, traslados y despliegue de equipos.',
-  },
-] as const;
+type FormState = {
+  canSubmit: boolean;
+  isSubmitting: boolean;
+};
 
 const route = useRoute();
+const accountsRepository = createAccountsRepository();
+const accountGoalsRepository = createAccountGoalsRepository();
+
 const isCreateTransactionModalOpen = ref(false);
 const isEditTransactionModalOpen = ref(false);
 const isDeleteTransactionModalOpen = ref(false);
@@ -79,6 +43,11 @@ const searchTerm = ref('');
 const selectedStatuses = ref<Array<'completed' | 'pending'>>([]);
 const selectedTypes = ref<Array<'income' | 'expense'>>([]);
 const selectedTransactionId = ref<string | null>(null);
+const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const accountUsers = ref<AccountMember[]>([]);
+const accountOptions = ref<Array<{ value: string; label: string; description?: string }>>([]);
+const financialGoals = ref<Array<{ id: string; name: string; description?: string | null }>>([]);
 
 const transactionStatusOptions = [
   { value: 'completed', label: 'Completado' },
@@ -90,15 +59,31 @@ const transactionTypeOptions = [
   { value: 'expense', label: 'Egreso' },
 ] as const;
 
-const account = computed(() => {
-  const accountId = typeof route.params.accountId === 'string' ? route.params.accountId : '';
-  return findAccountById(accountId);
-});
+const accountId = computed(() =>
+  typeof route.params.accountId === 'string' ? route.params.accountId : '',
+);
+
+const {
+  transactions,
+  hasTransactions,
+  isLoading,
+  isSaving,
+  isDeleting,
+  loadError,
+  saveError,
+  deleteError,
+  clearSaveError,
+  clearDeleteError,
+  loadTransactions,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
+} = useTransactionsCrud();
 
 const filteredTransactionItems = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
-  return transactionItems.filter((transaction) => {
+  return transactions.value.filter((transaction) => {
     const matchesQuery =
       normalizedQuery.length === 0 || transaction.concept.toLowerCase().includes(normalizedQuery);
 
@@ -108,7 +93,7 @@ const filteredTransactionItems = computed(() => {
 
     if (
       selectedStatuses.value.length > 0 &&
-      !selectedStatuses.value.includes(transaction.status)
+      !selectedStatuses.value.includes(transaction.status ?? 'completed')
     ) {
       return false;
     }
@@ -127,46 +112,112 @@ const selectedTransaction = computed(() => {
   }
 
   return (
-    transactionItems.find((transaction) => transaction.id === selectedTransactionId.value) ?? null
+    transactions.value.find((transaction) => transaction.id === selectedTransactionId.value) ?? null
   );
 });
 
-const selectedTransactionFormValues = computed(() => {
-  if (!selectedTransaction.value) {
-    return null;
-  }
+const createTransactionActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'submit-transaction',
+    label: isSaving.value ? 'Guardando...' : 'Crear transacción',
+    tone: 'primary' as const,
+    type: 'submit' as const,
+    form: 'transaction-form',
+    disabled: !createFormState.value.canSubmit || isSaving.value,
+  },
+]);
 
-  return {
-    type: selectedTransaction.value.type,
-    status: selectedTransaction.value.status,
-    concept: selectedTransaction.value.concept,
-    amount: selectedTransaction.value.amount,
-    date: selectedTransaction.value.date,
-    splitBetweenUsers: false,
-    financialGoalId: null,
-    userPercentages: {},
-  };
+const editTransactionActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'submit-edit-transaction',
+    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
+    tone: 'primary' as const,
+    type: 'submit' as const,
+    form: 'edit-transaction-form',
+    disabled: !editFormState.value.canSubmit || isSaving.value,
+  },
+]);
+
+const deleteTransactionActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'confirm-delete-transaction',
+    label: isDeleting.value ? 'Eliminando...' : 'Eliminar transacción',
+    tone: 'primary' as const,
+    disabled: !selectedTransaction.value || isDeleting.value,
+  },
+]);
+
+onMounted(() => {
+  void Promise.all([loadContext(), loadTransactions(accountId.value)]);
 });
 
+async function loadContext(): Promise<void> {
+  if (!accountId.value) {
+    return;
+  }
+
+  try {
+    const [account, accounts, goals] = await Promise.all([
+      accountsRepository.getById(accountId.value),
+      accountsRepository.list(),
+      accountGoalsRepository.list(accountId.value),
+    ]);
+
+    accountUsers.value = account.users;
+    accountOptions.value = accounts.map((item) => ({
+      value: item.id,
+      label: item.name,
+      description: item.description,
+    }));
+    financialGoals.value = goals.map((goal) => ({
+      id: goal.id,
+      name: goal.name,
+      description: goal.userName ? `Meta de ${goal.userName}` : null,
+    }));
+  } catch {
+    accountUsers.value = [];
+    accountOptions.value = [];
+    financialGoals.value = [];
+  }
+}
+
+function formatDateLabel(date: string): string {
+  return new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(`${date}T00:00:00`));
+}
+
 function openCreateTransactionModal(): void {
+  clearSaveError();
+  createFormState.value = { canSubmit: false, isSubmitting: false };
   isCreateTransactionModalOpen.value = true;
 }
 
 function closeCreateTransactionModal(): void {
   isCreateTransactionModalOpen.value = false;
+  clearSaveError();
 }
 
 function openEditTransaction(transactionId: string): void {
+  clearSaveError();
   selectedTransactionId.value = transactionId;
+  editFormState.value = { canSubmit: false, isSubmitting: false };
   isEditTransactionModalOpen.value = true;
 }
 
 function closeEditTransactionModal(): void {
   isEditTransactionModalOpen.value = false;
   selectedTransactionId.value = null;
+  clearSaveError();
 }
 
 function openDeleteTransaction(transactionId: string): void {
+  clearDeleteError();
   selectedTransactionId.value = transactionId;
   isDeleteTransactionModalOpen.value = true;
 }
@@ -174,6 +225,7 @@ function openDeleteTransaction(transactionId: string): void {
 function closeDeleteTransactionModal(): void {
   isDeleteTransactionModalOpen.value = false;
   selectedTransactionId.value = null;
+  clearDeleteError();
 }
 
 function openFilters(): void {
@@ -218,16 +270,44 @@ function handleFiltersModalAction(actionKey: string): void {
   }
 }
 
-function handleTransactionSubmit(): void {
-  closeCreateTransactionModal();
+async function handleTransactionSubmit(payload: TransactionWritePayload): Promise<void> {
+  const wasCreated = await createTransaction(payload);
+
+  if (wasCreated) {
+    closeCreateTransactionModal();
+  }
 }
 
-function handleEditTransactionSubmit(): void {
-  closeEditTransactionModal();
+async function handleEditTransactionSubmit(payload: TransactionWritePayload): Promise<void> {
+  if (!selectedTransaction.value) {
+    return;
+  }
+
+  const wasUpdated = await updateTransaction(selectedTransaction.value.id, payload);
+
+  if (wasUpdated) {
+    closeEditTransactionModal();
+  }
 }
 
-function confirmDeleteTransaction(): void {
-  closeDeleteTransactionModal();
+async function confirmDeleteTransaction(): Promise<void> {
+  if (!selectedTransaction.value) {
+    return;
+  }
+
+  const wasDeleted = await deleteTransaction(selectedTransaction.value.id);
+
+  if (wasDeleted) {
+    closeDeleteTransactionModal();
+  }
+}
+
+function handleCreateFormStateChange(state: FormState): void {
+  createFormState.value = state;
+}
+
+function handleEditFormStateChange(state: FormState): void {
+  editFormState.value = state;
 }
 </script>
 
@@ -248,9 +328,7 @@ function confirmDeleteTransaction(): void {
 
     <div class="flex items-center gap-3">
       <div class="relative flex-1">
-        <div
-          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
-        >
+        <div class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)">
           <MagnifyingGlassIcon class="h-5 w-5" />
         </div>
         <AppInput
@@ -267,7 +345,15 @@ function confirmDeleteTransaction(): void {
       </AppIconButton>
     </div>
 
-    <section class="space-y-3">
+    <section v-if="loadError && hasTransactions" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+      <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
+    </section>
+
+    <section v-if="isLoading && !hasTransactions" class="rounded-2xl border px-4 py-10 text-center">
+      <AppText>Cargando transacciones...</AppText>
+    </section>
+
+    <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle">
           {{ filteredTransactionItems.length }} transacciones visibles
@@ -281,18 +367,19 @@ function confirmDeleteTransaction(): void {
           :key="transaction.id"
           :amount="transaction.amount"
           :concept="transaction.concept"
-          :date-label="transaction.dateLabel"
+          :date-label="formatDateLabel(transaction.date)"
           :item-id="transaction.id"
-          :status="transaction.status"
+          :status="transaction.status ?? 'completed'"
           :type="transaction.type"
           @delete="openDeleteTransaction"
           @edit="openEditTransaction"
         />
 
-        <div
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
+        <div v-if="filteredTransactionItems.length === 0" class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
+          <AppText size="sm">No hay transacciones que coincidan con la búsqueda o los filtros actuales.</AppText>
+        </div>
+
+        <div class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
           <AppText size="sm">
             Sigue desplazándote para revisar más actividad conforme la cuenta acumule movimientos.
           </AppText>
@@ -323,11 +410,7 @@ function confirmDeleteTransaction(): void {
             :key="status.value"
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedStatuses.includes(status.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
+            :class="selectedStatuses.includes(status.value) ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)' : 'bg-(--app-color-surface-muted) text-(--app-color-text)'"
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="toggleStatus(status.value)"
           >
@@ -337,7 +420,7 @@ function confirmDeleteTransaction(): void {
 
         <div class="space-y-2">
           <AppTitle as="h2" size="sm">Tipo</AppTitle>
-          <AppText>Filtra entre ingresos y egresos sin salir del detalle de la cuenta.</AppText>
+          <AppText>Filtra entre ingresos y egresos.</AppText>
         </div>
 
         <div class="flex flex-wrap gap-2">
@@ -346,11 +429,7 @@ function confirmDeleteTransaction(): void {
             :key="type.value"
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedTypes.includes(type.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
+            :class="selectedTypes.includes(type.value) ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)' : 'bg-(--app-color-surface-muted) text-(--app-color-text)'"
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="toggleType(type.value)"
           >
@@ -360,81 +439,49 @@ function confirmDeleteTransaction(): void {
       </div>
     </AppModal>
 
-    <AppModal
-      :open="isCreateTransactionModalOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        {
-          key: 'submit-transaction',
-          label: 'Guardar transacción',
-          tone: 'primary',
-          type: 'submit',
-          form: 'transaction-form',
-        },
-      ]"
-      title="Nueva transacción"
-      variant="default"
-      @close="closeCreateTransactionModal"
-    >
+    <AppModal :open="isCreateTransactionModalOpen" :actions="createTransactionActions" title="Nueva transacción" variant="default" @close="closeCreateTransactionModal">
       <TransactionsForm
-        v-if="account"
-        :account-users="account.users"
-        :financial-goals="financialGoals"
         form-id="transaction-form"
+        :account-options="accountOptions"
+        :account-users="accountUsers"
+        :financial-goals="financialGoals"
+        :locked-account-id="accountId"
+        :server-error="saveError"
+        @state-change="handleCreateFormStateChange"
         @submit="handleTransactionSubmit"
       />
     </AppModal>
 
-    <AppModal
-      :open="isEditTransactionModalOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        {
-          key: 'submit-edit-transaction',
-          label: 'Guardar cambios',
-          tone: 'primary',
-          type: 'submit',
-          form: 'edit-transaction-form',
-        },
-      ]"
-      title="Editar transacción"
-      variant="default"
-      @close="closeEditTransactionModal"
-    >
+    <AppModal :open="isEditTransactionModalOpen" :actions="editTransactionActions" title="Editar transacción" variant="default" @close="closeEditTransactionModal">
       <TransactionsForm
-        v-if="account && selectedTransactionFormValues"
-        :account-users="account.users"
-        :financial-goals="financialGoals"
-        :initial-values="selectedTransactionFormValues"
+        v-if="selectedTransaction"
         form-id="edit-transaction-form"
+        :account-options="accountOptions"
+        :account-users="accountUsers"
+        :financial-goals="financialGoals"
+        :locked-account-id="accountId"
+        :initial-values="selectedTransaction"
+        :server-error="saveError"
+        @state-change="handleEditFormStateChange"
         @submit="handleEditTransactionSubmit"
       />
     </AppModal>
 
     <AppModal
       :open="isDeleteTransactionModalOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        {
-          key: 'confirm-delete-transaction',
-          label: 'Eliminar transacción',
-          tone: 'primary',
-        },
-      ]"
+      :actions="deleteTransactionActions"
       title="Eliminar transacción"
       variant="danger"
       @action="$event === 'confirm-delete-transaction' && confirmDeleteTransaction()"
       @close="closeDeleteTransactionModal"
     >
       <div class="space-y-3">
-        <AppText>
+        <AppText v-if="selectedTransaction">
           Vas a eliminar
-          <strong>{{ selectedTransaction?.concept }}</strong
+          <strong>{{ selectedTransaction.concept }}</strong
           >.
         </AppText>
-        <AppText size="sm" tone="subtle">
-          La confirmación ya sigue el patrón de borrado del resto del sistema.
-        </AppText>
+        <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
       </div>
     </AppModal>
   </section>

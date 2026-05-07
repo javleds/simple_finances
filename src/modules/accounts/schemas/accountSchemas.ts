@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import type { Account, AccountFormValues, AccountWritePayload, AccountStatus } from '../types';
+import type {
+  Account,
+  AccountFormValues,
+  AccountWritePayload,
+  AccountStatus,
+  AccountMember,
+} from '../types';
 
 const colorPattern = /^#([0-9a-fA-F]{6})$/;
 
@@ -119,6 +125,18 @@ export const accountApiSchema = z.object({
   feed_account_id: z
     .union([z.string(), z.number(), z.null(), z.undefined()])
     .transform((value) => (value === null || value === undefined ? null : String(value))),
+  users: z
+    .array(
+      z.object({
+        id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+        name: z.string(),
+        email: z.string().email().catch(''),
+        percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+        pending_expenses: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+      }),
+    )
+    .optional()
+    .transform((value) => value ?? []),
 });
 
 export function createDefaultAccountFormValues(
@@ -152,6 +170,13 @@ export function mapAccountApiToDomain(
     creditLine: payload.credit_line,
     closingDay: payload.cutoff_day,
     fundingAccountId: payload.feed_account_id,
+    users: payload.users.map<AccountMember>((user) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      allocationPercentage: user.percentage,
+      pendingExpenses: user.pending_expenses,
+    })),
   };
 }
 

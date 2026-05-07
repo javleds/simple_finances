@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
-type InvitationStatus = 'pending' | 'resent' | 'accepted';
+type InvitationStatus = 'pending' | 'accepted' | 'declined';
 
 const props = defineProps<{
   itemId: string;
-  name: string;
   email: string;
-  roleLabel: string;
+  percentageLabel: string;
   metaLabel: string;
   status: InvitationStatus;
 }>();
@@ -22,8 +21,8 @@ function statusLabel(status: InvitationStatus): string {
     return 'Aceptada';
   }
 
-  if (status === 'resent') {
-    return 'Reenviada';
+  if (status === 'declined') {
+    return 'Declinada';
   }
 
   return 'Pendiente';
@@ -34,8 +33,8 @@ function statusClasses(status: InvitationStatus): string {
     return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
   }
 
-  if (status === 'resent') {
-    return 'bg-sky-500/10 text-sky-700 dark:text-sky-300';
+  if (status === 'declined') {
+    return 'bg-slate-500/10 text-slate-600 dark:text-slate-300';
   }
 
   return 'bg-amber-500/12 text-amber-700 dark:text-amber-300';
@@ -46,8 +45,8 @@ function accentStyle(status: InvitationStatus): string {
     return 'linear-gradient(90deg, color-mix(in srgb, #10b981 14%, transparent), transparent 78%)';
   }
 
-  if (status === 'resent') {
-    return 'linear-gradient(90deg, color-mix(in srgb, #0ea5e9 14%, transparent), transparent 78%)';
+  if (status === 'declined') {
+    return 'linear-gradient(90deg, color-mix(in srgb, #64748b 14%, transparent), transparent 78%)';
   }
 
   return 'linear-gradient(90deg, color-mix(in srgb, #f59e0b 16%, transparent), transparent 78%)';
@@ -77,21 +76,21 @@ function handleDelete(): void {
           <p
             class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
           >
-            {{ props.name }}
+            {{ props.email }}
           </p>
           <p class="truncate text-sm leading-5 text-(--app-color-text-muted)">
-            {{ props.email }}
+            Invitación de cuenta compartida
           </p>
         </div>
 
         <div class="space-y-1 text-right">
           <p class="text-sm font-semibold text-(--app-color-text)">
-            {{ props.roleLabel }}
+            {{ props.percentageLabel }}
           </p>
           <p
             class="text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
           >
-            Rol invitado
+            reparto asignado
           </p>
         </div>
 

@@ -6,9 +6,13 @@ import {
   PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 
+import AccountGoalForm from '@/modules/accounts/components/AccountGoalForm.vue';
 import AccountGoalListItem from '@/modules/accounts/components/AccountGoalListItem.vue';
+import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
+import type { AccountGoalWritePayload } from '@/modules/accounts/schemas/accountGoalSchemas';
 import {
   AppButton,
   AppCard,
@@ -20,64 +24,21 @@ import {
 } from '@/modules/shared/components';
 
 type GoalStatus = 'on-track' | 'at-risk' | 'completed';
-type GoalCadence = 'monthly' | 'quarterly' | 'strategic';
+type FormState = {
+  canSubmit: boolean;
+  isSubmitting: boolean;
+};
 
-const goalItems = [
-  {
-    id: 'reserve-quarterly',
-    title: 'Ahorro de reserva trimestral para contingencias operativas y ajustes de flujo',
-    detail: 'Meta para proteger liquidez frente a cierres extraordinarios y gastos no planeados.',
-    currentAmount: 68000,
-    targetAmount: 100000,
-    progress: 68,
-    status: 'on-track',
-    cadence: 'quarterly',
-    cadenceLabel: 'Trimestral',
-  },
-  {
-    id: 'monthly-operations',
-    title: 'Fondo operativo mensual',
-    detail:
-      'Objetivo para cubrir gastos recurrentes del siguiente ciclo sin tensionar la caja principal.',
-    currentAmount: 24500,
-    targetAmount: 30000,
-    progress: 82,
-    status: 'on-track',
-    cadence: 'monthly',
-    cadenceLabel: 'Mensual',
-  },
-  {
-    id: 'tax-buffer',
-    title: 'Colchón fiscal de cierre anual',
-    detail: 'Reserva preventiva para impuestos, ajustes regulatorios y variaciones de cierre.',
-    currentAmount: 41000,
-    targetAmount: 90000,
-    progress: 46,
-    status: 'at-risk',
-    cadence: 'strategic',
-    cadenceLabel: 'Estratégica',
-  },
-  {
-    id: 'regional-expansion',
-    title: 'Bolsa para expansión regional',
-    detail: 'Meta destinada a contratación operativa, traslados y activación de nuevas plazas.',
-    currentAmount: 120000,
-    targetAmount: 120000,
-    progress: 100,
-    status: 'completed',
-    cadence: 'strategic',
-    cadenceLabel: 'Estratégica',
-  },
-] as const;
-
+const route = useRoute();
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateGoalOpen = ref(false);
 const isEditGoalOpen = ref(false);
 const isDeleteGoalOpen = ref(false);
 const selectedStatuses = ref<GoalStatus[]>([]);
-const selectedCadences = ref<GoalCadence[]>([]);
 const selectedGoalId = ref<string | null>(null);
+const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 
 const goalStatusOptions = [
   { value: 'on-track', label: 'En curso' },
@@ -85,28 +46,40 @@ const goalStatusOptions = [
   { value: 'completed', label: 'Completada' },
 ] as const;
 
-const goalCadenceOptions = [
-  { value: 'monthly', label: 'Mensual' },
-  { value: 'quarterly', label: 'Trimestral' },
-  { value: 'strategic', label: 'Estratégica' },
-] as const;
+const accountId = computed(() =>
+  typeof route.params.accountId === 'string' ? route.params.accountId : '',
+);
+
+const {
+  goals,
+  hasGoals,
+  isLoading,
+  isSaving,
+  isDeleting,
+  loadError,
+  saveError,
+  deleteError,
+  clearSaveError,
+  clearDeleteError,
+  loadGoals,
+  createGoal,
+  updateGoal,
+  deleteGoal,
+} = useAccountGoalsCrud();
 
 const filteredGoalItems = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
-  return goalItems.filter((goal) => {
-    const matchesQuery =
-      normalizedQuery.length === 0 || goal.title.toLowerCase().includes(normalizedQuery);
+  return goals.value.filter((goal) => {
+    const matchesQuery = normalizedQuery.length === 0 || goal.name.toLowerCase().includes(normalizedQuery);
 
     if (!matchesQuery) {
       return false;
     }
 
-    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(goal.status)) {
-      return false;
-    }
+    const status = resolveGoalStatus(goal.progress);
 
-    if (selectedCadences.value.length > 0 && !selectedCadences.value.includes(goal.cadence)) {
+    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(status)) {
       return false;
     }
 
@@ -119,8 +92,72 @@ const selectedGoal = computed(() => {
     return null;
   }
 
-  return goalItems.find((goal) => goal.id === selectedGoalId.value) ?? null;
+  return goals.value.find((goal) => goal.id === selectedGoalId.value) ?? null;
 });
+
+const createGoalActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'submit-goal',
+    label: isSaving.value ? 'Guardando...' : 'Crear meta',
+    tone: 'primary' as const,
+    type: 'submit' as const,
+    form: 'account-goal-form',
+    disabled: !createFormState.value.canSubmit || isSaving.value,
+  },
+]);
+
+const editGoalActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'submit-edit-goal',
+    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
+    tone: 'primary' as const,
+    type: 'submit' as const,
+    form: 'edit-account-goal-form',
+    disabled: !editFormState.value.canSubmit || isSaving.value,
+  },
+]);
+
+const deleteGoalActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'confirm-delete-goal',
+    label: isDeleting.value ? 'Eliminando...' : 'Eliminar meta',
+    tone: 'primary' as const,
+    disabled: !selectedGoal.value || isDeleting.value,
+  },
+]);
+
+onMounted(() => {
+  if (accountId.value) {
+    void loadGoals(accountId.value);
+  }
+});
+
+function resolveGoalStatus(progress: number): GoalStatus {
+  if (progress >= 100) {
+    return 'completed';
+  }
+
+  if (progress < 50) {
+    return 'at-risk';
+  }
+
+  return 'on-track';
+}
+
+function formatDateLabel(date: string | null): string {
+  if (!date) {
+    return 'Sin fecha límite';
+  }
+
+  return new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(`${date}T00:00:00`));
+}
 
 function openFilters(): void {
   isFiltersOpen.value = true;
@@ -132,7 +169,6 @@ function closeFilters(): void {
 
 function clearFilters(): void {
   selectedStatuses.value = [];
-  selectedCadences.value = [];
 }
 
 function toggleStatus(status: GoalStatus): void {
@@ -142,15 +178,6 @@ function toggleStatus(status: GoalStatus): void {
   }
 
   selectedStatuses.value = [...selectedStatuses.value, status];
-}
-
-function toggleCadence(cadence: GoalCadence): void {
-  if (selectedCadences.value.includes(cadence)) {
-    selectedCadences.value = selectedCadences.value.filter((item) => item !== cadence);
-    return;
-  }
-
-  selectedCadences.value = [...selectedCadences.value, cadence];
 }
 
 function handleFiltersModalAction(actionKey: string): void {
@@ -165,24 +192,31 @@ function handleFiltersModalAction(actionKey: string): void {
 }
 
 function openCreateGoal(): void {
+  clearSaveError();
+  createFormState.value = { canSubmit: false, isSubmitting: false };
   isCreateGoalOpen.value = true;
 }
 
 function closeCreateGoal(): void {
   isCreateGoalOpen.value = false;
+  clearSaveError();
 }
 
 function openEditGoal(goalId: string): void {
+  clearSaveError();
   selectedGoalId.value = goalId;
+  editFormState.value = { canSubmit: false, isSubmitting: false };
   isEditGoalOpen.value = true;
 }
 
 function closeEditGoal(): void {
   isEditGoalOpen.value = false;
   selectedGoalId.value = null;
+  clearSaveError();
 }
 
 function openDeleteGoal(goalId: string): void {
+  clearDeleteError();
   selectedGoalId.value = goalId;
   isDeleteGoalOpen.value = true;
 }
@@ -190,10 +224,47 @@ function openDeleteGoal(goalId: string): void {
 function closeDeleteGoal(): void {
   isDeleteGoalOpen.value = false;
   selectedGoalId.value = null;
+  clearDeleteError();
 }
 
-function confirmDeleteGoal(): void {
-  closeDeleteGoal();
+async function handleCreateGoalSubmit(payload: AccountGoalWritePayload): Promise<void> {
+  const wasCreated = await createGoal(payload);
+
+  if (wasCreated) {
+    closeCreateGoal();
+  }
+}
+
+async function handleEditGoalSubmit(payload: AccountGoalWritePayload): Promise<void> {
+  if (!selectedGoal.value) {
+    return;
+  }
+
+  const wasUpdated = await updateGoal(selectedGoal.value.id, payload);
+
+  if (wasUpdated) {
+    closeEditGoal();
+  }
+}
+
+async function confirmDeleteGoal(): Promise<void> {
+  if (!selectedGoal.value) {
+    return;
+  }
+
+  const wasDeleted = await deleteGoal(selectedGoal.value.id);
+
+  if (wasDeleted) {
+    closeDeleteGoal();
+  }
+}
+
+function handleCreateFormStateChange(state: FormState): void {
+  createFormState.value = state;
+}
+
+function handleEditFormStateChange(state: FormState): void {
+  editFormState.value = state;
 }
 </script>
 
@@ -219,13 +290,7 @@ function confirmDeleteGoal(): void {
         >
           <MagnifyingGlassIcon class="h-5 w-5" />
         </div>
-        <AppInput
-          id="goal-search"
-          v-model="searchTerm"
-          type="search"
-          placeholder="Buscar meta por nombre"
-          class="pl-11"
-        />
+        <AppInput id="goal-search" v-model="searchTerm" type="search" placeholder="Buscar meta por nombre" class="pl-11" />
       </div>
 
       <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
@@ -233,7 +298,15 @@ function confirmDeleteGoal(): void {
       </AppIconButton>
     </div>
 
-    <section class="space-y-3">
+    <section v-if="loadError && hasGoals" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+      <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
+    </section>
+
+    <section v-if="isLoading && !hasGoals" class="rounded-2xl border px-4 py-10 text-center">
+      <AppText>Cargando metas...</AppText>
+    </section>
+
+    <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle">{{ filteredGoalItems.length }} metas visibles</AppText>
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
@@ -243,25 +316,25 @@ function confirmDeleteGoal(): void {
         <AccountGoalListItem
           v-for="goal in filteredGoalItems"
           :key="goal.id"
-          :cadence-label="goal.cadenceLabel"
           :current-amount="goal.currentAmount"
-          :detail="goal.detail"
+          :deadline-label="formatDateLabel(goal.deadline)"
           :item-id="goal.id"
+          :owner-label="goal.userName ?? 'Meta del usuario autenticado'"
           :progress="goal.progress"
-          :status="goal.status"
+          :remaining-amount="goal.remainingAmount"
+          :status="resolveGoalStatus(goal.progress)"
           :target-amount="goal.targetAmount"
-          :title="goal.title"
+          :title="goal.name"
           @delete="openDeleteGoal"
           @edit="openEditGoal"
         />
 
-        <div
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">
-            Sigue desplazándote para revisar más metas conforme la cuenta acumule objetivos.
-          </AppText>
+        <div v-if="filteredGoalItems.length === 0" class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
+          <AppText size="sm">No hay metas que coincidan con la búsqueda o los filtros actuales.</AppText>
+        </div>
+
+        <div class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
+          <AppText size="sm">Sigue desplazándote para revisar más metas conforme la cuenta acumule objetivos.</AppText>
         </div>
       </div>
     </section>
@@ -280,7 +353,7 @@ function confirmDeleteGoal(): void {
       <div class="space-y-5">
         <div class="space-y-2">
           <AppTitle as="h2" size="sm">Estatus</AppTitle>
-          <AppText>Filtra metas según su nivel de avance y riesgo operativo.</AppText>
+          <AppText>Filtra metas según su nivel de avance.</AppText>
         </div>
 
         <div class="flex flex-wrap gap-2">
@@ -289,104 +362,54 @@ function confirmDeleteGoal(): void {
             :key="status.value"
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedStatuses.includes(status.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
+            :class="selectedStatuses.includes(status.value) ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)' : 'bg-(--app-color-surface-muted) text-(--app-color-text)'"
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="toggleStatus(status.value)"
           >
             {{ status.label }}
           </button>
         </div>
-
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Cadencia</AppTitle>
-          <AppText>Refina la lista por temporalidad o naturaleza de cada meta.</AppText>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="cadence in goalCadenceOptions"
-            :key="cadence.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedCadences.includes(cadence.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleCadence(cadence.value)"
-          >
-            {{ cadence.label }}
-          </button>
-        </div>
       </div>
     </AppModal>
 
-    <AppModal
-      :open="isCreateGoalOpen"
-      :actions="[
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Crear meta"
-      variant="default"
-      @close="closeCreateGoal"
-    >
-      <div class="space-y-3">
-        <AppText>
-          La creación de metas puede vivir en esta modal siguiendo el mismo patrón del resto del
-          módulo.
-        </AppText>
-        <AppText size="sm" tone="subtle">
-          Por ahora dejamos el flujo visual preparado mientras se define el formulario específico.
-        </AppText>
-      </div>
+    <AppModal :open="isCreateGoalOpen" :actions="createGoalActions" title="Crear meta" variant="default" @close="closeCreateGoal">
+      <AccountGoalForm
+        v-if="accountId"
+        form-id="account-goal-form"
+        :account-id="accountId"
+        :server-error="saveError"
+        @state-change="handleCreateFormStateChange"
+        @submit="handleCreateGoalSubmit"
+      />
     </AppModal>
 
-    <AppModal
-      :open="isEditGoalOpen"
-      :actions="[
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Editar meta"
-      variant="default"
-      @close="closeEditGoal"
-    >
-      <div class="space-y-3">
-        <AppText>
-          El formulario de edición para
-          <strong>{{ selectedGoal?.title }}</strong>
-          se mostrará aquí en una siguiente iteración.
-        </AppText>
-        <AppText size="sm" tone="subtle">
-          El flujo modal ya quedó reservado para mantener consistencia con el resto del sistema.
-        </AppText>
-      </div>
+    <AppModal :open="isEditGoalOpen" :actions="editGoalActions" title="Editar meta" variant="default" @close="closeEditGoal">
+      <AccountGoalForm
+        v-if="accountId && selectedGoal"
+        form-id="edit-account-goal-form"
+        :account-id="accountId"
+        :initial-values="selectedGoal"
+        :server-error="saveError"
+        @state-change="handleEditFormStateChange"
+        @submit="handleEditGoalSubmit"
+      />
     </AppModal>
 
     <AppModal
       :open="isDeleteGoalOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        { key: 'confirm-delete-goal', label: 'Eliminar meta', tone: 'primary' },
-      ]"
+      :actions="deleteGoalActions"
       title="Eliminar meta"
       variant="danger"
       @action="$event === 'confirm-delete-goal' && confirmDeleteGoal()"
       @close="closeDeleteGoal"
     >
       <div class="space-y-3">
-        <AppText>
+        <AppText v-if="selectedGoal">
           Vas a eliminar
-          <strong>{{ selectedGoal?.title }}</strong
+          <strong>{{ selectedGoal.name }}</strong
           >.
         </AppText>
-        <AppText size="sm" tone="subtle">
-          La confirmación sigue el mismo patrón de borrado del resto de las facilities con listados.
-        </AppText>
+        <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
       </div>
     </AppModal>
   </section>

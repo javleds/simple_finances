@@ -47,6 +47,10 @@ export function createAccountsRepository() {
       const response = await apiClient.get<unknown>(accountsPath);
       return accountCollectionSchema.parse(response).map(mapAccountApiToDomain);
     },
+    async getById(accountId: string): Promise<Account> {
+      const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}`);
+      return mapAccountApiToDomain(singleAccountSchema.parse(response));
+    },
     async create(payload: AccountWritePayload): Promise<Account> {
       const response = await apiClient.post<unknown>(accountsPath, mapWritePayloadToApi(payload));
       return mapAccountApiToDomain(singleAccountSchema.parse(response));

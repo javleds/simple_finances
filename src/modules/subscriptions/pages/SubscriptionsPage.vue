@@ -6,9 +6,17 @@ import {
   PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
+import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
+import SubscriptionsForm from '@/modules/subscriptions/components/SubscriptionsForm.vue';
 import SubscriptionListItem from '@/modules/subscriptions/components/SubscriptionListItem.vue';
+import { useSubscriptionsCrud } from '@/modules/subscriptions/composables/useSubscriptionsCrud';
+import { formatSubscriptionFrequency } from '@/modules/subscriptions/schemas/subscriptionSchemas';
+import type {
+  SubscriptionFrequencyUnit,
+  SubscriptionWritePayload,
+} from '@/modules/subscriptions/types';
 import {
   AppButton,
   AppCard,
@@ -19,88 +27,77 @@ import {
   AppTitle,
 } from '@/modules/shared/components';
 
-const subscriptions = [
-  {
-    id: 'premium-facility',
-    plan: 'Plan Premium Facility',
-    cycle: 'Facturación anual',
-    nextCharge: '12 de mayo de 2026',
-    amount: 12000,
-    status: 'active',
-  },
-  {
-    id: 'additional-users',
-    plan: 'Usuarios adicionales',
-    cycle: 'Facturación mensual',
-    nextCharge: '03 de mayo de 2026',
-    amount: 1280,
-    status: 'pending-renewal',
-  },
-  {
-    id: 'advanced-analytics',
-    plan: 'Analítica avanzada',
-    cycle: 'Complemento mensual',
-    nextCharge: '18 de mayo de 2026',
-    amount: 860,
-    status: 'paused',
-  },
-] as const;
+type FormState = {
+  canSubmit: boolean;
+  isSubmitting: boolean;
+};
 
-type SubscriptionStatus = 'active' | 'pending-renewal' | 'paused';
-type SubscriptionCycle = 'annual' | 'monthly' | 'add-on';
+type SubscriptionStatusFilter = 'active' | 'cancelled';
+
+const accountsRepository = createAccountsRepository();
 
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateSubscriptionOpen = ref(false);
 const isEditSubscriptionOpen = ref(false);
 const isDeleteSubscriptionOpen = ref(false);
-const selectedStatuses = ref<SubscriptionStatus[]>([]);
-const selectedCycles = ref<SubscriptionCycle[]>([]);
+const selectedStatuses = ref<SubscriptionStatusFilter[]>([]);
+const selectedUnits = ref<SubscriptionFrequencyUnit[]>([]);
 const selectedSubscriptionId = ref<string | null>(null);
+const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const fundingAccountOptions = ref<Array<{ value: string; label: string; description?: string }>>([]);
 
 const subscriptionStatusOptions = [
   { value: 'active', label: 'Activa' },
-  { value: 'pending-renewal', label: 'Por renovar' },
-  { value: 'paused', label: 'Pausada' },
+  { value: 'cancelled', label: 'Cancelada' },
 ] as const;
 
-const subscriptionCycleOptions = [
-  { value: 'annual', label: 'Anual' },
-  { value: 'monthly', label: 'Mensual' },
-  { value: 'add-on', label: 'Complemento' },
+const subscriptionUnitOptions = [
+  { value: 'day', label: 'Día' },
+  { value: 'week', label: 'Semana' },
+  { value: 'month', label: 'Mes' },
+  { value: 'year', label: 'Año' },
 ] as const;
 
-const normalizedSubscriptions = computed(() =>
-  subscriptions.map((subscription) => ({
-    ...subscription,
-    cycleType:
-      subscription.id === 'premium-facility'
-        ? ('annual' as SubscriptionCycle)
-        : subscription.id === 'additional-users'
-          ? ('monthly' as SubscriptionCycle)
-          : ('add-on' as SubscriptionCycle),
-  })),
-);
+const {
+  subscriptions,
+  hasSubscriptions,
+  isLoading,
+  isSaving,
+  isDeleting,
+  loadError,
+  saveError,
+  deleteError,
+  clearSaveError,
+  clearDeleteError,
+  loadSubscriptions,
+  createSubscription,
+  updateSubscription,
+  deleteSubscription,
+} = useSubscriptionsCrud();
 
 const filteredSubscriptions = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
-  return normalizedSubscriptions.value.filter((subscription) => {
+  return subscriptions.value.filter((subscription) => {
     const matchesQuery =
-      normalizedQuery.length === 0 || subscription.plan.toLowerCase().includes(normalizedQuery);
+      normalizedQuery.length === 0 || subscription.name.toLowerCase().includes(normalizedQuery);
 
     if (!matchesQuery) {
       return false;
     }
 
-    if (
-      selectedStatuses.value.length > 0 &&
-      !selectedStatuses.value.includes(subscription.status)
-    ) {
+    const status: SubscriptionStatusFilter = subscription.cancellationDate ? 'cancelled' : 'active';
+
+    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(status)) {
       return false;
     }
 
-    if (selectedCycles.value.length > 0 && !selectedCycles.value.includes(subscription.cycleType)) {
+    if (
+      selectedUnits.value.length > 0 &&
+      !selectedUnits.value.includes(subscription.frequencyUnit)
+    ) {
       return false;
     }
 
@@ -114,11 +111,62 @@ const selectedSubscription = computed(() => {
   }
 
   return (
-    normalizedSubscriptions.value.find(
+    subscriptions.value.find(
       (subscription) => subscription.id === selectedSubscriptionId.value,
     ) ?? null
   );
 });
+
+const createSubscriptionActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'submit-subscription',
+    label: isSaving.value ? 'Guardando...' : 'Crear suscripción',
+    tone: 'primary' as const,
+    type: 'submit' as const,
+    form: 'subscription-form',
+    disabled: !createFormState.value.canSubmit || isSaving.value,
+  },
+]);
+
+const editSubscriptionActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'submit-edit-subscription',
+    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
+    tone: 'primary' as const,
+    type: 'submit' as const,
+    form: 'edit-subscription-form',
+    disabled: !editFormState.value.canSubmit || isSaving.value,
+  },
+]);
+
+const deleteSubscriptionActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'confirm-delete-subscription',
+    label: isDeleting.value ? 'Eliminando...' : 'Eliminar suscripción',
+    tone: 'primary' as const,
+    disabled: !selectedSubscription.value || isDeleting.value,
+  },
+]);
+
+onMounted(() => {
+  void Promise.all([loadSubscriptions(), loadFundingAccounts()]);
+});
+
+async function loadFundingAccounts(): Promise<void> {
+  try {
+    const accounts = await accountsRepository.list();
+    fundingAccountOptions.value = accounts.map((account) => ({
+      value: account.id,
+      label: account.name,
+      description: account.description,
+    }));
+  } catch {
+    fundingAccountOptions.value = [];
+  }
+}
 
 function openFilters(): void {
   isFiltersOpen.value = true;
@@ -130,10 +178,10 @@ function closeFilters(): void {
 
 function clearFilters(): void {
   selectedStatuses.value = [];
-  selectedCycles.value = [];
+  selectedUnits.value = [];
 }
 
-function toggleStatus(status: SubscriptionStatus): void {
+function toggleStatus(status: SubscriptionStatusFilter): void {
   if (selectedStatuses.value.includes(status)) {
     selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
     return;
@@ -142,13 +190,13 @@ function toggleStatus(status: SubscriptionStatus): void {
   selectedStatuses.value = [...selectedStatuses.value, status];
 }
 
-function toggleCycle(cycle: SubscriptionCycle): void {
-  if (selectedCycles.value.includes(cycle)) {
-    selectedCycles.value = selectedCycles.value.filter((item) => item !== cycle);
+function toggleUnit(unit: SubscriptionFrequencyUnit): void {
+  if (selectedUnits.value.includes(unit)) {
+    selectedUnits.value = selectedUnits.value.filter((item) => item !== unit);
     return;
   }
 
-  selectedCycles.value = [...selectedCycles.value, cycle];
+  selectedUnits.value = [...selectedUnits.value, unit];
 }
 
 function handleFiltersModalAction(actionKey: string): void {
@@ -163,24 +211,31 @@ function handleFiltersModalAction(actionKey: string): void {
 }
 
 function openCreateSubscription(): void {
+  clearSaveError();
+  createFormState.value = { canSubmit: false, isSubmitting: false };
   isCreateSubscriptionOpen.value = true;
 }
 
 function closeCreateSubscription(): void {
   isCreateSubscriptionOpen.value = false;
+  clearSaveError();
 }
 
 function openEditSubscription(subscriptionId: string): void {
+  clearSaveError();
   selectedSubscriptionId.value = subscriptionId;
+  editFormState.value = { canSubmit: false, isSubmitting: false };
   isEditSubscriptionOpen.value = true;
 }
 
 function closeEditSubscription(): void {
   isEditSubscriptionOpen.value = false;
   selectedSubscriptionId.value = null;
+  clearSaveError();
 }
 
 function openDeleteSubscription(subscriptionId: string): void {
+  clearDeleteError();
   selectedSubscriptionId.value = subscriptionId;
   isDeleteSubscriptionOpen.value = true;
 }
@@ -188,10 +243,59 @@ function openDeleteSubscription(subscriptionId: string): void {
 function closeDeleteSubscription(): void {
   isDeleteSubscriptionOpen.value = false;
   selectedSubscriptionId.value = null;
+  clearDeleteError();
 }
 
-function confirmDeleteSubscription(): void {
-  closeDeleteSubscription();
+async function handleCreateSubscriptionSubmit(payload: SubscriptionWritePayload): Promise<void> {
+  const wasCreated = await createSubscription(payload);
+
+  if (wasCreated) {
+    closeCreateSubscription();
+  }
+}
+
+async function handleEditSubscriptionSubmit(payload: SubscriptionWritePayload): Promise<void> {
+  if (!selectedSubscription.value) {
+    return;
+  }
+
+  const wasUpdated = await updateSubscription(selectedSubscription.value.id, payload);
+
+  if (wasUpdated) {
+    closeEditSubscription();
+  }
+}
+
+async function confirmDeleteSubscription(): Promise<void> {
+  if (!selectedSubscription.value) {
+    return;
+  }
+
+  const wasDeleted = await deleteSubscription(selectedSubscription.value.id);
+
+  if (wasDeleted) {
+    closeDeleteSubscription();
+  }
+}
+
+function handleCreateFormStateChange(state: FormState): void {
+  createFormState.value = state;
+}
+
+function handleEditFormStateChange(state: FormState): void {
+  editFormState.value = state;
+}
+
+function formatDateLabel(date: string | null): string {
+  if (!date) {
+    return 'Sin fecha';
+  }
+
+  return new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(`${date}T00:00:00`));
 }
 </script>
 
@@ -231,7 +335,29 @@ function confirmDeleteSubscription(): void {
       </AppIconButton>
     </div>
 
-    <section class="space-y-3">
+    <section v-if="loadError && hasSubscriptions" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+      <AppText class="text-(--app-color-danger)!">
+        {{ loadError }}
+      </AppText>
+    </section>
+
+    <section v-if="isLoading && !hasSubscriptions" class="rounded-2xl border px-4 py-10 text-center">
+      <AppText>Cargando suscripciones...</AppText>
+    </section>
+
+    <section
+      v-else-if="loadError && !hasSubscriptions"
+      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    >
+      <AppText>{{ loadError }}</AppText>
+      <div class="flex justify-center">
+        <AppButton variant="outline" @click="loadSubscriptions">
+          Reintentar
+        </AppButton>
+      </div>
+    </section>
+
+    <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle">
           {{ filteredSubscriptions.length }} suscripciones visibles
@@ -244,14 +370,24 @@ function confirmDeleteSubscription(): void {
           v-for="subscription in filteredSubscriptions"
           :key="subscription.id"
           :amount="subscription.amount"
-          :cycle="subscription.cycle"
+          :cycle="formatSubscriptionFrequency(subscription.frequencyEvery, subscription.frequencyUnit)"
           :item-id="subscription.id"
-          :next-charge="subscription.nextCharge"
-          :plan="subscription.plan"
-          :status="subscription.status"
+          :next-charge="formatDateLabel(subscription.nextPaymentDate)"
+          :plan="subscription.name"
+          :status="subscription.cancellationDate ? 'cancelled' : 'active'"
           @delete="openDeleteSubscription"
           @edit="openEditSubscription"
         />
+
+        <div
+          v-if="filteredSubscriptions.length === 0"
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm">
+            No hay suscripciones que coincidan con la búsqueda o los filtros actuales.
+          </AppText>
+        </div>
 
         <div
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
@@ -301,25 +437,25 @@ function confirmDeleteSubscription(): void {
         </div>
 
         <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Ciclo</AppTitle>
-          <AppText>Refina entre planes anuales, mensuales o complementos especializados.</AppText>
+          <AppTitle as="h2" size="sm">Frecuencia</AppTitle>
+          <AppText>Refina la lista por la unidad principal de recurrencia.</AppText>
         </div>
 
         <div class="flex flex-wrap gap-2">
           <button
-            v-for="cycle in subscriptionCycleOptions"
-            :key="cycle.value"
+            v-for="unit in subscriptionUnitOptions"
+            :key="unit.value"
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
             :class="
-              selectedCycles.includes(cycle.value)
+              selectedUnits.includes(unit.value)
                 ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
                 : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
             "
             :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleCycle(cycle.value)"
+            @click="toggleUnit(unit.value)"
           >
-            {{ cycle.label }}
+            {{ unit.label }}
           </button>
         </div>
       </div>
@@ -327,58 +463,54 @@ function confirmDeleteSubscription(): void {
 
     <AppModal
       :open="isCreateSubscriptionOpen"
-      :actions="[
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
+      :actions="createSubscriptionActions"
       title="Nueva suscripción"
       variant="default"
       @close="closeCreateSubscription"
     >
-      <div class="space-y-3">
-        <AppText>
-          La creación o ampliación de subscripciones puede integrarse aquí con el mismo patrón modal
-          del resto de la app.
-        </AppText>
-        <AppText size="sm" tone="subtle">
-          Por ahora dejamos preparado el flujo visual de búsqueda, filtros y acciones contextuales.
-        </AppText>
-      </div>
+      <SubscriptionsForm
+        form-id="subscription-form"
+        :funding-account-options="fundingAccountOptions"
+        :server-error="saveError"
+        @state-change="handleCreateFormStateChange"
+        @submit="handleCreateSubscriptionSubmit"
+      />
     </AppModal>
 
     <AppModal
       :open="isEditSubscriptionOpen"
-      :actions="[
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
+      :actions="editSubscriptionActions"
       title="Editar suscripción"
       variant="default"
       @close="closeEditSubscription"
     >
-      <div class="space-y-3">
-        <AppText>
-          El formulario de edición para
-          <strong>{{ selectedSubscription?.plan }}</strong>
-          se mostrará aquí eventualmente.
-        </AppText>
-      </div>
+      <SubscriptionsForm
+        v-if="selectedSubscription"
+        form-id="edit-subscription-form"
+        :initial-values="selectedSubscription"
+        :funding-account-options="fundingAccountOptions"
+        :server-error="saveError"
+        @state-change="handleEditFormStateChange"
+        @submit="handleEditSubscriptionSubmit"
+      />
     </AppModal>
 
     <AppModal
       :open="isDeleteSubscriptionOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        { key: 'confirm-delete-subscription', label: 'Eliminar suscripción', tone: 'primary' },
-      ]"
+      :actions="deleteSubscriptionActions"
       title="Eliminar suscripción"
       variant="danger"
       @action="$event === 'confirm-delete-subscription' && confirmDeleteSubscription()"
       @close="closeDeleteSubscription"
     >
       <div class="space-y-3">
-        <AppText>
+        <AppText v-if="selectedSubscription">
           Vas a eliminar
-          <strong>{{ selectedSubscription?.plan }}</strong
+          <strong>{{ selectedSubscription.name }}</strong
           >.
+        </AppText>
+        <AppText v-if="deleteError" class="text-(--app-color-danger)!">
+          {{ deleteError }}
         </AppText>
       </div>
     </AppModal>

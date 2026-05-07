@@ -1,5 +1,13 @@
 export type AccountStatus = 'Activo' | 'Inactivo';
 
+export type AccountMember = {
+  id: string;
+  name: string;
+  email: string;
+  allocationPercentage: number;
+  pendingExpenses: number;
+};
+
 export type Account = {
   id: string;
   name: string;
@@ -14,6 +22,7 @@ export type Account = {
   creditLine: number | null;
   closingDay: number | null;
   fundingAccountId: string | null;
+  users: AccountMember[];
 };
 
 export type AccountFormValues = {

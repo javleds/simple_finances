@@ -6,9 +6,16 @@ import {
   PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 
+import AccountInvitationForm from '@/modules/accounts/components/AccountInvitationForm.vue';
 import AccountInvitationListItem from '@/modules/accounts/components/AccountInvitationListItem.vue';
+import { useAccountInvitesCrud } from '@/modules/accounts/composables/useAccountInvitesCrud';
+import type {
+  AccountInviteStatus,
+  AccountInviteWritePayload,
+} from '@/modules/accounts/schemas/accountInviteSchemas';
 import {
   AppButton,
   AppCard,
@@ -19,76 +26,60 @@ import {
   AppTitle,
 } from '@/modules/shared/components';
 
-type InvitationStatus = 'pending' | 'resent' | 'accepted';
-type InvitationRole = 'admin' | 'approver' | 'finance';
+type FormState = {
+  canSubmit: boolean;
+  isSubmitting: boolean;
+};
 
-const invitationItems = [
-  {
-    id: 'carlos-mendoza',
-    name: 'Carlos Mendoza',
-    email: 'carlos@empresa.com',
-    role: 'approver',
-    roleLabel: 'Aprobador',
-    metaLabel: 'Expira en 3 días',
-    status: 'pending',
-  },
-  {
-    id: 'maria-torres',
-    name: 'María Torres',
-    email: 'maria@empresa.com',
-    role: 'finance',
-    roleLabel: 'Seguimiento financiero',
-    metaLabel: 'Reenviada ayer',
-    status: 'resent',
-  },
-  {
-    id: 'paola-garcia',
-    name: 'Paola García',
-    email: 'paola@empresa.com',
-    role: 'admin',
-    roleLabel: 'Administrador',
-    metaLabel: 'Aceptada hace 2 días',
-    status: 'accepted',
-  },
-] as const;
-
+const route = useRoute();
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateInvitationOpen = ref(false);
 const isEditInvitationOpen = ref(false);
 const isDeleteInvitationOpen = ref(false);
-const selectedStatuses = ref<InvitationStatus[]>([]);
-const selectedRoles = ref<InvitationRole[]>([]);
+const selectedStatuses = ref<AccountInviteStatus[]>([]);
 const selectedInvitationId = ref<string | null>(null);
+const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 
 const invitationStatusOptions = [
   { value: 'pending', label: 'Pendiente' },
-  { value: 'resent', label: 'Reenviada' },
   { value: 'accepted', label: 'Aceptada' },
+  { value: 'declined', label: 'Declinada' },
 ] as const;
 
-const invitationRoleOptions = [
-  { value: 'admin', label: 'Administrador' },
-  { value: 'approver', label: 'Aprobador' },
-  { value: 'finance', label: 'Finanzas' },
-] as const;
+const accountId = computed(() =>
+  typeof route.params.accountId === 'string' ? route.params.accountId : '',
+);
+
+const {
+  invites,
+  hasInvites,
+  isLoading,
+  isSaving,
+  isDeleting,
+  loadError,
+  saveError,
+  deleteError,
+  clearSaveError,
+  clearDeleteError,
+  loadInvites,
+  createInvite,
+  updateInvite,
+  deleteInvite,
+} = useAccountInvitesCrud();
 
 const filteredInvitationItems = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
-  return invitationItems.filter((invitation) => {
-    const matchesQuery =
-      normalizedQuery.length === 0 || invitation.name.toLowerCase().includes(normalizedQuery);
+  return invites.value.filter((invitation) => {
+    const matchesQuery = normalizedQuery.length === 0 || invitation.email.toLowerCase().includes(normalizedQuery);
 
     if (!matchesQuery) {
       return false;
     }
 
     if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(invitation.status)) {
-      return false;
-    }
-
-    if (selectedRoles.value.length > 0 && !selectedRoles.value.includes(invitation.role)) {
       return false;
     }
 
@@ -101,8 +92,60 @@ const selectedInvitation = computed(() => {
     return null;
   }
 
-  return invitationItems.find((invitation) => invitation.id === selectedInvitationId.value) ?? null;
+  return invites.value.find((invitation) => invitation.id === selectedInvitationId.value) ?? null;
 });
+
+const createInviteActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'submit-invitation',
+    label: isSaving.value ? 'Guardando...' : 'Crear invitación',
+    tone: 'primary' as const,
+    type: 'submit' as const,
+    form: 'account-invitation-form',
+    disabled: !createFormState.value.canSubmit || isSaving.value,
+  },
+]);
+
+const editInviteActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'submit-edit-invitation',
+    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
+    tone: 'primary' as const,
+    type: 'submit' as const,
+    form: 'edit-account-invitation-form',
+    disabled: !editFormState.value.canSubmit || isSaving.value,
+  },
+]);
+
+const deleteInviteActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'confirm-delete-invitation',
+    label: isDeleting.value ? 'Eliminando...' : 'Eliminar invitación',
+    tone: 'primary' as const,
+    disabled: !selectedInvitation.value || isDeleting.value,
+  },
+]);
+
+onMounted(() => {
+  if (accountId.value) {
+    void loadInvites(accountId.value);
+  }
+});
+
+function formatDateLabel(date: string | null): string {
+  if (!date) {
+    return 'Sin fecha';
+  }
+
+  return new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(date));
+}
 
 function openFilters(): void {
   isFiltersOpen.value = true;
@@ -114,25 +157,15 @@ function closeFilters(): void {
 
 function clearFilters(): void {
   selectedStatuses.value = [];
-  selectedRoles.value = [];
 }
 
-function toggleStatus(status: InvitationStatus): void {
+function toggleStatus(status: AccountInviteStatus): void {
   if (selectedStatuses.value.includes(status)) {
     selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
     return;
   }
 
   selectedStatuses.value = [...selectedStatuses.value, status];
-}
-
-function toggleRole(role: InvitationRole): void {
-  if (selectedRoles.value.includes(role)) {
-    selectedRoles.value = selectedRoles.value.filter((item) => item !== role);
-    return;
-  }
-
-  selectedRoles.value = [...selectedRoles.value, role];
 }
 
 function handleFiltersModalAction(actionKey: string): void {
@@ -147,24 +180,31 @@ function handleFiltersModalAction(actionKey: string): void {
 }
 
 function openCreateInvitation(): void {
+  clearSaveError();
+  createFormState.value = { canSubmit: false, isSubmitting: false };
   isCreateInvitationOpen.value = true;
 }
 
 function closeCreateInvitation(): void {
   isCreateInvitationOpen.value = false;
+  clearSaveError();
 }
 
 function openEditInvitation(invitationId: string): void {
+  clearSaveError();
   selectedInvitationId.value = invitationId;
+  editFormState.value = { canSubmit: false, isSubmitting: false };
   isEditInvitationOpen.value = true;
 }
 
 function closeEditInvitation(): void {
   isEditInvitationOpen.value = false;
   selectedInvitationId.value = null;
+  clearSaveError();
 }
 
 function openDeleteInvitation(invitationId: string): void {
+  clearDeleteError();
   selectedInvitationId.value = invitationId;
   isDeleteInvitationOpen.value = true;
 }
@@ -172,10 +212,47 @@ function openDeleteInvitation(invitationId: string): void {
 function closeDeleteInvitation(): void {
   isDeleteInvitationOpen.value = false;
   selectedInvitationId.value = null;
+  clearDeleteError();
 }
 
-function confirmDeleteInvitation(): void {
-  closeDeleteInvitation();
+async function handleCreateInvitationSubmit(payload: AccountInviteWritePayload): Promise<void> {
+  const wasCreated = await createInvite(payload);
+
+  if (wasCreated) {
+    closeCreateInvitation();
+  }
+}
+
+async function handleEditInvitationSubmit(payload: AccountInviteWritePayload): Promise<void> {
+  if (!selectedInvitation.value) {
+    return;
+  }
+
+  const wasUpdated = await updateInvite(selectedInvitation.value.id, payload);
+
+  if (wasUpdated) {
+    closeEditInvitation();
+  }
+}
+
+async function confirmDeleteInvitation(): Promise<void> {
+  if (!selectedInvitation.value) {
+    return;
+  }
+
+  const wasDeleted = await deleteInvite(selectedInvitation.value.id);
+
+  if (wasDeleted) {
+    closeDeleteInvitation();
+  }
+}
+
+function handleCreateFormStateChange(state: FormState): void {
+  createFormState.value = state;
+}
+
+function handleEditFormStateChange(state: FormState): void {
+  editFormState.value = state;
 }
 </script>
 
@@ -195,18 +272,10 @@ function confirmDeleteInvitation(): void {
 
     <div class="flex items-center gap-3">
       <div class="relative flex-1">
-        <div
-          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
-        >
+        <div class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)">
           <MagnifyingGlassIcon class="h-5 w-5" />
         </div>
-        <AppInput
-          id="invitation-search"
-          v-model="searchTerm"
-          type="search"
-          placeholder="Buscar invitación por nombre"
-          class="pl-11"
-        />
+        <AppInput id="invitation-search" v-model="searchTerm" type="search" placeholder="Buscar invitación por correo" class="pl-11" />
       </div>
 
       <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
@@ -214,11 +283,17 @@ function confirmDeleteInvitation(): void {
       </AppIconButton>
     </div>
 
-    <section class="space-y-3">
+    <section v-if="loadError && hasInvites" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+      <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
+    </section>
+
+    <section v-if="isLoading && !hasInvites" class="rounded-2xl border px-4 py-10 text-center">
+      <AppText>Cargando invitaciones...</AppText>
+    </section>
+
+    <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">
-          {{ filteredInvitationItems.length }} invitaciones visibles
-        </AppText>
+        <AppText size="sm" tone="subtle">{{ filteredInvitationItems.length }} invitaciones visibles</AppText>
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
       </div>
 
@@ -228,21 +303,19 @@ function confirmDeleteInvitation(): void {
           :key="invitation.id"
           :email="invitation.email"
           :item-id="invitation.id"
-          :meta-label="invitation.metaLabel"
-          :name="invitation.name"
-          :role-label="invitation.roleLabel"
+          :meta-label="formatDateLabel(invitation.invitedAt)"
+          :percentage-label="`${invitation.percentage}%`"
           :status="invitation.status"
           @delete="openDeleteInvitation"
           @edit="openEditInvitation"
         />
 
-        <div
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">
-            Sigue desplazándote para revisar más invitaciones conforme se amplíe la colaboración.
-          </AppText>
+        <div v-if="filteredInvitationItems.length === 0" class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
+          <AppText size="sm">No hay invitaciones que coincidan con la búsqueda o los filtros actuales.</AppText>
+        </div>
+
+        <div class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
+          <AppText size="sm">Sigue desplazándote para revisar más invitaciones conforme se amplíe la colaboración.</AppText>
         </div>
       </div>
     </section>
@@ -261,7 +334,7 @@ function confirmDeleteInvitation(): void {
       <div class="space-y-5">
         <div class="space-y-2">
           <AppTitle as="h2" size="sm">Estatus</AppTitle>
-          <AppText>Refina las invitaciones según su momento dentro del flujo de acceso.</AppText>
+          <AppText>Refina las invitaciones según su estado de respuesta.</AppText>
         </div>
 
         <div class="flex flex-wrap gap-2">
@@ -270,100 +343,54 @@ function confirmDeleteInvitation(): void {
             :key="status.value"
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedStatuses.includes(status.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
+            :class="selectedStatuses.includes(status.value) ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)' : 'bg-(--app-color-surface-muted) text-(--app-color-text)'"
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="toggleStatus(status.value)"
           >
             {{ status.label }}
           </button>
         </div>
-
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Rol</AppTitle>
-          <AppText
-            >Filtra por el tipo de invitación que se está enviando a cada colaborador.</AppText
-          >
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="role in invitationRoleOptions"
-            :key="role.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedRoles.includes(role.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleRole(role.value)"
-          >
-            {{ role.label }}
-          </button>
-        </div>
       </div>
     </AppModal>
 
-    <AppModal
-      :open="isCreateInvitationOpen"
-      :actions="[
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Nueva invitación"
-      variant="default"
-      @close="closeCreateInvitation"
-    >
-      <div class="space-y-3">
-        <AppText>
-          La creación de invitaciones puede integrarse aquí siguiendo el mismo patrón modal del
-          resto del módulo.
-        </AppText>
-        <AppText size="sm" tone="subtle">
-          Por ahora dejamos preparado el flujo visual con búsqueda, filtros y acciones de lista.
-        </AppText>
-      </div>
+    <AppModal :open="isCreateInvitationOpen" :actions="createInviteActions" title="Nueva invitación" variant="default" @close="closeCreateInvitation">
+      <AccountInvitationForm
+        v-if="accountId"
+        form-id="account-invitation-form"
+        :account-id="accountId"
+        :server-error="saveError"
+        @state-change="handleCreateFormStateChange"
+        @submit="handleCreateInvitationSubmit"
+      />
     </AppModal>
 
-    <AppModal
-      :open="isEditInvitationOpen"
-      :actions="[
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Editar invitación"
-      variant="default"
-      @close="closeEditInvitation"
-    >
-      <div class="space-y-3">
-        <AppText>
-          El formulario de edición para la invitación de
-          <strong>{{ selectedInvitation?.name }}</strong>
-          se mostrará aquí eventualmente.
-        </AppText>
-      </div>
+    <AppModal :open="isEditInvitationOpen" :actions="editInviteActions" title="Editar invitación" variant="default" @close="closeEditInvitation">
+      <AccountInvitationForm
+        v-if="accountId && selectedInvitation"
+        form-id="edit-account-invitation-form"
+        :account-id="accountId"
+        :initial-values="selectedInvitation"
+        :server-error="saveError"
+        @state-change="handleEditFormStateChange"
+        @submit="handleEditInvitationSubmit"
+      />
     </AppModal>
 
     <AppModal
       :open="isDeleteInvitationOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        { key: 'confirm-delete-invitation', label: 'Eliminar invitación', tone: 'primary' },
-      ]"
+      :actions="deleteInviteActions"
       title="Eliminar invitación"
       variant="danger"
       @action="$event === 'confirm-delete-invitation' && confirmDeleteInvitation()"
       @close="closeDeleteInvitation"
     >
       <div class="space-y-3">
-        <AppText>
+        <AppText v-if="selectedInvitation">
           Vas a eliminar la invitación de
-          <strong>{{ selectedInvitation?.name }}</strong
+          <strong>{{ selectedInvitation.email }}</strong
           >.
         </AppText>
+        <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
       </div>
     </AppModal>
   </section>
