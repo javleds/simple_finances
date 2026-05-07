@@ -40,6 +40,15 @@ const accountUserCollectionSchema = z
   ])
   .transform((payload) => ('data' in payload ? payload.data : payload));
 
+const singleAccountUserSchema = z
+  .union([
+    accountUserApiSchema,
+    z.object({
+      data: accountUserApiSchema,
+    }),
+  ])
+  .transform((payload) => ('data' in payload ? payload.data : payload));
+
 function mapWritePayloadToApi(payload: AccountWritePayload) {
   return {
     name: payload.name,
@@ -65,6 +74,15 @@ export function createAccountsRepository() {
     async listUsers(accountId: string): Promise<AccountMember[]> {
       const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}/users`);
       return accountUserCollectionSchema.parse(response).map(mapAccountUserApiToDomain);
+    },
+    async updateUserPercentage(accountId: string, userId: string, percentage: number): Promise<AccountMember> {
+      const response = await apiClient.put<unknown>(`${accountsPath}/${accountId}/users/${userId}`, {
+        percentage,
+      });
+      return mapAccountUserApiToDomain(singleAccountUserSchema.parse(response));
+    },
+    async removeUser(accountId: string, userId: string): Promise<void> {
+      await apiClient.delete(`${accountsPath}/${accountId}/users/${userId}`);
     },
     async create(payload: AccountWritePayload): Promise<Account> {
       const response = await apiClient.post<unknown>(accountsPath, mapWritePayloadToApi(payload));

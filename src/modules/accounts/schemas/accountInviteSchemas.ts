@@ -28,10 +28,13 @@ export type AccountInviteStatus = 'pending' | 'accepted' | 'declined';
 export type AccountInvite = {
   id: string;
   accountId: string;
+  userId: string | null;
   email: string;
   percentage: number;
   status: AccountInviteStatus;
   invitedAt: string | null;
+  accountName: string | null;
+  invitedByName: string | null;
 };
 
 export type AccountInviteFormValues = {
@@ -71,10 +74,27 @@ export const accountInviteFormSchema = z.object({
 export const accountInviteApiSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   account_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+  user_id: z
+    .union([z.string(), z.number(), z.null(), z.undefined()])
+    .transform((value) => (value === null || value === undefined ? null : String(value))),
   email: z.string(),
   percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   status: z.unknown().transform(parseInviteStatus),
   created_at: z.string().nullable().optional().transform((value) => value ?? null),
+  account: z
+    .object({
+      name: z.string(),
+    })
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
+  user: z
+    .object({
+      name: z.string(),
+    })
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
 });
 
 export function createDefaultAccountInviteFormValues(
@@ -96,10 +116,13 @@ export function mapAccountInviteApiToDomain(
   return {
     id: payload.id,
     accountId: payload.account_id,
+    userId: payload.user_id,
     email: payload.email,
     percentage: payload.percentage,
     status: payload.status,
     invitedAt: payload.created_at,
+    accountName: payload.account?.name ?? null,
+    invitedByName: payload.user?.name ?? null,
   };
 }
 

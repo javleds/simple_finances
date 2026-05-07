@@ -38,8 +38,21 @@ function buildWritePayload(payload: AccountInviteWritePayload) {
   };
 }
 
+function buildGlobalWritePayload(payload: AccountInviteWritePayload) {
+  return {
+    account_id: Number(payload.accountId),
+    email: payload.email,
+    percentage: payload.percentage,
+    status: payload.status,
+  };
+}
+
 export function createAccountInvitesRepository() {
   return {
+    async listAll(): Promise<AccountInvite[]> {
+      const response = await apiClient.get<unknown>(invitesPath);
+      return inviteCollectionSchema.parse(response).map(mapAccountInviteApiToDomain);
+    },
     async list(accountId: string): Promise<AccountInvite[]> {
       const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}/invites`);
       return inviteCollectionSchema.parse(response).map(mapAccountInviteApiToDomain);
@@ -55,6 +68,13 @@ export function createAccountInvitesRepository() {
       const response = await apiClient.put<unknown>(
         `${accountsPath}/${payload.accountId}/invites/${inviteId}`,
         buildWritePayload(payload),
+      );
+      return mapAccountInviteApiToDomain(singleInviteSchema.parse(response));
+    },
+    async respond(inviteId: string, payload: AccountInviteWritePayload): Promise<AccountInvite> {
+      const response = await apiClient.put<unknown>(
+        `${invitesPath}/${inviteId}`,
+        buildGlobalWritePayload(payload),
       );
       return mapAccountInviteApiToDomain(singleInviteSchema.parse(response));
     },

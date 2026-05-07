@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { reactive } from 'vue';
+import { onMounted, ref } from 'vue';
 
-import { accounts } from '@/modules/accounts/data/accounts';
+import { ApiError } from '@/lib/api/apiClient';
+import { createNotificationSettingsRepository } from '@/modules/settings/repositories/notificationSettingsRepository';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppCard,
@@ -11,78 +12,92 @@ import {
   AppToggleButton,
 } from '@/modules/shared/components';
 
-type NotificationSetting = {
-  id: string;
-  title: string;
-  description: string;
-  enabled: boolean;
-};
-
-type AccountNotificationSetting = {
-  id: string;
-  accountName: string;
-  enabled: boolean;
-};
-
 const themeStore = useThemeStore();
+const notificationSettingsRepository = createNotificationSettingsRepository();
 
 const themeOptions = [
   { value: THEME_MODE.LIGHT, label: 'Light' },
   { value: THEME_MODE.DARK, label: 'Dark' },
 ] as const;
 
-const globalNotificationSettings = reactive<NotificationSetting[]>([
-  {
-    id: 'payment-reminders',
-    title: 'Recordatorios de pago',
-    description: 'Avisa cuando una cuenta esté cerca de su fecha de corte o pago programado.',
-    enabled: true,
-  },
-  {
-    id: 'balance-alerts',
-    title: 'Alertas de saldo',
-    description: 'Notifica cuando una cuenta baje de su umbral operativo o requiera fondeo.',
-    enabled: true,
-  },
-  {
-    id: 'member-activity',
-    title: 'Actividad de colaboradores',
-    description:
-      'Envía avisos cuando un usuario realice movimientos relevantes o cambios de estado.',
-    enabled: false,
-  },
-]);
-
-const accountNotificationSettings = reactive<AccountNotificationSetting[]>(
-  accounts.map((account, index) => ({
-    id: account.id,
-    accountName: account.name,
-    enabled: index < 3,
-  })),
+const globalNotificationSettings = ref<
+  Array<{ id: string; title: string; description: string; enabled: boolean }>
+>([]);
+const accountNotificationSettings = ref<Array<{ id: string; accountName: string; enabled: boolean }>>(
+  [],
 );
+const isLoading = ref(false);
+const saveError = ref<string | null>(null);
 
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
 }
 
-function toggleGlobalSetting(settingId: string): void {
-  const setting = globalNotificationSettings.find((item) => item.id === settingId);
+onMounted(() => {
+  void loadSettings();
+});
+
+function resolveErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+async function loadSettings(): Promise<void> {
+  isLoading.value = true;
+  saveError.value = null;
+
+  try {
+    const settings = await notificationSettingsRepository.get();
+    globalNotificationSettings.value = settings.notificationTypes;
+    accountNotificationSettings.value = settings.accounts;
+  } catch (error) {
+    saveError.value = resolveErrorMessage(error, 'No fue posible cargar la configuración.');
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function persistSettings(): Promise<void> {
+  saveError.value = null;
+
+  try {
+    await notificationSettingsRepository.update({
+      notificationTypes: globalNotificationSettings.value,
+      accounts: accountNotificationSettings.value,
+    });
+  } catch (error) {
+    saveError.value = resolveErrorMessage(error, 'No fue posible guardar la configuración.');
+    await loadSettings();
+  }
+}
+
+async function toggleGlobalSetting(settingId: string): Promise<void> {
+  const setting = globalNotificationSettings.value.find((item) => item.id === settingId);
 
   if (!setting) {
     return;
   }
 
   setting.enabled = !setting.enabled;
+  await persistSettings();
 }
 
-function toggleAccountSetting(accountId: string): void {
-  const accountSetting = accountNotificationSettings.find((item) => item.id === accountId);
+async function toggleAccountSetting(accountId: string): Promise<void> {
+  const accountSetting = accountNotificationSettings.value.find((item) => item.id === accountId);
 
   if (!accountSetting) {
     return;
   }
 
   accountSetting.enabled = !accountSetting.enabled;
+  await persistSettings();
 }
 </script>
 
@@ -111,7 +126,15 @@ function toggleAccountSetting(accountId: string): void {
         >
       </div>
 
-      <div class="space-y-4">
+      <div v-if="saveError" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+        <AppText class="text-(--app-color-danger)!">{{ saveError }}</AppText>
+      </div>
+
+      <div v-if="isLoading" class="rounded-2xl border px-4 py-6 text-center">
+        <AppText>Cargando configuración...</AppText>
+      </div>
+
+      <div v-else class="space-y-4">
         <AppCard
           v-for="setting in globalNotificationSettings"
           :key="setting.id"
@@ -128,7 +151,7 @@ function toggleAccountSetting(accountId: string): void {
             <AppSwitch
               :model-value="setting.enabled"
               :aria-label="`Alternar ${setting.title}`"
-              @update:model-value="toggleGlobalSetting(setting.id)"
+              @update:model-value="void toggleGlobalSetting(setting.id)"
             />
           </div>
         </AppCard>
@@ -141,7 +164,7 @@ function toggleAccountSetting(accountId: string): void {
         <AppText>Activa o apaga avisos individuales según la cuenta que quieras seguir.</AppText>
       </div>
 
-      <div class="space-y-4">
+      <div v-if="!isLoading" class="space-y-4">
         <AppCard
           v-for="setting in accountNotificationSettings"
           :key="setting.id"
@@ -159,7 +182,7 @@ function toggleAccountSetting(accountId: string): void {
             <AppSwitch
               :model-value="setting.enabled"
               :aria-label="`Alternar notificaciones de ${setting.accountName}`"
-              @update:model-value="toggleAccountSetting(setting.id)"
+              @update:model-value="void toggleAccountSetting(setting.id)"
             />
           </div>
         </AppCard>

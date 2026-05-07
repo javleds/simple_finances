@@ -1,250 +1,287 @@
 <script setup lang="ts">
-import {
-  AdjustmentsHorizontalIcon,
-  ArrowPathIcon,
-  MagnifyingGlassIcon,
-  XMarkIcon,
-} from '@heroicons/vue/24/outline';
-import { computed, ref } from 'vue';
+import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { computed, onMounted, ref } from 'vue';
 
 import FacilityInvitationListItem from '@/modules/admin/components/FacilityInvitationListItem.vue';
-import { AppIconButton, AppInput, AppModal, AppText, AppTitle } from '@/modules/shared/components';
+import { createAccountInvitesRepository } from '@/modules/accounts/repositories/accountInvitesRepository';
+import type { AccountInvite } from '@/modules/accounts/schemas/accountInviteSchemas';
+import { ApiError } from '@/lib/api/apiClient';
+import {
+  AppButton,
+  AppInput,
+  AppModal,
+  AppText,
+  AppTitle,
+} from '@/modules/shared/components';
 
-type InvitationStatus = 'pending' | 'expiring';
-type InvitationSource = 'finance' | 'operations' | 'leadership';
+type PendingInvitationAction = 'accepted' | 'declined';
 
-const invitationItems = [
-  {
-    id: 'reserve-tributaria',
-    accountName: 'Reserva tributaria',
-    invitedBy: 'Sofía Mora',
-    status: 'pending',
-    source: 'finance',
-    metaLabel: 'Invitación recibida hoy',
-  },
-  {
-    id: 'operacion-regional',
-    accountName: 'Operación regional',
-    invitedBy: 'Josefina Ramos',
-    status: 'expiring',
-    source: 'operations',
-    metaLabel: 'Expira en 24 horas',
-  },
-  {
-    id: 'inversiones-liquidas',
-    accountName: 'Inversiones líquidas',
-    invitedBy: 'Valeria Muñoz',
-    status: 'pending',
-    source: 'leadership',
-    metaLabel: 'Invitación pendiente',
-  },
-] as const;
+const accountInvitesRepository = createAccountInvitesRepository();
 
 const searchTerm = ref('');
-const isFiltersOpen = ref(false);
-const selectedStatuses = ref<InvitationStatus[]>([]);
-const selectedSources = ref<InvitationSource[]>([]);
+const invitations = ref<AccountInvite[]>([]);
+const isLoading = ref(false);
+const isSaving = ref(false);
+const loadError = ref<string | null>(null);
+const saveError = ref<string | null>(null);
+const selectedInvitationId = ref<string | null>(null);
+const pendingAction = ref<PendingInvitationAction | null>(null);
 
-const invitationStatusOptions = [
-  { value: 'pending', label: 'Pendiente' },
-  { value: 'expiring', label: 'Expira pronto' },
-] as const;
+const selectedInvitation = computed(() => {
+  if (!selectedInvitationId.value) {
+    return null;
+  }
 
-const invitationSourceOptions = [
-  { value: 'finance', label: 'Finanzas' },
-  { value: 'operations', label: 'Operación' },
-  { value: 'leadership', label: 'Liderazgo' },
-] as const;
+  return invitations.value.find((invitation) => invitation.id === selectedInvitationId.value) ?? null;
+});
 
-const filteredInvitationItems = computed(() => {
+const visibleInvitations = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
-  return invitationItems.filter((invitation) => {
-    const matchesQuery =
-      normalizedQuery.length === 0 ||
-      invitation.accountName.toLowerCase().includes(normalizedQuery);
-
-    if (!matchesQuery) {
+  return invitations.value.filter((invitation) => {
+    if (invitation.status !== 'pending') {
       return false;
     }
 
-    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(invitation.status)) {
-      return false;
+    if (normalizedQuery.length === 0) {
+      return true;
     }
 
-    if (selectedSources.value.length > 0 && !selectedSources.value.includes(invitation.source)) {
-      return false;
-    }
+    const accountName = resolveAccountName(invitation).toLowerCase();
+    const invitedBy = resolveInvitedBy(invitation).toLowerCase();
 
-    return true;
+    return accountName.includes(normalizedQuery) || invitedBy.includes(normalizedQuery);
   });
 });
 
-function openFilters(): void {
-  isFiltersOpen.value = true;
+const actionModalTitle = computed(() => {
+  if (pendingAction.value === 'accepted') {
+    return 'Aceptar invitación';
+  }
+
+  if (pendingAction.value === 'declined') {
+    return 'Rechazar invitación';
+  }
+
+  return 'Invitación';
+});
+
+const actionModalVariant = computed(() => {
+  return pendingAction.value === 'accepted' ? 'success' : 'danger';
+});
+
+const actionModalActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'confirm-invitation-action',
+    label: isSaving.value
+      ? 'Guardando...'
+      : pendingAction.value === 'accepted'
+        ? 'Aceptar invitación'
+        : 'Rechazar invitación',
+    tone: 'primary' as const,
+    disabled: !selectedInvitation.value || !pendingAction.value || isSaving.value,
+  },
+]);
+
+onMounted(() => {
+  void loadInvitations();
+});
+
+function resolveErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
 }
 
-function closeFilters(): void {
-  isFiltersOpen.value = false;
+function resolveAccountName(invitation: AccountInvite): string {
+  return invitation.accountName ?? `Cuenta #${invitation.accountId}`;
 }
 
-function clearFilters(): void {
-  selectedStatuses.value = [];
-  selectedSources.value = [];
+function resolveInvitedBy(invitation: AccountInvite): string {
+  if (invitation.invitedByName) {
+    return invitation.invitedByName;
+  }
+
+  if (invitation.userId) {
+    return `Usuario #${invitation.userId}`;
+  }
+
+  return 'Invitador no disponible';
 }
 
-function toggleStatus(status: InvitationStatus): void {
-  if (selectedStatuses.value.includes(status)) {
-    selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
+function resolveMetaLabel(invitation: AccountInvite): string {
+  if (!invitation.invitedAt) {
+    return 'Invitación pendiente';
+  }
+
+  const invitedAt = new Date(invitation.invitedAt);
+
+  if (Number.isNaN(invitedAt.getTime())) {
+    return 'Invitación pendiente';
+  }
+
+  return `Recibida ${new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(invitedAt)}`;
+}
+
+async function loadInvitations(): Promise<void> {
+  isLoading.value = true;
+  loadError.value = null;
+
+  try {
+    invitations.value = await accountInvitesRepository.listAll();
+  } catch (error) {
+    loadError.value = resolveErrorMessage(error, 'No fue posible cargar las invitaciones.');
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+function openInvitationAction(inviteId: string, action: PendingInvitationAction): void {
+  saveError.value = null;
+  selectedInvitationId.value = inviteId;
+  pendingAction.value = action;
+}
+
+function closeInvitationAction(): void {
+  selectedInvitationId.value = null;
+  pendingAction.value = null;
+  saveError.value = null;
+}
+
+async function confirmInvitationAction(): Promise<void> {
+  if (!selectedInvitation.value || !pendingAction.value) {
     return;
   }
 
-  selectedStatuses.value = [...selectedStatuses.value, status];
-}
+  isSaving.value = true;
+  saveError.value = null;
 
-function toggleSource(source: InvitationSource): void {
-  if (selectedSources.value.includes(source)) {
-    selectedSources.value = selectedSources.value.filter((item) => item !== source);
-    return;
+  try {
+    const updatedInvitation = await accountInvitesRepository.respond(selectedInvitation.value.id, {
+      accountId: selectedInvitation.value.accountId,
+      email: selectedInvitation.value.email,
+      percentage: selectedInvitation.value.percentage,
+      status: pendingAction.value,
+    });
+
+    invitations.value = invitations.value.map((invitation) =>
+      invitation.id === updatedInvitation.id ? updatedInvitation : invitation,
+    );
+
+    closeInvitationAction();
+  } catch (error) {
+    saveError.value = resolveErrorMessage(error, 'No fue posible responder la invitación.');
+  } finally {
+    isSaving.value = false;
   }
-
-  selectedSources.value = [...selectedSources.value, source];
 }
-
-function handleFiltersModalAction(actionKey: string): void {
-  if (actionKey === 'clear') {
-    clearFilters();
-    return;
-  }
-
-  if (actionKey === 'close') {
-    closeFilters();
-  }
-}
-
-function handleAcceptInvitation(): void {}
-
-function handleRejectInvitation(): void {}
 </script>
 
 <template>
   <section class="space-y-4">
     <div class="space-y-1">
       <AppTitle as="h2" size="sm">Invitaciones</AppTitle>
-      <AppText>Revisa las cuentas a las que aún no te has unido dentro de esta facility.</AppText>
+      <AppText>Revisa las cuentas a las que aún no te has unido y responde desde aquí.</AppText>
     </div>
 
-    <div class="flex items-center gap-3">
-      <div class="relative flex-1">
-        <div
-          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
-        >
-          <MagnifyingGlassIcon class="h-5 w-5" />
-        </div>
-        <AppInput
-          id="facility-invitation-search"
-          v-model="searchTerm"
-          type="search"
-          placeholder="Buscar invitación por cuenta"
-          class="pl-11"
-        />
+    <div class="relative flex-1">
+      <div
+        class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
+      >
+        <MagnifyingGlassIcon class="h-5 w-5" />
       </div>
-
-      <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
-        <AdjustmentsHorizontalIcon class="h-5 w-5" />
-      </AppIconButton>
+      <AppInput
+        id="facility-invitation-search"
+        v-model="searchTerm"
+        type="search"
+        placeholder="Buscar invitación por cuenta o invitador"
+        class="pl-11"
+      />
     </div>
 
-    <section class="space-y-3">
+    <section v-if="loadError && invitations.length > 0" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+      <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
+    </section>
+
+    <section v-if="isLoading && invitations.length === 0" class="rounded-2xl border px-4 py-10 text-center">
+      <AppText>Cargando invitaciones...</AppText>
+    </section>
+
+    <section
+      v-else-if="loadError && invitations.length === 0"
+      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    >
+      <AppText>{{ loadError }}</AppText>
+      <div class="flex justify-center">
+        <AppButton variant="secondary" @click="loadInvitations">Reintentar</AppButton>
+      </div>
+    </section>
+
+    <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle">
-          {{ filteredInvitationItems.length }} invitaciones visibles
+          {{ visibleInvitations.length }} invitaciones visibles
         </AppText>
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
       </div>
 
       <div class="space-y-4">
         <FacilityInvitationListItem
-          v-for="invitation in filteredInvitationItems"
+          v-for="invitation in visibleInvitations"
           :key="invitation.id"
-          :account-name="invitation.accountName"
-          :invited-by="invitation.invitedBy"
+          :account-name="resolveAccountName(invitation)"
+          :invited-by="resolveInvitedBy(invitation)"
           :item-id="invitation.id"
-          :meta-label="invitation.metaLabel"
-          :status="invitation.status"
-          @accept="handleAcceptInvitation"
-          @reject="handleRejectInvitation"
+          :meta-label="resolveMetaLabel(invitation)"
+          status="pending"
+          @accept="openInvitationAction($event, 'accepted')"
+          @reject="openInvitationAction($event, 'declined')"
         />
+
+        <div
+          v-if="visibleInvitations.length === 0"
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm">No hay invitaciones pendientes que coincidan con la búsqueda.</AppText>
+        </div>
 
         <div
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
           <AppText size="sm">
-            Sigue desplazándote para revisar más invitaciones conforme crezca la colaboración entre
-            cuentas.
+            Sigue desplazándote para revisar más invitaciones conforme se compartan nuevas cuentas.
           </AppText>
         </div>
       </div>
     </section>
 
     <AppModal
-      :open="isFiltersOpen"
-      :actions="[
-        { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Filtros avanzados"
-      variant="default"
-      @action="handleFiltersModalAction"
-      @close="closeFilters"
+      :open="Boolean(selectedInvitation && pendingAction)"
+      :actions="actionModalActions"
+      :title="actionModalTitle"
+      :variant="actionModalVariant"
+      @action="$event === 'confirm-invitation-action' && confirmInvitationAction()"
+      @close="closeInvitationAction"
     >
-      <div class="space-y-5">
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Estatus</AppTitle>
-          <AppText>Filtra invitaciones según su urgencia o su estado de respuesta.</AppText>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="status in invitationStatusOptions"
-            :key="status.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedStatuses.includes(status.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleStatus(status.value)"
-          >
-            {{ status.label }}
-          </button>
-        </div>
-
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Origen</AppTitle>
-          <AppText>Refina según el área o perfil que emitió la invitación a la cuenta.</AppText>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="source in invitationSourceOptions"
-            :key="source.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedSources.includes(source.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleSource(source.value)"
-          >
-            {{ source.label }}
-          </button>
-        </div>
+      <div class="space-y-3">
+        <AppText v-if="selectedInvitation">
+          {{ pendingAction === 'accepted' ? 'Vas a aceptar la invitación a' : 'Vas a rechazar la invitación a' }}
+          <strong>{{ resolveAccountName(selectedInvitation) }}</strong>.
+        </AppText>
+        <AppText v-if="saveError" class="text-(--app-color-danger)!">{{ saveError }}</AppText>
       </div>
     </AppModal>
   </section>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
-type DistributionRelationType = 'transfer' | 'saving';
+type DistributionRelationType = 'transfer' | 'savings';
 
 const props = defineProps<{
   concept: string;
@@ -26,7 +26,7 @@ function formattedAmount(amount: number): string {
 }
 
 function typeLabel(type: DistributionRelationType): string {
-  if (type === 'saving') {
+  if (type === 'savings') {
     return 'Ahorro';
   }
 
@@ -34,7 +34,7 @@ function typeLabel(type: DistributionRelationType): string {
 }
 
 function typeClasses(type: DistributionRelationType): string {
-  if (type === 'saving') {
+  if (type === 'savings') {
     return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
   }
 
@@ -58,7 +58,7 @@ function handleDelete(): void {
       class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
       :style="{
         background:
-          props.type === 'saving'
+          props.type === 'savings'
             ? 'linear-gradient(90deg, color-mix(in srgb, #10b981 14%, transparent), transparent 78%)'
             : 'linear-gradient(90deg, color-mix(in srgb, var(--app-color-primary) 10%, transparent), transparent 78%)',
       }"

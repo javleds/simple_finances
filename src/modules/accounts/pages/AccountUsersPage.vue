@@ -1,113 +1,54 @@
 <script setup lang="ts">
-import {
-  AdjustmentsHorizontalIcon,
-  ArrowPathIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
-  XMarkIcon,
-} from '@heroicons/vue/24/outline';
-import { computed, ref } from 'vue';
+import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import AccountUserListItem from '@/modules/accounts/components/AccountUserListItem.vue';
-import { findAccountById } from '@/modules/accounts/data/accounts';
+import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
+import type { AccountMember } from '@/modules/accounts/types';
+import { ApiError } from '@/lib/api/apiClient';
 import {
   AppButton,
   AppCard,
-  AppIconButton,
   AppInput,
   AppModal,
   AppText,
   AppTitle,
 } from '@/modules/shared/components';
 
-type UserRole = 'admin' | 'reconciliation' | 'approver';
-type UserAccess = 'full' | 'limited' | 'read-move';
-type UserStatus = 'active' | 'invited';
-
+const accountsRepository = createAccountsRepository();
 const route = useRoute();
+
 const searchTerm = ref('');
-const isFiltersOpen = ref(false);
+const users = ref<AccountMember[]>([]);
+const isLoading = ref(false);
+const isSaving = ref(false);
+const isDeleting = ref(false);
+const loadError = ref<string | null>(null);
+const saveError = ref<string | null>(null);
+const deleteError = ref<string | null>(null);
 const isCreateUserOpen = ref(false);
 const isEditUserOpen = ref(false);
 const isDeleteUserOpen = ref(false);
-const selectedRoles = ref<UserRole[]>([]);
-const selectedAccesses = ref<UserAccess[]>([]);
 const selectedUserId = ref<string | null>(null);
+const editPercentage = ref('');
 
-const account = computed(() => {
-  const accountId = typeof route.params.accountId === 'string' ? route.params.accountId : '';
-  return findAccountById(accountId);
-});
-
-const userRoleOptions = [
-  { value: 'admin', label: 'Administrador' },
-  { value: 'reconciliation', label: 'Conciliación' },
-  { value: 'approver', label: 'Aprobador' },
-] as const;
-
-const userAccessOptions = [
-  { value: 'full', label: 'Acceso total' },
-  { value: 'read-move', label: 'Lectura y movimientos' },
-  { value: 'limited', label: 'Permisos limitados' },
-] as const;
-
-const accountUsers = computed(() => {
-  const members = account.value?.users ?? [];
-
-  return members.map((member, index) => {
-    const roleMap: UserRole[] = ['admin', 'reconciliation', 'approver'];
-    const accessMap: UserAccess[] = ['full', 'read-move', 'limited'];
-    const role = roleMap[index % roleMap.length] ?? 'approver';
-    const access = accessMap[index % accessMap.length] ?? 'limited';
-
-    return {
-      id: member.id,
-      name: member.name,
-      email: member.email,
-      allocationPercentage: member.allocationPercentage,
-      pendingExpenses: member.pendingExpenses,
-      role,
-      roleLabel:
-        role === 'admin'
-          ? 'Administrador'
-          : role === 'reconciliation'
-            ? 'Conciliación'
-            : 'Aprobador',
-      access,
-      accessLabel:
-        access === 'full'
-          ? 'Acceso total'
-          : access === 'read-move'
-            ? 'Lectura y movimientos'
-            : 'Permisos limitados',
-      status: index === members.length - 1 ? ('invited' as UserStatus) : ('active' as UserStatus),
-    };
-  });
-});
+const accountId = computed(() =>
+  typeof route.params.accountId === 'string' ? route.params.accountId : '',
+);
 
 const filteredUsers = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
-  return accountUsers.value.filter((user) => {
-    const matchesQuery =
-      normalizedQuery.length === 0 ||
+  return users.value.filter((user) => {
+    if (normalizedQuery.length === 0) {
+      return true;
+    }
+
+    return (
       user.name.toLowerCase().includes(normalizedQuery) ||
-      user.email.toLowerCase().includes(normalizedQuery);
-
-    if (!matchesQuery) {
-      return false;
-    }
-
-    if (selectedRoles.value.length > 0 && !selectedRoles.value.includes(user.role)) {
-      return false;
-    }
-
-    if (selectedAccesses.value.length > 0 && !selectedAccesses.value.includes(user.access)) {
-      return false;
-    }
-
-    return true;
+      user.email.toLowerCase().includes(normalizedQuery)
+    );
   });
 });
 
@@ -116,48 +57,81 @@ const selectedUser = computed(() => {
     return null;
   }
 
-  return accountUsers.value.find((user) => user.id === selectedUserId.value) ?? null;
+  return users.value.find((user) => user.id === selectedUserId.value) ?? null;
 });
 
-function openFilters(): void {
-  isFiltersOpen.value = true;
+const editUserActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'submit-edit-user',
+    label: isSaving.value ? 'Guardando...' : 'Guardar porcentaje',
+    tone: 'primary' as const,
+    type: 'button' as const,
+    disabled: !canSubmitPercentage() || isSaving.value,
+  },
+]);
+
+const deleteUserActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'confirm-delete-user',
+    label: isDeleting.value ? 'Eliminando...' : 'Quitar usuario',
+    tone: 'primary' as const,
+    disabled: !selectedUser.value || isDeleting.value,
+  },
+]);
+
+onMounted(() => {
+  void loadUsers();
+});
+
+function resolveErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
 }
 
-function closeFilters(): void {
-  isFiltersOpen.value = false;
+function parsePercentage(value: string): number | null {
+  const normalizedValue = value.trim();
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const parsedValue = Number(normalizedValue);
+
+  if (!Number.isFinite(parsedValue)) {
+    return null;
+  }
+
+  return parsedValue;
 }
 
-function clearFilters(): void {
-  selectedRoles.value = [];
-  selectedAccesses.value = [];
+function canSubmitPercentage(): boolean {
+  const percentage = parsePercentage(editPercentage.value);
+  return percentage !== null && percentage >= 0 && percentage <= 100;
 }
 
-function toggleRole(role: UserRole): void {
-  if (selectedRoles.value.includes(role)) {
-    selectedRoles.value = selectedRoles.value.filter((item) => item !== role);
+async function loadUsers(): Promise<void> {
+  if (!accountId.value) {
     return;
   }
 
-  selectedRoles.value = [...selectedRoles.value, role];
-}
+  isLoading.value = true;
+  loadError.value = null;
 
-function toggleAccess(access: UserAccess): void {
-  if (selectedAccesses.value.includes(access)) {
-    selectedAccesses.value = selectedAccesses.value.filter((item) => item !== access);
-    return;
-  }
-
-  selectedAccesses.value = [...selectedAccesses.value, access];
-}
-
-function handleFiltersModalAction(actionKey: string): void {
-  if (actionKey === 'clear') {
-    clearFilters();
-    return;
-  }
-
-  if (actionKey === 'close') {
-    closeFilters();
+  try {
+    users.value = await accountsRepository.listUsers(accountId.value);
+  } catch (error) {
+    loadError.value = resolveErrorMessage(error, 'No fue posible cargar los usuarios.');
+  } finally {
+    isLoading.value = false;
   }
 }
 
@@ -170,16 +144,21 @@ function closeCreateUser(): void {
 }
 
 function openEditUser(userId: string): void {
+  saveError.value = null;
   selectedUserId.value = userId;
+  editPercentage.value = selectedUser.value ? String(selectedUser.value.allocationPercentage) : '';
   isEditUserOpen.value = true;
 }
 
 function closeEditUser(): void {
   isEditUserOpen.value = false;
   selectedUserId.value = null;
+  editPercentage.value = '';
+  saveError.value = null;
 }
 
 function openDeleteUser(userId: string): void {
+  deleteError.value = null;
   selectedUserId.value = userId;
   isDeleteUserOpen.value = true;
 }
@@ -187,10 +166,57 @@ function openDeleteUser(userId: string): void {
 function closeDeleteUser(): void {
   isDeleteUserOpen.value = false;
   selectedUserId.value = null;
+  deleteError.value = null;
 }
 
-function confirmDeleteUser(): void {
-  closeDeleteUser();
+async function saveUserPercentage(): Promise<void> {
+  if (!accountId.value || !selectedUser.value) {
+    return;
+  }
+
+  const percentage = parsePercentage(editPercentage.value);
+
+  if (percentage === null) {
+    saveError.value = 'El porcentaje debe ser un número válido.';
+    return;
+  }
+
+  isSaving.value = true;
+  saveError.value = null;
+
+  try {
+    const updatedUser = await accountsRepository.updateUserPercentage(
+      accountId.value,
+      selectedUser.value.id,
+      percentage,
+    );
+
+    users.value = users.value.map((user) => (user.id === updatedUser.id ? updatedUser : user));
+    closeEditUser();
+  } catch (error) {
+    saveError.value = resolveErrorMessage(error, 'No fue posible actualizar el porcentaje.');
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+async function confirmDeleteUser(): Promise<void> {
+  if (!accountId.value || !selectedUser.value) {
+    return;
+  }
+
+  isDeleting.value = true;
+  deleteError.value = null;
+
+  try {
+    await accountsRepository.removeUser(accountId.value, selectedUser.value.id);
+    users.value = users.value.filter((user) => user.id !== selectedUser.value?.id);
+    closeDeleteUser();
+  } catch (error) {
+    deleteError.value = resolveErrorMessage(error, 'No fue posible quitar al usuario.');
+  } finally {
+    isDeleting.value = false;
+  }
 }
 </script>
 
@@ -200,7 +226,7 @@ function confirmDeleteUser(): void {
       <div class="flex items-center justify-between gap-3">
         <div class="space-y-1">
           <AppTitle as="h2" size="sm">Usuarios</AppTitle>
-          <AppText>Gestión embebida de miembros, roles y permisos de la cuenta.</AppText>
+          <AppText>Miembros reales compartidos en la cuenta y su porcentaje asignado.</AppText>
         </div>
 
         <AppButton variant="primary" @click="openCreateUser">
@@ -209,28 +235,40 @@ function confirmDeleteUser(): void {
       </div>
     </AppCard>
 
-    <div class="flex items-center gap-3">
-      <div class="relative flex-1">
-        <div
-          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
-        >
-          <MagnifyingGlassIcon class="h-5 w-5" />
-        </div>
-        <AppInput
-          id="user-search"
-          v-model="searchTerm"
-          type="search"
-          placeholder="Buscar usuario por nombre"
-          class="pl-11"
-        />
+    <div class="relative flex-1">
+      <div
+        class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
+      >
+        <MagnifyingGlassIcon class="h-5 w-5" />
       </div>
-
-      <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
-        <AdjustmentsHorizontalIcon class="h-5 w-5" />
-      </AppIconButton>
+      <AppInput
+        id="user-search"
+        v-model="searchTerm"
+        type="search"
+        placeholder="Buscar usuario por nombre o correo"
+        class="pl-11"
+      />
     </div>
 
-    <section class="space-y-3">
+    <section v-if="loadError && users.length > 0" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+      <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
+    </section>
+
+    <section v-if="isLoading && users.length === 0" class="rounded-2xl border px-4 py-10 text-center">
+      <AppText>Cargando usuarios...</AppText>
+    </section>
+
+    <section
+      v-else-if="loadError && users.length === 0"
+      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    >
+      <AppText>{{ loadError }}</AppText>
+      <div class="flex justify-center">
+        <AppButton variant="secondary" @click="loadUsers">Reintentar</AppButton>
+      </div>
+    </section>
+
+    <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle">{{ filteredUsers.length }} usuarios visibles</AppText>
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
@@ -240,17 +278,25 @@ function confirmDeleteUser(): void {
         <AccountUserListItem
           v-for="user in filteredUsers"
           :key="user.id"
-          :access-label="user.accessLabel"
+          access-label="Cuenta compartida"
           :allocation-percentage="user.allocationPercentage"
           :email="user.email"
           :item-id="user.id"
           :name="user.name"
-          :pending-expenses="user.pendingExpenses"
-          :role-label="user.roleLabel"
-          :status="user.status"
+          pending-expenses="Usuario vinculado"
+          role-label="Miembro"
+          status="active"
           @delete="openDeleteUser"
           @edit="openEditUser"
         />
+
+        <div
+          v-if="filteredUsers.length === 0"
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm">No hay usuarios que coincidan con la búsqueda actual.</AppText>
+        </div>
 
         <div
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
@@ -265,68 +311,6 @@ function confirmDeleteUser(): void {
     </section>
 
     <AppModal
-      :open="isFiltersOpen"
-      :actions="[
-        { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Filtros avanzados"
-      variant="default"
-      @action="handleFiltersModalAction"
-      @close="closeFilters"
-    >
-      <div class="space-y-5">
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Rol</AppTitle>
-          <AppText>Refina la lista según el tipo de responsabilidad dentro de la cuenta.</AppText>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="role in userRoleOptions"
-            :key="role.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedRoles.includes(role.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleRole(role.value)"
-          >
-            {{ role.label }}
-          </button>
-        </div>
-
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Acceso</AppTitle>
-          <AppText
-            >Filtra entre niveles de permiso y operación disponibles para cada usuario.</AppText
-          >
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="access in userAccessOptions"
-            :key="access.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedAccesses.includes(access.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleAccess(access.value)"
-          >
-            {{ access.label }}
-          </button>
-        </div>
-      </div>
-    </AppModal>
-
-    <AppModal
       :open="isCreateUserOpen"
       :actions="[
         { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
@@ -337,56 +321,61 @@ function confirmDeleteUser(): void {
     >
       <div class="space-y-3">
         <AppText>
-          La invitación o asignación de usuarios puede integrarse aquí siguiendo la misma estructura
-          modal.
+          La API permite adjuntar un usuario existente por `user_id`, pero este frontend todavía no
+          cuenta con un catálogo global de usuarios para seleccionarlo desde aquí.
         </AppText>
         <AppText size="sm" tone="subtle">
-          Por ahora dejamos listo el flujo visual y el listado administrable con búsqueda y filtros.
+          Por ahora, la incorporación de nuevos miembros sigue el flujo de invitaciones de la
+          cuenta.
         </AppText>
       </div>
     </AppModal>
 
     <AppModal
       :open="isEditUserOpen"
-      :actions="[
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Editar usuario"
+      :actions="editUserActions"
+      title="Editar porcentaje"
       variant="default"
+      @action="$event === 'submit-edit-user' && saveUserPercentage()"
       @close="closeEditUser"
     >
-      <div class="space-y-3">
-        <AppText>
-          El formulario de edición para
-          <strong>{{ selectedUser?.name }}</strong>
-          se mostrará aquí eventualmente.
+      <div class="space-y-5">
+        <AppText v-if="selectedUser">
+          Ajusta la participación de <strong>{{ selectedUser.name }}</strong> dentro de esta cuenta.
         </AppText>
-        <AppText size="sm" tone="subtle">
-          Dejamos listo el punto de integración para mantener el mismo patrón modal de edición.
-        </AppText>
+
+        <AppInput
+          id="account-user-percentage"
+          v-model="editPercentage"
+          label="Porcentaje"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          max="100"
+          step="0.01"
+          placeholder="0.00"
+          :error="
+            saveError ??
+            (editPercentage && !canSubmitPercentage() ? 'El porcentaje debe estar entre 0 y 100.' : undefined)
+          "
+          required
+        />
       </div>
     </AppModal>
 
     <AppModal
       :open="isDeleteUserOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        { key: 'confirm-delete-user', label: 'Eliminar usuario', tone: 'primary' },
-      ]"
-      title="Eliminar usuario"
+      :actions="deleteUserActions"
+      title="Quitar usuario"
       variant="danger"
       @action="$event === 'confirm-delete-user' && confirmDeleteUser()"
       @close="closeDeleteUser"
     >
       <div class="space-y-3">
-        <AppText>
-          Vas a eliminar a
-          <strong>{{ selectedUser?.name }}</strong>
-          de esta cuenta.
+        <AppText v-if="selectedUser">
+          Vas a quitar a <strong>{{ selectedUser.name }}</strong> de esta cuenta.
         </AppText>
-        <AppText size="sm" tone="subtle">
-          La confirmación sigue el mismo patrón del resto de módulos con acciones contextuales.
-        </AppText>
+        <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
       </div>
     </AppModal>
   </section>

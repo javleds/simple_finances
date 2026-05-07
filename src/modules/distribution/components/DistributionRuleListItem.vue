@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 
+import type { DistributionFrequency } from '@/modules/distribution/types';
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
-
-type DistributionStatus = 'active' | 'draft' | 'paused';
 
 const props = defineProps<{
   itemId: string;
   name: string;
-  description: string;
-  allocation: number;
-  destination: string;
-  status: DistributionStatus;
+  frequency: DistributionFrequency;
+  outcomesCount: number;
+  totalAmount: number;
 }>();
 
 const emit = defineEmits<{
@@ -21,40 +19,35 @@ const emit = defineEmits<{
 
 const router = useRouter();
 
-function statusLabel(status: DistributionStatus): string {
-  if (status === 'paused') {
-    return 'Pausada';
-  }
+const currencyFormatter = new Intl.NumberFormat('es-MX', {
+  style: 'currency',
+  currency: 'MXN',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
-  if (status === 'draft') {
-    return 'Borrador';
-  }
-
-  return 'Activa';
+function frequencyLabel(frequency: DistributionFrequency): string {
+  return frequency === 'semi_monthly' ? 'Quincenal' : 'Mensual';
 }
 
-function statusClasses(status: DistributionStatus): string {
-  if (status === 'paused') {
-    return 'bg-slate-500/10 text-slate-600 dark:text-slate-300';
-  }
-
-  if (status === 'draft') {
+function frequencyClasses(frequency: DistributionFrequency): string {
+  if (frequency === 'semi_monthly') {
     return 'bg-amber-500/12 text-amber-700 dark:text-amber-300';
   }
 
   return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
 }
 
-function accentStyle(status: DistributionStatus): string {
-  if (status === 'paused') {
-    return 'linear-gradient(90deg, color-mix(in srgb, #64748b 14%, transparent), transparent 78%)';
-  }
-
-  if (status === 'draft') {
+function accentStyle(frequency: DistributionFrequency): string {
+  if (frequency === 'semi_monthly') {
     return 'linear-gradient(90deg, color-mix(in srgb, #f59e0b 16%, transparent), transparent 78%)';
   }
 
   return 'linear-gradient(90deg, color-mix(in srgb, var(--app-color-primary) 12%, transparent), transparent 78%)';
+}
+
+function formattedAmount(amount: number): string {
+  return currencyFormatter.format(amount);
 }
 
 function handleEdit(): void {
@@ -84,7 +77,7 @@ function openRuleDetails(): void {
   >
     <div
       class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
-      :style="{ background: accentStyle(props.status) }"
+      :style="{ background: accentStyle(props.frequency) }"
     />
 
     <div class="relative space-y-3">
@@ -96,18 +89,18 @@ function openRuleDetails(): void {
             {{ props.name }}
           </p>
           <p class="text-sm leading-5 text-(--app-color-text-muted)">
-            {{ props.description }}
+            {{ props.outcomesCount }} relaciones registradas
           </p>
         </div>
 
         <div class="space-y-1 text-right">
           <p class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums">
-            {{ props.allocation }}%
+            {{ formattedAmount(props.totalAmount) }}
           </p>
           <p
             class="text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
           >
-            Asignación
+            Total
           </p>
         </div>
 
@@ -118,20 +111,13 @@ function openRuleDetails(): void {
         />
       </div>
 
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex min-w-0 items-center gap-2">
-          <span
-            class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
-            :class="statusClasses(props.status)"
-          >
-            {{ statusLabel(props.status) }}
-          </span>
-          <p
-            class="truncate text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
-          >
-            {{ props.destination }}
-          </p>
-        </div>
+      <div class="flex items-center gap-2">
+        <span
+          class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
+          :class="frequencyClasses(props.frequency)"
+        >
+          {{ frequencyLabel(props.frequency) }}
+        </span>
       </div>
     </div>
   </AppCard>
