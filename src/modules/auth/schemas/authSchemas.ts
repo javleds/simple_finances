@@ -71,7 +71,9 @@ export const registerFormSchema = z
     password: z.string().trim().min(8, 'La contraseña debe tener al menos 8 caracteres.'),
     passwordConfirmation: z.string().trim().min(1, 'Confirma tu contraseña.'),
     termsAccepted: z.boolean().refine((value) => value, 'Debes aceptar los términos.'),
-    privacyPolicyAccepted: z.boolean().refine((value) => value, 'Debes aceptar la política de privacidad.'),
+    privacyPolicyAccepted: z
+      .boolean()
+      .refine((value) => value, 'Debes aceptar la política de privacidad.'),
   })
   .superRefine((values, context) => {
     if (values.password !== values.passwordConfirmation) {
@@ -108,8 +110,16 @@ export const authUserApiSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   name: z.string(),
   email: z.string().email(),
-  email_verified_at: z.string().nullable().optional().transform((value) => value ?? null),
-  phone_number: z.string().nullable().optional().transform((value) => value ?? null),
+  email_verified_at: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
+  phone_number: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   telegram_chat_id: z
     .union([z.string(), z.number(), z.null(), z.undefined()])
     .transform((value) => parseNullableString(value)),
@@ -138,7 +148,9 @@ export function mapAuthUserApiToDomain(payload: z.infer<typeof authUserApiSchema
   };
 }
 
-export function mapAuthResponseApiToSession(payload: z.infer<typeof authResponseApiSchema>): AuthSession {
+export function mapAuthResponseApiToSession(
+  payload: z.infer<typeof authResponseApiSchema>,
+): AuthSession {
   return {
     user: mapAuthUserApiToDomain(payload.data),
     token: payload.meta.auth.token,
