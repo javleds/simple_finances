@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AccountInviteController;
+use App\Http\Controllers\Api\AccountFinancialGoalController;
+use App\Http\Controllers\Api\AccountRelationInviteController;
+use App\Http\Controllers\Api\AccountTransactionController;
+use App\Http\Controllers\Api\AccountUserController;
 use App\Http\Controllers\Api\AccountUserNotificationController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\Auth\EmailVerificationNotificationController;
@@ -52,6 +56,26 @@ Route::middleware('api.auth')->group(function (): void {
     Route::get('accounts/{account}', [AccountController::class, 'show']);
     Route::put('accounts/{account}', [AccountController::class, 'update']);
     Route::delete('accounts/{account}', [AccountController::class, 'delete']);
+    Route::get('accounts/{account}/invites', [AccountRelationInviteController::class, 'index']);
+    Route::post('accounts/{account}/invites', [AccountRelationInviteController::class, 'store']);
+    Route::get('accounts/{account}/invites/{invite}', [AccountRelationInviteController::class, 'show']);
+    Route::put('accounts/{account}/invites/{invite}', [AccountRelationInviteController::class, 'update']);
+    Route::delete('accounts/{account}/invites/{invite}', [AccountRelationInviteController::class, 'delete']);
+    Route::get('accounts/{account}/users', [AccountUserController::class, 'index']);
+    Route::post('accounts/{account}/users', [AccountUserController::class, 'store']);
+    Route::get('accounts/{account}/users/{user}', [AccountUserController::class, 'show']);
+    Route::put('accounts/{account}/users/{user}', [AccountUserController::class, 'update']);
+    Route::delete('accounts/{account}/users/{user}', [AccountUserController::class, 'delete']);
+    Route::get('accounts/{account}/transactions', [AccountTransactionController::class, 'index']);
+    Route::post('accounts/{account}/transactions', [AccountTransactionController::class, 'store']);
+    Route::get('accounts/{account}/transactions/{transaction}', [AccountTransactionController::class, 'show']);
+    Route::put('accounts/{account}/transactions/{transaction}', [AccountTransactionController::class, 'update']);
+    Route::delete('accounts/{account}/transactions/{transaction}', [AccountTransactionController::class, 'delete']);
+    Route::get('accounts/{account}/financial-goals', [AccountFinancialGoalController::class, 'index']);
+    Route::post('accounts/{account}/financial-goals', [AccountFinancialGoalController::class, 'store']);
+    Route::get('accounts/{account}/financial-goals/{financialGoal}', [AccountFinancialGoalController::class, 'show']);
+    Route::put('accounts/{account}/financial-goals/{financialGoal}', [AccountFinancialGoalController::class, 'update']);
+    Route::delete('accounts/{account}/financial-goals/{financialGoal}', [AccountFinancialGoalController::class, 'delete']);
 
     Route::get('account-invites', [AccountInviteController::class, 'index']);
     Route::post('account-invites', [AccountInviteController::class, 'store']);

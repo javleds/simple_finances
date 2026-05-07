@@ -368,6 +368,510 @@
         }
       }
     },
+    "/api/accounts/{account}/invites": {
+      "get": {
+        "tags": ["Account Invites"],
+        "summary": "List account invites for an account",
+        "description": "Filtros disponibles por cualquier propiedad real del modelo AccountInvite dentro de la cuenta seleccionada.",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/AccountInviteIdFilter" },
+          { "$ref": "#/components/parameters/AccountInviteEmailFilter" },
+          { "$ref": "#/components/parameters/AccountInviteStatusFilter" },
+          { "$ref": "#/components/parameters/AccountInviteAccountIdFilter" },
+          { "$ref": "#/components/parameters/AccountInviteUserIdFilter" },
+          { "$ref": "#/components/parameters/AccountInvitePercentageFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated account invites for the account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Account Invites"],
+        "summary": "Create account invite for an account",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountRelationInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/invites/{invite}": {
+      "get": {
+        "tags": ["Account Invites"],
+        "summary": "Show account invite for an account",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/InvitePath" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Account Invites"],
+        "summary": "Update account invite for an account",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/InvitePath" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountRelationInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Account Invites"],
+        "summary": "Delete account invite for an account",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/InvitePath" }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/users": {
+      "get": {
+        "tags": ["Account Users"],
+        "summary": "List account users for an account",
+        "description": "Filtros disponibles por propiedades del usuario compartido y por el porcentaje pivot de la cuenta.",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/UserIdFilter" },
+          { "$ref": "#/components/parameters/UserNameFilter" },
+          { "$ref": "#/components/parameters/UserEmailFilter" },
+          { "$ref": "#/components/parameters/UserEmailVerifiedAtFilter" },
+          { "$ref": "#/components/parameters/UserPhoneNumberFilter" },
+          { "$ref": "#/components/parameters/UserTelegramChatIdFilter" },
+          { "$ref": "#/components/parameters/AccountUserPercentageFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated account users for the account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Account Users"],
+        "summary": "Attach a user to an account",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account user relation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/users/{user}": {
+      "get": {
+        "tags": ["Account Users"],
+        "summary": "Show account user for an account",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/UserPath" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account user relation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Account Users"],
+        "summary": "Update account user percentage",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/UserPath" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account user relation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Account Users"],
+        "summary": "Detach a user from an account",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/UserPath" }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/transactions": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "List account transactions",
+        "description": "Filtros disponibles por cualquier propiedad real del modelo Transaction dentro de la cuenta seleccionada.",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/TransactionIdFilter" },
+          { "$ref": "#/components/parameters/TransactionParentTransactionIdFilter" },
+          { "$ref": "#/components/parameters/TransactionUserIdFilter" },
+          { "$ref": "#/components/parameters/TransactionAccountIdFilter" },
+          { "$ref": "#/components/parameters/TransactionConceptFilter" },
+          { "$ref": "#/components/parameters/TransactionAmountFilter" },
+          { "$ref": "#/components/parameters/TransactionPercentageFilter" },
+          { "$ref": "#/components/parameters/TransactionTypeFilter" },
+          { "$ref": "#/components/parameters/TransactionStatusFilter" },
+          { "$ref": "#/components/parameters/TransactionScheduledAtFilter" },
+          { "$ref": "#/components/parameters/TransactionFinancialGoalIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated account transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "Create account transaction",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/transactions/{transaction}": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Show account transaction",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/TransactionPath" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Transactions"],
+        "summary": "Update account transaction",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/TransactionPath" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Transactions"],
+        "summary": "Delete account transaction",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/TransactionPath" }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/financial-goals": {
+      "get": {
+        "tags": ["Financial Goals"],
+        "summary": "List account financial goals",
+        "description": "Filtros disponibles por cualquier propiedad real del modelo FinancialGoal dentro de la cuenta seleccionada.",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/FinancialGoalIdFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalNameFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalAmountFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalProgressFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalMustCompletedAtFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalStatusFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalAccountIdFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalUserIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated account financial goals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Financial Goals"],
+        "summary": "Create account financial goal",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountFinancialGoalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account financial goal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/financial-goals/{financialGoal}": {
+      "get": {
+        "tags": ["Financial Goals"],
+        "summary": "Show account financial goal",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/FinancialGoalPath" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account financial goal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Financial Goals"],
+        "summary": "Update account financial goal",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/FinancialGoalPath" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountFinancialGoalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account financial goal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Financial Goals"],
+        "summary": "Delete account financial goal",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/FinancialGoalPath" }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
     "/api/account-invites": {
       "get": {
         "tags": ["Account Invites"],
@@ -1905,6 +2409,18 @@
         "required": true,
         "schema": { "type": "integer" }
       },
+      "InvitePath": {
+        "name": "invite",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "UserPath": {
+        "name": "user",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
       "AccountInvitePath": {
         "name": "accountInvite",
         "in": "path",
@@ -2023,6 +2539,13 @@
       "AccountInviteAccountIdFilter": { "name": "account_id", "in": "query", "required": false, "schema": { "type": "integer" } },
       "AccountInviteUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
       "AccountInvitePercentageFilter": { "name": "percentage", "in": "query", "required": false, "schema": { "type": "number" } },
+      "UserIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "UserNameFilter": { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } },
+      "UserEmailFilter": { "name": "email", "in": "query", "required": false, "schema": { "type": "string", "format": "email" } },
+      "UserEmailVerifiedAtFilter": { "name": "email_verified_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" } },
+      "UserPhoneNumberFilter": { "name": "phone_number", "in": "query", "required": false, "schema": { "type": "string" } },
+      "UserTelegramChatIdFilter": { "name": "telegram_chat_id", "in": "query", "required": false, "schema": { "type": "string" } },
+      "AccountUserPercentageFilter": { "name": "percentage", "in": "query", "required": false, "schema": { "type": "number" } },
 
       "AccountUserNotificationIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
       "AccountUserNotificationUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
@@ -2433,12 +2956,38 @@
           "status": { "type": "string", "enum": ["pending", "accepted", "declined"] }
         }
       },
+      "AccountRelationInviteRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "percentage": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "accepted", "declined"] }
+        }
+      },
+      "AccountUserRequest": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "integer" },
+          "percentage": { "type": "number" }
+        },
+        "required": ["percentage"]
+      },
       "AccountUserNotificationRequest": {
         "type": "object",
         "properties": {
           "account_id": { "type": "integer" }
         },
         "required": ["account_id"]
+      },
+      "AccountFinancialGoalRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "amount": { "type": "number" },
+          "must_completed_at": { "type": ["string", "null"], "format": "date" },
+          "status": { "type": "string", "enum": ["in progress", "completed"] }
+        },
+        "required": ["name", "amount"]
       },
       "FinancialGoalRequest": {
         "type": "object",
@@ -2568,6 +3117,25 @@
         },
         "required": ["type", "status", "concept", "amount", "account_id", "scheduled_at"]
       },
+      "AccountTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["income", "outcome"] },
+          "status": { "type": "string", "enum": ["pending", "completed"] },
+          "concept": { "type": "string" },
+          "amount": { "type": "number" },
+          "split_between_users": { "type": ["boolean", "null"] },
+          "user_payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionUserPayment"
+            }
+          },
+          "scheduled_at": { "type": "string", "format": "date" },
+          "financial_goal_id": { "type": ["integer", "null"] }
+        },
+        "required": ["type", "status", "concept", "amount", "scheduled_at"]
+      },
 
       "AuthResponse": {
         "type": "object",
@@ -2614,10 +3182,32 @@
           "data": { "$ref": "#/components/schemas/User" }
         }
       },
+      "AccountUser": {
+        "allOf": [
+          { "$ref": "#/components/schemas/User" },
+          {
+            "type": "object",
+            "properties": {
+              "pivot": {
+                "type": "object",
+                "properties": {
+                  "percentage": { "type": "number" }
+                }
+              }
+            }
+          }
+        ]
+      },
       "AccountItemResponse": {
         "type": "object",
         "properties": {
           "data": { "$ref": "#/components/schemas/Account" }
+        }
+      },
+      "AccountUserItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/AccountUser" }
         }
       },
       "AccountInviteItemResponse": {
@@ -2703,6 +3293,13 @@
         "type": "object",
         "properties": {
           "data": { "type": "array", "items": { "$ref": "#/components/schemas/Account" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "AccountUserCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/AccountUser" } },
           "meta": { "$ref": "#/components/schemas/PaginationMeta" }
         }
       },

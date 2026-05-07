@@ -238,6 +238,91 @@ it('creates account invites and lets the invited user accept them', function () 
     expect($account->fresh()->users()->pluck('users.id')->all())->toContain($invitee->id);
 });
 
+it('manages nested account users, invites, transactions and financial goals', function () {
+    Notification::fake();
+    seedNotificationTypes();
+
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->attach($owner->id, ['percentage' => 100]);
+
+    $userResponse = $this->withHeaders(apiHeaders($owner))
+        ->postJson("/api/accounts/{$account->id}/users", [
+            'user_id' => $member->id,
+            'percentage' => 40,
+        ])
+        ->assertCreated();
+
+    expect($account->fresh()->users()->where('users.id', $member->id)->first()?->pivot?->percentage)->toBe(40);
+
+    $this->withHeaders(apiHeaders($owner))
+        ->putJson("/api/accounts/{$account->id}/users/{$member->id}", [
+            'percentage' => 55,
+        ])
+        ->assertOk();
+
+    $this->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/users?percentage=55")
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    $goalResponse = $this->withHeaders(apiHeaders($owner))
+        ->postJson("/api/accounts/{$account->id}/financial-goals", [
+            'name' => 'Emergency Fund',
+            'amount' => 5000,
+            'must_completed_at' => now()->addMonth()->toDateString(),
+        ])
+        ->assertCreated();
+
+    $goalId = $goalResponse->json('data.id');
+
+    $transactionResponse = $this->withHeaders(apiHeaders($owner))
+        ->postJson("/api/accounts/{$account->id}/transactions", [
+            'type' => 'income',
+            'status' => 'completed',
+            'concept' => 'Salary',
+            'amount' => 5000,
+            'split_between_users' => false,
+            'scheduled_at' => now()->toDateString(),
+            'financial_goal_id' => $goalId,
+        ])
+        ->assertCreated();
+
+    $transactionId = $transactionResponse->json('data.id');
+
+    $this->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/transactions?type=income&financial_goal_id={$goalId}")
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    $inviteResponse = $this->withHeaders(apiHeaders($owner))
+        ->postJson("/api/accounts/{$account->id}/invites", [
+            'email' => 'invitee@example.com',
+            'percentage' => 20,
+        ])
+        ->assertCreated();
+
+    $inviteId = $inviteResponse->json('data.id');
+
+    $this->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/invites?status=pending")
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    $this->withHeaders(apiHeaders($owner))
+        ->deleteJson("/api/accounts/{$account->id}/invites/{$inviteId}")
+        ->assertOk();
+
+    $this->withHeaders(apiHeaders($owner))
+        ->deleteJson("/api/accounts/{$account->id}/transactions/{$transactionId}")
+        ->assertOk();
+
+    $this->withHeaders(apiHeaders($owner))
+        ->deleteJson("/api/accounts/{$account->id}/financial-goals/{$goalId}")
+        ->assertOk();
+});
+
 it('creates subscription payments and registers a transaction when paid', function () {
     seedNotificationTypes();
     $user = User::factory()->create();
