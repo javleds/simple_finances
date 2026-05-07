@@ -33,10 +33,10 @@ function buildWritePayload(payload: SubscriptionWritePayload) {
   return {
     name: payload.name,
     amount: payload.amount,
-    start_date: payload.startDate,
-    frequency_every: payload.frequencyEvery,
+    started_at: payload.startDate,
     frequency_unit: payload.frequencyUnit,
-    cancellation_date: payload.cancellationDate,
+    frequency_type: payload.frequencyType,
+    finished_at: payload.finishedAt,
     feed_account_id: payload.fundingAccountId,
   };
 }

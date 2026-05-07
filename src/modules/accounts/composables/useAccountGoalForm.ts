@@ -52,9 +52,9 @@ export function useAccountGoalForm(options: UseAccountGoalFormOptions) {
     set: (value: string) => setFieldValue('name', value, true),
   });
 
-  const targetAmount = computed({
-    get: () => values.targetAmount,
-    set: (value: string) => setFieldValue('targetAmount', value, true),
+  const amount = computed({
+    get: () => values.amount,
+    set: (value: string) => setFieldValue('amount', value, true),
   });
 
   const deadline = computed({
@@ -70,7 +70,7 @@ export function useAccountGoalForm(options: UseAccountGoalFormOptions) {
 
   return {
     name,
-    targetAmount,
+    amount,
     deadline,
     errors,
     meta,

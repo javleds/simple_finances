@@ -75,12 +75,12 @@ export function useAccountGoalsCrud() {
     }
   }
 
-  async function deleteGoal(goalId: string): Promise<boolean> {
+  async function deleteGoal(goalId: string, accountId?: string): Promise<boolean> {
     isDeleting.value = true;
     deleteError.value = null;
 
     try {
-      await accountGoalsRepository.remove(goalId);
+      await accountGoalsRepository.remove(goalId, accountId);
       goals.value = goals.value.filter((goal) => goal.id !== goalId);
       return true;
     } catch (error) {

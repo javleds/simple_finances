@@ -116,15 +116,15 @@ export const accountApiSchema = z.object({
   color: z.string().nullable().optional().transform((value) => value ?? null),
   virtual: z.unknown().transform(parseBooleanLike),
   credit_card: z.unknown().transform(parseBooleanLike),
-  status: z.unknown().transform(parseAccountStatus),
   balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-  total_spent: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  spent: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   available_credit: z.unknown().transform(parseNullableNumber),
   credit_line: z.unknown().transform(parseNullableNumber),
   cutoff_day: z.unknown().transform(parseNullableNumber),
   feed_account_id: z
     .union([z.string(), z.number(), z.null(), z.undefined()])
     .transform((value) => (value === null || value === undefined ? null : String(value))),
+  deleted_at: z.string().nullable().optional().transform((value) => value ?? null),
   users: z
     .array(
       z.object({
@@ -137,6 +137,18 @@ export const accountApiSchema = z.object({
     )
     .optional()
     .transform((value) => value ?? []),
+});
+
+export const accountUserApiSchema = z.object({
+  id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+  name: z.string(),
+  email: z.string().email().catch(''),
+  pivot: z
+    .object({
+      percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    })
+    .optional()
+    .transform((value) => value ?? { percentage: 0 }),
 });
 
 export function createDefaultAccountFormValues(
@@ -163,9 +175,9 @@ export function mapAccountApiToDomain(
     color: payload.color,
     isVirtual: payload.virtual,
     isCredit: payload.credit_card,
-    status: payload.status,
+    status: parseAccountStatus(payload.deleted_at ? 'inactive' : 'active'),
     balance: payload.balance,
-    totalSpent: payload.total_spent,
+    totalSpent: payload.spent,
     availableCredit: payload.available_credit,
     creditLine: payload.credit_line,
     closingDay: payload.cutoff_day,
@@ -177,6 +189,18 @@ export function mapAccountApiToDomain(
       allocationPercentage: user.percentage,
       pendingExpenses: user.pending_expenses,
     })),
+  };
+}
+
+export function mapAccountUserApiToDomain(
+  payload: z.infer<typeof accountUserApiSchema>,
+): AccountMember {
+  return {
+    id: payload.id,
+    name: payload.name,
+    email: payload.email,
+    allocationPercentage: payload.pivot.percentage,
+    pendingExpenses: 0,
   };
 }
 

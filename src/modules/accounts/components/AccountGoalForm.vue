@@ -29,7 +29,7 @@ const emit = defineEmits<{
   stateChange: [payload: FormState];
 }>();
 
-const { name, targetAmount, deadline, errors, isSubmitting, isSubmitDisabled, meta, submitForm } =
+const { name, amount, deadline, errors, isSubmitting, isSubmitDisabled, meta, submitForm } =
   useAccountGoalForm({
     accountId: props.accountId,
     initialValues: () => props.initialValues,
@@ -76,14 +76,14 @@ async function handleSubmit(): Promise<void> {
 
     <AppInput
       id="goal-target-amount"
-      v-model="targetAmount"
+      v-model="amount"
       label="Cantidad objetivo"
       type="number"
       inputmode="decimal"
       min="0"
       step="0.01"
       placeholder="0.00"
-      :error="errors.targetAmount"
+      :error="errors.amount"
       required
     />
 

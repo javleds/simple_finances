@@ -4,9 +4,11 @@ import { createApiClient } from '@/lib/api/apiClient';
 
 import {
   accountApiSchema,
+  accountUserApiSchema,
   mapAccountApiToDomain,
+  mapAccountUserApiToDomain,
 } from '../schemas/accountSchemas';
-import type { Account, AccountWritePayload } from '../types';
+import type { Account, AccountMember, AccountWritePayload } from '../types';
 
 const apiClient = createApiClient();
 const accountsPath = '/accounts';
@@ -25,6 +27,15 @@ const singleAccountSchema = z
     accountApiSchema,
     z.object({
       data: accountApiSchema,
+    }),
+  ])
+  .transform((payload) => ('data' in payload ? payload.data : payload));
+
+const accountUserCollectionSchema = z
+  .union([
+    z.array(accountUserApiSchema),
+    z.object({
+      data: z.array(accountUserApiSchema),
     }),
   ])
   .transform((payload) => ('data' in payload ? payload.data : payload));
@@ -50,6 +61,10 @@ export function createAccountsRepository() {
     async getById(accountId: string): Promise<Account> {
       const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}`);
       return mapAccountApiToDomain(singleAccountSchema.parse(response));
+    },
+    async listUsers(accountId: string): Promise<AccountMember[]> {
+      const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}/users`);
+      return accountUserCollectionSchema.parse(response).map(mapAccountUserApiToDomain);
     },
     async create(payload: AccountWritePayload): Promise<Account> {
       const response = await apiClient.post<unknown>(accountsPath, mapWritePayloadToApi(payload));

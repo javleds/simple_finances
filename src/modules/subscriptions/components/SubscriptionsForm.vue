@@ -40,10 +40,9 @@ const emit = defineEmits<{
 }>();
 
 const frequencyUnitOptions = [
-  { value: 'day', label: 'Día' },
-  { value: 'week', label: 'Semana' },
-  { value: 'month', label: 'Mes' },
-  { value: 'year', label: 'Año' },
+  { value: 'days', label: 'Días' },
+  { value: 'months', label: 'Meses' },
+  { value: 'years', label: 'Años' },
 ] as const;
 
 const {
@@ -141,7 +140,7 @@ async function handleSubmit(): Promise<void> {
 
       <div class="grid gap-4 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <AppInput
-          id="subscription-frequency-every"
+          id="subscription-frequency-unit"
           v-model="frequencyEvery"
           label="Cada"
           type="number"
@@ -149,7 +148,7 @@ async function handleSubmit(): Promise<void> {
           min="1"
           step="1"
           placeholder="1"
-          :error="errors.frequencyEvery"
+          :error="errors.frequencyUnit"
           required
         />
 
@@ -181,13 +180,13 @@ async function handleSubmit(): Promise<void> {
     </section>
 
     <section class="space-y-5">
-      <AppDatePicker
-        id="subscription-cancellation-date"
-        v-model="cancellationDate"
-        label="Fecha de cancelación"
-        placeholder="Sin cancelación"
-        clearable
-      />
+        <AppDatePicker
+          id="subscription-finished-at"
+          v-model="cancellationDate"
+          label="Fecha de cancelación"
+          placeholder="Sin cancelación"
+          clearable
+        />
 
       <AppSearchSelect
         id="subscription-funding-account"

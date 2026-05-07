@@ -75,12 +75,12 @@ export function useAccountInvitesCrud() {
     }
   }
 
-  async function deleteInvite(inviteId: string): Promise<boolean> {
+  async function deleteInvite(inviteId: string, accountId?: string): Promise<boolean> {
     isDeleting.value = true;
     deleteError.value = null;
 
     try {
-      await accountInvitesRepository.remove(inviteId);
+      await accountInvitesRepository.remove(inviteId, accountId);
       invites.value = invites.value.filter((invite) => invite.id !== inviteId);
       return true;
     } catch (error) {

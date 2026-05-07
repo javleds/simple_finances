@@ -126,7 +126,7 @@ export const transactionApiSchema = z.object({
   amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   type: z.unknown().transform(parseType),
   status: z.unknown().transform(parseStatus),
-  date: z.string(),
+  scheduled_at: z.string(),
   financial_goal_id: z
     .union([z.string(), z.number(), z.null(), z.undefined()])
     .transform((value) => (value === null || value === undefined ? null : String(value))),
@@ -137,7 +137,15 @@ export const transactionApiSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => value ?? null),
-  user_payments: z.record(z.string(), z.number()).optional().transform((value) => value ?? {}),
+  user_payments: z
+    .array(
+      z.object({
+        user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+        percentage: z.number(),
+      }),
+    )
+    .optional()
+    .transform((value) => value ?? []),
 });
 
 export function createDefaultTransactionFormValues(
@@ -171,10 +179,13 @@ export function mapTransactionApiToDomain(
     amount: payload.amount,
     type: payload.type,
     status: payload.type === 'income' ? payload.status : null,
-    date: payload.date,
+    date: payload.scheduled_at.slice(0, 10),
     financialGoalId: payload.financial_goal_id,
     financialGoalName: payload.financial_goal?.name ?? null,
-    userPayments: payload.user_payments,
+    userPayments: payload.user_payments.reduce<Record<string, number>>((accumulator, payment) => {
+      accumulator[payment.user_id] = payment.percentage;
+      return accumulator;
+    }, {}),
   };
 }
 

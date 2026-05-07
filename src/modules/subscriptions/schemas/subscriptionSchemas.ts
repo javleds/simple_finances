@@ -3,11 +3,11 @@ import { z } from 'zod';
 import type {
   Subscription,
   SubscriptionFormValues,
-  SubscriptionFrequencyUnit,
+  SubscriptionFrequencyType,
   SubscriptionWritePayload,
 } from '../types';
 
-const frequencyUnitSchema = z.enum(['day', 'week', 'month', 'year']);
+const frequencyTypeSchema = z.enum(['days', 'months', 'years']);
 
 function parseNullableNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === '') {
@@ -32,12 +32,12 @@ function parseNullableNumber(value: unknown): number | null {
   return null;
 }
 
-function parseFrequencyUnit(value: unknown): SubscriptionFrequencyUnit {
-  if (value === 'day' || value === 'week' || value === 'month' || value === 'year') {
+function parseFrequencyType(value: unknown): SubscriptionFrequencyType {
+  if (value === 'days' || value === 'months' || value === 'years') {
     return value;
   }
 
-  return 'month';
+  return 'months';
 }
 
 export const subscriptionFormSchema = z.object({
@@ -51,16 +51,16 @@ export const subscriptionFormSchema = z.object({
       return amount !== null && amount >= 0;
     }, 'La cantidad debe ser mayor o igual a 0.'),
   startDate: z.string().trim().min(1, 'La fecha de contratación es obligatoria.'),
-  frequencyEvery: z
+  frequencyUnit: z
     .string()
     .trim()
     .min(1, 'La frecuencia es obligatoria.')
     .refine((value) => {
-      const frequencyEvery = parseNullableNumber(value);
-      return frequencyEvery !== null && Number.isInteger(frequencyEvery) && frequencyEvery > 0;
+      const frequencyUnit = parseNullableNumber(value);
+      return frequencyUnit !== null && Number.isInteger(frequencyUnit) && frequencyUnit > 0;
     }, 'La frecuencia debe ser un entero mayor a 0.'),
-  frequencyUnit: frequencyUnitSchema,
-  cancellationDate: z.string().trim().default(''),
+  frequencyType: frequencyTypeSchema,
+  finishedAt: z.string().trim().default(''),
   fundingAccountId: z.string().nullable(),
 });
 
@@ -68,10 +68,10 @@ export const subscriptionApiSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   name: z.string(),
   amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-  start_date: z.string(),
-  frequency_every: z.unknown().transform((value) => parseNullableNumber(value) ?? 1),
-  frequency_unit: z.unknown().transform(parseFrequencyUnit),
-  cancellation_date: z.string().nullable().optional().transform((value) => value ?? null),
+  started_at: z.string(),
+  frequency_unit: z.unknown().transform((value) => parseNullableNumber(value) ?? 1),
+  frequency_type: z.unknown().transform(parseFrequencyType),
+  finished_at: z.string().nullable().optional().transform((value) => value ?? null),
   feed_account_id: z
     .union([z.string(), z.number(), z.null(), z.undefined()])
     .transform((value) => (value === null || value === undefined ? null : String(value))),
@@ -97,12 +97,12 @@ export function createDefaultSubscriptionFormValues(
         ? ''
         : String(subscription.amount),
     startDate: subscription?.startDate ?? '',
-    frequencyEvery:
-      subscription?.frequencyEvery === null || subscription?.frequencyEvery === undefined
+    frequencyUnit:
+      subscription?.frequencyUnit === null || subscription?.frequencyUnit === undefined
         ? '1'
-        : String(subscription.frequencyEvery),
-    frequencyUnit: subscription?.frequencyUnit ?? 'month',
-    cancellationDate: subscription?.cancellationDate ?? '',
+        : String(subscription.frequencyUnit),
+    frequencyType: subscription?.frequencyType ?? 'months',
+    finishedAt: subscription?.finishedAt ?? '',
     fundingAccountId: subscription?.fundingAccountId ?? null,
   };
 }
@@ -114,10 +114,10 @@ export function mapSubscriptionApiToDomain(
     id: payload.id,
     name: payload.name,
     amount: payload.amount,
-    startDate: payload.start_date,
-    frequencyEvery: payload.frequency_every,
+    startDate: payload.started_at,
     frequencyUnit: payload.frequency_unit,
-    cancellationDate: payload.cancellation_date,
+    frequencyType: payload.frequency_type,
+    finishedAt: payload.finished_at,
     fundingAccountId: payload.feed_account_id,
     fundingAccountName: payload.feed_account?.name ?? null,
     nextPaymentDate: payload.next_payment_date,
@@ -132,23 +132,22 @@ export function mapSubscriptionFormToWritePayload(
     name: values.name.trim(),
     amount: parseNullableNumber(values.amount) ?? 0,
     startDate: values.startDate,
-    frequencyEvery: parseNullableNumber(values.frequencyEvery) ?? 1,
-    frequencyUnit: values.frequencyUnit,
-    cancellationDate: values.cancellationDate.trim() || null,
+    frequencyUnit: parseNullableNumber(values.frequencyUnit) ?? 1,
+    frequencyType: values.frequencyType,
+    finishedAt: values.finishedAt.trim() || null,
     fundingAccountId: values.fundingAccountId,
   };
 }
 
 export function formatSubscriptionFrequency(
-  frequencyEvery: number,
-  frequencyUnit: SubscriptionFrequencyUnit,
+  frequencyUnit: number,
+  frequencyType: SubscriptionFrequencyType,
 ): string {
-  const labelMap: Record<SubscriptionFrequencyUnit, string> = {
-    day: frequencyEvery === 1 ? 'día' : 'días',
-    week: frequencyEvery === 1 ? 'semana' : 'semanas',
-    month: frequencyEvery === 1 ? 'mes' : 'meses',
-    year: frequencyEvery === 1 ? 'año' : 'años',
+  const labelMap: Record<SubscriptionFrequencyType, string> = {
+    days: frequencyUnit === 1 ? 'día' : 'días',
+    months: frequencyUnit === 1 ? 'mes' : 'meses',
+    years: frequencyUnit === 1 ? 'año' : 'años',
   };
 
-  return `Cada ${frequencyEvery} ${labelMap[frequencyUnit]}`;
+  return `Cada ${frequencyUnit} ${labelMap[frequencyType]}`;
 }

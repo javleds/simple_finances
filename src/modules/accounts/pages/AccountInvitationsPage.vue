@@ -240,7 +240,7 @@ async function confirmDeleteInvitation(): Promise<void> {
     return;
   }
 
-  const wasDeleted = await deleteInvite(selectedInvitation.value.id);
+  const wasDeleted = await deleteInvite(selectedInvitation.value.id, accountId.value);
 
   if (wasDeleted) {
     closeDeleteInvitation();

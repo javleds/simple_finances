@@ -58,19 +58,19 @@ export function useSubscriptionForm(options: UseSubscriptionFormOptions = {}) {
   });
 
   const frequencyEvery = computed({
-    get: () => values.frequencyEvery,
-    set: (value: string) => setFieldValue('frequencyEvery', value, true),
+    get: () => values.frequencyUnit,
+    set: (value: string) => setFieldValue('frequencyUnit', value, true),
   });
 
   const frequencyUnit = computed({
-    get: () => values.frequencyUnit,
-    set: (value: SubscriptionFormValues['frequencyUnit']) =>
-      setFieldValue('frequencyUnit', value, true),
+    get: () => values.frequencyType,
+    set: (value: SubscriptionFormValues['frequencyType']) =>
+      setFieldValue('frequencyType', value, true),
   });
 
   const cancellationDate = computed({
-    get: () => values.cancellationDate,
-    set: (value: string) => setFieldValue('cancellationDate', value, true),
+    get: () => values.finishedAt,
+    set: (value: string) => setFieldValue('finishedAt', value, true),
   });
 
   const fundingAccountId = computed({

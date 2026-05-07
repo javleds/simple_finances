@@ -10,6 +10,7 @@ import type { AccountGoal, AccountGoalWritePayload } from '../schemas/accountGoa
 
 const apiClient = createApiClient();
 const goalsPath = '/financial-goals';
+const accountsPath = '/accounts';
 
 const goalCollectionSchema = z
   .union([
@@ -31,31 +32,39 @@ const singleGoalSchema = z
 
 function buildWritePayload(payload: AccountGoalWritePayload) {
   return {
-    account_id: payload.accountId,
     name: payload.name,
-    target_amount: payload.targetAmount,
-    deadline: payload.deadline,
+    amount: payload.amount,
+    must_completed_at: payload.deadline,
+    status: payload.status,
   };
 }
 
 export function createAccountGoalsRepository() {
   return {
     async list(accountId: string): Promise<AccountGoal[]> {
-      const response = await apiClient.get<unknown>(`${goalsPath}?account_id=${accountId}`);
+      const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}/financial-goals`);
       return goalCollectionSchema.parse(response).map(mapAccountGoalApiToDomain);
     },
     async create(payload: AccountGoalWritePayload): Promise<AccountGoal> {
-      const response = await apiClient.post<unknown>(goalsPath, buildWritePayload(payload));
-      return mapAccountGoalApiToDomain(singleGoalSchema.parse(response));
-    },
-    async update(goalId: string, payload: AccountGoalWritePayload): Promise<AccountGoal> {
-      const response = await apiClient.put<unknown>(
-        `${goalsPath}/${goalId}`,
+      const response = await apiClient.post<unknown>(
+        `${accountsPath}/${payload.accountId}/financial-goals`,
         buildWritePayload(payload),
       );
       return mapAccountGoalApiToDomain(singleGoalSchema.parse(response));
     },
-    async remove(goalId: string): Promise<void> {
+    async update(goalId: string, payload: AccountGoalWritePayload): Promise<AccountGoal> {
+      const response = await apiClient.put<unknown>(
+        `${accountsPath}/${payload.accountId}/financial-goals/${goalId}`,
+        buildWritePayload(payload),
+      );
+      return mapAccountGoalApiToDomain(singleGoalSchema.parse(response));
+    },
+    async remove(goalId: string, accountId?: string): Promise<void> {
+      if (accountId) {
+        await apiClient.delete(`${accountsPath}/${accountId}/financial-goals/${goalId}`);
+        return;
+      }
+
       await apiClient.delete(`${goalsPath}/${goalId}`);
     },
   };

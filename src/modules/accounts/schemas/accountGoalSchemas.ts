@@ -26,57 +26,50 @@ function parseNullableNumber(value: unknown): number | null {
 export type AccountGoal = {
   id: string;
   accountId: string;
-  userName: string | null;
   name: string;
-  targetAmount: number;
-  currentAmount: number;
-  remainingAmount: number;
+  amount: number;
   progress: number;
   deadline: string | null;
+  status: 'in progress' | 'completed';
 };
 
 export type AccountGoalFormValues = {
   name: string;
-  targetAmount: string;
+  amount: string;
   deadline: string;
+  status: 'in progress' | 'completed';
 };
 
 export type AccountGoalWritePayload = {
   accountId: string;
   name: string;
-  targetAmount: number;
+  amount: number;
   deadline: string | null;
+  status: 'in progress' | 'completed';
 };
 
 export const accountGoalFormSchema = z.object({
   name: z.string().trim().min(1, 'El nombre es obligatorio.'),
-  targetAmount: z
+  amount: z
     .string()
     .trim()
     .min(1, 'La cantidad objetivo es obligatoria.')
     .refine((value) => {
-      const targetAmount = parseNullableNumber(value);
-      return targetAmount !== null && targetAmount >= 0;
+      const amount = parseNullableNumber(value);
+      return amount !== null && amount >= 0;
     }, 'La cantidad objetivo debe ser mayor o igual a 0.'),
   deadline: z.string().trim().min(1, 'La fecha límite es obligatoria.'),
+  status: z.union([z.literal('in progress'), z.literal('completed')]),
 });
 
 export const accountGoalApiSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   account_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   name: z.string(),
-  target_amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-  current_amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-  remaining_amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   progress: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-  deadline: z.string().nullable().optional().transform((value) => value ?? null),
-  user: z
-    .object({
-      name: z.string(),
-    })
-    .nullable()
-    .optional()
-    .transform((value) => value ?? null),
+  must_completed_at: z.string().nullable().optional().transform((value) => value ?? null),
+  status: z.union([z.literal('in progress'), z.literal('completed')]).catch('in progress'),
 });
 
 export function createDefaultAccountGoalFormValues(
@@ -84,11 +77,12 @@ export function createDefaultAccountGoalFormValues(
 ): AccountGoalFormValues {
   return {
     name: goal?.name ?? '',
-    targetAmount:
-      goal?.targetAmount === null || goal?.targetAmount === undefined
+    amount:
+      goal?.amount === null || goal?.amount === undefined
         ? ''
-        : String(goal.targetAmount),
+        : String(goal.amount),
     deadline: goal?.deadline ?? '',
+    status: goal?.status ?? 'in progress',
   };
 }
 
@@ -98,13 +92,11 @@ export function mapAccountGoalApiToDomain(
   return {
     id: payload.id,
     accountId: payload.account_id,
-    userName: payload.user?.name ?? null,
     name: payload.name,
-    targetAmount: payload.target_amount,
-    currentAmount: payload.current_amount,
-    remainingAmount: payload.remaining_amount,
+    amount: payload.amount,
     progress: payload.progress,
-    deadline: payload.deadline,
+    deadline: payload.must_completed_at,
+    status: payload.status,
   };
 }
 
@@ -115,7 +107,8 @@ export function mapAccountGoalFormToWritePayload(
   return {
     accountId,
     name: values.name.trim(),
-    targetAmount: parseNullableNumber(values.targetAmount) ?? 0,
+    amount: parseNullableNumber(values.amount) ?? 0,
     deadline: values.deadline.trim() || null,
+    status: values.status,
   };
 }

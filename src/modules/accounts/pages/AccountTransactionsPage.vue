@@ -161,12 +161,12 @@ async function loadContext(): Promise<void> {
 
   try {
     const [account, accounts, goals] = await Promise.all([
-      accountsRepository.getById(accountId.value),
+      accountsRepository.listUsers(accountId.value),
       accountsRepository.list(),
       accountGoalsRepository.list(accountId.value),
     ]);
 
-    accountUsers.value = account.users;
+    accountUsers.value = account;
     accountOptions.value = accounts.map((item) => ({
       value: item.id,
       label: item.name,
@@ -175,7 +175,7 @@ async function loadContext(): Promise<void> {
     financialGoals.value = goals.map((goal) => ({
       id: goal.id,
       name: goal.name,
-      description: goal.userName ? `Meta de ${goal.userName}` : null,
+      description: goal.status === 'completed' ? 'Meta completada' : 'Meta en progreso',
     }));
   } catch {
     accountUsers.value = [];
@@ -295,7 +295,7 @@ async function confirmDeleteTransaction(): Promise<void> {
     return;
   }
 
-  const wasDeleted = await deleteTransaction(selectedTransaction.value.id);
+  const wasDeleted = await deleteTransaction(selectedTransaction.value.id, accountId.value);
 
   if (wasDeleted) {
     closeDeleteTransactionModal();

@@ -77,7 +77,7 @@ const filteredGoalItems = computed(() => {
       return false;
     }
 
-    const status = resolveGoalStatus(goal.progress);
+    const status = goal.status === 'completed' ? 'completed' : resolveGoalStatus(goal.progress);
 
     if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(status)) {
       return false;
@@ -252,7 +252,7 @@ async function confirmDeleteGoal(): Promise<void> {
     return;
   }
 
-  const wasDeleted = await deleteGoal(selectedGoal.value.id);
+  const wasDeleted = await deleteGoal(selectedGoal.value.id, accountId.value);
 
   if (wasDeleted) {
     closeDeleteGoal();
@@ -316,14 +316,14 @@ function handleEditFormStateChange(state: FormState): void {
         <AccountGoalListItem
           v-for="goal in filteredGoalItems"
           :key="goal.id"
-          :current-amount="goal.currentAmount"
+          :current-amount="goal.amount * (goal.progress / 100)"
           :deadline-label="formatDateLabel(goal.deadline)"
           :item-id="goal.id"
-          :owner-label="goal.userName ?? 'Meta del usuario autenticado'"
+          :owner-label="goal.status === 'completed' ? 'Meta completada' : 'Meta en progreso'"
           :progress="goal.progress"
-          :remaining-amount="goal.remainingAmount"
-          :status="resolveGoalStatus(goal.progress)"
-          :target-amount="goal.targetAmount"
+          :remaining-amount="Math.max(goal.amount - goal.amount * (goal.progress / 100), 0)"
+          :status="goal.status === 'completed' ? 'completed' : resolveGoalStatus(goal.progress)"
+          :target-amount="goal.amount"
           :title="goal.name"
           @delete="openDeleteGoal"
           @edit="openEditGoal"

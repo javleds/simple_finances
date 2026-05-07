@@ -14,7 +14,7 @@ import SubscriptionListItem from '@/modules/subscriptions/components/Subscriptio
 import { useSubscriptionsCrud } from '@/modules/subscriptions/composables/useSubscriptionsCrud';
 import { formatSubscriptionFrequency } from '@/modules/subscriptions/schemas/subscriptionSchemas';
 import type {
-  SubscriptionFrequencyUnit,
+  SubscriptionFrequencyType,
   SubscriptionWritePayload,
 } from '@/modules/subscriptions/types';
 import {
@@ -42,7 +42,7 @@ const isCreateSubscriptionOpen = ref(false);
 const isEditSubscriptionOpen = ref(false);
 const isDeleteSubscriptionOpen = ref(false);
 const selectedStatuses = ref<SubscriptionStatusFilter[]>([]);
-const selectedUnits = ref<SubscriptionFrequencyUnit[]>([]);
+const selectedUnits = ref<SubscriptionFrequencyType[]>([]);
 const selectedSubscriptionId = ref<string | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
@@ -54,10 +54,9 @@ const subscriptionStatusOptions = [
 ] as const;
 
 const subscriptionUnitOptions = [
-  { value: 'day', label: 'Día' },
-  { value: 'week', label: 'Semana' },
-  { value: 'month', label: 'Mes' },
-  { value: 'year', label: 'Año' },
+  { value: 'days', label: 'Días' },
+  { value: 'months', label: 'Meses' },
+  { value: 'years', label: 'Años' },
 ] as const;
 
 const {
@@ -88,7 +87,7 @@ const filteredSubscriptions = computed(() => {
       return false;
     }
 
-    const status: SubscriptionStatusFilter = subscription.cancellationDate ? 'cancelled' : 'active';
+    const status: SubscriptionStatusFilter = subscription.finishedAt ? 'cancelled' : 'active';
 
     if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(status)) {
       return false;
@@ -96,7 +95,7 @@ const filteredSubscriptions = computed(() => {
 
     if (
       selectedUnits.value.length > 0 &&
-      !selectedUnits.value.includes(subscription.frequencyUnit)
+      !selectedUnits.value.includes(subscription.frequencyType)
     ) {
       return false;
     }
@@ -190,7 +189,7 @@ function toggleStatus(status: SubscriptionStatusFilter): void {
   selectedStatuses.value = [...selectedStatuses.value, status];
 }
 
-function toggleUnit(unit: SubscriptionFrequencyUnit): void {
+function toggleUnit(unit: SubscriptionFrequencyType): void {
   if (selectedUnits.value.includes(unit)) {
     selectedUnits.value = selectedUnits.value.filter((item) => item !== unit);
     return;
@@ -370,11 +369,11 @@ function formatDateLabel(date: string | null): string {
           v-for="subscription in filteredSubscriptions"
           :key="subscription.id"
           :amount="subscription.amount"
-          :cycle="formatSubscriptionFrequency(subscription.frequencyEvery, subscription.frequencyUnit)"
+          :cycle="formatSubscriptionFrequency(subscription.frequencyUnit, subscription.frequencyType)"
           :item-id="subscription.id"
           :next-charge="formatDateLabel(subscription.nextPaymentDate)"
           :plan="subscription.name"
-          :status="subscription.cancellationDate ? 'cancelled' : 'active'"
+          :status="subscription.finishedAt ? 'cancelled' : 'active'"
           @delete="openDeleteSubscription"
           @edit="openEditSubscription"
         />

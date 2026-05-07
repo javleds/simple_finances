@@ -37,12 +37,14 @@ export type AccountInvite = {
 export type AccountInviteFormValues = {
   email: string;
   percentage: string;
+  status: AccountInviteStatus;
 };
 
 export type AccountInviteWritePayload = {
   accountId: string;
   email: string;
   percentage: number;
+  status: AccountInviteStatus;
 };
 
 function parseInviteStatus(value: unknown): AccountInviteStatus {
@@ -63,6 +65,7 @@ export const accountInviteFormSchema = z.object({
       const percentage = parseNullableNumber(value);
       return percentage !== null && percentage >= 0 && percentage <= 100;
     }, 'El porcentaje debe estar entre 0 y 100.'),
+  status: z.union([z.literal('pending'), z.literal('accepted'), z.literal('declined')]),
 });
 
 export const accountInviteApiSchema = z.object({
@@ -83,6 +86,7 @@ export function createDefaultAccountInviteFormValues(
       invite?.percentage === null || invite?.percentage === undefined
         ? ''
         : String(invite.percentage),
+    status: invite?.status ?? 'pending',
   };
 }
 
@@ -107,5 +111,6 @@ export function mapAccountInviteFormToWritePayload(
     accountId,
     email: values.email.trim(),
     percentage: parseNullableNumber(values.percentage) ?? 0,
+    status: values.status,
   };
 }

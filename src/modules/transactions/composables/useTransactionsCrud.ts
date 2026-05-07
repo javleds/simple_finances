@@ -80,12 +80,12 @@ export function useTransactionsCrud() {
     }
   }
 
-  async function deleteTransaction(transactionId: string): Promise<boolean> {
+  async function deleteTransaction(transactionId: string, accountId?: string): Promise<boolean> {
     isDeleting.value = true;
     deleteError.value = null;
 
     try {
-      await transactionsRepository.remove(transactionId);
+      await transactionsRepository.remove(transactionId, accountId);
       transactions.value = transactions.value.filter((transaction) => transaction.id !== transactionId);
       return true;
     } catch (error) {
