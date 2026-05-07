@@ -27,7 +27,7 @@ class GenerateSubscriptionPaymentSchema
             return;
         }
 
-        $userId = auth()->id();
+        $userId = auth()->id() ?? $subscription->user_id;
 
         if ($startDate->day > $subscription->started_at->day) {
             $startDate->add($subscription->getAddFrequency());

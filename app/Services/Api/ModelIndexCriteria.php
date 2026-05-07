@@ -1,0 +1,83 @@
+<?php
+
+namespace App\Services\Api;
+
+use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
+
+class ModelIndexCriteria
+{
+    public function apply(Builder $query, Request $request): Builder
+    {
+        $model = $query->getModel();
+        $columns = Schema::getColumnListing($model->getTable());
+
+        foreach ($request->query() as $key => $value) {
+            if ($this->shouldSkip($key, $value, $columns)) {
+                continue;
+            }
+
+            $query->where(
+                $key,
+                $this->normalizeValue($model, $key, $value)
+            );
+        }
+
+        return $query;
+    }
+
+    private function shouldSkip(string $key, mixed $value, array $columns): bool
+    {
+        if (in_array($key, ['page', 'per_page'], true)) {
+            return true;
+        }
+
+        if (! in_array($key, $columns, true)) {
+            return true;
+        }
+
+        if (is_array($value)) {
+            return true;
+        }
+
+        return $value === null || $value === '';
+    }
+
+    private function normalizeValue(Model $model, string $key, mixed $value): mixed
+    {
+        $casts = $model->getCasts();
+        $cast = $casts[$key] ?? null;
+
+        if ($cast === 'bool' || $cast === 'boolean') {
+            return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        }
+
+        if ($cast === 'int' || $cast === 'integer') {
+            return (int) $value;
+        }
+
+        if ($cast === 'float' || $cast === 'double' || $cast === 'real') {
+            return (float) $value;
+        }
+
+        if (is_string($cast) && enum_exists($cast)) {
+            return $this->normalizeEnumValue($cast, $value);
+        }
+
+        return $value;
+    }
+
+    private function normalizeEnumValue(string $enumClass, mixed $value): mixed
+    {
+        if (! is_subclass_of($enumClass, BackedEnum::class)) {
+            return $value;
+        }
+
+        $enum = $enumClass::tryFrom($value);
+
+        return $enum?->value ?? $value;
+    }
+}
