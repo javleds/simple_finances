@@ -1,24 +1,51 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
+
+import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
+import { useLoginForm } from '@/modules/auth/composables/useLoginForm';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
   AppCard,
   AppInput,
   AppLink,
+  AppPasswordInput,
   AppText,
   AppToggleButton,
   AppTitle,
 } from '@/modules/shared/components';
 
 const themeStore = useThemeStore();
+const router = useRouter();
+const authRepository = createAuthRepository();
 
 const themeOptions = [
   { value: THEME_MODE.LIGHT, label: 'Light' },
   { value: THEME_MODE.DARK, label: 'Dark' },
 ] as const;
 
+const {
+  email,
+  password,
+  errors,
+  isSubmitting,
+  isSubmitDisabled,
+  submitForm,
+} = useLoginForm();
+
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
+}
+
+async function handleSubmit(): Promise<void> {
+  const payload = await submitForm();
+
+  if (!payload) {
+    return;
+  }
+
+  await authRepository.login(payload);
+  await router.push({ name: 'admin.dashboard' });
 }
 </script>
 
@@ -60,12 +87,16 @@ function updateTheme(nextTheme: string): void {
             <AppText>Ingresa con tus credenciales para continuar.</AppText>
           </div>
 
-          <form class="space-y-5">
+          <form class="space-y-5" @submit.prevent="handleSubmit">
             <AppInput
               id="email"
+              v-model="email"
               type="email"
               label="Correo electrónico"
               placeholder="nombre@empresa.com"
+              autocomplete="email"
+              :error="errors.email"
+              required
             />
 
             <div class="space-y-2">
@@ -77,13 +108,23 @@ function updateTheme(nextTheme: string): void {
                   ¿Olvidaste tu contraseña?
                 </AppLink>
               </div>
-              <AppInput id="password" type="password" placeholder="Ingresa tu contraseña" />
+              <AppPasswordInput
+                id="password"
+                label="Contraseña"
+                v-model="password"
+                placeholder="Ingresa tu contraseña"
+                autocomplete="current-password"
+                :error="errors.password"
+              />
             </div>
 
-            <AppButton type="submit" variant="primary" full-width>
-              <RouterLink :to="{ name: 'admin.dashboard' }" class="w-full">
-                Iniciar sesión
-              </RouterLink>
+            <AppButton
+              type="submit"
+              variant="primary"
+              full-width
+              :disabled="isSubmitDisabled || isSubmitting"
+            >
+              {{ isSubmitting ? 'Ingresando...' : 'Iniciar sesión' }}
             </AppButton>
           </form>
 

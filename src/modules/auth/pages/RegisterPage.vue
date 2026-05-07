@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 import PrivacyPolicyContent from '@/modules/auth/components/PrivacyPolicyContent.vue';
 import TermsAndConditionsContent from '@/modules/auth/components/TermsAndConditionsContent.vue';
+import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
+import { useRegisterForm } from '@/modules/auth/composables/useRegisterForm';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
@@ -19,12 +22,28 @@ import {
 type LegalDocument = 'terms' | 'privacy' | null;
 
 const themeStore = useThemeStore();
+const router = useRouter();
+const authRepository = createAuthRepository();
 const activeDocument = ref<LegalDocument>(null);
 
 const themeOptions = [
   { value: THEME_MODE.LIGHT, label: 'Light' },
   { value: THEME_MODE.DARK, label: 'Dark' },
 ] as const;
+
+const {
+  name,
+  email,
+  phoneNumber,
+  password,
+  passwordConfirmation,
+  termsAccepted,
+  privacyPolicyAccepted,
+  errors,
+  isSubmitting,
+  isSubmitDisabled,
+  submitForm,
+} = useRegisterForm();
 
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
@@ -36,6 +55,17 @@ function openDocument(document: Exclude<LegalDocument, null>): void {
 
 function closeDocument(): void {
   activeDocument.value = null;
+}
+
+async function handleSubmit(): Promise<void> {
+  const payload = await submitForm();
+
+  if (!payload) {
+    return;
+  }
+
+  await authRepository.register(payload);
+  await router.push({ name: 'admin.dashboard' });
 }
 </script>
 
@@ -77,61 +107,111 @@ function closeDocument(): void {
             <AppText>Completa tus datos para registrarte y comenzar.</AppText>
           </div>
 
-          <form class="space-y-5">
+          <form class="space-y-5" @submit.prevent="handleSubmit">
             <AppInput
               id="name"
+              v-model="name"
               type="text"
               label="Nombre"
               placeholder="Tu nombre completo"
               autocomplete="name"
+              :error="errors.name"
+              required
             />
 
             <AppInput
               id="email"
+              v-model="email"
               type="email"
               label="Correo electrónico"
               placeholder="nombre@empresa.com"
               autocomplete="email"
+              :error="errors.email"
+              required
+            />
+
+            <AppInput
+              id="phone-number"
+              v-model="phoneNumber"
+              type="tel"
+              label="Teléfono"
+              placeholder="55 1234 5678"
+              autocomplete="tel"
+              :error="errors.phoneNumber"
             />
 
             <AppPasswordInput
               id="password"
+              v-model="password"
               label="Contraseña"
               placeholder="Crea una contraseña"
               autocomplete="new-password"
+              :error="errors.password"
             />
 
             <AppPasswordInput
               id="password-confirmation"
+              v-model="passwordConfirmation"
               label="Confirmar contraseña"
               placeholder="Repite tu contraseña"
               autocomplete="new-password"
+              :error="errors.passwordConfirmation"
             />
 
-            <AppText size="sm">
-              Al registrarse, usted acepta los
-              {{ ' ' }}
-              <AppLink
-                href=""
-                variant="primary"
-                class="font-semibold"
-                @click.prevent="openDocument('terms')"
-              >
-                términos y condiciones
-              </AppLink>
-              {{ ' ' }}y la{{ ' ' }}
-              <AppLink
-                href=""
-                variant="primary"
-                class="font-semibold"
-                @click.prevent="openDocument('privacy')"
-              >
-                política de privacidad
-              </AppLink>
-              .
-            </AppText>
+            <div class="space-y-3 rounded-xl border px-4 py-4" :style="{ borderColor: 'var(--app-color-border)' }">
+              <label class="flex items-start gap-3">
+                <input
+                  v-model="termsAccepted"
+                  type="checkbox"
+                  class="mt-1 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
+                />
+                <span class="text-sm text-(--app-color-text)">
+                  Acepto los
+                  <AppLink
+                    href=""
+                    variant="primary"
+                    class="font-semibold"
+                    @click.prevent="openDocument('terms')"
+                  >
+                    términos y condiciones
+                  </AppLink>
+                </span>
+              </label>
+              <p v-if="errors.termsAccepted" class="text-sm text-(--app-color-danger)">
+                {{ errors.termsAccepted }}
+              </p>
 
-            <AppButton type="submit" variant="primary" full-width>Registrarme</AppButton>
+              <label class="flex items-start gap-3">
+                <input
+                  v-model="privacyPolicyAccepted"
+                  type="checkbox"
+                  class="mt-1 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
+                />
+                <span class="text-sm text-(--app-color-text)">
+                  Acepto la
+                  <AppLink
+                    href=""
+                    variant="primary"
+                    class="font-semibold"
+                    @click.prevent="openDocument('privacy')"
+                  >
+                    política de privacidad
+                  </AppLink>
+                </span>
+              </label>
+              <p v-if="errors.privacyPolicyAccepted" class="text-sm text-(--app-color-danger)">
+                {{ errors.privacyPolicyAccepted }}
+              </p>
+            </div>
+
+            <AppButton
+              type="submit"
+              variant="primary"
+              full-width
+              :disabled="isSubmitDisabled || isSubmitting"
+            >
+              {{ isSubmitting ? 'Registrando...' : 'Registrarme' }}
+            </AppButton>
           </form>
 
           <div class="border-t pt-5" :style="{ borderColor: 'var(--app-color-border)' }">

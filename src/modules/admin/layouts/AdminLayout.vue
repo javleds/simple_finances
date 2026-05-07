@@ -19,7 +19,9 @@ import {
   Squares2X2Icon as Squares2X2SolidIcon,
   WalletIcon as WalletSolidIcon,
 } from '@heroicons/vue/24/solid';
-import { RouterLink, RouterView, useRoute } from 'vue-router';
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
+
+import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 
 type AdminNavigationItem = {
   label: string;
@@ -36,9 +38,11 @@ type ProfileMenuAction = {
 };
 
 const route = useRoute();
+const router = useRouter();
 const activeFacilityName = 'Finanzas Simples';
 const isProfileMenuOpen = ref(false);
 const profileMenuRef = ref<HTMLElement | null>(null);
+const authRepository = createAuthRepository();
 
 const profileMenuActions: ProfileMenuAction[] = [
   {
@@ -54,7 +58,7 @@ const profileMenuActions: ProfileMenuAction[] = [
   {
     label: 'Salir',
     icon: ArrowRightOnRectangleIcon,
-    routeName: 'auth.login',
+    actionKey: 'logout',
   },
 ] as const;
 
@@ -129,6 +133,12 @@ function closeProfileMenu(): void {
 
 function handleProfileMenuAction(): void {
   closeProfileMenu();
+}
+
+async function handleLogout(): Promise<void> {
+  closeProfileMenu();
+  await authRepository.logout();
+  await router.push({ name: 'auth.login' });
 }
 
 function handleDocumentClick(event: MouseEvent): void {
@@ -223,7 +233,7 @@ onBeforeUnmount(() => {
                 :to="action.routeName ? { name: action.routeName } : undefined"
                 type="button"
                 class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-(--app-color-text) transition hover:bg-(--app-color-surface-muted) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-                @click="handleProfileMenuAction"
+                @click="action.actionKey === 'logout' ? handleLogout() : handleProfileMenuAction()"
               >
                 <component :is="action.icon" class="h-5 w-5 text-(--app-color-text-subtle)" />
                 <span>{{ action.label }}</span>

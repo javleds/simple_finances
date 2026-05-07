@@ -5,6 +5,36 @@ type ApiRequestOptions = {
   signal?: AbortSignal;
 };
 
+const AUTH_TOKEN_STORAGE_KEY = 'finsi_20_auth_token';
+
+function canAccessStorage(): boolean {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+}
+
+export function getStoredAuthToken(): string | null {
+  if (!canAccessStorage()) {
+    return null;
+  }
+
+  return window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+}
+
+export function setStoredAuthToken(token: string): void {
+  if (!canAccessStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
+}
+
+export function clearStoredAuthToken(): void {
+  if (!canAccessStorage()) {
+    return;
+  }
+
+  window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -63,11 +93,13 @@ async function parseResponse(response: Response): Promise<unknown> {
 }
 
 async function request<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+  const authToken = getStoredAuthToken();
   const response = await fetch(resolveUrl(path), {
     method: options.method ?? 'GET',
     credentials: 'include',
     headers: {
       Accept: 'application/json',
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       ...options.headers,
     },

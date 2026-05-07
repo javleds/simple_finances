@@ -1,29 +1,43 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
-import { usePasswordRecoveryForm } from '@/modules/auth/composables/usePasswordRecoveryForm';
+import { usePasswordResetForm } from '@/modules/auth/composables/usePasswordResetForm';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
   AppCard,
   AppInput,
   AppLink,
+  AppPasswordInput,
   AppText,
   AppToggleButton,
   AppTitle,
 } from '@/modules/shared/components';
 
 const themeStore = useThemeStore();
+const router = useRouter();
+const route = useRoute();
 const authRepository = createAuthRepository();
-const recoveryMessage = ref<string | null>(null);
 
 const themeOptions = [
   { value: THEME_MODE.LIGHT, label: 'Light' },
   { value: THEME_MODE.DARK, label: 'Dark' },
 ] as const;
 
-const { email, errors, isSubmitting, isSubmitDisabled, submitForm } = usePasswordRecoveryForm();
+const initialToken = computed(() =>
+  typeof route.query.token === 'string' ? route.query.token : '',
+);
+const initialEmail = computed(() =>
+  typeof route.query.email === 'string' ? route.query.email : '',
+);
+
+const { token, email, password, passwordConfirmation, errors, isSubmitting, isSubmitDisabled, submitForm } =
+  usePasswordResetForm({
+    token: initialToken.value,
+    email: initialEmail.value,
+  });
 
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
@@ -36,7 +50,8 @@ async function handleSubmit(): Promise<void> {
     return;
   }
 
-  recoveryMessage.value = await authRepository.requestPasswordRecovery(payload);
+  await authRepository.resetPassword(payload);
+  await router.push({ name: 'auth.login' });
 }
 </script>
 
@@ -74,14 +89,22 @@ async function handleSubmit(): Promise<void> {
           </AppCard>
 
           <div class="space-y-2">
-            <AppTitle as="h1" size="md">Recuperar contraseña</AppTitle>
+            <AppTitle as="h1" size="md">Restablecer contraseña</AppTitle>
             <AppText>
-              Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu
-              contraseña.
+              Define una nueva contraseña para la cuenta asociada al enlace de recuperación.
             </AppText>
           </div>
 
           <form class="space-y-5" @submit.prevent="handleSubmit">
+            <AppInput
+              id="token"
+              v-model="token"
+              label="Token"
+              placeholder="Token de recuperación"
+              :error="errors.token"
+              required
+            />
+
             <AppInput
               id="email"
               v-model="email"
@@ -93,14 +116,23 @@ async function handleSubmit(): Promise<void> {
               required
             />
 
-            <AppText v-if="recoveryMessage" size="sm" class="text-(--app-color-success)!">
-              {{ recoveryMessage }}
-            </AppText>
+            <AppPasswordInput
+              id="password"
+              v-model="password"
+              label="Nueva contraseña"
+              placeholder="Nueva contraseña"
+              autocomplete="new-password"
+              :error="errors.password"
+            />
 
-            <AppText size="sm" tone="subtle">
-              Si existe una cuenta asociada a ese correo, recibirás un enlace para continuar con la
-              recuperación.
-            </AppText>
+            <AppPasswordInput
+              id="password-confirmation"
+              v-model="passwordConfirmation"
+              label="Confirmar contraseña"
+              placeholder="Confirma tu nueva contraseña"
+              autocomplete="new-password"
+              :error="errors.passwordConfirmation"
+            />
 
             <AppButton
               type="submit"
@@ -108,7 +140,7 @@ async function handleSubmit(): Promise<void> {
               full-width
               :disabled="isSubmitDisabled || isSubmitting"
             >
-              {{ isSubmitting ? 'Enviando...' : 'Recuperar mi contraseña' }}
+              {{ isSubmitting ? 'Actualizando...' : 'Actualizar contraseña' }}
             </AppButton>
           </form>
 
