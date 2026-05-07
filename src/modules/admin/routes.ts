@@ -21,6 +21,11 @@ const routes: RouteRecordRaw[] = [
         path: 'invitations',
         component: () => import('./pages/InvitationsPage.vue'),
       },
+      {
+        name: 'admin.profile',
+        path: 'profile',
+        component: () => import('./pages/ProfilePage.vue'),
+      },
       ...accountsRoutes,
       ...subscriptionsRoutes,
       ...distributionRoutes,

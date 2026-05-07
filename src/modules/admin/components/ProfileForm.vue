@@ -1,55 +1,104 @@
 <script setup lang="ts">
-import { computed, reactive } from 'vue';
+import { watch } from 'vue';
 
+import { useProfileForm } from '@/modules/admin/composables/useProfileForm';
+import type { Profile, ProfileWritePayload } from '@/modules/admin/schemas/profileSchemas';
 import { AppInput, AppPasswordInput, AppText } from '@/modules/shared/components';
 
-type ProfileFormSubmit = {
-  name: string;
-  password: string | null;
-  passwordConfirmation: string | null;
+type FormState = {
+  canSubmit: boolean;
+  isSubmitting: boolean;
 };
 
 const props = withDefaults(
   defineProps<{
     formId?: string;
-    initialName?: string;
+    initialValues?: Partial<Profile> | null;
+    serverError?: string | null;
   }>(),
   {
     formId: 'profile-form',
-    initialName: '',
+    initialValues: null,
+    serverError: null,
   },
 );
 
 const emit = defineEmits<{
-  submit: [payload: ProfileFormSubmit];
+  submit: [payload: ProfileWritePayload];
+  stateChange: [payload: FormState];
 }>();
 
-const state = reactive({
-  name: props.initialName,
-  password: '',
-  passwordConfirmation: '',
+const {
+  name,
+  email,
+  phoneNumber,
+  password,
+  passwordConfirmation,
+  errors,
+  isSubmitting,
+  isSubmitDisabled,
+  meta,
+  submitForm,
+} = useProfileForm({
+  initialValues: () => props.initialValues,
 });
 
-const requiresPasswordConfirmation = computed(() => state.password.trim().length > 0);
+watch(
+  [isSubmitDisabled, isSubmitting, meta],
+  () => {
+    emit('stateChange', {
+      canSubmit: !isSubmitDisabled.value,
+      isSubmitting: isSubmitting.value,
+    });
+  },
+  { immediate: true, deep: true },
+);
 
-function submitForm(): void {
-  emit('submit', {
-    name: state.name.trim(),
-    password: requiresPasswordConfirmation.value ? state.password : null,
-    passwordConfirmation: requiresPasswordConfirmation.value ? state.passwordConfirmation : null,
-  });
+async function handleSubmit(): Promise<void> {
+  const payload = await submitForm();
+
+  if (!payload) {
+    return;
+  }
+
+  emit('submit', payload);
 }
 </script>
 
 <template>
-  <form :id="props.formId" class="space-y-6" @submit.prevent="submitForm">
+  <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
+    <section v-if="props.serverError" class="rounded-xl border border-(--app-color-danger) px-4 py-3">
+      <AppText size="sm" class="text-(--app-color-danger)!">
+        {{ props.serverError }}
+      </AppText>
+    </section>
+
     <section class="space-y-5">
       <AppInput
         id="profile-name"
-        v-model="state.name"
+        v-model="name"
         label="Nombre"
         placeholder="Tu nombre completo"
+        :error="errors.name"
         required
+      />
+
+      <AppInput
+        id="profile-email"
+        v-model="email"
+        label="Correo"
+        type="email"
+        placeholder="tu@correo.com"
+        :error="errors.email"
+        required
+      />
+
+      <AppInput
+        id="profile-phone-number"
+        v-model="phoneNumber"
+        label="Teléfono"
+        placeholder="55 1234 5678"
+        :error="errors.phoneNumber"
       />
     </section>
 
@@ -66,19 +115,20 @@ function submitForm(): void {
 
       <AppPasswordInput
         id="profile-password"
-        v-model="state.password"
+        v-model="password"
         label="Contraseña"
         placeholder="Nueva contraseña"
         autocomplete="new-password"
+        :error="errors.password"
       />
 
       <AppPasswordInput
         id="profile-password-confirmation"
-        v-model="state.passwordConfirmation"
+        v-model="passwordConfirmation"
         label="Confirmar contraseña"
         placeholder="Confirma la nueva contraseña"
         autocomplete="new-password"
-        :required="requiresPasswordConfirmation"
+        :error="errors.passwordConfirmation"
       />
     </section>
   </form>

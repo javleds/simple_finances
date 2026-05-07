@@ -5,13 +5,11 @@ import {
   ArrowRightOnRectangleIcon,
   CreditCardIcon,
   EnvelopeIcon,
-  PencilSquareIcon,
   HomeIcon,
   Squares2X2Icon,
   UserIcon,
   UserCircleIcon,
   WalletIcon,
-  XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import {
@@ -22,9 +20,6 @@ import {
   WalletIcon as WalletSolidIcon,
 } from '@heroicons/vue/24/solid';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
-
-import ProfileForm from '@/modules/admin/components/ProfileForm.vue';
-import { AppModal } from '@/modules/shared/components';
 
 type AdminNavigationItem = {
   label: string;
@@ -43,14 +38,13 @@ type ProfileMenuAction = {
 const route = useRoute();
 const activeFacilityName = 'Finanzas Simples';
 const isProfileMenuOpen = ref(false);
-const isProfileModalOpen = ref(false);
 const profileMenuRef = ref<HTMLElement | null>(null);
 
 const profileMenuActions: ProfileMenuAction[] = [
   {
     label: 'Perfil',
-    icon: PencilSquareIcon,
-    actionKey: 'profile',
+    icon: UserIcon,
+    routeName: 'admin.profile',
   },
   {
     label: 'Invitaciones',
@@ -106,6 +100,10 @@ function showBackButton(): boolean {
     return true;
   }
 
+  if (route.name === 'admin.profile' || route.name === 'admin.invitations') {
+    return true;
+  }
+
   return route.name.startsWith('admin.accounts.') && route.name !== 'admin.accounts';
 }
 
@@ -129,24 +127,8 @@ function closeProfileMenu(): void {
   isProfileMenuOpen.value = false;
 }
 
-function openProfileModal(): void {
-  isProfileModalOpen.value = true;
-}
-
-function closeProfileModal(): void {
-  isProfileModalOpen.value = false;
-}
-
-function handleProfileMenuAction(action: ProfileMenuAction): void {
+function handleProfileMenuAction(): void {
   closeProfileMenu();
-
-  if (action.actionKey === 'profile') {
-    openProfileModal();
-  }
-}
-
-function handleProfileSubmit(): void {
-  closeProfileModal();
 }
 
 function handleDocumentClick(event: MouseEvent): void {
@@ -191,14 +173,18 @@ onBeforeUnmount(() => {
             :to="
               route.name === 'admin.distribution.detail'
                 ? { name: 'admin.distribution' }
-                : { name: 'admin.accounts' }
+                : route.name === 'admin.profile' || route.name === 'admin.invitations'
+                  ? { name: 'admin.dashboard' }
+                  : { name: 'admin.accounts' }
             "
             class="flex h-11 w-11 items-center justify-center rounded-full border bg-(--app-color-surface-muted) text-(--app-color-text) transition hover:bg-(--app-color-surface) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
             :style="{ borderColor: 'var(--app-color-border)' }"
             :aria-label="
               route.name === 'admin.distribution.detail'
                 ? 'Volver a distribución'
-                : 'Volver a cuentas'
+                : route.name === 'admin.profile' || route.name === 'admin.invitations'
+                  ? 'Volver al escritorio'
+                  : 'Volver a cuentas'
             "
           >
             <ArrowLeftIcon class="h-5 w-5" />
@@ -237,7 +223,7 @@ onBeforeUnmount(() => {
                 :to="action.routeName ? { name: action.routeName } : undefined"
                 type="button"
                 class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-(--app-color-text) transition hover:bg-(--app-color-surface-muted) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-                @click="handleProfileMenuAction(action)"
+                @click="handleProfileMenuAction"
               >
                 <component :is="action.icon" class="h-5 w-5 text-(--app-color-text-subtle)" />
                 <span>{{ action.label }}</span>
@@ -260,25 +246,6 @@ onBeforeUnmount(() => {
         </main>
       </div>
     </div>
-
-    <AppModal
-      :open="isProfileModalOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        {
-          key: 'submit-profile',
-          label: 'Guardar perfil',
-          tone: 'primary',
-          type: 'submit',
-          form: 'profile-form',
-        },
-      ]"
-      title="Perfil"
-      variant="default"
-      @close="closeProfileModal"
-    >
-      <ProfileForm form-id="profile-form" initial-name="Hugo Díaz" @submit="handleProfileSubmit" />
-    </AppModal>
 
     <nav
       class="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-x border-t bg-[color-mix(in_srgb,var(--app-color-surface)_92%,transparent)] px-2 pt-1 pb-2 backdrop-blur"

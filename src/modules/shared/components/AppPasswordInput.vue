@@ -9,6 +9,7 @@ const props = defineProps<{
   id: string;
   label: string;
   modelValue?: string | number | null;
+  error?: string;
 }>();
 
 const emit = defineEmits<{
@@ -37,7 +38,11 @@ function handleInput(event: Event): void {
 <template>
   <div class="space-y-2.5">
     <div class="flex min-h-5 items-center justify-between gap-4">
-      <label :for="props.id" class="text-sm font-medium text-(--app-color-label)">
+      <label
+        :for="props.id"
+        class="text-sm font-medium"
+        :class="props.error ? 'text-(--app-color-danger)' : 'text-(--app-color-label)'"
+      >
         {{ props.label }}
       </label>
       <button
@@ -53,9 +58,18 @@ function handleInput(event: Event): void {
       :id="props.id"
       :type="inputType"
       :value="props.modelValue ?? ''"
-      class="h-12 w-full rounded-lg border border-(--app-color-input-border) bg-(--app-color-input-bg) px-4 text-sm text-(--app-color-input-text) transition outline-none placeholder:text-(--app-color-input-placeholder) focus:border-(--app-color-primary) focus:ring-4 focus:ring-(--app-color-focus-ring)"
+      :aria-invalid="Boolean(props.error)"
+      class="h-12 w-full rounded-lg border bg-(--app-color-input-bg) px-4 text-sm text-(--app-color-input-text) transition outline-none placeholder:text-(--app-color-input-placeholder) focus:ring-4 focus:ring-(--app-color-focus-ring)"
+      :class="
+        props.error
+          ? 'border-(--app-color-danger) focus:border-(--app-color-danger)'
+          : 'border-(--app-color-input-border) focus:border-(--app-color-primary)'
+      "
       v-bind="$attrs"
       @input="handleInput"
     />
+    <p v-if="props.error" class="text-sm text-(--app-color-danger)">
+      {{ props.error }}
+    </p>
   </div>
 </template>
