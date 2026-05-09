@@ -195,6 +195,7 @@
       "get": {
         "tags": ["Profile"],
         "summary": "Get current profile",
+        "description": "Returns the authenticated user, including the is_email_verified flag.",
         "responses": {
           "200": {
             "description": "Profile",

@@ -89,7 +89,8 @@ it('registers, logs in, shows profile and logs out', function () {
         'Authorization' => 'Bearer '.$token,
     ])->getJson('/api/profile')
         ->assertOk()
-        ->assertJsonPath('data.email', 'jane@example.com');
+        ->assertJsonPath('data.email', 'jane@example.com')
+        ->assertJsonPath('data.is_email_verified', false);
 
     $this->withHeaders([
         'Accept' => 'application/json',
