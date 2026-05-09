@@ -159,6 +159,47 @@ it('rate limits email verification resend by email and ip', function () {
     ])->assertStatus(429);
 });
 
+it('rate limits register requests by email and ip', function () {
+    Notification::fake();
+    seedNotificationTypes();
+
+    $payload = [
+        'name' => 'Rate Limited User',
+        'email' => 'register-limit@example.com',
+        'password' => 'password123',
+        'password_confirmation' => 'password123',
+        'phone_number' => '555-1000',
+        'terms_accepted' => true,
+        'privacy_policy_accepted' => true,
+    ];
+
+    $this->postJson('/api/auth/register', $payload)
+        ->assertCreated();
+
+    $this->postJson('/api/auth/register', $payload)
+        ->assertStatus(422);
+
+    $this->postJson('/api/auth/register', $payload)
+        ->assertStatus(422);
+
+    $this->postJson('/api/auth/register', $payload)
+        ->assertStatus(429);
+});
+
+it('rate limits password recovery requests by email and ip', function () {
+    $payload = [
+        'email' => 'password-recovery-limit@example.com',
+    ];
+
+    for ($attempt = 0; $attempt < 3; $attempt++) {
+        $this->postJson('/api/auth/password-recovery', $payload)
+            ->assertStatus(422);
+    }
+
+    $this->postJson('/api/auth/password-recovery', $payload)
+        ->assertStatus(429);
+});
+
 it('updates notification settings', function () {
     seedNotificationTypes();
     $user = User::factory()->create();

@@ -31,12 +31,14 @@ use App\Http\Controllers\Api\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function (): void {
-    Route::post('register', [RegisterController::class, 'store']);
+    Route::post('register', [RegisterController::class, 'store'])
+        ->middleware('throttle:auth-email-action');
     Route::post('login', [LoginController::class, 'store']);
-    Route::post('password-recovery', [PasswordRecoveryController::class, 'store']);
+    Route::post('password-recovery', [PasswordRecoveryController::class, 'store'])
+        ->middleware('throttle:auth-email-action');
     Route::put('password-reset', [PasswordResetController::class, 'update']);
     Route::post('email-verification-notification-by-email', [EmailVerificationNotificationByEmailController::class, 'store'])
-        ->middleware('throttle:email-verification-by-email');
+        ->middleware('throttle:auth-email-action');
     Route::get('email-verification/{id}/{hash}', [EmailVerificationController::class, 'show'])
         ->middleware('signed')
         ->name('verification.verify');

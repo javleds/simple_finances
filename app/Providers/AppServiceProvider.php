@@ -53,7 +53,7 @@ class AppServiceProvider extends ServiceProvider
         $defaultCurrency = 'MXN';
         $defaultLocale = config('app.locale');
 
-        RateLimiter::for('email-verification-by-email', function (Request $request): Limit {
+        RateLimiter::for('auth-email-action', function (Request $request): Limit {
             $email = mb_strtolower((string) $request->input('email'));
 
             return Limit::perMinute(3)->by($request->ip().'|'.$email);
