@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import { clearPendingVerificationEmail } from '@/modules/auth/lib/authSession';
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { usePasswordResetForm } from '@/modules/auth/composables/usePasswordResetForm';
 import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
@@ -9,7 +11,6 @@ import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
   AppCard,
-  AppInput,
   AppLink,
   AppPasswordInput,
   AppText,
@@ -21,6 +22,7 @@ const themeStore = useThemeStore();
 const router = useRouter();
 const route = useRoute();
 const authRepository = createAuthRepository();
+const serverError = ref<string | null>(null);
 
 const themeOptions = [
   { value: THEME_MODE.LIGHT, label: 'Light' },
@@ -39,8 +41,6 @@ const { token, email, password, passwordConfirmation, isSubmitting, isSubmitDisa
     token: initialToken.value,
     email: initialEmail.value,
   });
-const { error: tokenError, touch: touchToken } = useFormFieldInteraction('token');
-const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
 const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('password');
 const { error: passwordConfirmationError, touch: touchPasswordConfirmation } =
   useFormFieldInteraction('passwordConfirmation');
@@ -50,14 +50,21 @@ function updateTheme(nextTheme: string): void {
 }
 
 async function handleSubmit(): Promise<void> {
+  serverError.value = null;
+
   const payload = await submitForm();
 
   if (!payload) {
     return;
   }
 
-  await authRepository.resetPassword(payload);
-  await router.push({ name: 'auth.login' });
+  try {
+    await authRepository.resetPassword(payload);
+    clearPendingVerificationEmail();
+    await router.push({ name: 'auth.login' });
+  } catch (error) {
+    serverError.value = error instanceof Error ? error.message : 'No fue posible restablecer la contraseña.';
+  }
 }
 </script>
 
@@ -102,27 +109,17 @@ async function handleSubmit(): Promise<void> {
           </div>
 
           <form class="space-y-5" @submit.prevent="handleSubmit">
-            <AppInput
-              id="token"
-              v-model="token"
-              label="Token"
-              placeholder="Token de recuperación"
-              :error="tokenError"
-              @blur="touchToken"
-              required
-            />
+            <section
+              v-if="serverError"
+              class="rounded-xl border border-(--app-color-danger) px-4 py-3"
+            >
+              <AppText size="sm" class="text-(--app-color-danger)!">
+                {{ serverError }}
+              </AppText>
+            </section>
 
-            <AppInput
-              id="email"
-              v-model="email"
-              type="email"
-              label="Correo electrónico"
-              placeholder="nombre@empresa.com"
-              autocomplete="email"
-              :error="emailError"
-              @blur="touchEmail"
-              required
-            />
+            <input v-model="token" type="hidden" />
+            <input v-model="email" type="hidden" />
 
             <AppPasswordInput
               id="password"
