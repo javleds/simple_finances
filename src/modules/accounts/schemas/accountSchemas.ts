@@ -126,13 +126,47 @@ export const accountApiSchema = z.object({
   deleted_at: z.string().nullable().optional().transform((value) => value ?? null),
   users: z
     .array(
-      z.object({
-        id: z.union([z.string(), z.number()]).transform((value) => String(value)),
-        name: z.string(),
-        email: z.string().email().catch(''),
-        percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-        pending_expenses: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-      }),
+      z
+        .union([
+          z.object({
+            id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+            name: z.string(),
+            email: z.string().email().catch(''),
+            percentage: z.unknown().optional().transform((value) => parseNullableNumber(value) ?? 0),
+            pending_expenses: z
+              .unknown()
+              .optional()
+              .transform((value) => parseNullableNumber(value) ?? 0),
+          }),
+          z.object({
+            id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+            name: z.string(),
+            email: z.string().email().catch(''),
+            pivot: z
+              .object({
+                percentage: z.unknown().optional().transform((value) => parseNullableNumber(value) ?? 0),
+              })
+              .optional()
+              .transform((value) => value ?? { percentage: 0 }),
+            pending_expenses: z
+              .unknown()
+              .optional()
+              .transform((value) => parseNullableNumber(value) ?? 0),
+          }),
+        ])
+        .transform((value) => {
+          if ('percentage' in value) {
+            return value;
+          }
+
+          return {
+            id: value.id,
+            name: value.name,
+            email: value.email,
+            percentage: value.pivot.percentage,
+            pending_expenses: value.pending_expenses,
+          };
+        }),
     )
     .optional()
     .transform((value) => value ?? []),
