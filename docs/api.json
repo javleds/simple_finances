@@ -74,6 +74,32 @@
         }
       }
     },
+    "/api/auth/email-verification-notification-by-email": {
+      "post": {
+        "tags": ["Auth"],
+        "security": [],
+        "summary": "Resend verification email by email address",
+        "description": "Returns a neutral response to avoid exposing whether the account exists or is already verified. This endpoint is rate limited.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailVerificationNotificationByEmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          },
+          "429": {
+            "description": "Too many resend attempts"
+          }
+        }
+      }
+    },
     "/api/auth/logout": {
       "delete": {
         "tags": ["Auth"],
@@ -2665,6 +2691,7 @@
           "id": { "type": "integer" },
           "name": { "type": "string" },
           "email": { "type": "string", "format": "email" },
+          "is_email_verified": { "type": "boolean" },
           "email_verified_at": { "type": ["string", "null"], "format": "date-time" },
           "phone_number": { "type": ["string", "null"] },
           "telegram_chat_id": { "type": ["string", "null"] },
@@ -2892,6 +2919,13 @@
         "required": ["email", "password"]
       },
       "PasswordRecoveryRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" }
+        },
+        "required": ["email"]
+      },
+      "EmailVerificationNotificationByEmailRequest": {
         "type": "object",
         "properties": {
           "email": { "type": "string", "format": "email" }

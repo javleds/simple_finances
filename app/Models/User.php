@@ -38,6 +38,10 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'remember_token',
     ];
 
+    protected $appends = [
+        'is_email_verified',
+    ];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -49,6 +53,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function getIsEmailVerifiedAttribute(): bool
+    {
+        return $this->hasVerifiedEmail();
     }
 
     public function accounts(): BelongsToMany

@@ -62,7 +62,9 @@ it('registers, logs in, shows profile and logs out', function () {
 
     $registerResponse
         ->assertCreated()
+        ->assertJsonPath('data.name', 'Jane Doe')
         ->assertJsonPath('data.email', 'jane@example.com')
+        ->assertJsonPath('data.is_email_verified', false)
         ->assertJsonStructure(['meta' => ['auth' => ['token', 'expires_at', 'token_type']]]);
 
     $user = User::withoutGlobalScopes()->where('email', 'jane@example.com')->firstOrFail();
@@ -73,6 +75,12 @@ it('registers, logs in, shows profile and logs out', function () {
         'email' => 'jane@example.com',
         'password' => 'password123',
     ]);
+
+    $loginResponse
+        ->assertOk()
+        ->assertJsonPath('data.name', 'Jane Doe')
+        ->assertJsonPath('data.email', 'jane@example.com')
+        ->assertJsonPath('data.is_email_verified', false);
 
     $token = $loginResponse->json('meta.auth.token');
 
@@ -94,6 +102,60 @@ it('registers, logs in, shows profile and logs out', function () {
         'Authorization' => 'Bearer '.$token,
     ])->getJson('/api/profile')
         ->assertUnauthorized();
+});
+
+it('resends email verification by email when the account is pending verification', function () {
+    Notification::fake();
+
+    $user = User::factory()->unverified()->create([
+        'email' => 'pending@example.com',
+    ]);
+
+    $this->postJson('/api/auth/email-verification-notification-by-email', [
+        'email' => $user->email,
+    ])->assertOk()
+        ->assertJsonPath('message', 'If the account exists and the email is not verified, a verification link will be sent.');
+
+    Notification::assertSentTo($user, VerifyEmail::class);
+});
+
+it('does not reveal whether the email exists or is already verified', function () {
+    Notification::fake();
+
+    $verifiedUser = User::factory()->create([
+        'email' => 'verified@example.com',
+        'email_verified_at' => now(),
+    ]);
+
+    $this->postJson('/api/auth/email-verification-notification-by-email', [
+        'email' => $verifiedUser->email,
+    ])->assertOk()
+        ->assertJsonPath('message', 'If the account exists and the email is not verified, a verification link will be sent.');
+
+    $this->postJson('/api/auth/email-verification-notification-by-email', [
+        'email' => 'missing@example.com',
+    ])->assertOk()
+        ->assertJsonPath('message', 'If the account exists and the email is not verified, a verification link will be sent.');
+
+    Notification::assertNotSentTo($verifiedUser, VerifyEmail::class);
+});
+
+it('rate limits email verification resend by email and ip', function () {
+    Notification::fake();
+
+    $user = User::factory()->unverified()->create([
+        'email' => 'limit@example.com',
+    ]);
+
+    for ($attempt = 0; $attempt < 3; $attempt++) {
+        $this->postJson('/api/auth/email-verification-notification-by-email', [
+            'email' => $user->email,
+        ])->assertOk();
+    }
+
+    $this->postJson('/api/auth/email-verification-notification-by-email', [
+        'email' => $user->email,
+    ])->assertStatus(429);
 });
 
 it('updates notification settings', function () {

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AccountTransactionController;
 use App\Http\Controllers\Api\AccountUserController;
 use App\Http\Controllers\Api\AccountUserNotificationController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
+use App\Http\Controllers\Api\Auth\EmailVerificationNotificationByEmailController;
 use App\Http\Controllers\Api\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
@@ -34,6 +35,8 @@ Route::prefix('auth')->group(function (): void {
     Route::post('login', [LoginController::class, 'store']);
     Route::post('password-recovery', [PasswordRecoveryController::class, 'store']);
     Route::put('password-reset', [PasswordResetController::class, 'update']);
+    Route::post('email-verification-notification-by-email', [EmailVerificationNotificationByEmailController::class, 'store'])
+        ->middleware('throttle:email-verification-by-email');
     Route::get('email-verification/{id}/{hash}', [EmailVerificationController::class, 'show'])
         ->middleware('signed')
         ->name('verification.verify');

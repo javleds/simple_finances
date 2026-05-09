@@ -12,6 +12,9 @@ use Filament\Support\Enums\Alignment;
 use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -49,6 +52,12 @@ class AppServiceProvider extends ServiceProvider
     {
         $defaultCurrency = 'MXN';
         $defaultLocale = config('app.locale');
+
+        RateLimiter::for('email-verification-by-email', function (Request $request): Limit {
+            $email = mb_strtolower((string) $request->input('email'));
+
+            return Limit::perMinute(3)->by($request->ip().'|'.$email);
+        });
 
         Model::unguard();
         Table::$defaultCurrency = $defaultCurrency;
