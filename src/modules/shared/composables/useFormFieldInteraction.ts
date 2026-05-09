@@ -1,5 +1,5 @@
-import { computed, type ComputedRef } from 'vue';
-import { useFieldError, useIsFieldTouched, useSetFieldTouched, useSubmitCount } from 'vee-validate';
+import { computed, ref, type ComputedRef } from 'vue';
+import { useFormErrors, useSubmitCount } from 'vee-validate';
 
 type UseFormFieldInteractionResult = {
   error: ComputedRef<string | undefined>;
@@ -7,21 +7,22 @@ type UseFormFieldInteractionResult = {
 };
 
 export function useFormFieldInteraction(fieldName: string): UseFormFieldInteractionResult {
-  const fieldError = useFieldError(fieldName);
-  const isTouched = useIsFieldTouched(fieldName);
-  const setFieldTouched = useSetFieldTouched(fieldName);
+  const formErrors = useFormErrors<Record<string, string>>();
   const submitCount = useSubmitCount();
+  const isTouched = ref(false);
 
   const error = computed(() => {
-    if (!fieldError.value) {
+    const fieldError = formErrors.value[fieldName];
+
+    if (!fieldError) {
       return undefined;
     }
 
-    return isTouched.value || submitCount.value > 0 ? fieldError.value : undefined;
+    return isTouched.value || submitCount.value > 0 ? fieldError : undefined;
   });
 
   function touch(): void {
-    setFieldTouched(true);
+    isTouched.value = true;
   }
 
   return {
