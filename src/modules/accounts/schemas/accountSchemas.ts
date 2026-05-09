@@ -64,13 +64,12 @@ export const accountFormSchema = z
     color: z
       .string()
       .trim()
-      .refine((value) => value === '' || colorPattern.test(value), 'Usa un color hexadecimal válido.')
-      .default(''),
-    description: z.string().trim().default(''),
+      .refine((value) => value === '' || colorPattern.test(value), 'Usa un color hexadecimal válido.'),
+    description: z.string().trim(),
     isVirtual: z.enum(['yes', 'no']),
     isCredit: z.enum(['yes', 'no']),
-    creditLine: z.string().trim().default(''),
-    closingDay: z.string().trim().default(''),
+    creditLine: z.string().trim(),
+    closingDay: z.string().trim(),
   })
   .superRefine((values, context) => {
     if (values.isCredit !== 'yes') {

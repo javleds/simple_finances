@@ -35,7 +35,6 @@ const themeOptions = [
 const {
   name,
   email,
-  phoneNumber,
   password,
   passwordConfirmation,
   termsAccepted,
@@ -46,7 +45,6 @@ const {
 } = useRegisterForm();
 const { error: nameError, touch: touchName } = useFormFieldInteraction('name');
 const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
-const { error: phoneNumberError, touch: touchPhoneNumber } = useFormFieldInteraction('phoneNumber');
 const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('password');
 const { error: passwordConfirmationError, touch: touchPasswordConfirmation } =
   useFormFieldInteraction('passwordConfirmation');
@@ -74,8 +72,17 @@ async function handleSubmit(): Promise<void> {
     return;
   }
 
-  await authRepository.register(payload);
-  await router.push({ name: 'admin.dashboard' });
+  const session = await authRepository.register(payload);
+
+  if (session.user.isEmailVerified) {
+    await router.push({ name: 'admin.dashboard' });
+    return;
+  }
+
+  await router.push({
+    name: 'auth.email-verification-required',
+    query: { email: session.user.email },
+  });
 }
 </script>
 
@@ -140,17 +147,6 @@ async function handleSubmit(): Promise<void> {
               :error="emailError"
               @blur="touchEmail"
               required
-            />
-
-            <AppInput
-              id="phone-number"
-              v-model="phoneNumber"
-              type="tel"
-              label="Teléfono"
-              placeholder="55 1234 5678"
-              autocomplete="tel"
-              :error="phoneNumberError"
-              @blur="touchPhoneNumber"
             />
 
             <AppPasswordInput

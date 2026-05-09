@@ -3,6 +3,7 @@ type ApiRequestOptions = {
   body?: unknown;
   headers?: HeadersInit;
   signal?: AbortSignal;
+  credentials?: RequestCredentials;
 };
 
 const AUTH_TOKEN_STORAGE_KEY = 'finsi_20_auth_token';
@@ -96,7 +97,7 @@ async function request<T>(path: string, options: ApiRequestOptions = {}): Promis
   const authToken = getStoredAuthToken();
   const response = await fetch(resolveUrl(path), {
     method: options.method ?? 'GET',
-    credentials: 'include',
+    credentials: options.credentials,
     headers: {
       Accept: 'application/json',
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),

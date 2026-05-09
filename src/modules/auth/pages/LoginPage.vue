@@ -40,8 +40,17 @@ async function handleSubmit(): Promise<void> {
     return;
   }
 
-  await authRepository.login(payload);
-  await router.push({ name: 'admin.dashboard' });
+  const session = await authRepository.login(payload);
+
+  if (session.user.isEmailVerified) {
+    await router.push({ name: 'admin.dashboard' });
+    return;
+  }
+
+  await router.push({
+    name: 'auth.email-verification-required',
+    query: { email: session.user.email },
+  });
 }
 </script>
 

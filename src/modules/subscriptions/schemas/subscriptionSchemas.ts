@@ -60,7 +60,7 @@ export const subscriptionFormSchema = z.object({
       return frequencyUnit !== null && Number.isInteger(frequencyUnit) && frequencyUnit > 0;
     }, 'La frecuencia debe ser un entero mayor a 0.'),
   frequencyType: frequencyTypeSchema,
-  finishedAt: z.string().trim().default(''),
+  finishedAt: z.string().trim(),
   fundingAccountId: z.string().nullable(),
 });
 

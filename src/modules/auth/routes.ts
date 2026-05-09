@@ -26,6 +26,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./pages/PasswordReset.vue'),
       },
       {
+        name: 'auth.email-verification-required',
+        path: 'email-verification-required',
+        component: () => import('./pages/EmailVerificationRequiredPage.vue'),
+      },
+      {
         name: 'auth.terms',
         path: 'terms-and-conditions',
         component: () => import('./pages/TermsAndConditions.vue'),

@@ -23,11 +23,6 @@ export function useRegisterForm() {
     set: (value: string) => setFieldValue('email', value, true),
   });
 
-  const phoneNumber = computed({
-    get: () => values.phoneNumber,
-    set: (value: string) => setFieldValue('phoneNumber', value, true),
-  });
-
   const password = computed({
     get: () => values.password,
     set: (value: string) => setFieldValue('password', value, true),
@@ -61,7 +56,6 @@ export function useRegisterForm() {
   return {
     name,
     email,
-    phoneNumber,
     password,
     passwordConfirmation,
     termsAccepted,

@@ -28,9 +28,9 @@ export const profileFormSchema = z
   .object({
     name: z.string().trim().min(1, 'El nombre es obligatorio.'),
     email: z.string().trim().email('Ingresa un correo electrónico válido.'),
-    phoneNumber: z.string().trim().default(''),
-    password: z.string().default(''),
-    passwordConfirmation: z.string().default(''),
+    phoneNumber: z.string().trim(),
+    password: z.string(),
+    passwordConfirmation: z.string(),
   })
   .superRefine((values, context) => {
     if (!values.password.trim()) {

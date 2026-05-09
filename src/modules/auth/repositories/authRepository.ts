@@ -5,6 +5,12 @@ import {
   createApiClient,
   setStoredAuthToken,
 } from '@/lib/api/apiClient';
+import {
+  clearPendingVerificationEmail,
+  clearStoredAuthSession,
+  setPendingVerificationEmail,
+  setStoredAuthSession,
+} from '@/modules/auth/lib/authSession';
 
 import {
   authResponseApiSchema,
@@ -50,6 +56,12 @@ function buildPasswordRecoveryPayload(payload: PasswordRecoveryFormValues) {
   };
 }
 
+function buildEmailVerificationNotificationByEmailPayload(email: string) {
+  return {
+    email,
+  };
+}
+
 function buildPasswordResetPayload(payload: PasswordResetFormValues) {
   return {
     token: payload.token,
@@ -61,24 +73,43 @@ function buildPasswordResetPayload(payload: PasswordResetFormValues) {
 
 function storeSession(session: AuthSession): AuthSession {
   setStoredAuthToken(session.token);
+  setStoredAuthSession(session);
+  clearPendingVerificationEmail();
   return session;
+}
+
+function storePendingVerification(session: AuthSession): AuthSession {
+  clearStoredAuthToken();
+  clearStoredAuthSession();
+  setPendingVerificationEmail(session.user.email);
+  return session;
+}
+
+function persistSession(session: AuthSession): AuthSession {
+  if (session.user.isEmailVerified) {
+    return storeSession(session);
+  }
+
+  return storePendingVerification(session);
 }
 
 export function createAuthRepository() {
   return {
     async login(payload: LoginFormValues): Promise<AuthSession> {
       const response = await apiClient.post<unknown>('/auth/login', buildLoginPayload(payload));
-      return storeSession(mapAuthResponseApiToSession(authResponseApiSchema.parse(response)));
+      return persistSession(mapAuthResponseApiToSession(authResponseApiSchema.parse(response)));
     },
     async register(payload: RegisterFormValues): Promise<AuthSession> {
       const response = await apiClient.post<unknown>('/auth/register', buildRegisterPayload(payload));
-      return storeSession(mapAuthResponseApiToSession(authResponseApiSchema.parse(response)));
+      return persistSession(mapAuthResponseApiToSession(authResponseApiSchema.parse(response)));
     },
     async logout(): Promise<void> {
       try {
         await apiClient.delete('/auth/logout');
       } finally {
         clearStoredAuthToken();
+        clearStoredAuthSession();
+        clearPendingVerificationEmail();
       }
     },
     async requestPasswordRecovery(payload: PasswordRecoveryFormValues): Promise<string> {
@@ -97,6 +128,13 @@ export function createAuthRepository() {
     },
     async resendEmailVerification(): Promise<string> {
       const response = await apiClient.post<unknown>('/auth/email-verification-notification');
+      return messageResponseSchema.parse(response).message;
+    },
+    async resendEmailVerificationByEmail(email: string): Promise<string> {
+      const response = await apiClient.post<unknown>(
+        '/auth/email-verification-notification-by-email',
+        buildEmailVerificationNotificationByEmailPayload(email),
+      );
       return messageResponseSchema.parse(response).message;
     },
   };

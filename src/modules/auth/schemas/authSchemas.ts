@@ -20,6 +20,7 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
+  isEmailVerified: boolean;
   phoneNumber: string | null;
   emailVerifiedAt: string | null;
   telegramChatId: string | null;
@@ -67,7 +68,7 @@ export const registerFormSchema = z
   .object({
     name: z.string().trim().min(1, 'El nombre es obligatorio.'),
     email: z.string().trim().email('Ingresa un correo electrónico válido.'),
-    phoneNumber: z.string().trim().default(''),
+    phoneNumber: z.string().trim(),
     password: z.string().trim().min(8, 'La contraseña debe tener al menos 8 caracteres.'),
     passwordConfirmation: z.string().trim().min(1, 'Confirma tu contraseña.'),
     termsAccepted: z.boolean().refine((value) => value, 'Debes aceptar los términos.'),
@@ -110,6 +111,7 @@ export const authUserApiSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   name: z.string(),
   email: z.string().email(),
+  is_email_verified: z.boolean(),
   email_verified_at: z
     .string()
     .nullable()
@@ -121,7 +123,8 @@ export const authUserApiSchema = z.object({
     .optional()
     .transform((value) => value ?? null),
   telegram_chat_id: z
-    .union([z.string(), z.number(), z.null(), z.undefined()])
+    .union([z.string(), z.number(), z.null()])
+    .optional()
     .transform((value) => parseNullableString(value)),
 });
 
@@ -142,6 +145,7 @@ export function mapAuthUserApiToDomain(payload: z.infer<typeof authUserApiSchema
     id: payload.id,
     name: payload.name,
     email: payload.email,
+    isEmailVerified: payload.is_email_verified,
     phoneNumber: payload.phone_number,
     emailVerifiedAt: payload.email_verified_at,
     telegramChatId: payload.telegram_chat_id,
