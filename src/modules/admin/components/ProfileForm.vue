@@ -4,6 +4,7 @@ import { watch } from 'vue';
 import { useProfileForm } from '@/modules/admin/composables/useProfileForm';
 import type { Profile, ProfileWritePayload } from '@/modules/admin/schemas/profileSchemas';
 import { AppInput, AppPasswordInput, AppText } from '@/modules/shared/components';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 
 type FormState = {
   canSubmit: boolean;
@@ -34,7 +35,6 @@ const {
   phoneNumber,
   password,
   passwordConfirmation,
-  errors,
   isSubmitting,
   isSubmitDisabled,
   meta,
@@ -42,6 +42,12 @@ const {
 } = useProfileForm({
   initialValues: () => props.initialValues,
 });
+const { error: nameError, touch: touchName } = useFormFieldInteraction('name');
+const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
+const { error: phoneNumberError, touch: touchPhoneNumber } = useFormFieldInteraction('phoneNumber');
+const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('password');
+const { error: passwordConfirmationError, touch: touchPasswordConfirmation } =
+  useFormFieldInteraction('passwordConfirmation');
 
 watch(
   [isSubmitDisabled, isSubmitting, meta],
@@ -67,7 +73,10 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
-    <section v-if="props.serverError" class="rounded-xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="props.serverError"
+      class="rounded-xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText size="sm" class="text-(--app-color-danger)!">
         {{ props.serverError }}
       </AppText>
@@ -79,7 +88,8 @@ async function handleSubmit(): Promise<void> {
         v-model="name"
         label="Nombre"
         placeholder="Tu nombre completo"
-        :error="errors.name"
+        :error="nameError"
+        @blur="touchName"
         required
       />
 
@@ -89,7 +99,8 @@ async function handleSubmit(): Promise<void> {
         label="Correo"
         type="email"
         placeholder="tu@correo.com"
-        :error="errors.email"
+        :error="emailError"
+        @blur="touchEmail"
         required
       />
 
@@ -98,7 +109,8 @@ async function handleSubmit(): Promise<void> {
         v-model="phoneNumber"
         label="Teléfono"
         placeholder="55 1234 5678"
-        :error="errors.phoneNumber"
+        :error="phoneNumberError"
+        @blur="touchPhoneNumber"
       />
     </section>
 
@@ -119,7 +131,8 @@ async function handleSubmit(): Promise<void> {
         label="Contraseña"
         placeholder="Nueva contraseña"
         autocomplete="new-password"
-        :error="errors.password"
+        :error="passwordError"
+        @blur="touchPassword"
       />
 
       <AppPasswordInput
@@ -128,7 +141,8 @@ async function handleSubmit(): Promise<void> {
         label="Confirmar contraseña"
         placeholder="Confirma la nueva contraseña"
         autocomplete="new-password"
-        :error="errors.passwordConfirmation"
+        :error="passwordConfirmationError"
+        @blur="touchPasswordConfirmation"
       />
     </section>
   </form>

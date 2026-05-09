@@ -3,6 +3,7 @@ import { ref } from 'vue';
 
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { usePasswordRecoveryForm } from '@/modules/auth/composables/usePasswordRecoveryForm';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
@@ -23,7 +24,8 @@ const themeOptions = [
   { value: THEME_MODE.DARK, label: 'Dark' },
 ] as const;
 
-const { email, errors, isSubmitting, isSubmitDisabled, submitForm } = usePasswordRecoveryForm();
+const { email, isSubmitting, isSubmitDisabled, submitForm } = usePasswordRecoveryForm();
+const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
 
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
@@ -89,7 +91,8 @@ async function handleSubmit(): Promise<void> {
               label="Correo electrónico"
               placeholder="nombre@empresa.com"
               autocomplete="email"
-              :error="errors.email"
+              :error="emailError"
+              @blur="touchEmail"
               required
             />
 

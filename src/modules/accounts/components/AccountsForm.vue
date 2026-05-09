@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
 
 import { useAccountForm } from '@/modules/accounts/composables/useAccountForm';
 import type { Account, AccountWritePayload } from '@/modules/accounts/types';
 import { AppInput, AppText, AppToggleButton } from '@/modules/shared/components';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 
 type YesNoValue = 'yes' | 'no';
 
@@ -43,7 +44,6 @@ const {
   isCredit,
   creditLine,
   closingDay,
-  errors,
   isSubmitting,
   isSubmitDisabled,
   meta,
@@ -51,6 +51,16 @@ const {
   submitForm,
 } = useAccountForm({
   initialValues: () => props.initialValues,
+});
+
+const { error: nameError, touch: touchName } = useFormFieldInteraction('name');
+const { error: descriptionError, touch: touchDescription } = useFormFieldInteraction('description');
+const { error: colorError, touch: touchColor } = useFormFieldInteraction('color');
+const { error: creditLineError, touch: touchCreditLine } = useFormFieldInteraction('creditLine');
+const { error: closingDayError, touch: touchClosingDay } = useFormFieldInteraction('closingDay');
+
+const creditConfigLabelHasError = computed(() => {
+  return Boolean(creditLineError.value || closingDayError.value);
 });
 
 watch(
@@ -77,7 +87,10 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
-    <section v-if="props.serverError" class="rounded-xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="props.serverError"
+      class="rounded-xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText size="sm" class="text-(--app-color-danger)!">
         {{ props.serverError }}
       </AppText>
@@ -89,7 +102,8 @@ async function handleSubmit(): Promise<void> {
         v-model="name"
         label="Nombre"
         placeholder="Ej. Cuenta operativa regional"
-        :error="errors.name"
+        :error="nameError"
+        @blur="touchName"
         required
       />
 
@@ -99,7 +113,7 @@ async function handleSubmit(): Promise<void> {
             <label
               for="account-description"
               class="text-sm font-medium"
-              :class="errors.description ? 'text-(--app-color-danger)' : 'text-(--app-color-label)'"
+              :class="descriptionError ? 'text-(--app-color-danger)' : 'text-(--app-color-label)'"
             >
               Descripción
             </label>
@@ -112,15 +126,16 @@ async function handleSubmit(): Promise<void> {
             placeholder="Describe el propósito y contexto de la cuenta"
             class="w-full rounded-lg border bg-(--app-color-input-bg) px-4 py-3 text-sm text-(--app-color-input-text) transition outline-none placeholder:text-(--app-color-input-placeholder) focus:ring-4 focus:ring-(--app-color-focus-ring)"
             :class="
-              errors.description
+              descriptionError
                 ? 'border-(--app-color-danger) focus:border-(--app-color-danger)'
                 : 'border-(--app-color-input-border) focus:border-(--app-color-primary)'
             "
-            :aria-invalid="Boolean(errors.description)"
+            :aria-invalid="Boolean(descriptionError)"
+            @blur="touchDescription"
           />
 
-          <p v-if="errors.description" class="text-sm text-(--app-color-danger)">
-            {{ errors.description }}
+          <p v-if="descriptionError" class="text-sm text-(--app-color-danger)">
+            {{ descriptionError }}
           </p>
         </div>
 
@@ -129,7 +144,7 @@ async function handleSubmit(): Promise<void> {
             <label
               for="account-color"
               class="text-sm font-medium"
-              :class="errors.color ? 'text-(--app-color-danger)' : 'text-(--app-color-label)'"
+              :class="colorError ? 'text-(--app-color-danger)' : 'text-(--app-color-label)'"
             >
               Color
             </label>
@@ -137,21 +152,25 @@ async function handleSubmit(): Promise<void> {
 
           <div
             class="flex h-12 items-center gap-3 rounded-lg border bg-(--app-color-input-bg) px-3"
-            :class="errors.color ? 'border-(--app-color-danger)' : 'border-(--app-color-input-border)'"
+            :class="
+              colorError ? 'border-(--app-color-danger)' : 'border-(--app-color-input-border)'
+            "
           >
             <input
               id="account-color"
               v-model="color"
               type="color"
               class="h-7 w-10 cursor-pointer rounded border-0 bg-transparent p-0"
+              :aria-invalid="Boolean(colorError)"
+              @blur="touchColor"
             />
             <span class="truncate text-sm text-(--app-color-text-subtle)">
               {{ color || 'Opcional' }}
             </span>
           </div>
 
-          <p v-if="errors.color" class="text-sm text-(--app-color-danger)">
-            {{ errors.color }}
+          <p v-if="colorError" class="text-sm text-(--app-color-danger)">
+            {{ colorError }}
           </p>
         </div>
       </div>
@@ -178,7 +197,9 @@ async function handleSubmit(): Promise<void> {
           <label
             for="account-is-credit"
             class="text-sm font-medium"
-            :class="errors.creditLine || errors.closingDay ? 'text-(--app-color-danger)' : 'text-(--app-color-label)'"
+            :class="
+              creditConfigLabelHasError ? 'text-(--app-color-danger)' : 'text-(--app-color-label)'
+            "
           >
             Es de crédito
           </label>
@@ -219,7 +240,8 @@ async function handleSubmit(): Promise<void> {
           min="0"
           step="0.01"
           placeholder="0.00"
-          :error="errors.creditLine"
+          :error="creditLineError"
+          @blur="touchCreditLine"
           :required="showCreditFields"
         />
 
@@ -233,7 +255,8 @@ async function handleSubmit(): Promise<void> {
           max="31"
           step="1"
           placeholder="1 - 31"
-          :error="errors.closingDay"
+          :error="closingDayError"
+          @blur="touchClosingDay"
           :required="showCreditFields"
         />
       </div>

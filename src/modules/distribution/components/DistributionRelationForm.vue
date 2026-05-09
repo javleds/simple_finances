@@ -2,8 +2,12 @@
 import { watch } from 'vue';
 
 import { useDistributionRelationForm } from '@/modules/distribution/composables/useDistributionRelationForm';
-import type { DistributionRelation, DistributionRelationWritePayload } from '@/modules/distribution/types';
+import type {
+  DistributionRelation,
+  DistributionRelationWritePayload,
+} from '@/modules/distribution/types';
 import { AppInput, AppText, AppToggleButton } from '@/modules/shared/components';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 
 type FormState = {
   canSubmit: boolean;
@@ -34,11 +38,13 @@ const typeOptions = [
   { value: 'savings', label: 'Ahorro' },
 ] as const;
 
-const { name, amount, type, errors, isSubmitting, isSubmitDisabled, meta, submitForm } =
+const { name, amount, type, isSubmitting, isSubmitDisabled, meta, submitForm } =
   useDistributionRelationForm({
     fixedIncomeId: props.fixedIncomeId,
     initialValues: () => props.initialValues,
   });
+const { error: nameError, touch: touchName } = useFormFieldInteraction('name');
+const { error: amountError, touch: touchAmount } = useFormFieldInteraction('amount');
 
 watch(
   [isSubmitDisabled, isSubmitting, meta],
@@ -64,7 +70,10 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
-    <section v-if="props.serverError" class="rounded-xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="props.serverError"
+      class="rounded-xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText size="sm" class="text-(--app-color-danger)!">{{ props.serverError }}</AppText>
     </section>
 
@@ -73,7 +82,8 @@ async function handleSubmit(): Promise<void> {
       v-model="name"
       label="Concepto"
       placeholder="Ej. Ahorro operativo"
-      :error="errors.name"
+      :error="nameError"
+      @blur="touchName"
       required
     />
 
@@ -86,7 +96,8 @@ async function handleSubmit(): Promise<void> {
       min="0"
       step="0.01"
       placeholder="0.00"
-      :error="errors.amount"
+      :error="amountError"
+      @blur="touchAmount"
       required
     />
 

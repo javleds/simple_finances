@@ -4,6 +4,7 @@ import { watch } from 'vue';
 import { useDistributionRuleForm } from '@/modules/distribution/composables/useDistributionRuleForm';
 import type { DistributionRule, DistributionRuleWritePayload } from '@/modules/distribution/types';
 import { AppInput, AppText, AppToggleButton } from '@/modules/shared/components';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 
 type FormState = {
   canSubmit: boolean;
@@ -33,10 +34,11 @@ const frequencyOptions = [
   { value: 'semi_monthly', label: 'Quincenal' },
 ] as const;
 
-const { name, frequency, errors, isSubmitting, isSubmitDisabled, meta, submitForm } =
+const { name, frequency, isSubmitting, isSubmitDisabled, meta, submitForm } =
   useDistributionRuleForm({
     initialValues: () => props.initialValues,
   });
+const { error: nameError, touch: touchName } = useFormFieldInteraction('name');
 
 watch(
   [isSubmitDisabled, isSubmitting, meta],
@@ -62,7 +64,10 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
-    <section v-if="props.serverError" class="rounded-xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="props.serverError"
+      class="rounded-xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText size="sm" class="text-(--app-color-danger)!">{{ props.serverError }}</AppText>
     </section>
 
@@ -71,7 +76,8 @@ async function handleSubmit(): Promise<void> {
       v-model="name"
       label="Nombre"
       placeholder="Ej. Ingreso fijo principal"
-      :error="errors.name"
+      :error="nameError"
+      @blur="touchName"
       required
     />
 

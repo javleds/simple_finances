@@ -36,6 +36,8 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | null];
+  change: [value: string | null];
+  blur: [event: FocusEvent];
 }>();
 
 const themeStore = useThemeStore();
@@ -43,7 +45,10 @@ const themeStore = useThemeStore();
 const dateValue = computed({
   get: () => props.modelValue,
   set: (value: unknown) => {
-    emit('update:modelValue', typeof value === 'string' ? value : null);
+    const normalizedValue = typeof value === 'string' ? value : null;
+
+    emit('update:modelValue', normalizedValue);
+    emit('change', normalizedValue);
   },
 });
 
@@ -54,6 +59,10 @@ const datePickerUi = computed(() => ({
     : 'app-date-picker__menu app-date-picker__menu--time-disabled',
   calendar: 'app-date-picker__calendar',
 }));
+
+function handleBlur(event?: FocusEvent): void {
+  emit('blur', event ?? new FocusEvent('blur'));
+}
 </script>
 
 <template>
@@ -85,13 +94,10 @@ const datePickerUi = computed(() => ({
       :min-date="props.minDate"
       :max-date="props.maxDate"
       :aria-invalid="Boolean(props.error)"
-      :class="
-        props.error
-          ? 'app-date-picker--error'
-          : ''
-      "
+      :class="props.error ? 'app-date-picker--error' : ''"
       text-input
       v-bind="$attrs"
+      @blur="handleBlur"
     >
       <template #input-icon>
         <CalendarDaysIcon class="h-4 w-4 text-(--app-color-text-subtle)" />

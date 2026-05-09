@@ -10,7 +10,6 @@ const props = defineProps<{
   label: string;
   modelValue?: string | number | null;
   error?: string;
-  showErrorBeforeBlur?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -19,7 +18,6 @@ const emit = defineEmits<{
 }>();
 
 const isVisible = ref(false);
-const hasBlurred = ref(false);
 
 const inputType = computed(() => {
   return isVisible.value ? 'text' : 'password';
@@ -27,14 +25,6 @@ const inputType = computed(() => {
 
 const actionLabel = computed(() => {
   return isVisible.value ? 'Ocultar' : 'Mostrar';
-});
-
-const visibleError = computed(() => {
-  if (!props.error) {
-    return undefined;
-  }
-
-  return props.showErrorBeforeBlur || hasBlurred.value ? props.error : undefined;
 });
 
 function toggleVisibility(): void {
@@ -46,7 +36,6 @@ function handleInput(event: Event): void {
 }
 
 function handleBlur(event: FocusEvent): void {
-  hasBlurred.value = true;
   emit('blur', event);
 }
 </script>
@@ -57,7 +46,7 @@ function handleBlur(event: FocusEvent): void {
       <label
         :for="props.id"
         class="text-sm font-medium"
-        :class="visibleError ? 'text-(--app-color-danger)' : 'text-(--app-color-label)'"
+        :class="props.error ? 'text-(--app-color-danger)' : 'text-(--app-color-label)'"
       >
         {{ props.label }}
       </label>
@@ -74,10 +63,10 @@ function handleBlur(event: FocusEvent): void {
       :id="props.id"
       :type="inputType"
       :value="props.modelValue ?? ''"
-      :aria-invalid="Boolean(visibleError)"
+      :aria-invalid="Boolean(props.error)"
       class="h-12 w-full rounded-lg border bg-(--app-color-input-bg) px-4 text-sm text-(--app-color-input-text) transition outline-none placeholder:text-(--app-color-input-placeholder) focus:ring-4 focus:ring-(--app-color-focus-ring)"
       :class="
-        visibleError
+        props.error
           ? 'border-(--app-color-danger) focus:border-(--app-color-danger)'
           : 'border-(--app-color-input-border) focus:border-(--app-color-primary)'
       "
@@ -85,8 +74,8 @@ function handleBlur(event: FocusEvent): void {
       @input="handleInput"
       @blur="handleBlur"
     />
-    <p v-if="visibleError" class="text-sm text-(--app-color-danger)">
-      {{ visibleError }}
+    <p v-if="props.error" class="text-sm text-(--app-color-danger)">
+      {{ props.error }}
     </p>
   </div>
 </template>

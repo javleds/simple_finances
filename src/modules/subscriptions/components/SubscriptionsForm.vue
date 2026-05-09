@@ -3,12 +3,8 @@ import { computed, watch } from 'vue';
 
 import { useSubscriptionForm } from '@/modules/subscriptions/composables/useSubscriptionForm';
 import type { Subscription, SubscriptionWritePayload } from '@/modules/subscriptions/types';
-import {
-  AppDatePicker,
-  AppInput,
-  AppSearchSelect,
-  AppText,
-} from '@/modules/shared/components';
+import { AppDatePicker, AppInput, AppSearchSelect, AppText } from '@/modules/shared/components';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 
 type FormState = {
   canSubmit: boolean;
@@ -53,7 +49,6 @@ const {
   frequencyUnit,
   cancellationDate,
   fundingAccountId,
-  errors,
   isSubmitting,
   isSubmitDisabled,
   meta,
@@ -61,6 +56,13 @@ const {
 } = useSubscriptionForm({
   initialValues: () => props.initialValues,
 });
+const { error: nameError, touch: touchName } = useFormFieldInteraction('name');
+const { error: amountError, touch: touchAmount } = useFormFieldInteraction('amount');
+const { error: startDateError, touch: touchStartDate } = useFormFieldInteraction('startDate');
+const { error: frequencyUnitError, touch: touchFrequencyUnit } =
+  useFormFieldInteraction('frequencyUnit');
+const { error: fundingAccountError, touch: touchFundingAccount } =
+  useFormFieldInteraction('fundingAccountId');
 
 const fundingAccountSelectOptions = computed(() => props.fundingAccountOptions);
 
@@ -88,7 +90,10 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
-    <section v-if="props.serverError" class="rounded-xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="props.serverError"
+      class="rounded-xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText size="sm" class="text-(--app-color-danger)!">
         {{ props.serverError }}
       </AppText>
@@ -100,7 +105,8 @@ async function handleSubmit(): Promise<void> {
         v-model="name"
         label="Nombre"
         placeholder="Ej. Plan premium anual"
-        :error="errors.name"
+        :error="nameError"
+        @blur="touchName"
         required
       />
 
@@ -114,7 +120,8 @@ async function handleSubmit(): Promise<void> {
           min="0"
           step="0.01"
           placeholder="0.00"
-          :error="errors.amount"
+          :error="amountError"
+          @blur="touchAmount"
           required
         />
 
@@ -123,7 +130,9 @@ async function handleSubmit(): Promise<void> {
           v-model="startDate"
           label="Fecha de contratación"
           placeholder="AAAA-MM-DD"
-          :error="errors.startDate"
+          :error="startDateError"
+          @change="touchStartDate"
+          @blur="touchStartDate"
           required
         />
       </div>
@@ -148,13 +157,17 @@ async function handleSubmit(): Promise<void> {
           min="1"
           step="1"
           placeholder="1"
-          :error="errors.frequencyUnit"
+          :error="frequencyUnitError"
+          @blur="touchFrequencyUnit"
           required
         />
 
         <div class="space-y-2.5">
           <div class="flex min-h-5 items-center">
-            <label for="subscription-frequency-unit" class="text-sm font-medium text-(--app-color-label)">
+            <label
+              for="subscription-frequency-unit"
+              class="text-sm font-medium text-(--app-color-label)"
+            >
               Unidad
             </label>
           </div>
@@ -180,13 +193,13 @@ async function handleSubmit(): Promise<void> {
     </section>
 
     <section class="space-y-5">
-        <AppDatePicker
-          id="subscription-finished-at"
-          v-model="cancellationDate"
-          label="Fecha de cancelación"
-          placeholder="Sin cancelación"
-          clearable
-        />
+      <AppDatePicker
+        id="subscription-finished-at"
+        v-model="cancellationDate"
+        label="Fecha de cancelación"
+        placeholder="Sin cancelación"
+        clearable
+      />
 
       <AppSearchSelect
         id="subscription-funding-account"
@@ -196,6 +209,9 @@ async function handleSubmit(): Promise<void> {
         placeholder="Selecciona una cuenta"
         search-placeholder="Buscar cuenta"
         empty-message="No encontramos cuentas disponibles."
+        :error="fundingAccountError"
+        @change="touchFundingAccount"
+        @blur="touchFundingAccount"
       />
     </section>
   </form>

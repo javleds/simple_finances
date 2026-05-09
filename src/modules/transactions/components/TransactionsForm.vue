@@ -13,6 +13,7 @@ import {
   AppText,
   AppToggleButton,
 } from '@/modules/shared/components';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 
 type FormState = {
   canSubmit: boolean;
@@ -73,7 +74,6 @@ const {
   date,
   financialGoalId,
   userPayments,
-  errors,
   isSubmitting,
   isSubmitDisabled,
   meta,
@@ -88,6 +88,14 @@ const {
 const hasSharedAccount = computed(() => props.accountUsers.length > 1);
 const showUserSplitToggle = computed(() => isExpense.value && hasSharedAccount.value);
 const showUserSplitInputs = computed(() => showUserSplitToggle.value && splitBetweenUsers.value);
+const { error: accountError, touch: touchAccount } = useFormFieldInteraction('accountId');
+const { error: conceptError, touch: touchConcept } = useFormFieldInteraction('concept');
+const { error: amountError, touch: touchAmount } = useFormFieldInteraction('amount');
+const { error: userPaymentsError, touch: touchUserPayments } =
+  useFormFieldInteraction('userPayments');
+const { error: dateError, touch: touchDate } = useFormFieldInteraction('date');
+const { error: financialGoalError, touch: touchFinancialGoal } =
+  useFormFieldInteraction('financialGoalId');
 
 const financialGoalOptions = computed(() =>
   props.financialGoals.map((goal) => ({
@@ -142,7 +150,10 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
-    <section v-if="props.serverError" class="rounded-xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="props.serverError"
+      class="rounded-xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText size="sm" class="text-(--app-color-danger)!">
         {{ props.serverError }}
       </AppText>
@@ -187,16 +198,18 @@ async function handleSubmit(): Promise<void> {
         placeholder="Selecciona una cuenta"
         search-placeholder="Buscar cuenta"
         empty-message="No encontramos cuentas disponibles."
+        :error="accountError"
+        @change="touchAccount"
+        @blur="touchAccount"
       />
-
-      <p v-if="errors.accountId" class="text-sm text-(--app-color-danger)">{{ errors.accountId }}</p>
 
       <AppInput
         id="transaction-concept"
         v-model="concept"
         label="Concepto"
         placeholder="Ej. Pago a proveedor de logística"
-        :error="errors.concept"
+        :error="conceptError"
+        @blur="touchConcept"
         required
       />
 
@@ -211,7 +224,8 @@ async function handleSubmit(): Promise<void> {
             min="0"
             step="0.01"
             placeholder="0.00"
-            :error="errors.amount"
+            :error="amountError"
+            @blur="touchAmount"
             required
           />
 
@@ -225,14 +239,14 @@ async function handleSubmit(): Promise<void> {
                 v-model="splitBetweenUsers"
                 type="checkbox"
                 class="mt-1 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
+                @change="touchUserPayments"
               />
               <div class="space-y-1">
                 <span class="block text-sm font-medium text-(--app-color-label)">
                   Dividir entre usuarios de la cuenta
                 </span>
                 <AppText size="sm">
-                  Usa los porcentajes del pivote `account_user` como base y ajústalos si hace
-                  falta.
+                  Usa los porcentajes del pivote `account_user` como base y ajústalos si hace falta.
                 </AppText>
               </div>
             </label>
@@ -241,11 +255,14 @@ async function handleSubmit(): Promise<void> {
               v-if="showUserSplitInputs"
               :users="props.accountUsers"
               :model-value="userPayments"
-              @update:model-value="userPayments = $event"
+              @update:model-value="
+                touchUserPayments();
+                userPayments = $event;
+              "
             />
 
-            <p v-if="errors.userPayments" class="text-sm text-(--app-color-danger)">
-              {{ errors.userPayments }}
+            <p v-if="userPaymentsError" class="text-sm text-(--app-color-danger)">
+              {{ userPaymentsError }}
             </p>
           </section>
         </div>
@@ -255,7 +272,9 @@ async function handleSubmit(): Promise<void> {
           v-model="date"
           label="Fecha"
           placeholder="AAAA-MM-DD"
-          :error="errors.date"
+          :error="dateError"
+          @change="touchDate"
+          @blur="touchDate"
           required
         />
       </div>
@@ -272,11 +291,10 @@ async function handleSubmit(): Promise<void> {
         placeholder="Sin meta financiera"
         search-placeholder="Buscar meta financiera"
         empty-message="No encontramos metas con ese criterio."
+        :error="financialGoalError"
+        @change="touchFinancialGoal"
+        @blur="touchFinancialGoal"
       />
-
-      <p v-if="errors.financialGoalId" class="text-sm text-(--app-color-danger)">
-        {{ errors.financialGoalId }}
-      </p>
 
       <div
         v-if="props.financialGoals.length === 0"

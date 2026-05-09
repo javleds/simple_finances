@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { usePasswordResetForm } from '@/modules/auth/composables/usePasswordResetForm';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
@@ -33,11 +34,16 @@ const initialEmail = computed(() =>
   typeof route.query.email === 'string' ? route.query.email : '',
 );
 
-const { token, email, password, passwordConfirmation, errors, isSubmitting, isSubmitDisabled, submitForm } =
+const { token, email, password, passwordConfirmation, isSubmitting, isSubmitDisabled, submitForm } =
   usePasswordResetForm({
     token: initialToken.value,
     email: initialEmail.value,
   });
+const { error: tokenError, touch: touchToken } = useFormFieldInteraction('token');
+const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
+const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('password');
+const { error: passwordConfirmationError, touch: touchPasswordConfirmation } =
+  useFormFieldInteraction('passwordConfirmation');
 
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
@@ -101,7 +107,8 @@ async function handleSubmit(): Promise<void> {
               v-model="token"
               label="Token"
               placeholder="Token de recuperación"
-              :error="errors.token"
+              :error="tokenError"
+              @blur="touchToken"
               required
             />
 
@@ -112,7 +119,8 @@ async function handleSubmit(): Promise<void> {
               label="Correo electrónico"
               placeholder="nombre@empresa.com"
               autocomplete="email"
-              :error="errors.email"
+              :error="emailError"
+              @blur="touchEmail"
               required
             />
 
@@ -122,7 +130,8 @@ async function handleSubmit(): Promise<void> {
               label="Nueva contraseña"
               placeholder="Nueva contraseña"
               autocomplete="new-password"
-              :error="errors.password"
+              :error="passwordError"
+              @blur="touchPassword"
             />
 
             <AppPasswordInput
@@ -131,7 +140,8 @@ async function handleSubmit(): Promise<void> {
               label="Confirmar contraseña"
               placeholder="Confirma tu nueva contraseña"
               autocomplete="new-password"
-              :error="errors.passwordConfirmation"
+              :error="passwordConfirmationError"
+              @blur="touchPasswordConfirmation"
             />
 
             <AppButton

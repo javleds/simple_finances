@@ -7,6 +7,7 @@ import type {
   AccountInviteWritePayload,
 } from '@/modules/accounts/schemas/accountInviteSchemas';
 import { AppInput, AppText } from '@/modules/shared/components';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 
 type FormState = {
   canSubmit: boolean;
@@ -32,11 +33,13 @@ const emit = defineEmits<{
   stateChange: [payload: FormState];
 }>();
 
-const { email, percentage, errors, isSubmitting, isSubmitDisabled, meta, submitForm } =
+const { email, percentage, isSubmitting, isSubmitDisabled, meta, submitForm } =
   useAccountInviteForm({
     accountId: props.accountId,
     initialValues: () => props.initialValues,
   });
+const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
+const { error: percentageError, touch: touchPercentage } = useFormFieldInteraction('percentage');
 
 watch(
   [isSubmitDisabled, isSubmitting, meta],
@@ -62,7 +65,10 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
-    <section v-if="props.serverError" class="rounded-xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="props.serverError"
+      class="rounded-xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText size="sm" class="text-(--app-color-danger)!">
         {{ props.serverError }}
       </AppText>
@@ -74,7 +80,8 @@ async function handleSubmit(): Promise<void> {
       label="Correo electrónico invitado"
       type="email"
       placeholder="colaborador@empresa.com"
-      :error="errors.email"
+      :error="emailError"
+      @blur="touchEmail"
       required
     />
 
@@ -88,7 +95,8 @@ async function handleSubmit(): Promise<void> {
       max="100"
       step="0.01"
       placeholder="0.00"
-      :error="errors.percentage"
+      :error="percentageError"
+      @blur="touchPercentage"
       required
     />
   </form>

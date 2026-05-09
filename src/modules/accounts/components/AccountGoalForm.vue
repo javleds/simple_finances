@@ -2,8 +2,12 @@
 import { watch } from 'vue';
 
 import { useAccountGoalForm } from '@/modules/accounts/composables/useAccountGoalForm';
-import type { AccountGoal, AccountGoalWritePayload } from '@/modules/accounts/schemas/accountGoalSchemas';
+import type {
+  AccountGoal,
+  AccountGoalWritePayload,
+} from '@/modules/accounts/schemas/accountGoalSchemas';
 import { AppDatePicker, AppInput, AppText } from '@/modules/shared/components';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 
 type FormState = {
   canSubmit: boolean;
@@ -29,11 +33,14 @@ const emit = defineEmits<{
   stateChange: [payload: FormState];
 }>();
 
-const { name, amount, deadline, errors, isSubmitting, isSubmitDisabled, meta, submitForm } =
+const { name, amount, deadline, isSubmitting, isSubmitDisabled, meta, submitForm } =
   useAccountGoalForm({
     accountId: props.accountId,
     initialValues: () => props.initialValues,
   });
+const { error: nameError, touch: touchName } = useFormFieldInteraction('name');
+const { error: amountError, touch: touchAmount } = useFormFieldInteraction('amount');
+const { error: deadlineError, touch: touchDeadline } = useFormFieldInteraction('deadline');
 
 watch(
   [isSubmitDisabled, isSubmitting, meta],
@@ -59,7 +66,10 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
-    <section v-if="props.serverError" class="rounded-xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="props.serverError"
+      class="rounded-xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText size="sm" class="text-(--app-color-danger)!">
         {{ props.serverError }}
       </AppText>
@@ -70,7 +80,8 @@ async function handleSubmit(): Promise<void> {
       v-model="name"
       label="Nombre"
       placeholder="Ej. Fondo operativo mensual"
-      :error="errors.name"
+      :error="nameError"
+      @blur="touchName"
       required
     />
 
@@ -83,7 +94,8 @@ async function handleSubmit(): Promise<void> {
       min="0"
       step="0.01"
       placeholder="0.00"
-      :error="errors.amount"
+      :error="amountError"
+      @blur="touchAmount"
       required
     />
 
@@ -92,7 +104,9 @@ async function handleSubmit(): Promise<void> {
       v-model="deadline"
       label="Fecha límite"
       placeholder="AAAA-MM-DD"
-      :error="errors.deadline"
+      :error="deadlineError"
+      @change="touchDeadline"
+      @blur="touchDeadline"
       required
     />
   </form>

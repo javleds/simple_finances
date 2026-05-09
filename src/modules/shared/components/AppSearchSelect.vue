@@ -2,6 +2,10 @@
 import { ChevronDownIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import Multiselect from '@vueform/multiselect';
 
+defineOptions({
+  inheritAttrs: false,
+});
+
 type SearchSelectOption = {
   value: string;
   label: string;
@@ -19,6 +23,7 @@ const props = withDefaults(
     emptyMessage?: string;
     disabled?: boolean;
     openDirection?: 'top' | 'bottom';
+    error?: string;
   }>(),
   {
     label: undefined,
@@ -27,22 +32,36 @@ const props = withDefaults(
     emptyMessage: 'No hay resultados disponibles.',
     disabled: false,
     openDirection: 'top',
+    error: undefined,
   },
 );
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | null];
+  change: [value: string | null];
+  blur: [event: FocusEvent];
 }>();
 
 function updateValue(nextValue: unknown): void {
-  emit('update:modelValue', typeof nextValue === 'string' ? nextValue : null);
+  const normalizedValue = typeof nextValue === 'string' ? nextValue : null;
+
+  emit('update:modelValue', normalizedValue);
+  emit('change', normalizedValue);
+}
+
+function handleBlur(event: FocusEvent): void {
+  emit('blur', event);
 }
 </script>
 
 <template>
   <div class="app-search-select space-y-2.5">
     <div v-if="props.label" class="flex min-h-5 items-center">
-      <label :for="props.id" class="text-sm font-medium text-(--app-color-label)">
+      <label
+        :for="props.id"
+        class="text-sm font-medium"
+        :class="props.error ? 'text-(--app-color-danger)' : 'text-(--app-color-label)'"
+      >
         {{ props.label }}
       </label>
     </div>
@@ -67,7 +86,11 @@ function updateValue(nextValue: unknown): void {
       :can-deselect="true"
       :no-options-text="props.emptyMessage"
       :no-results-text="props.emptyMessage"
+      :aria-invalid="Boolean(props.error)"
+      :class="props.error ? 'app-search-select--error' : ''"
+      v-bind="$attrs"
       @update:model-value="updateValue"
+      @blur="handleBlur"
     >
       <template #caret>
         <ChevronDownIcon class="h-5 w-5" />
@@ -99,6 +122,10 @@ function updateValue(nextValue: unknown): void {
         </div>
       </template>
     </Multiselect>
+
+    <p v-if="props.error" class="text-sm text-(--app-color-danger)">
+      {{ props.error }}
+    </p>
   </div>
 </template>
 
@@ -192,5 +219,10 @@ function updateValue(nextValue: unknown): void {
 
 .app-search-select .multiselect-single-label-text {
   color: var(--app-color-input-text);
+}
+
+.app-search-select--error,
+.app-search-select--error.is-active {
+  border-color: var(--app-color-danger);
 }
 </style>

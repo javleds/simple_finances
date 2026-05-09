@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router';
 
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { useLoginForm } from '@/modules/auth/composables/useLoginForm';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
@@ -24,16 +25,9 @@ const themeOptions = [
   { value: THEME_MODE.DARK, label: 'Dark' },
 ] as const;
 
-const {
-  email,
-  password,
-  errors,
-  isSubmitting,
-  isSubmitDisabled,
-  handleEmailBlur,
-  handlePasswordBlur,
-  submitForm,
-} = useLoginForm();
+const { email, password, isSubmitting, isSubmitDisabled, submitForm } = useLoginForm();
+const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
+const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('password');
 
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
@@ -97,29 +91,27 @@ async function handleSubmit(): Promise<void> {
               label="Correo electrónico"
               placeholder="nombre@empresa.com"
               autocomplete="email"
-              :error="errors.email"
-              @blur="handleEmailBlur"
+              :error="emailError"
+              @blur="touchEmail"
               required
             />
 
             <div class="space-y-2">
-              <div class="flex items-center justify-between gap-4">
-                <label for="password" class="text-sm font-medium text-(--app-color-label)">
-                  Contraseña
-                </label>
-                <AppLink :to="{ name: 'auth.password-recovery' }" variant="subtle" class="text-sm">
-                  ¿Olvidaste tu contraseña?
-                </AppLink>
-              </div>
               <AppPasswordInput
                 id="password"
                 label="Contraseña"
                 v-model="password"
                 placeholder="Ingresa tu contraseña"
                 autocomplete="current-password"
-                :error="errors.password"
-                @blur="handlePasswordBlur"
+                :error="passwordError"
+                @blur="touchPassword"
               />
+
+              <div class="flex items-center justify-end gap-4">
+                <AppLink :to="{ name: 'auth.password-recovery' }" variant="subtle" class="text-sm">
+                  ¿Olvidaste tu contraseña?
+                </AppLink>
+              </div>
             </div>
 
             <AppButton

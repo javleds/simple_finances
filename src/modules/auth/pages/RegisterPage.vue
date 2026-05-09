@@ -6,6 +6,7 @@ import PrivacyPolicyContent from '@/modules/auth/components/PrivacyPolicyContent
 import TermsAndConditionsContent from '@/modules/auth/components/TermsAndConditionsContent.vue';
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { useRegisterForm } from '@/modules/auth/composables/useRegisterForm';
+import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
@@ -39,11 +40,20 @@ const {
   passwordConfirmation,
   termsAccepted,
   privacyPolicyAccepted,
-  errors,
   isSubmitting,
   isSubmitDisabled,
   submitForm,
 } = useRegisterForm();
+const { error: nameError, touch: touchName } = useFormFieldInteraction('name');
+const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
+const { error: phoneNumberError, touch: touchPhoneNumber } = useFormFieldInteraction('phoneNumber');
+const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('password');
+const { error: passwordConfirmationError, touch: touchPasswordConfirmation } =
+  useFormFieldInteraction('passwordConfirmation');
+const { error: termsAcceptedError, touch: touchTermsAccepted } =
+  useFormFieldInteraction('termsAccepted');
+const { error: privacyPolicyAcceptedError, touch: touchPrivacyPolicyAccepted } =
+  useFormFieldInteraction('privacyPolicyAccepted');
 
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
@@ -115,7 +125,8 @@ async function handleSubmit(): Promise<void> {
               label="Nombre"
               placeholder="Tu nombre completo"
               autocomplete="name"
-              :error="errors.name"
+              :error="nameError"
+              @blur="touchName"
               required
             />
 
@@ -126,7 +137,8 @@ async function handleSubmit(): Promise<void> {
               label="Correo electrónico"
               placeholder="nombre@empresa.com"
               autocomplete="email"
-              :error="errors.email"
+              :error="emailError"
+              @blur="touchEmail"
               required
             />
 
@@ -137,7 +149,8 @@ async function handleSubmit(): Promise<void> {
               label="Teléfono"
               placeholder="55 1234 5678"
               autocomplete="tel"
-              :error="errors.phoneNumber"
+              :error="phoneNumberError"
+              @blur="touchPhoneNumber"
             />
 
             <AppPasswordInput
@@ -146,7 +159,8 @@ async function handleSubmit(): Promise<void> {
               label="Contraseña"
               placeholder="Crea una contraseña"
               autocomplete="new-password"
-              :error="errors.password"
+              :error="passwordError"
+              @blur="touchPassword"
             />
 
             <AppPasswordInput
@@ -155,15 +169,20 @@ async function handleSubmit(): Promise<void> {
               label="Confirmar contraseña"
               placeholder="Repite tu contraseña"
               autocomplete="new-password"
-              :error="errors.passwordConfirmation"
+              :error="passwordConfirmationError"
+              @blur="touchPasswordConfirmation"
             />
 
-            <div class="space-y-3 rounded-xl border px-4 py-4" :style="{ borderColor: 'var(--app-color-border)' }">
+            <div
+              class="space-y-3 rounded-xl border px-4 py-4"
+              :style="{ borderColor: 'var(--app-color-border)' }"
+            >
               <label class="flex items-start gap-3">
                 <input
                   v-model="termsAccepted"
                   type="checkbox"
                   class="mt-1 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
+                  @change="touchTermsAccepted"
                 />
                 <span class="text-sm text-(--app-color-text)">
                   Acepto los
@@ -177,8 +196,8 @@ async function handleSubmit(): Promise<void> {
                   </AppLink>
                 </span>
               </label>
-              <p v-if="errors.termsAccepted" class="text-sm text-(--app-color-danger)">
-                {{ errors.termsAccepted }}
+              <p v-if="termsAcceptedError" class="text-sm text-(--app-color-danger)">
+                {{ termsAcceptedError }}
               </p>
 
               <label class="flex items-start gap-3">
@@ -186,6 +205,7 @@ async function handleSubmit(): Promise<void> {
                   v-model="privacyPolicyAccepted"
                   type="checkbox"
                   class="mt-1 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
+                  @change="touchPrivacyPolicyAccepted"
                 />
                 <span class="text-sm text-(--app-color-text)">
                   Acepto la
@@ -199,8 +219,8 @@ async function handleSubmit(): Promise<void> {
                   </AppLink>
                 </span>
               </label>
-              <p v-if="errors.privacyPolicyAccepted" class="text-sm text-(--app-color-danger)">
-                {{ errors.privacyPolicyAccepted }}
+              <p v-if="privacyPolicyAcceptedError" class="text-sm text-(--app-color-danger)">
+                {{ privacyPolicyAcceptedError }}
               </p>
             </div>
 
