@@ -74,34 +74,25 @@ function buildPasswordResetPayload(payload: PasswordResetFormValues) {
 function storeSession(session: AuthSession): AuthSession {
   setStoredAuthToken(session.token);
   setStoredAuthSession(session);
-  clearPendingVerificationEmail();
-  return session;
-}
 
-function storePendingVerification(session: AuthSession): AuthSession {
-  clearStoredAuthToken();
-  clearStoredAuthSession();
-  setPendingVerificationEmail(session.user.email);
-  return session;
-}
-
-function persistSession(session: AuthSession): AuthSession {
   if (session.user.isEmailVerified) {
-    return storeSession(session);
+    clearPendingVerificationEmail();
+    return session;
   }
 
-  return storePendingVerification(session);
+  setPendingVerificationEmail(session.user.email);
+  return session;
 }
 
 export function createAuthRepository() {
   return {
     async login(payload: LoginFormValues): Promise<AuthSession> {
       const response = await apiClient.post<unknown>('/auth/login', buildLoginPayload(payload));
-      return persistSession(mapAuthResponseApiToSession(authResponseApiSchema.parse(response)));
+      return storeSession(mapAuthResponseApiToSession(authResponseApiSchema.parse(response)));
     },
     async register(payload: RegisterFormValues): Promise<AuthSession> {
       const response = await apiClient.post<unknown>('/auth/register', buildRegisterPayload(payload));
-      return persistSession(mapAuthResponseApiToSession(authResponseApiSchema.parse(response)));
+      return storeSession(mapAuthResponseApiToSession(authResponseApiSchema.parse(response)));
     },
     async logout(): Promise<void> {
       try {

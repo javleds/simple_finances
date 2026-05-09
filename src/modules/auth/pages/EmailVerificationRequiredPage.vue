@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { createProfileRepository } from '@/modules/admin/repositories/profileRepository';
+import { getStoredAuthToken } from '@/lib/api/apiClient';
 import { useRouter } from 'vue-router';
 import { useRoute } from 'vue-router';
 
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
-import { getPendingVerificationEmail } from '@/modules/auth/lib/authSession';
+import {
+  getPendingVerificationEmail,
+  getStoredAuthSession,
+  setPendingVerificationEmail,
+  setStoredAuthSession,
+} from '@/modules/auth/lib/authSession';
 import {
   AppButton,
   AppCard,
@@ -16,7 +23,9 @@ import {
 const route = useRoute();
 const router = useRouter();
 const authRepository = createAuthRepository();
+const profileRepository = createProfileRepository();
 const isSubmitting = ref(false);
+const isCheckingVerification = ref(true);
 const message = ref<string | null>(null);
 
 const email = computed(() => {
@@ -28,6 +37,46 @@ const email = computed(() => {
 
   return getPendingVerificationEmail();
 });
+
+async function checkVerificationStatus(): Promise<void> {
+  const authToken = getStoredAuthToken();
+  const storedSession = getStoredAuthSession();
+
+  if (!authToken) {
+    isCheckingVerification.value = false;
+    return;
+  }
+
+  try {
+    const profile = await profileRepository.get();
+
+    if (!profile.isEmailVerified) {
+      setPendingVerificationEmail(profile.email);
+      return;
+    }
+
+    setStoredAuthSession({
+      token: storedSession?.token ?? authToken,
+      tokenType: storedSession?.tokenType ?? 'Bearer',
+      expiresAt: storedSession?.expiresAt ?? '',
+      user: {
+        id: storedSession?.user.id ?? profile.id,
+        name: profile.name,
+        email: profile.email,
+        phoneNumber: profile.phoneNumber,
+        emailVerifiedAt: storedSession?.user.emailVerifiedAt ?? null,
+        telegramChatId: profile.telegramChatId,
+        isEmailVerified: profile.isEmailVerified,
+      },
+    });
+
+    await router.push({ name: 'admin.dashboard' });
+  } catch {
+    // Keep the user on this screen when the profile check cannot be completed.
+  } finally {
+    isCheckingVerification.value = false;
+  }
+}
 
 async function handleResendEmail(): Promise<void> {
   if (!email.value || isSubmitting.value) {
@@ -44,7 +93,7 @@ async function handleResendEmail(): Promise<void> {
 }
 
 async function handleBackToLogin(): Promise<void> {
-  if (isSubmitting.value) {
+  if (isSubmitting.value || isCheckingVerification.value) {
     return;
   }
 
@@ -57,6 +106,10 @@ async function handleBackToLogin(): Promise<void> {
     await router.push({ name: 'auth.login' });
   }
 }
+
+onMounted(() => {
+  void checkVerificationStatus();
+});
 </script>
 
 <template>
@@ -100,11 +153,15 @@ async function handleBackToLogin(): Promise<void> {
               type="button"
               variant="primary"
               full-width
-              :disabled="!email || isSubmitting"
+              :disabled="!email || isSubmitting || isCheckingVerification"
               @click="handleResendEmail"
             >
               {{
-                isSubmitting ? 'Enviando verificación...' : 'Reenviar correo de verificación'
+                isCheckingVerification
+                  ? 'Validando verificación...'
+                  : isSubmitting
+                    ? 'Enviando verificación...'
+                    : 'Reenviar correo de verificación'
               }}
             </AppButton>
 

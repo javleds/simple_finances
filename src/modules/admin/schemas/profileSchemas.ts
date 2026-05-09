@@ -4,6 +4,7 @@ export type Profile = {
   id: string;
   name: string;
   email: string;
+  isEmailVerified: boolean;
   phoneNumber: string;
   telegramChatId: string | null;
 };
@@ -67,6 +68,7 @@ export const profileApiSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   name: z.string(),
   email: z.string().email(),
+  is_email_verified: z.boolean(),
   phone_number: z.string().nullable().optional().transform((value) => value ?? ''),
   telegram_chat_id: z
     .union([z.string(), z.number(), z.null(), z.undefined()])
@@ -88,6 +90,7 @@ export function mapProfileApiToDomain(payload: z.infer<typeof profileApiSchema>)
     id: payload.id,
     name: payload.name,
     email: payload.email,
+    isEmailVerified: payload.is_email_verified,
     phoneNumber: payload.phone_number,
     telegramChatId: payload.telegram_chat_id,
   };
