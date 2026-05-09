@@ -11,7 +11,7 @@ import { computed, onMounted, ref } from 'vue';
 import AccountsForm from '@/modules/accounts/components/AccountsForm.vue';
 import AccountListItem from '@/modules/accounts/components/AccountListItem.vue';
 import { useAccountsCrud } from '@/modules/accounts/composables/useAccountsCrud';
-import type { AccountStatus, AccountWritePayload } from '@/modules/accounts/types';
+import type { Account, AccountStatus, AccountWritePayload } from '@/modules/accounts/types';
 import {
   AppButton,
   AppIconButton,
@@ -33,6 +33,7 @@ const isEditAccountOpen = ref(false);
 const isFiltersOpen = ref(false);
 const selectedStatuses = ref<AccountStatus[]>([]);
 const selectedAccountId = ref<string | null>(null);
+const editAccountInitialValues = ref<Partial<Account> | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 
@@ -144,8 +145,18 @@ function closeCreateAccount(): void {
 }
 
 function openEditAccount(accountId: string): void {
+  const account = accounts.value.find((item) => item.id === accountId);
+
+  if (!account) {
+    return;
+  }
+
   clearSaveError();
   selectedAccountId.value = accountId;
+  editAccountInitialValues.value = {
+    ...account,
+    users: [...account.users],
+  };
   editFormState.value = { canSubmit: false, isSubmitting: false };
   isEditAccountOpen.value = true;
 }
@@ -153,6 +164,7 @@ function openEditAccount(accountId: string): void {
 function closeEditAccount(): void {
   isEditAccountOpen.value = false;
   selectedAccountId.value = null;
+  editAccountInitialValues.value = null;
   clearSaveError();
 }
 
@@ -196,11 +208,11 @@ async function handleCreateAccountSubmit(payload: AccountWritePayload): Promise<
 }
 
 async function handleEditAccountSubmit(payload: AccountWritePayload): Promise<void> {
-  if (!selectedAccount.value) {
+  if (!selectedAccountId.value) {
     return;
   }
 
-  const wasUpdated = await updateAccount(selectedAccount.value.id, payload);
+  const wasUpdated = await updateAccount(selectedAccountId.value, payload);
 
   if (wasUpdated) {
     closeEditAccount();
@@ -380,9 +392,10 @@ function handleEditFormStateChange(state: FormState): void {
       @close="closeEditAccount"
     >
       <AccountsForm
-        v-if="selectedAccount"
+        v-if="editAccountInitialValues"
+        :key="selectedAccountId ?? 'edit-account-form'"
         form-id="edit-account-form"
-        :initial-values="selectedAccount"
+        :initial-values="editAccountInitialValues"
         :server-error="saveError"
         @state-change="handleEditFormStateChange"
         @submit="handleEditAccountSubmit"

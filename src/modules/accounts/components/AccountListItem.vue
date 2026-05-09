@@ -51,12 +51,7 @@ function openAccountDetails(): void {
 
 <template>
   <AppCard
-    class="relative block cursor-pointer overflow-hidden rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
-    role="link"
-    tabindex="0"
-    @click="openAccountDetails"
-    @keydown.enter="openAccountDetails"
-    @keydown.space.prevent="openAccountDetails"
+    class="relative overflow-hidden rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
   >
     <div
       class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
@@ -66,42 +61,50 @@ function openAccountDetails(): void {
     />
 
     <div class="relative grid grid-cols-[minmax(0,1fr)_auto_auto_1rem] items-start gap-x-3 gap-y-2">
-      <div class="min-w-0">
-        <p
-          class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-        >
-          {{ props.account.name }}
-        </p>
-      </div>
-
-      <span
-        class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
-        :class="statusClasses(props.account.status)"
+      <button
+        type="button"
+        class="col-span-4 grid cursor-pointer grid-cols-subgrid gap-x-3 gap-y-2 rounded-xl text-left focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+        @click="openAccountDetails"
+        @keydown.enter.prevent="openAccountDetails"
+        @keydown.space.prevent="openAccountDetails"
       >
-        {{ props.account.status }}
-      </span>
+        <div class="min-w-0">
+          <p
+            class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+          >
+            {{ props.account.name }}
+          </p>
+        </div>
 
-      <AppActionMenu
-        class="shrink-0"
-        @delete.prevent.stop="handleDelete"
-        @edit.prevent.stop="handleEdit"
-      />
-
-      <div class="row-span-2 flex h-full items-center justify-end self-center">
-        <ChevronRightIcon class="h-4 w-4 shrink-0 text-(--app-color-text-subtle)" />
-      </div>
-
-      <div class="col-span-3 flex min-w-0 items-center justify-between">
-        <p
-          class="text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
+        <span
+          class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
+          :class="statusClasses(props.account.status)"
         >
-          Balance
-        </p>
-        <p
-          class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap text-(--app-color-text) tabular-nums sm:text-base"
-        >
-          {{ formatCurrency(props.account.balance) }}
-        </p>
+          {{ props.account.status }}
+        </span>
+
+        <div class="shrink-0" aria-hidden="true" />
+
+        <div class="row-span-2 flex h-full items-center justify-end self-center">
+          <ChevronRightIcon class="h-4 w-4 shrink-0 text-(--app-color-text-subtle)" />
+        </div>
+
+        <div class="col-span-3 flex min-w-0 items-center justify-between">
+          <p
+            class="text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
+          >
+            Balance
+          </p>
+          <p
+            class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap text-(--app-color-text) tabular-nums sm:text-base"
+          >
+            {{ formatCurrency(props.account.balance) }}
+          </p>
+        </div>
+      </button>
+
+      <div class="col-start-3 row-start-1 self-start">
+        <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
       </div>
     </div>
   </AppCard>
