@@ -1,43 +1,69 @@
 <?php
 
-function loadCorsConfigForEnvironment(string $environment): array
+function loadCorsConfig(array $environment): array
 {
-    $originalAppEnv = $_ENV['APP_ENV'] ?? null;
-    $originalServerAppEnv = $_SERVER['APP_ENV'] ?? null;
+    $originalEnvironment = [];
 
-    putenv("APP_ENV={$environment}");
-    $_ENV['APP_ENV'] = $environment;
-    $_SERVER['APP_ENV'] = $environment;
+    foreach ($environment as $key => $value) {
+        $originalEnvironment[$key] = [
+            'env' => $_ENV[$key] ?? null,
+            'server' => $_SERVER[$key] ?? null,
+            'putenv' => getenv($key) === false ? null : getenv($key),
+        ];
+
+        if ($value === null) {
+            unset($_ENV[$key], $_SERVER[$key]);
+            putenv($key);
+
+            continue;
+        }
+
+        $_ENV[$key] = $value;
+        $_SERVER[$key] = $value;
+        putenv("{$key}={$value}");
+    }
 
     try {
         return require base_path('config/cors.php');
     } finally {
-        if ($originalAppEnv === null) {
-            unset($_ENV['APP_ENV']);
-            putenv('APP_ENV');
-        } else {
-            $_ENV['APP_ENV'] = $originalAppEnv;
-            putenv("APP_ENV={$originalAppEnv}");
-        }
+        foreach ($originalEnvironment as $key => $originalValue) {
+            if ($originalValue['env'] === null) {
+                unset($_ENV[$key]);
+            } else {
+                $_ENV[$key] = $originalValue['env'];
+            }
 
-        if ($originalServerAppEnv === null) {
-            unset($_SERVER['APP_ENV']);
-        } else {
-            $_SERVER['APP_ENV'] = $originalServerAppEnv;
+            if ($originalValue['server'] === null) {
+                unset($_SERVER[$key]);
+            } else {
+                $_SERVER[$key] = $originalValue['server'];
+            }
+
+            if ($originalValue['putenv'] === null) {
+                putenv($key);
+            } else {
+                putenv("{$key}={$originalValue['putenv']}");
+            }
         }
     }
 }
 
-it('allows every origin in local environment', function () {
-    $corsConfiguration = loadCorsConfigForEnvironment('local');
+it('uses laravel default cors paths and allows every configured origin', function () {
+    $corsConfiguration = loadCorsConfig([
+        'CORS_ALLOWED_ORIGINS' => '*',
+        'CORS_ALLOWED_ORIGIN_PATTERNS' => null,
+    ]);
 
     expect($corsConfiguration['allowed_origins'])->toBe(['*']);
     expect($corsConfiguration['allowed_origins_patterns'])->toBe([]);
-    expect($corsConfiguration['paths'])->toBe(['api/*']);
+    expect($corsConfiguration['paths'])->toBe(['api/*', 'sanctum/csrf-cookie']);
 });
 
-it('allows only fin-si domains in production environment', function () {
-    $corsConfiguration = loadCorsConfigForEnvironment('production');
+it('supports allowed origin patterns from environment configuration', function () {
+    $corsConfiguration = loadCorsConfig([
+        'CORS_ALLOWED_ORIGINS' => '',
+        'CORS_ALLOWED_ORIGIN_PATTERNS' => '#^https?://([a-z0-9-]+\.)*fin-si\.com(?::\d+)?$#i',
+    ]);
     $allowedOriginPattern = $corsConfiguration['allowed_origins_patterns'][0];
 
     expect($corsConfiguration['allowed_origins'])->toBe([]);
