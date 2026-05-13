@@ -1,23 +1,22 @@
 <script setup lang="ts">
-import {
-  ArrowPathIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
-  XMarkIcon,
-} from '@heroicons/vue/24/outline';
+import { ArrowPathIcon, MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, onMounted, ref } from 'vue';
 
 import DistributionRuleForm from '@/modules/distribution/components/DistributionRuleForm.vue';
 import DistributionRuleListItem from '@/modules/distribution/components/DistributionRuleListItem.vue';
 import { useDistributionRulesCrud } from '@/modules/distribution/composables/useDistributionRulesCrud';
 import { formatDistributionFrequency } from '@/modules/distribution/schemas/distributionSchemas';
-import type { DistributionFrequency, DistributionRuleWritePayload } from '@/modules/distribution/types';
+import type {
+  DistributionFrequency,
+  DistributionRuleWritePayload,
+} from '@/modules/distribution/types';
 import {
   AppButton,
   AppInput,
   AppModal,
   AppSectionBar,
   AppText,
+  AppTitle,
 } from '@/modules/shared/components';
 
 type FormState = {
@@ -61,13 +60,17 @@ const filteredRules = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
   return rules.value.filter((rule) => {
-    const matchesQuery = normalizedQuery.length === 0 || rule.name.toLowerCase().includes(normalizedQuery);
+    const matchesQuery =
+      normalizedQuery.length === 0 || rule.name.toLowerCase().includes(normalizedQuery);
 
     if (!matchesQuery) {
       return false;
     }
 
-    if (selectedFrequencies.value.length > 0 && !selectedFrequencies.value.includes(rule.frequency)) {
+    if (
+      selectedFrequencies.value.length > 0 &&
+      !selectedFrequencies.value.includes(rule.frequency)
+    ) {
       return false;
     }
 
@@ -263,7 +266,10 @@ function handleEditFormStateChange(state: FormState): void {
       <AppButton variant="secondary" @click="openFilters">Filtros</AppButton>
     </div>
 
-    <section v-if="loadError && hasRules" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="loadError && hasRules"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
@@ -305,7 +311,9 @@ function handleEditFormStateChange(state: FormState): void {
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <AppText size="sm">No hay reglas que coincidan con la búsqueda o filtros actuales.</AppText>
+          <AppText size="sm"
+            >No hay reglas que coincidan con la búsqueda o filtros actuales.</AppText
+          >
         </div>
       </div>
     </section>
@@ -389,7 +397,8 @@ function handleEditFormStateChange(state: FormState): void {
     >
       <div class="space-y-3">
         <AppText v-if="selectedRule">
-          Vas a eliminar <strong>{{ selectedRule.name }}</strong>.
+          Vas a eliminar <strong>{{ selectedRule.name }}</strong
+          >.
         </AppText>
         <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
       </div>

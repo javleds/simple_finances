@@ -23,6 +23,7 @@ import {
   AppModal,
   AppSectionBar,
   AppText,
+  AppTitle,
 } from '@/modules/shared/components';
 
 type FormState = {
@@ -72,7 +73,8 @@ const filteredInvitationItems = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
   return invites.value.filter((invitation) => {
-    const matchesQuery = normalizedQuery.length === 0 || invitation.email.toLowerCase().includes(normalizedQuery);
+    const matchesQuery =
+      normalizedQuery.length === 0 || invitation.email.toLowerCase().includes(normalizedQuery);
 
     if (!matchesQuery) {
       return false;
@@ -271,10 +273,18 @@ function handleEditFormStateChange(state: FormState): void {
 
     <div class="flex items-center gap-3">
       <div class="relative flex-1">
-        <div class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)">
+        <div
+          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
+        >
           <MagnifyingGlassIcon class="h-5 w-5" />
         </div>
-        <AppInput id="invitation-search" v-model="searchTerm" type="search" placeholder="Buscar invitación por correo" class="pl-11" />
+        <AppInput
+          id="invitation-search"
+          v-model="searchTerm"
+          type="search"
+          placeholder="Buscar invitación por correo"
+          class="pl-11"
+        />
       </div>
 
       <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
@@ -282,7 +292,10 @@ function handleEditFormStateChange(state: FormState): void {
       </AppIconButton>
     </div>
 
-    <section v-if="loadError && hasInvites" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="loadError && hasInvites"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
@@ -292,7 +305,9 @@ function handleEditFormStateChange(state: FormState): void {
 
     <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">{{ filteredInvitationItems.length }} invitaciones visibles</AppText>
+        <AppText size="sm" tone="subtle"
+          >{{ filteredInvitationItems.length }} invitaciones visibles</AppText
+        >
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
       </div>
 
@@ -309,12 +324,24 @@ function handleEditFormStateChange(state: FormState): void {
           @edit="openEditInvitation"
         />
 
-        <div v-if="filteredInvitationItems.length === 0" class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
-          <AppText size="sm">No hay invitaciones que coincidan con la búsqueda o los filtros actuales.</AppText>
+        <div
+          v-if="filteredInvitationItems.length === 0"
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm"
+            >No hay invitaciones que coincidan con la búsqueda o los filtros actuales.</AppText
+          >
         </div>
 
-        <div class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
-          <AppText size="sm">Sigue desplazándote para revisar más invitaciones conforme se amplíe la colaboración.</AppText>
+        <div
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm"
+            >Sigue desplazándote para revisar más invitaciones conforme se amplíe la
+            colaboración.</AppText
+          >
         </div>
       </div>
     </section>
@@ -342,7 +369,11 @@ function handleEditFormStateChange(state: FormState): void {
             :key="status.value"
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="selectedStatuses.includes(status.value) ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)' : 'bg-(--app-color-surface-muted) text-(--app-color-text)'"
+            :class="
+              selectedStatuses.includes(status.value)
+                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
+                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
+            "
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="toggleStatus(status.value)"
           >
@@ -352,7 +383,13 @@ function handleEditFormStateChange(state: FormState): void {
       </div>
     </AppModal>
 
-    <AppModal :open="isCreateInvitationOpen" :actions="createInviteActions" title="Nueva invitación" variant="default" @close="closeCreateInvitation">
+    <AppModal
+      :open="isCreateInvitationOpen"
+      :actions="createInviteActions"
+      title="Nueva invitación"
+      variant="default"
+      @close="closeCreateInvitation"
+    >
       <AccountInvitationForm
         v-if="accountId"
         form-id="account-invitation-form"
@@ -363,7 +400,13 @@ function handleEditFormStateChange(state: FormState): void {
       />
     </AppModal>
 
-    <AppModal :open="isEditInvitationOpen" :actions="editInviteActions" title="Editar invitación" variant="default" @close="closeEditInvitation">
+    <AppModal
+      :open="isEditInvitationOpen"
+      :actions="editInviteActions"
+      title="Editar invitación"
+      variant="default"
+      @close="closeEditInvitation"
+    >
       <AccountInvitationForm
         v-if="accountId && selectedInvitation"
         form-id="edit-account-invitation-form"

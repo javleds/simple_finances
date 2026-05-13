@@ -24,6 +24,7 @@ import {
   AppModal,
   AppSectionBar,
   AppText,
+  AppTitle,
 } from '@/modules/shared/components';
 
 type FormState = {
@@ -45,7 +46,9 @@ const selectedUnits = ref<SubscriptionFrequencyType[]>([]);
 const selectedSubscriptionId = ref<string | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
-const fundingAccountOptions = ref<Array<{ value: string; label: string; description?: string }>>([]);
+const fundingAccountOptions = ref<Array<{ value: string; label: string; description?: string }>>(
+  [],
+);
 
 const subscriptionStatusOptions = [
   { value: 'active', label: 'Activa' },
@@ -109,9 +112,8 @@ const selectedSubscription = computed(() => {
   }
 
   return (
-    subscriptions.value.find(
-      (subscription) => subscription.id === selectedSubscriptionId.value,
-    ) ?? null
+    subscriptions.value.find((subscription) => subscription.id === selectedSubscriptionId.value) ??
+    null
   );
 });
 
@@ -332,13 +334,19 @@ function formatDateLabel(date: string | null): string {
       </AppIconButton>
     </div>
 
-    <section v-if="loadError && hasSubscriptions" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="loadError && hasSubscriptions"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText class="text-(--app-color-danger)!">
         {{ loadError }}
       </AppText>
     </section>
 
-    <section v-if="isLoading && !hasSubscriptions" class="rounded-2xl border px-4 py-10 text-center">
+    <section
+      v-if="isLoading && !hasSubscriptions"
+      class="rounded-2xl border px-4 py-10 text-center"
+    >
       <AppText>Cargando suscripciones...</AppText>
     </section>
 
@@ -348,9 +356,7 @@ function formatDateLabel(date: string | null): string {
     >
       <AppText>{{ loadError }}</AppText>
       <div class="flex justify-center">
-        <AppButton variant="outline" @click="loadSubscriptions">
-          Reintentar
-        </AppButton>
+        <AppButton variant="outline" @click="loadSubscriptions"> Reintentar </AppButton>
       </div>
     </section>
 
@@ -367,7 +373,9 @@ function formatDateLabel(date: string | null): string {
           v-for="subscription in filteredSubscriptions"
           :key="subscription.id"
           :amount="subscription.amount"
-          :cycle="formatSubscriptionFrequency(subscription.frequencyUnit, subscription.frequencyType)"
+          :cycle="
+            formatSubscriptionFrequency(subscription.frequencyUnit, subscription.frequencyType)
+          "
           :item-id="subscription.id"
           :next-charge="formatDateLabel(subscription.nextPaymentDate)"
           :plan="subscription.name"

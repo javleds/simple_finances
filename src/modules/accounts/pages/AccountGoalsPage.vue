@@ -20,6 +20,7 @@ import {
   AppModal,
   AppSectionBar,
   AppText,
+  AppTitle,
 } from '@/modules/shared/components';
 
 type GoalStatus = 'on-track' | 'at-risk' | 'completed';

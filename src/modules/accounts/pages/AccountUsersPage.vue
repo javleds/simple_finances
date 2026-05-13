@@ -13,6 +13,7 @@ import {
   AppModal,
   AppSectionBar,
   AppText,
+  AppTitle,
 } from '@/modules/shared/components';
 
 const accountsRepository = createAccountsRepository();
@@ -248,11 +249,17 @@ async function confirmDeleteUser(): Promise<void> {
       />
     </div>
 
-    <section v-if="loadError && users.length > 0" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="loadError && users.length > 0"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
-    <section v-if="isLoading && users.length === 0" class="rounded-2xl border px-4 py-10 text-center">
+    <section
+      v-if="isLoading && users.length === 0"
+      class="rounded-2xl border px-4 py-10 text-center"
+    >
       <AppText>Cargando usuarios...</AppText>
     </section>
 
@@ -354,7 +361,9 @@ async function confirmDeleteUser(): Promise<void> {
           placeholder="0.00"
           :error="
             saveError ??
-            (editPercentage && !canSubmitPercentage() ? 'El porcentaje debe estar entre 0 y 100.' : undefined)
+            (editPercentage && !canSubmitPercentage()
+              ? 'El porcentaje debe estar entre 0 y 100.'
+              : undefined)
           "
           required
         />

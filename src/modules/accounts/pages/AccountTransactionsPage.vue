@@ -20,6 +20,7 @@ import {
   AppModal,
   AppSectionBar,
   AppText,
+  AppTitle,
 } from '@/modules/shared/components';
 import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
 import TransactionsForm from '@/modules/transactions/components/TransactionsForm.vue';

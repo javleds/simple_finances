@@ -6,13 +6,7 @@ import FacilityInvitationListItem from '@/modules/admin/components/FacilityInvit
 import { createAccountInvitesRepository } from '@/modules/accounts/repositories/accountInvitesRepository';
 import type { AccountInvite } from '@/modules/accounts/schemas/accountInviteSchemas';
 import { ApiError } from '@/lib/api/apiClient';
-import {
-  AppButton,
-  AppInput,
-  AppModal,
-  AppSectionBar,
-  AppText,
-} from '@/modules/shared/components';
+import { AppButton, AppInput, AppModal, AppSectionBar, AppText } from '@/modules/shared/components';
 
 type PendingInvitationAction = 'accepted' | 'declined';
 
@@ -32,7 +26,9 @@ const selectedInvitation = computed(() => {
     return null;
   }
 
-  return invitations.value.find((invitation) => invitation.id === selectedInvitationId.value) ?? null;
+  return (
+    invitations.value.find((invitation) => invitation.id === selectedInvitationId.value) ?? null
+  );
 });
 
 const visibleInvitations = computed(() => {
@@ -210,11 +206,17 @@ async function confirmInvitationAction(): Promise<void> {
       />
     </div>
 
-    <section v-if="loadError && invitations.length > 0" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="loadError && invitations.length > 0"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
-    <section v-if="isLoading && invitations.length === 0" class="rounded-2xl border px-4 py-10 text-center">
+    <section
+      v-if="isLoading && invitations.length === 0"
+      class="rounded-2xl border px-4 py-10 text-center"
+    >
       <AppText>Cargando invitaciones...</AppText>
     </section>
 
@@ -278,8 +280,13 @@ async function confirmInvitationAction(): Promise<void> {
     >
       <div class="space-y-3">
         <AppText v-if="selectedInvitation">
-          {{ pendingAction === 'accepted' ? 'Vas a aceptar la invitación a' : 'Vas a rechazar la invitación a' }}
-          <strong>{{ resolveAccountName(selectedInvitation) }}</strong>.
+          {{
+            pendingAction === 'accepted'
+              ? 'Vas a aceptar la invitación a'
+              : 'Vas a rechazar la invitación a'
+          }}
+          <strong>{{ resolveAccountName(selectedInvitation) }}</strong
+          >.
         </AppText>
         <AppText v-if="saveError" class="text-(--app-color-danger)!">{{ saveError }}</AppText>
       </div>

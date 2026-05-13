@@ -19,6 +19,7 @@ import {
   AppModal,
   AppSectionBar,
   AppText,
+  AppTitle,
 } from '@/modules/shared/components';
 
 type FormState = {
@@ -247,10 +248,10 @@ function handleEditFormStateChange(state: FormState): void {
       description="La navegación por default es entrar al detalle de cada cuenta."
     >
       <template #actions>
-      <AppButton variant="primary" @click="openCreateAccount">
-        <PlusIcon class="h-4 w-4" />
-        <span>Nueva</span>
-      </AppButton>
+        <AppButton variant="primary" @click="openCreateAccount">
+          <PlusIcon class="h-4 w-4" />
+          <span>Nueva</span>
+        </AppButton>
       </template>
     </AppSectionBar>
 
@@ -275,7 +276,10 @@ function handleEditFormStateChange(state: FormState): void {
       </AppIconButton>
     </div>
 
-    <section v-if="loadError && hasAccounts" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="loadError && hasAccounts"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText class="text-(--app-color-danger)!">
         {{ loadError }}
       </AppText>
@@ -291,9 +295,7 @@ function handleEditFormStateChange(state: FormState): void {
     >
       <AppText>{{ loadError }}</AppText>
       <div class="flex justify-center">
-        <AppButton variant="outline" @click="loadAccounts">
-          Reintentar
-        </AppButton>
+        <AppButton variant="outline" @click="loadAccounts"> Reintentar </AppButton>
       </div>
     </section>
 
