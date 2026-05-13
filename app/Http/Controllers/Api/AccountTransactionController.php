@@ -44,7 +44,12 @@ class AccountTransactionController extends ApiController
             TransactionFormDto::fromFormArray($payload)
         );
 
-        return $this->respondModel($transaction->fresh(), ['account', 'user', 'financialGoal', 'subTransactions'], 201);
+        return $this->respondModel(
+            $transaction->fresh(),
+            ['account', 'user', 'financialGoal', 'subTransactions'],
+            201,
+            $this->transactionAccountMeta($account->id),
+        );
     }
 
     public function show(Account $account, Transaction $transaction): JsonResponse
@@ -63,6 +68,7 @@ class AccountTransactionController extends ApiController
         $this->ensureAccountTransaction($account, $transaction);
         abort_unless($transaction->user_id === $request->user()->id, 403);
 
+        $previousAccountId = $transaction->account_id;
         $payload = $request->validated();
         $payload['id'] = $transaction->id;
         $payload['account_id'] = $account->id;
@@ -72,7 +78,11 @@ class AccountTransactionController extends ApiController
             TransactionFormDto::fromFormArray($payload)
         );
 
-        return $this->respondModel($transaction->fresh(), ['account', 'user', 'financialGoal', 'subTransactions']);
+        return $this->respondModel(
+            $transaction->fresh(),
+            ['account', 'user', 'financialGoal', 'subTransactions'],
+            meta: $this->transactionAccountMeta($transaction->account_id, $previousAccountId),
+        );
     }
 
     public function delete(Account $account, Transaction $transaction, TransactionRemover $transactionRemover): JsonResponse
@@ -80,10 +90,12 @@ class AccountTransactionController extends ApiController
         $this->ensureAccountTransaction($account, $transaction);
         abort_unless($transaction->user_id === auth()->id(), 403);
 
+        $accountId = $transaction->account_id;
         $transactionRemover->execute($transaction);
 
         return $this->respond([
             'message' => 'Account transaction deleted successfully.',
+            'meta' => $this->transactionAccountMeta($accountId),
         ]);
     }
 
@@ -96,5 +108,28 @@ class AccountTransactionController extends ApiController
     {
         $this->ensureAccountMember($account);
         abort_unless($transaction->account_id === $account->id, 404);
+    }
+
+    private function transactionAccountMeta(int $accountId, ?int $previousAccountId = null): array
+    {
+        $meta = [
+            'account' => $this->accountMeta($accountId),
+        ];
+
+        if ($previousAccountId && $previousAccountId !== $accountId) {
+            $meta['previous_account'] = $this->accountMeta($previousAccountId);
+        }
+
+        return $meta;
+    }
+
+    private function accountMeta(int $accountId): array
+    {
+        $account = Account::withoutGlobalScopes()->findOrFail($accountId);
+
+        return [
+            'id' => $account->id,
+            'balance' => $account->balance,
+        ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Dto\TransactionFormDto;
 use App\Http\Requests\Api\TransactionRequest;
+use App\Models\Account;
 use App\Models\Transaction;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
@@ -30,7 +31,12 @@ class TransactionController extends ApiController
             TransactionFormDto::fromFormArray($request->validated())
         );
 
-        return $this->respondModel($transaction->fresh(), ['account', 'user', 'financialGoal', 'subTransactions'], 201);
+        return $this->respondModel(
+            $transaction->fresh(),
+            ['account', 'user', 'financialGoal', 'subTransactions'],
+            201,
+            $this->transactionAccountMeta($transaction->account_id),
+        );
     }
 
     public function show(Transaction $transaction): JsonResponse
@@ -45,6 +51,7 @@ class TransactionController extends ApiController
     ): JsonResponse {
         abort_unless($transaction->user_id === $request->user()->id, 403);
 
+        $previousAccountId = $transaction->account_id;
         $payload = $request->validated();
         $payload['id'] = $transaction->id;
 
@@ -53,17 +60,46 @@ class TransactionController extends ApiController
             TransactionFormDto::fromFormArray($payload)
         );
 
-        return $this->respondModel($transaction->fresh(), ['account', 'user', 'financialGoal', 'subTransactions']);
+        return $this->respondModel(
+            $transaction->fresh(),
+            ['account', 'user', 'financialGoal', 'subTransactions'],
+            meta: $this->transactionAccountMeta($transaction->account_id, $previousAccountId),
+        );
     }
 
     public function delete(Transaction $transaction, TransactionRemover $transactionRemover): JsonResponse
     {
         abort_unless($transaction->user_id === auth()->id(), 403);
 
+        $accountId = $transaction->account_id;
         $transactionRemover->execute($transaction);
 
         return $this->respond([
             'message' => 'Transaction deleted successfully.',
+            'meta' => $this->transactionAccountMeta($accountId),
         ]);
+    }
+
+    private function transactionAccountMeta(int $accountId, ?int $previousAccountId = null): array
+    {
+        $meta = [
+            'account' => $this->accountMeta($accountId),
+        ];
+
+        if ($previousAccountId && $previousAccountId !== $accountId) {
+            $meta['previous_account'] = $this->accountMeta($previousAccountId);
+        }
+
+        return $meta;
+    }
+
+    private function accountMeta(int $accountId): array
+    {
+        $account = Account::withoutGlobalScopes()->findOrFail($accountId);
+
+        return [
+            'id' => $account->id,
+            'balance' => $account->balance,
+        ];
     }
 }

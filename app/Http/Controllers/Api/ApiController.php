@@ -18,15 +18,21 @@ abstract class ApiController extends Controller
         return response()->json($payload, $status);
     }
 
-    protected function respondModel(Model $model, array $relations = [], int $status = 200): JsonResponse
+    protected function respondModel(Model $model, array $relations = [], int $status = 200, array $meta = []): JsonResponse
     {
         if ($relations !== []) {
             $model->loadMissing($relations);
         }
 
-        return $this->respond([
+        $payload = [
             'data' => $model,
-        ], $status);
+        ];
+
+        if ($meta !== []) {
+            $payload['meta'] = $meta;
+        }
+
+        return $this->respond($payload, $status);
     }
 
     protected function respondCollection(Collection $collection): JsonResponse

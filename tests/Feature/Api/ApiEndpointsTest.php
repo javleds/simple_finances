@@ -261,7 +261,9 @@ it('creates and updates accounts and transactions through the api', function () 
             'financial_goal_id' => null,
         ])
         ->assertCreated()
-        ->assertJsonPath('data.concept', 'Groceries');
+        ->assertJsonPath('data.concept', 'Groceries')
+        ->assertJsonPath('meta.account.id', $accountId)
+        ->assertJsonPath('meta.account.balance', -250);
 
     expect(Account::findOrFail($accountId)->fresh()->balance)->toBe(-250.0);
 
@@ -279,9 +281,17 @@ it('creates and updates accounts and transactions through the api', function () 
             'financial_goal_id' => null,
         ])
         ->assertOk()
-        ->assertJsonPath('data.concept', 'Groceries and fuel');
+        ->assertJsonPath('data.concept', 'Groceries and fuel')
+        ->assertJsonPath('meta.account.id', $accountId)
+        ->assertJsonPath('meta.account.balance', -300);
 
-    expect(Account::findOrFail($accountId)->fresh()->balance)->toBe(-300.0);
+    $this->withHeaders(apiHeaders($user))
+        ->deleteJson("/api/transactions/{$transaction->id}")
+        ->assertOk()
+        ->assertJsonPath('meta.account.id', $accountId)
+        ->assertJsonPath('meta.account.balance', 0);
+
+    expect(Account::findOrFail($accountId)->fresh()->balance)->toBe(0.0);
 });
 
 it('filters and paginates index endpoints through query criteria', function () {
@@ -360,13 +370,17 @@ it('sends the invitation email before persisting account invites from the nested
     seedNotificationTypes();
 
     $owner = User::factory()->create();
+    $invitee = User::factory()->create([
+        'email' => 'invitee@example.com',
+    ]);
     $account = Account::factory()->create(['user_id' => $owner->id]);
     $account->users()->attach($owner->id);
     $owner->notificationTypes()->sync(NotificationType::query()->pluck('id')->all());
+    $invitee->notificationTypes()->sync(NotificationType::query()->pluck('id')->all());
 
     $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/invites", [
-            'email' => 'invitee@example.com',
+            'email' => $invitee->email,
             'percentage' => 20,
         ])
         ->assertCreated();
@@ -425,7 +439,9 @@ it('manages nested account users, invites, transactions and financial goals', fu
             'scheduled_at' => now()->toDateString(),
             'financial_goal_id' => $goalId,
         ])
-        ->assertCreated();
+        ->assertCreated()
+        ->assertJsonPath('meta.account.id', $account->id)
+        ->assertJsonPath('meta.account.balance', 5000);
 
     $transactionId = $transactionResponse->json('data.id');
 
@@ -454,7 +470,9 @@ it('manages nested account users, invites, transactions and financial goals', fu
 
     $this->withHeaders(apiHeaders($owner))
         ->deleteJson("/api/accounts/{$account->id}/transactions/{$transactionId}")
-        ->assertOk();
+        ->assertOk()
+        ->assertJsonPath('meta.account.id', $account->id)
+        ->assertJsonPath('meta.account.balance', 0);
 
     $this->withHeaders(apiHeaders($owner))
         ->deleteJson("/api/accounts/{$account->id}/financial-goals/{$goalId}")
