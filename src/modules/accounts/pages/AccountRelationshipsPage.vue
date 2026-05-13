@@ -4,33 +4,34 @@ import {
   EnvelopeIcon,
   FlagIcon,
   InformationCircleIcon,
-  TrashIcon,
   UsersIcon,
-  XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { findAccountById } from '@/modules/accounts/data/accounts';
+import { ApiError } from '@/lib/api/apiClient';
+import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
+import type { Account } from '@/modules/accounts/types';
 import {
   AppCard,
   AppContextTabs,
   AppLink,
-  AppModal,
   AppText,
   AppTitle,
 } from '@/modules/shared/components';
 
-type AccountRelationSection = 'details' | 'transactions' | 'invitations' | 'goals' | 'users';
+type AccountRelationSection = 'view' | 'transactions' | 'invitations' | 'goals' | 'users';
 
 const route = useRoute();
 const router = useRouter();
-const isDeleteModalOpen = ref(false);
+const accountsRepository = createAccountsRepository();
+const account = ref<Account | null>(null);
+const isLoadingAccount = ref(false);
+const loadError = ref<string | null>(null);
 
-const account = computed(() => {
-  const accountId = typeof route.params.accountId === 'string' ? route.params.accountId : '';
-  return findAccountById(accountId);
-});
+const accountId = computed(() =>
+  typeof route.params.accountId === 'string' ? route.params.accountId : '',
+);
 
 const relationshipSections = [
   {
@@ -64,40 +65,79 @@ const activeSection = computed<AccountRelationSection>(
   () => (String(route.name).split('.').pop() as AccountRelationSection) || 'view',
 );
 
-function closeDeleteModal(): void {
-  isDeleteModalOpen.value = false;
+watch(
+  accountId,
+  (nextAccountId) => {
+    void loadAccount(nextAccountId);
+  },
+  { immediate: true },
+);
+
+function resolveErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
 }
 
-function handleDeleteModalAction(actionKey: string): void {
-  if (actionKey === 'cancel') {
-    closeDeleteModal();
+async function loadAccount(nextAccountId: string): Promise<void> {
+  if (!nextAccountId) {
+    account.value = null;
+    loadError.value = 'La cuenta solicitada no es válida.';
     return;
   }
 
-  if (actionKey === 'confirm-delete') {
-    closeDeleteModal();
+  isLoadingAccount.value = true;
+  loadError.value = null;
+
+  try {
+    account.value = await accountsRepository.getById(nextAccountId);
+  } catch (error) {
+    account.value = null;
+    loadError.value = resolveErrorMessage(error, 'No fue posible cargar la cuenta.');
+  } finally {
+    isLoadingAccount.value = false;
   }
 }
 
 function updateActiveSection(nextSection: string): void {
-  const accountId = typeof route.params.accountId === 'string' ? route.params.accountId : '';
-
-  if (!accountId) {
+  if (!accountId.value) {
     return;
   }
 
   router.push({
     name: `admin.accounts.${nextSection}`,
     params: {
-      accountId,
+      accountId: accountId.value,
     },
   });
 }
 </script>
 
 <template>
-  <div v-if="account" class="space-y-5 pb-16">
-    <RouterView />
+  <div v-if="isLoadingAccount && !account" class="space-y-5 pb-16">
+    <AppCard class="rounded-3xl">
+      <div class="space-y-3">
+        <AppTitle as="h2" size="sm">Cargando cuenta</AppTitle>
+        <AppText>Estamos consultando el detalle más reciente de esta cuenta.</AppText>
+      </div>
+    </AppCard>
+  </div>
+
+  <div v-else-if="account" class="space-y-5 pb-16">
+    <RouterView v-slot="{ Component }">
+      <component
+        :is="Component"
+        :account="account"
+        :is-loading-account="isLoadingAccount"
+        :account-load-error="loadError"
+      />
+    </RouterView>
 
     <div
       class="fixed bottom-[5rem] left-1/2 z-10 w-full max-w-[430px] -translate-x-1/2 border-t border-(--app-color-border) bg-[color-mix(in_srgb,var(--app-color-surface)_96%,transparent)] backdrop-blur"
@@ -109,37 +149,14 @@ function updateActiveSection(nextSection: string): void {
         @update:model-value="updateActiveSection"
       />
     </div>
-
-    <AppModal
-      :open="isDeleteModalOpen"
-      :actions="[
-        { key: 'cancel', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        {
-          key: 'confirm-delete',
-          label: 'Confirmar eliminación',
-          tone: 'primary',
-          icon: TrashIcon,
-        },
-      ]"
-      title="Eliminar cuenta"
-      variant="danger"
-      @action="handleDeleteModalAction"
-      @close="closeDeleteModal"
-    >
-      <div class="space-y-4">
-        <AppText>
-          Vas a eliminar <strong>{{ account.name }}</strong
-          >. Esta acción debe confirmar dependencias, usuarios y metas financieras antes de
-          ejecutarse.
-        </AppText>
-      </div>
-    </AppModal>
   </div>
 
   <AppCard v-else class="rounded-3xl">
     <div class="space-y-3">
       <AppTitle as="h2" size="sm">Cuenta no encontrada</AppTitle>
-      <AppText>La cuenta solicitada no existe o ya no está disponible en esta facility.</AppText>
+      <AppText>
+        {{ loadError ?? 'La cuenta solicitada no existe o ya no está disponible en esta facility.' }}
+      </AppText>
       <AppLink :to="{ name: 'admin.accounts' }" variant="primary">Volver a la lista</AppLink>
     </div>
   </AppCard>

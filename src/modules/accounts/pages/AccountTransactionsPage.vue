@@ -6,12 +6,10 @@ import {
   PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
-import { createAccountGoalsRepository } from '@/modules/accounts/repositories/accountGoalsRepository';
-import type { AccountMember } from '@/modules/accounts/types';
+import type { Account } from '@/modules/accounts/types';
 import {
   AppButton,
   AppCard,
@@ -31,9 +29,11 @@ type FormState = {
   isSubmitting: boolean;
 };
 
+const props = defineProps<{
+  account?: Account;
+}>();
+
 const route = useRoute();
-const accountsRepository = createAccountsRepository();
-const accountGoalsRepository = createAccountGoalsRepository();
 
 const isCreateTransactionModalOpen = ref(false);
 const isEditTransactionModalOpen = ref(false);
@@ -45,9 +45,6 @@ const selectedTypes = ref<Array<'income' | 'expense'>>([]);
 const selectedTransactionId = ref<string | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
-const accountUsers = ref<AccountMember[]>([]);
-const accountOptions = ref<Array<{ value: string; label: string; description?: string }>>([]);
-const financialGoals = ref<Array<{ id: string; name: string; description?: string | null }>>([]);
 
 const transactionStatusOptions = [
   { value: 'completed', label: 'Completado' },
@@ -62,6 +59,23 @@ const transactionTypeOptions = [
 const accountId = computed(() =>
   typeof route.params.accountId === 'string' ? route.params.accountId : '',
 );
+
+const accountUsers = computed(() => props.account?.users ?? []);
+const financialGoals: Array<{ id: string; name: string; description?: string | null }> = [];
+
+const accountOptions = computed(() => {
+  if (!props.account) {
+    return [];
+  }
+
+  return [
+    {
+      value: props.account.id,
+      label: props.account.name,
+      description: props.account.description,
+    },
+  ];
+});
 
 const {
   transactions,
@@ -150,39 +164,17 @@ const deleteTransactionActions = computed(() => [
   },
 ]);
 
-onMounted(() => {
-  void Promise.all([loadContext(), loadTransactions(accountId.value)]);
-});
+watch(
+  accountId,
+  (nextAccountId) => {
+    if (!nextAccountId) {
+      return;
+    }
 
-async function loadContext(): Promise<void> {
-  if (!accountId.value) {
-    return;
-  }
-
-  try {
-    const [account, accounts, goals] = await Promise.all([
-      accountsRepository.listUsers(accountId.value),
-      accountsRepository.list(),
-      accountGoalsRepository.list(accountId.value),
-    ]);
-
-    accountUsers.value = account;
-    accountOptions.value = accounts.map((item) => ({
-      value: item.id,
-      label: item.name,
-      description: item.description,
-    }));
-    financialGoals.value = goals.map((goal) => ({
-      id: goal.id,
-      name: goal.name,
-      description: goal.status === 'completed' ? 'Meta completada' : 'Meta en progreso',
-    }));
-  } catch {
-    accountUsers.value = [];
-    accountOptions.value = [];
-    financialGoals.value = [];
-  }
-}
+    void loadTransactions(nextAccountId);
+  },
+  { immediate: true },
+);
 
 function formatDateLabel(date: string): string {
   return new Intl.DateTimeFormat('es-MX', {

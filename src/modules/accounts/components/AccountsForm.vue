@@ -181,7 +181,7 @@ async function handleSubmit(): Promise<void> {
       :style="{ borderColor: 'var(--app-color-border)' }"
     >
       <div class="grid gap-4 sm:grid-cols-2">
-        <div class="space-y-2">
+        <div class="flex w-full items-center justify-between">
           <label for="account-is-virtual" class="text-sm font-medium text-(--app-color-label)">
             Es virtual
           </label>
@@ -193,7 +193,7 @@ async function handleSubmit(): Promise<void> {
           />
         </div>
 
-        <div class="space-y-2">
+        <div class="flex w-full items-center justify-between">
           <label
             for="account-is-credit"
             class="text-sm font-medium"

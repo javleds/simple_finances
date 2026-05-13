@@ -1,44 +1,53 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { findAccountById, type AccountRecord } from '@/modules/accounts/data/accounts';
-import { useRoute } from 'vue-router';
-import AppButton from '@/modules/shared/components/AppButton.vue';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { computed, ref } from 'vue';
+
+import type { Account } from '@/modules/accounts/types';
 import AppCard from '@/modules/shared/components/AppCard.vue';
+import AppButton from '@/modules/shared/components/AppButton.vue';
 import AppTitle from '@/modules/shared/components/AppTitle.vue';
 import AppText from '@/modules/shared/components/AppText.vue';
 
-const route = useRoute();
+const props = defineProps<{
+  account: Account;
+  isLoadingAccount?: boolean;
+  accountLoadError?: string | null;
+}>();
+
 const isDeleteModalOpen = ref(false);
 
-const account = computed(() => {
-  const accountId = typeof route.params.accountId === 'string' ? route.params.accountId : '';
-  return findAccountById(accountId);
-});
-
 const usersPendingSummary = computed(() => {
-  if (!account.value) {
-    return 0;
-  }
-
-  return account.value.users.filter((user) => user.pendingExpenses !== '$0.00').length;
+  return props.account.users.filter((user) => user.pendingExpenses > 0).length;
 });
 
 function openDeleteModal(): void {
   isDeleteModalOpen.value = true;
 }
 
-function statusClasses(status: AccountRecord['status']): string {
+function statusClasses(status: Account['status']): string {
   if (status === 'Activo') {
     return 'bg-emerald-500/12 text-emerald-600';
   }
 
   return 'bg-slate-500/12 text-slate-600 dark:text-slate-300';
 }
+
+function formatCurrency(value: number | null): string {
+  if (value === null) {
+    return 'No aplica';
+  }
+
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
 </script>
 
 <template>
-  <section v-if="account" class="space-y-5">
+  <section class="space-y-5">
     <div class="grid grid-cols-2 gap-3">
       <AppButton variant="outline">
         <PencilSquareIcon class="mr-2 h-4 w-4" />
@@ -55,34 +64,37 @@ function statusClasses(status: AccountRecord['status']): string {
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0 space-y-2">
             <div class="flex items-center gap-3">
-              <span class="h-3 w-3 rounded-sm" :style="{ backgroundColor: account.color }" />
+              <span
+                class="h-3 w-3 rounded-sm"
+                :style="{ backgroundColor: props.account.color ?? '#94A3B8' }"
+              />
               <span
                 class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.04em] uppercase"
-                :class="statusClasses(account.status)"
+                :class="statusClasses(props.account.status)"
               >
-                {{ account.status }}
+                {{ props.account.status }}
               </span>
             </div>
 
-            <AppTitle as="h2" size="sm">{{ account.name }}</AppTitle>
+            <AppTitle as="h2" size="sm">{{ props.account.name }}</AppTitle>
           </div>
 
           <div class="shrink-0 text-right">
             <AppText size="sm" tone="subtle">Balance</AppText>
             <p class="mt-1 text-2xl font-semibold tracking-tight text-(--app-color-text)">
-              {{ account.balance }}
+              {{ formatCurrency(props.account.balance) }}
             </p>
           </div>
         </div>
 
-        <div v-if="account.accountType === 'credito'" class="grid grid-cols-2 gap-3">
+        <div v-if="props.account.isCredit" class="grid grid-cols-2 gap-3">
           <div
             class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <AppText size="sm" tone="subtle">Línea de crédito</AppText>
             <p class="mt-1 text-lg font-semibold text-(--app-color-text)">
-              {{ account.creditLine }}
+              {{ formatCurrency(props.account.creditLine) }}
             </p>
           </div>
 
@@ -92,7 +104,7 @@ function statusClasses(status: AccountRecord['status']): string {
           >
             <AppText size="sm" tone="subtle">Crédito disponible</AppText>
             <p class="mt-1 text-lg font-semibold text-(--app-color-text)">
-              {{ account.availableCredit }}
+              {{ formatCurrency(props.account.availableCredit) }}
             </p>
           </div>
         </div>
@@ -103,7 +115,7 @@ function statusClasses(status: AccountRecord['status']): string {
       <div class="space-y-5">
         <div class="space-y-2">
           <AppTitle as="h2" size="sm">Detalle de cuenta</AppTitle>
-          <AppText>{{ account.description }}</AppText>
+          <AppText>{{ props.account.description || 'Sin descripción registrada.' }}</AppText>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -115,10 +127,10 @@ function statusClasses(status: AccountRecord['status']): string {
             <div class="mt-2 flex items-center gap-3">
               <span
                 class="h-4 w-4 rounded-sm border border-white/30"
-                :style="{ backgroundColor: account.color }"
+                :style="{ backgroundColor: props.account.color ?? '#94A3B8' }"
               />
               <p class="text-sm font-semibold text-(--app-color-text)">
-                {{ account.color }}
+                {{ props.account.color ?? 'Sin color configurado' }}
               </p>
             </div>
           </div>
@@ -129,7 +141,7 @@ function statusClasses(status: AccountRecord['status']): string {
           >
             <AppText size="sm" tone="subtle">Tipo de cuenta</AppText>
             <p class="mt-2 text-sm font-semibold text-(--app-color-text)">
-              {{ account.accountType === 'credito' ? 'Crédito' : 'Débito' }}
+              {{ props.account.isCredit ? 'Crédito' : 'Débito' }}
             </p>
           </div>
 
@@ -139,7 +151,7 @@ function statusClasses(status: AccountRecord['status']): string {
           >
             <AppText size="sm" tone="subtle">Cuenta virtual</AppText>
             <p class="mt-2 text-sm font-semibold text-(--app-color-text)">
-              {{ account.isVirtual ? 'Sí' : 'No' }}
+              {{ props.account.isVirtual ? 'Sí' : 'No' }}
             </p>
           </div>
 
@@ -151,18 +163,18 @@ function statusClasses(status: AccountRecord['status']): string {
               <div class="space-y-1">
                 <AppText size="sm" tone="subtle">Cuenta de alimentación</AppText>
                 <p class="text-sm font-semibold text-(--app-color-text)">
-                  {{ account.fundingAccount ?? 'No configurada' }}
+                  {{ props.account.fundingAccountId ?? 'No configurada' }}
                 </p>
               </div>
               <span
                 class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.04em] uppercase"
                 :class="
-                  account.fundingAccount
+                  props.account.fundingAccountId
                     ? 'bg-emerald-500/12 text-emerald-600'
                     : 'bg-slate-500/12 text-slate-600'
                 "
               >
-                {{ account.fundingAccount ? 'Configurada' : 'Sin cuenta' }}
+                {{ props.account.fundingAccountId ? 'Configurada' : 'Sin cuenta' }}
               </span>
             </div>
           </div>
@@ -181,7 +193,7 @@ function statusClasses(status: AccountRecord['status']): string {
           </div>
           <div class="text-right">
             <p class="text-sm font-semibold text-(--app-color-text)">
-              {{ account.users.length }}
+              {{ props.account.users.length }}
             </p>
             <AppText size="sm" tone="subtle">usuarios</AppText>
           </div>
@@ -204,14 +216,14 @@ function statusClasses(status: AccountRecord['status']): string {
           >
             <AppText size="sm" tone="subtle">Reparto base</AppText>
             <p class="mt-1 text-lg font-semibold text-(--app-color-text)">
-              {{ account.users.length > 0 ? 'Activo' : 'Sin usuarios' }}
+              {{ props.account.users.length > 0 ? 'Activo' : 'Sin usuarios' }}
             </p>
           </div>
         </div>
 
         <div class="space-y-3">
           <div
-            v-for="user in account.users"
+            v-for="user in props.account.users"
             :key="user.id"
             class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-4"
             :style="{ borderColor: 'var(--app-color-border)' }"
@@ -235,7 +247,7 @@ function statusClasses(status: AccountRecord['status']): string {
             <div class="mt-4 flex items-center justify-between gap-3">
               <AppText size="sm" tone="subtle">Egresos pendientes</AppText>
               <p class="text-sm font-semibold text-(--app-color-text) tabular-nums">
-                {{ user.pendingExpenses }}
+                {{ formatCurrency(user.pendingExpenses) }}
               </p>
             </div>
           </div>

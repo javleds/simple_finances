@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ChevronRightIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
 
 import type { Account } from '@/modules/accounts/types';
@@ -60,7 +59,7 @@ function openAccountDetails(): void {
       }"
     />
 
-    <div class="relative grid grid-cols-[minmax(0,1fr)_auto_auto_1rem] items-start gap-x-3 gap-y-2">
+    <div class="relative grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-x-3 gap-y-2">
       <button
         type="button"
         class="col-span-4 grid cursor-pointer grid-cols-subgrid gap-x-3 gap-y-2 rounded-xl text-left focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
@@ -82,12 +81,6 @@ function openAccountDetails(): void {
         >
           {{ props.account.status }}
         </span>
-
-        <div class="shrink-0" aria-hidden="true" />
-
-        <div class="row-span-2 flex h-full items-center justify-end self-center">
-          <ChevronRightIcon class="h-4 w-4 shrink-0 text-(--app-color-text-subtle)" />
-        </div>
 
         <div class="col-span-3 flex min-w-0 items-center justify-between">
           <p
