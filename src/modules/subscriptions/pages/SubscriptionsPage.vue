@@ -308,7 +308,6 @@ function formatDateLabel(date: string | null): string {
       <template #actions>
         <AppButton variant="primary" @click="openCreateSubscription">
           <PlusIcon class="h-4 w-4" />
-          <span>Nueva</span>
         </AppButton>
       </template>
     </AppSectionBar>

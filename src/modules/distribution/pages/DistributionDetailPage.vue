@@ -17,9 +17,7 @@ type FormState = {
 
 const route = useRoute();
 
-const ruleId = computed(() =>
-  typeof route.params.ruleId === 'string' ? route.params.ruleId : '',
-);
+const ruleId = computed(() => (typeof route.params.ruleId === 'string' ? route.params.ruleId : ''));
 
 const isCreateRelationOpen = ref(false);
 const isEditRelationOpen = ref(false);
@@ -130,7 +128,9 @@ function closeDeleteRelation(): void {
   clearDeleteError();
 }
 
-async function handleCreateRelationSubmit(payload: DistributionRelationWritePayload): Promise<void> {
+async function handleCreateRelationSubmit(
+  payload: DistributionRelationWritePayload,
+): Promise<void> {
   const wasCreated = await createRelation(payload);
 
   if (wasCreated) {
@@ -180,12 +180,14 @@ function handleEditFormStateChange(state: FormState): void {
       <template #actions>
         <AppButton variant="primary" @click="openCreateRelation">
           <PlusIcon class="h-4 w-4" />
-          <span>Nueva</span>
         </AppButton>
       </template>
     </AppSectionBar>
 
-    <section v-if="loadError && hasRelations" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="loadError && hasRelations"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
@@ -264,7 +266,8 @@ function handleEditFormStateChange(state: FormState): void {
     >
       <div class="space-y-3">
         <AppText v-if="selectedRelation">
-          Vas a eliminar <strong>{{ selectedRelation.name }}</strong>.
+          Vas a eliminar <strong>{{ selectedRelation.name }}</strong
+          >.
         </AppText>
         <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
       </div>

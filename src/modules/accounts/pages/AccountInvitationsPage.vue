@@ -266,7 +266,6 @@ function handleEditFormStateChange(state: FormState): void {
       <template #actions>
         <AppButton variant="primary" @click="openCreateInvitation">
           <PlusIcon class="h-4 w-4" />
-          <span>Nueva</span>
         </AppButton>
       </template>
     </AppSectionBar>

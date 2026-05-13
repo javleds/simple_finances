@@ -345,7 +345,6 @@ function handleEditFormStateChange(state: FormState): void {
       <template #actions>
         <AppButton variant="primary" @click="openCreateTransactionModal">
           <PlusIcon class="h-4 w-4" />
-          <span>Nueva</span>
         </AppButton>
       </template>
     </AppSectionBar>
