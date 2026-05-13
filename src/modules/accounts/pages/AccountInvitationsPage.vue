@@ -320,7 +320,6 @@ function handleEditFormStateChange(state: FormState): void {
           :percentage-label="`${invitation.percentage}%`"
           :status="invitation.status"
           @delete="openDeleteInvitation"
-          @edit="openEditInvitation"
         />
 
         <div

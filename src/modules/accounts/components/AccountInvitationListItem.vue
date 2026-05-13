@@ -12,7 +12,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  edit: [itemId: string];
   delete: [itemId: string];
 }>();
 
@@ -50,10 +49,6 @@ function accentStyle(status: InvitationStatus): string {
   }
 
   return 'linear-gradient(90deg, color-mix(in srgb, #f59e0b 16%, transparent), transparent 78%)';
-}
-
-function handleEdit(): void {
-  emit('edit', props.itemId);
 }
 
 function handleDelete(): void {
@@ -94,7 +89,7 @@ function handleDelete(): void {
           </p>
         </div>
 
-        <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
+        <AppActionMenu class="shrink-0" @delete="handleDelete" />
       </div>
 
       <div class="flex items-center justify-between gap-3">
