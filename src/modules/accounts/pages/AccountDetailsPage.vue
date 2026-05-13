@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
 import type { Account } from '@/modules/accounts/types';
 import AppCard from '@/modules/shared/components/AppCard.vue';
-import AppButton from '@/modules/shared/components/AppButton.vue';
 import AppTitle from '@/modules/shared/components/AppTitle.vue';
 import AppText from '@/modules/shared/components/AppText.vue';
 
@@ -14,15 +12,9 @@ const props = defineProps<{
   accountLoadError?: string | null;
 }>();
 
-const isDeleteModalOpen = ref(false);
-
 const usersPendingSummary = computed(() => {
   return props.account.users.filter((user) => user.pendingExpenses > 0).length;
 });
-
-function openDeleteModal(): void {
-  isDeleteModalOpen.value = true;
-}
 
 function statusClasses(status: Account['status']): string {
   if (status === 'Activo') {
@@ -49,14 +41,7 @@ function formatCurrency(value: number | null): string {
 <template>
   <section class="space-y-5">
     <div class="grid grid-cols-2 gap-3">
-      <AppButton variant="outline">
-        <PencilSquareIcon class="mr-2 h-4 w-4" />
-        Editar
-      </AppButton>
-      <AppButton variant="outline" @click="openDeleteModal">
-        <TrashIcon class="mr-2 h-4 w-4" />
-        Eliminar
-      </AppButton>
+      <AppTitle as="h1">{{ props.account.name }}</AppTitle>
     </div>
 
     <AppCard class="rounded-3xl">

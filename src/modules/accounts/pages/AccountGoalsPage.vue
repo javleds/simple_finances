@@ -22,6 +22,8 @@ import {
   AppText,
   AppTitle,
 } from '@/modules/shared/components';
+import type { Account } from '../types';
+import { a } from 'vue-router/dist/index-D_VEAp3P.js';
 
 type GoalStatus = 'on-track' | 'at-risk' | 'completed';
 type FormState = {
@@ -71,7 +73,8 @@ const filteredGoalItems = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
   return goals.value.filter((goal) => {
-    const matchesQuery = normalizedQuery.length === 0 || goal.name.toLowerCase().includes(normalizedQuery);
+    const matchesQuery =
+      normalizedQuery.length === 0 || goal.name.toLowerCase().includes(normalizedQuery);
 
     if (!matchesQuery) {
       return false;
@@ -270,6 +273,10 @@ function handleEditFormStateChange(state: FormState): void {
 
 <template>
   <section class="space-y-4">
+    <div class="grid grid-cols-2 gap-3">
+      <AppTitle as="h1" v-if="account">{{ account.name }}</AppTitle>
+    </div>
+
     <AppCard class="rounded-3xl">
       <div class="flex items-center justify-between gap-3">
         <div class="space-y-1">
@@ -290,7 +297,13 @@ function handleEditFormStateChange(state: FormState): void {
         >
           <MagnifyingGlassIcon class="h-5 w-5" />
         </div>
-        <AppInput id="goal-search" v-model="searchTerm" type="search" placeholder="Buscar meta por nombre" class="pl-11" />
+        <AppInput
+          id="goal-search"
+          v-model="searchTerm"
+          type="search"
+          placeholder="Buscar meta por nombre"
+          class="pl-11"
+        />
       </div>
 
       <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
@@ -298,7 +311,10 @@ function handleEditFormStateChange(state: FormState): void {
       </AppIconButton>
     </div>
 
-    <section v-if="loadError && hasGoals" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="loadError && hasGoals"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
@@ -329,12 +345,24 @@ function handleEditFormStateChange(state: FormState): void {
           @edit="openEditGoal"
         />
 
-        <div v-if="filteredGoalItems.length === 0" class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
-          <AppText size="sm">No hay metas que coincidan con la búsqueda o los filtros actuales.</AppText>
+        <div
+          v-if="filteredGoalItems.length === 0"
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm"
+            >No hay metas que coincidan con la búsqueda o los filtros actuales.</AppText
+          >
         </div>
 
-        <div class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
-          <AppText size="sm">Sigue desplazándote para revisar más metas conforme la cuenta acumule objetivos.</AppText>
+        <div
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm"
+            >Sigue desplazándote para revisar más metas conforme la cuenta acumule
+            objetivos.</AppText
+          >
         </div>
       </div>
     </section>
@@ -362,7 +390,11 @@ function handleEditFormStateChange(state: FormState): void {
             :key="status.value"
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="selectedStatuses.includes(status.value) ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)' : 'bg-(--app-color-surface-muted) text-(--app-color-text)'"
+            :class="
+              selectedStatuses.includes(status.value)
+                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
+                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
+            "
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="toggleStatus(status.value)"
           >
@@ -372,7 +404,13 @@ function handleEditFormStateChange(state: FormState): void {
       </div>
     </AppModal>
 
-    <AppModal :open="isCreateGoalOpen" :actions="createGoalActions" title="Crear meta" variant="default" @close="closeCreateGoal">
+    <AppModal
+      :open="isCreateGoalOpen"
+      :actions="createGoalActions"
+      title="Crear meta"
+      variant="default"
+      @close="closeCreateGoal"
+    >
       <AccountGoalForm
         v-if="accountId"
         form-id="account-goal-form"
@@ -383,7 +421,13 @@ function handleEditFormStateChange(state: FormState): void {
       />
     </AppModal>
 
-    <AppModal :open="isEditGoalOpen" :actions="editGoalActions" title="Editar meta" variant="default" @close="closeEditGoal">
+    <AppModal
+      :open="isEditGoalOpen"
+      :actions="editGoalActions"
+      title="Editar meta"
+      variant="default"
+      @close="closeEditGoal"
+    >
       <AccountGoalForm
         v-if="accountId && selectedGoal"
         form-id="edit-account-goal-form"
