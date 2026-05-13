@@ -9,7 +9,6 @@ import {
   AppDatePicker,
   AppInput,
   AppPercentageSplitEditor,
-  AppSearchSelect,
   AppText,
   AppToggleButton,
 } from '@/modules/shared/components';
@@ -29,11 +28,6 @@ const props = withDefaults(
       name: string;
       description?: string | null;
     }>;
-    accountOptions?: ReadonlyArray<{
-      value: string;
-      label: string;
-      description?: string;
-    }>;
     initialValues?: Partial<Transaction> | null;
     lockedAccountId?: string | null;
     serverError?: string | null;
@@ -42,7 +36,6 @@ const props = withDefaults(
     formId: 'transaction-form',
     accountUsers: () => [],
     financialGoals: () => [],
-    accountOptions: () => [],
     initialValues: null,
     lockedAccountId: null,
     serverError: null,
@@ -69,7 +62,6 @@ const {
   status,
   concept,
   amount,
-  accountId,
   splitBetweenUsers,
   date,
   financialGoalId,
@@ -88,7 +80,6 @@ const {
 const hasSharedAccount = computed(() => props.accountUsers.length > 1);
 const showUserSplitToggle = computed(() => isExpense.value && hasSharedAccount.value);
 const showUserSplitInputs = computed(() => showUserSplitToggle.value && splitBetweenUsers.value);
-const { error: accountError, touch: touchAccount } = useFormFieldInteraction('accountId');
 const { error: conceptError, touch: touchConcept } = useFormFieldInteraction('concept');
 const { error: amountError, touch: touchAmount } = useFormFieldInteraction('amount');
 const { error: userPaymentsError, touch: touchUserPayments } =
@@ -189,20 +180,6 @@ async function handleSubmit(): Promise<void> {
     </section>
 
     <section class="space-y-5">
-      <AppSearchSelect
-        id="transaction-account"
-        v-model="accountId"
-        label="Cuenta"
-        :options="props.accountOptions"
-        :disabled="Boolean(props.lockedAccountId)"
-        placeholder="Selecciona una cuenta"
-        search-placeholder="Buscar cuenta"
-        empty-message="No encontramos cuentas disponibles."
-        :error="accountError"
-        @change="touchAccount"
-        @blur="touchAccount"
-      />
-
       <AppInput
         id="transaction-concept"
         v-model="concept"

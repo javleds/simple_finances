@@ -63,20 +63,6 @@ const accountId = computed(() =>
 const accountUsers = computed(() => props.account?.users ?? []);
 const financialGoals: Array<{ id: string; name: string; description?: string | null }> = [];
 
-const accountOptions = computed(() => {
-  if (!props.account) {
-    return [];
-  }
-
-  return [
-    {
-      value: props.account.id,
-      label: props.account.name,
-      description: props.account.description,
-    },
-  ];
-});
-
 const {
   transactions,
   hasTransactions,
@@ -434,7 +420,6 @@ function handleEditFormStateChange(state: FormState): void {
     <AppModal :open="isCreateTransactionModalOpen" :actions="createTransactionActions" title="Nueva transacción" variant="default" @close="closeCreateTransactionModal">
       <TransactionsForm
         form-id="transaction-form"
-        :account-options="accountOptions"
         :account-users="accountUsers"
         :financial-goals="financialGoals"
         :locked-account-id="accountId"
@@ -448,7 +433,6 @@ function handleEditFormStateChange(state: FormState): void {
       <TransactionsForm
         v-if="selectedTransaction"
         form-id="edit-transaction-form"
-        :account-options="accountOptions"
         :account-users="accountUsers"
         :financial-goals="financialGoals"
         :locked-account-id="accountId"
