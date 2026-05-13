@@ -58,7 +58,7 @@ export const accountGoalFormSchema = z.object({
       const amount = parseNullableNumber(value);
       return amount !== null && amount >= 0;
     }, 'La cantidad objetivo debe ser mayor o igual a 0.'),
-  deadline: z.string().trim().min(1, 'La fecha límite es obligatoria.'),
+  deadline: z.string().trim(),
   status: z.union([z.literal('in progress'), z.literal('completed')]),
 });
 
@@ -67,8 +67,15 @@ export const accountGoalApiSchema = z.object({
   account_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   name: z.string(),
   amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-  progress: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-  must_completed_at: z.string().nullable().optional().transform((value) => value ?? null),
+  progress: z
+    .unknown()
+    .optional()
+    .transform((value) => parseNullableNumber(value) ?? 0),
+  must_completed_at: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   status: z.union([z.literal('in progress'), z.literal('completed')]).catch('in progress'),
 });
 
@@ -77,10 +84,7 @@ export function createDefaultAccountGoalFormValues(
 ): AccountGoalFormValues {
   return {
     name: goal?.name ?? '',
-    amount:
-      goal?.amount === null || goal?.amount === undefined
-        ? ''
-        : String(goal.amount),
+    amount: goal?.amount === null || goal?.amount === undefined ? '' : String(goal.amount),
     deadline: goal?.deadline ?? '',
     status: goal?.status ?? 'in progress',
   };

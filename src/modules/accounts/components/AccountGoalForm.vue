@@ -108,7 +108,6 @@ async function handleSubmit(): Promise<void> {
       :error="deadlineError"
       @change="touchDeadline"
       @blur="touchDeadline"
-      required
     />
   </form>
 </template>
