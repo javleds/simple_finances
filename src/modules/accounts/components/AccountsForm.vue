@@ -235,6 +235,7 @@ async function handleSubmit(): Promise<void> {
           id="account-credit-line"
           v-model="creditLine"
           label="Línea de crédito"
+          mask="amount"
           type="number"
           inputmode="decimal"
           min="0"

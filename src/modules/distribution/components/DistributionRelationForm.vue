@@ -91,6 +91,7 @@ async function handleSubmit(): Promise<void> {
       id="distribution-relation-amount"
       v-model="amount"
       label="Cantidad"
+      mask="amount"
       type="number"
       inputmode="decimal"
       min="0"

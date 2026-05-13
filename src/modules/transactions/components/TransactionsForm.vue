@@ -219,11 +219,12 @@ async function handleSubmit(): Promise<void> {
             id="transaction-amount"
             v-model="amount"
             label="Cantidad"
+            mask="amount"
             type="number"
             inputmode="decimal"
             min="0"
             step="0.01"
-            placeholder="0.00"
+            placeholder="$ 00.00"
             :error="amountError"
             @blur="touchAmount"
             required

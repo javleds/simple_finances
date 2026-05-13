@@ -89,6 +89,7 @@ async function handleSubmit(): Promise<void> {
       id="goal-target-amount"
       v-model="amount"
       label="Cantidad objetivo"
+      mask="amount"
       type="number"
       inputmode="decimal"
       min="0"
