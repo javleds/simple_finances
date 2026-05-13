@@ -61,6 +61,9 @@ const accountId = computed(() =>
 );
 
 const accountUsers = computed(() => props.account?.users ?? []);
+const usersWithPendingExpenses = computed(() =>
+  accountUsers.value.filter((user) => user.pendingExpenses > 0),
+);
 const financialGoals: Array<{ id: string; name: string; description?: string | null }> = [];
 
 const {
@@ -168,6 +171,15 @@ function formatDateLabel(date: string): string {
     month: 'short',
     year: 'numeric',
   }).format(new Date(`${date}T00:00:00`));
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 function openCreateTransactionModal(): void {
@@ -293,9 +305,43 @@ function handleEditFormStateChange(state: FormState): void {
   <section class="space-y-4">
     <AppCard class="rounded-3xl">
       <div class="flex items-center justify-between gap-3">
-        <div class="space-y-1">
+        <div class="min-w-0 space-y-3">
           <AppTitle as="h2" size="sm">Transacciones</AppTitle>
-          <AppText>Vista embebida para revisar actividad y conciliación de la cuenta.</AppText>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <div
+              class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5"
+              :style="{ borderColor: 'var(--app-color-border)' }"
+            >
+              <AppText size="sm" tone="subtle">Balance</AppText>
+              <span class="text-sm font-semibold text-(--app-color-text)">
+                {{ formatCurrency(props.account?.balance ?? 0.0) }}
+              </span>
+            </div>
+
+            <div
+              v-for="user in usersWithPendingExpenses"
+              :key="user.id"
+              class="inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5"
+              :style="{ borderColor: 'var(--app-color-border)' }"
+            >
+              <span class="truncate text-sm font-medium text-(--app-color-text)">
+                {{ user.name }}
+              </span>
+              <span class="text-xs text-(--app-color-text-subtle)">debe</span>
+              <span class="text-sm font-semibold text-(--app-color-text)">
+                {{ formatCurrency(user.pendingExpenses ?? 0.0) }}
+              </span>
+            </div>
+
+            <div
+              v-if="usersWithPendingExpenses.length === 0"
+              class="inline-flex items-center rounded-full border px-3 py-1.5"
+              :style="{ borderColor: 'var(--app-color-border)' }"
+            >
+              <AppText size="sm" tone="subtle">Sin pendientes por usuario</AppText>
+            </div>
+          </div>
         </div>
 
         <AppButton variant="primary" @click="openCreateTransactionModal">
@@ -306,7 +352,9 @@ function handleEditFormStateChange(state: FormState): void {
 
     <div class="flex items-center gap-3">
       <div class="relative flex-1">
-        <div class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)">
+        <div
+          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
+        >
           <MagnifyingGlassIcon class="h-5 w-5" />
         </div>
         <AppInput
@@ -323,7 +371,10 @@ function handleEditFormStateChange(state: FormState): void {
       </AppIconButton>
     </div>
 
-    <section v-if="loadError && hasTransactions" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="loadError && hasTransactions"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
@@ -353,11 +404,20 @@ function handleEditFormStateChange(state: FormState): void {
           @edit="openEditTransaction"
         />
 
-        <div v-if="filteredTransactionItems.length === 0" class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
-          <AppText size="sm">No hay transacciones que coincidan con la búsqueda o los filtros actuales.</AppText>
+        <div
+          v-if="filteredTransactionItems.length === 0"
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm"
+            >No hay transacciones que coincidan con la búsqueda o los filtros actuales.</AppText
+          >
         </div>
 
-        <div class="rounded-2xl border border-dashed px-4 py-4 text-center" :style="{ borderColor: 'var(--app-color-border)' }">
+        <div
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
           <AppText size="sm">
             Sigue desplazándote para revisar más actividad conforme la cuenta acumule movimientos.
           </AppText>
@@ -388,7 +448,11 @@ function handleEditFormStateChange(state: FormState): void {
             :key="status.value"
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="selectedStatuses.includes(status.value) ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)' : 'bg-(--app-color-surface-muted) text-(--app-color-text)'"
+            :class="
+              selectedStatuses.includes(status.value)
+                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
+                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
+            "
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="toggleStatus(status.value)"
           >
@@ -407,7 +471,11 @@ function handleEditFormStateChange(state: FormState): void {
             :key="type.value"
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="selectedTypes.includes(type.value) ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)' : 'bg-(--app-color-surface-muted) text-(--app-color-text)'"
+            :class="
+              selectedTypes.includes(type.value)
+                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
+                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
+            "
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="toggleType(type.value)"
           >
@@ -417,7 +485,13 @@ function handleEditFormStateChange(state: FormState): void {
       </div>
     </AppModal>
 
-    <AppModal :open="isCreateTransactionModalOpen" :actions="createTransactionActions" title="Nueva transacción" variant="default" @close="closeCreateTransactionModal">
+    <AppModal
+      :open="isCreateTransactionModalOpen"
+      :actions="createTransactionActions"
+      title="Nueva transacción"
+      variant="default"
+      @close="closeCreateTransactionModal"
+    >
       <TransactionsForm
         form-id="transaction-form"
         :account-users="accountUsers"
@@ -429,7 +503,13 @@ function handleEditFormStateChange(state: FormState): void {
       />
     </AppModal>
 
-    <AppModal :open="isEditTransactionModalOpen" :actions="editTransactionActions" title="Editar transacción" variant="default" @close="closeEditTransactionModal">
+    <AppModal
+      :open="isEditTransactionModalOpen"
+      :actions="editTransactionActions"
+      title="Editar transacción"
+      variant="default"
+      @close="closeEditTransactionModal"
+    >
       <TransactionsForm
         v-if="selectedTransaction"
         form-id="edit-transaction-form"
