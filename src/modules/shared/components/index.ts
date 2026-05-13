@@ -1,8 +1,10 @@
 export { default as AppButton } from './AppButton.vue';
 export { default as AppActionMenu } from './AppActionMenu.vue';
+export { default as AppAvatarValueRow } from './AppAvatarValueRow.vue';
 export { default as AppCard } from './AppCard.vue';
 export { default as AppContextTabs } from './AppContextTabs.vue';
 export { default as AppDatePicker } from './AppDatePicker.vue';
+export { default as AppHeroMetric } from './AppHeroMetric.vue';
 export { default as AppIconButton } from './AppIconButton.vue';
 export { default as AppInput } from './AppInput.vue';
 export { default as AppLink } from './AppLink.vue';
@@ -10,6 +12,7 @@ export { default as AppModal } from './AppModal.vue';
 export { default as AppPasswordInput } from './AppPasswordInput.vue';
 export { default as AppPercentageSplitEditor } from './AppPercentageSplitEditor.vue';
 export { default as AppSearchSelect } from './AppSearchSelect.vue';
+export { default as AppSectionBar } from './AppSectionBar.vue';
 export { default as AppSectionHeader } from './AppSectionHeader.vue';
 export { default as AppSwitch } from './AppSwitch.vue';
 export { default as AppText } from './AppText.vue';

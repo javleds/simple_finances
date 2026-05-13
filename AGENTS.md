@@ -10,6 +10,8 @@ Current shared components:
 
 - `AppActionMenu`: compact contextual actions menu for secondary item actions such as edit and delete.
   Path: `src/modules/shared/components/AppActionMenu.vue`
+- `AppAvatarValueRow`: compact row with circular initials avatar, primary label and right-aligned value for small summaries.
+  Path: `src/modules/shared/components/AppAvatarValueRow.vue`
 - `AppButton`: base button with variants `primary`, `secondary`, `ghost`.
   Path: `src/modules/shared/components/AppButton.vue`
 - `AppCard`: bordered surface card with optional padding and muted surface mode.
@@ -18,6 +20,8 @@ Current shared components:
   Path: `src/modules/shared/components/AppContextTabs.vue`
 - `AppDatePicker`: app-styled wrapper around `@vuepic/vue-datepicker` for date fields that need to work well inside forms and modals.
   Path: `src/modules/shared/components/AppDatePicker.vue`
+- `AppHeroMetric`: hero-style metric block with small label, large value and optional adornment slot.
+  Path: `src/modules/shared/components/AppHeroMetric.vue`
 - `AppIconButton`: compact circular button for icon-only actions.
   Path: `src/modules/shared/components/AppIconButton.vue`
 - `AppInput`: labeled input wrapper compatible with native input attributes via `$attrs`.
@@ -32,6 +36,8 @@ Current shared components:
   Path: `src/modules/shared/components/AppPercentageSplitEditor.vue`
 - `AppSearchSelect`: app-styled single-select searchable dropdown wrapper built on `@vueform/multiselect`.
   Path: `src/modules/shared/components/AppSearchSelect.vue`
+- `AppSectionBar`: compact section heading row with title, actions slot and bottom divider.
+  Path: `src/modules/shared/components/AppSectionBar.vue`
 - `AppSectionHeader`: reusable section header card with title, optional description, compact metrics area and actions slot.
   Path: `src/modules/shared/components/AppSectionHeader.vue`
 - `AppSwitch`: boolean on/off switch for compact settings and per-item activation controls.
