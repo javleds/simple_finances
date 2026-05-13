@@ -11,6 +11,7 @@ use Filament\Pages\Page;
 use Filament\Support\Enums\Alignment;
 use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Table;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -57,6 +58,16 @@ class AppServiceProvider extends ServiceProvider
             $email = mb_strtolower((string) $request->input('email'));
 
             return Limit::perMinute(3)->by($request->ip().'|'.$email);
+        });
+
+        ResetPassword::createUrlUsing(function (object $user, string $token): string {
+            $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
+            $query = http_build_query([
+                'token' => $token,
+                'email' => $user->email,
+            ]);
+
+            return "{$frontendUrl}/password-reset/reset?{$query}";
         });
 
         Model::unguard();

@@ -11,8 +11,10 @@ use App\Models\SubscriptionPayment;
 use App\Models\TelegramVerificationCode;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Notifications\InviteAccountApiEmail;
 use App\Notifications\InviteAccountEmail;
 use App\Services\Auth\JwtTokenService;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Notification;
 
@@ -200,6 +202,17 @@ it('rate limits password recovery requests by email and ip', function () {
         ->assertStatus(429);
 });
 
+it('builds password recovery links with the configured frontend url', function () {
+    $user = User::factory()->create([
+        'email' => 'password-reset@example.com',
+    ]);
+
+    $notification = new ResetPassword('reset-token');
+    $mailMessage = $notification->toMail($user);
+
+    expect($mailMessage->actionUrl)->toBe('http://localhost:5173/password-reset/reset?token=reset-token&email=password-reset%40example.com');
+});
+
 it('updates notification settings', function () {
     seedNotificationTypes();
     $user = User::factory()->create();
@@ -330,7 +343,7 @@ it('creates account invites and lets the invited user accept them', function () 
 
     $inviteId = $response->json('data.id');
 
-    Notification::assertSentOnDemand(InviteAccountEmail::class);
+    Notification::assertSentOnDemand(InviteAccountApiEmail::class);
 
     $this->withHeaders(apiHeaders($invitee))
         ->putJson("/api/account-invites/{$inviteId}", [
@@ -340,6 +353,27 @@ it('creates account invites and lets the invited user accept them', function () 
         ->assertJsonPath('data.status', 'accepted');
 
     expect($account->fresh()->users()->pluck('users.id')->all())->toContain($invitee->id);
+});
+
+it('sends the invitation email before persisting account invites from the nested endpoint', function () {
+    Notification::fake();
+    seedNotificationTypes();
+
+    $owner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->attach($owner->id);
+    $owner->notificationTypes()->sync(NotificationType::query()->pluck('id')->all());
+
+    $this->withHeaders(apiHeaders($owner))
+        ->postJson("/api/accounts/{$account->id}/invites", [
+            'email' => 'invitee@example.com',
+            'percentage' => 20,
+        ])
+        ->assertCreated();
+
+    expect(AccountInvite::query()->where('account_id', $account->id)->count())->toBe(1);
+
+    Notification::assertSentOnDemand(InviteAccountApiEmail::class);
 });
 
 it('manages nested account users, invites, transactions and financial goals', function () {

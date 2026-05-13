@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Dto\AccountInviteDto;
 use App\Enums\InviteStatus;
 use App\Events\AccountInviteCreated;
 use App\Http\Requests\Api\AccountInviteRequest;
 use App\Models\Account;
 use App\Models\AccountInvite;
 use App\Models\User;
+use App\Services\AccountInvites\CreateAccountInvite;
 use App\Services\AccountInvites\Respond;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,16 +30,17 @@ class AccountInviteController extends ApiController
         );
     }
 
-    public function store(AccountInviteRequest $request): JsonResponse
+    public function store(AccountInviteRequest $request, CreateAccountInvite $createAccountInvite): JsonResponse
     {
         $account = Account::query()->findOrFail($request->integer('account_id'));
         abort_unless($account->user_id === $request->user()->id, 403);
 
-        $invite = AccountInvite::create([
-            'account_id' => $account->id,
-            'email' => $request->string('email')->toString(),
-            'percentage' => $request->float('percentage'),
-        ]);
+        $invite = $createAccountInvite->execute(new AccountInviteDto(
+            account: $account,
+            owner: $request->user(),
+            email: $request->string('email')->toString(),
+            percentage: $request->float('percentage'),
+        ));
 
         return $this->respondModel($invite, ['account', 'user'], 201);
     }
