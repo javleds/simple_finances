@@ -40,10 +40,6 @@ function formatCurrency(value: number | null): string {
 
 <template>
   <section class="space-y-5">
-    <div class="grid grid-cols-2 gap-3">
-      <AppTitle as="h1">{{ props.account.name }}</AppTitle>
-    </div>
-
     <AppCard class="rounded-3xl">
       <div class="space-y-4">
         <div class="flex items-start justify-between gap-4">

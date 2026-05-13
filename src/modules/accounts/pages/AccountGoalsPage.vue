@@ -22,8 +22,6 @@ import {
   AppText,
   AppTitle,
 } from '@/modules/shared/components';
-import type { Account } from '../types';
-import { a } from 'vue-router/dist/index-D_VEAp3P.js';
 
 type GoalStatus = 'on-track' | 'at-risk' | 'completed';
 type FormState = {
@@ -273,10 +271,6 @@ function handleEditFormStateChange(state: FormState): void {
 
 <template>
   <section class="space-y-4">
-    <div class="grid grid-cols-2 gap-3">
-      <AppTitle as="h1" v-if="account">{{ account.name }}</AppTitle>
-    </div>
-
     <AppCard class="rounded-3xl">
       <div class="flex items-center justify-between gap-3">
         <div class="space-y-1">

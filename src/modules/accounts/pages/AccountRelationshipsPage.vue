@@ -130,6 +130,13 @@ function updateActiveSection(nextSection: string): void {
   </div>
 
   <div v-else-if="account" class="space-y-5 pb-16">
+    <header class="space-y-1 px-1">
+      <AppTitle as="h1">{{ account.name }}</AppTitle>
+      <AppText v-if="account.description" tone="subtle">
+        {{ account.description }}
+      </AppText>
+    </header>
+
     <RouterView v-slot="{ Component }">
       <component
         :is="Component"
