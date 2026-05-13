@@ -182,6 +182,30 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function userInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+
+  if (words.length === 0) {
+    return '?';
+  }
+
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${words[0][0] ?? ''}${words[1][0] ?? ''}`.toUpperCase();
+}
+
+function userAvatarStyle(seed: string): Record<string, string> {
+  const hue =
+    Array.from(seed).reduce((accumulator, char) => accumulator + char.charCodeAt(0), 0) % 360;
+
+  return {
+    backgroundColor: `hsl(${hue} 70% 92%)`,
+    color: `hsl(${hue} 48% 32%)`,
+  };
+}
+
 function openCreateTransactionModal(): void {
   clearSaveError();
   createFormState.value = { canSubmit: false, isSubmitting: false };
@@ -304,51 +328,69 @@ function handleEditFormStateChange(state: FormState): void {
 <template>
   <section class="space-y-4">
     <AppCard class="rounded-3xl">
-      <div class="flex items-center justify-between gap-3">
-        <div class="min-w-0 space-y-3">
-          <AppTitle as="h2" size="sm">Transacciones</AppTitle>
+      <div class="space-y-5">
+        <div class="flex items-start justify-between gap-4">
+          <div class="space-y-2">
+            <AppText size="sm" tone="subtle">Balance</AppText>
+            <p class="text-3xl font-semibold tracking-tight text-(--app-color-text) sm:text-4xl">
+              {{ formatCurrency(props.account?.balance ?? 0) }}
+            </p>
+          </div>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <div
-              class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5"
-              :style="{ borderColor: 'var(--app-color-border)' }"
-            >
-              <AppText size="sm" tone="subtle">Balance</AppText>
-              <span class="text-sm font-semibold text-(--app-color-text)">
-                {{ formatCurrency(props.account?.balance ?? 0.0) }}
-              </span>
-            </div>
+          <div
+            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border bg-(--app-color-surface-muted)"
+            :style="{ borderColor: 'var(--app-color-border)' }"
+          >
+            <ArrowPathIcon class="h-5 w-5 text-(--app-color-text-subtle)" />
+          </div>
+        </div>
 
+        <div class="border-t" :style="{ borderColor: 'var(--app-color-border)' }"></div>
+
+        <div class="space-y-3">
+          <AppText size="sm" tone="subtle">Pendientes por usuario</AppText>
+
+          <div v-if="usersWithPendingExpenses.length > 0" class="space-y-2">
             <div
               v-for="user in usersWithPendingExpenses"
               :key="user.id"
-              class="inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5"
-              :style="{ borderColor: 'var(--app-color-border)' }"
+              class="flex items-center gap-3 rounded-2xl bg-(--app-color-surface-muted) px-3 py-2.5"
             >
-              <span class="truncate text-sm font-medium text-(--app-color-text)">
+              <div
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+                :style="userAvatarStyle(user.id)"
+              >
+                {{ userInitials(user.name) }}
+              </div>
+
+              <span class="min-w-0 flex-1 truncate text-sm font-medium text-(--app-color-text)">
                 {{ user.name }}
               </span>
-              <span class="text-xs text-(--app-color-text-subtle)">debe</span>
-              <span class="text-sm font-semibold text-(--app-color-text)">
-                {{ formatCurrency(user.pendingExpenses ?? 0.0) }}
+
+              <span class="shrink-0 text-sm font-semibold text-(--app-color-text)">
+                {{ formatCurrency(user.pendingExpenses) }}
               </span>
             </div>
+          </div>
 
-            <div
-              v-if="usersWithPendingExpenses.length === 0"
-              class="inline-flex items-center rounded-full border px-3 py-1.5"
-              :style="{ borderColor: 'var(--app-color-border)' }"
-            >
-              <AppText size="sm" tone="subtle">Sin pendientes por usuario</AppText>
-            </div>
+          <div v-else class="rounded-2xl bg-(--app-color-surface-muted) px-3 py-3">
+            <AppText size="sm" tone="subtle">No hay montos pendientes por usuario.</AppText>
           </div>
         </div>
+      </div>
+    </AppCard>
+
+    <section class="space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <AppTitle as="h2" size="sm">Transacciones</AppTitle>
 
         <AppButton variant="primary" @click="openCreateTransactionModal">
           <PlusIcon class="h-4 w-4" />
         </AppButton>
       </div>
-    </AppCard>
+
+      <div class="border-t" :style="{ borderColor: 'var(--app-color-border)' }"></div>
+    </section>
 
     <div class="flex items-center gap-3">
       <div class="relative flex-1">

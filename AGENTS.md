@@ -32,6 +32,8 @@ Current shared components:
   Path: `src/modules/shared/components/AppPercentageSplitEditor.vue`
 - `AppSearchSelect`: app-styled single-select searchable dropdown wrapper built on `@vueform/multiselect`.
   Path: `src/modules/shared/components/AppSearchSelect.vue`
+- `AppSectionHeader`: reusable section header card with title, optional description, compact metrics area and actions slot.
+  Path: `src/modules/shared/components/AppSectionHeader.vue`
 - `AppSwitch`: boolean on/off switch for compact settings and per-item activation controls.
   Path: `src/modules/shared/components/AppSwitch.vue`
 - `AppText`: shared paragraph/text primitive with tone and size options.
