@@ -68,6 +68,7 @@ const accountUsers = computed(() => props.account?.users ?? []);
 const usersWithPendingExpenses = computed(() =>
   accountUsers.value.filter((user) => user.pendingExpenses > 0),
 );
+const accountBalance = ref(props.account?.balance ?? 0);
 const {
   goals: financialGoals,
   isLoading: isLoadingFinancialGoals,
@@ -173,6 +174,18 @@ watch(
   { immediate: true },
 );
 
+watch(
+  () => props.account?.balance,
+  (nextBalance) => {
+    if (typeof nextBalance !== 'number') {
+      return;
+    }
+
+    accountBalance.value = nextBalance;
+  },
+  { immediate: true },
+);
+
 function formatDateLabel(date: string): string {
   return new Intl.DateTimeFormat('es-MX', {
     day: '2-digit',
@@ -188,6 +201,20 @@ function formatCurrency(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function applyMutationBalance(options: {
+  accountBalance?: number | null;
+  previousAccountBalance?: number | null;
+}): void {
+  if (typeof options.accountBalance === 'number') {
+    accountBalance.value = options.accountBalance;
+    return;
+  }
+
+  if (typeof options.previousAccountBalance === 'number') {
+    accountBalance.value = options.previousAccountBalance;
+  }
 }
 
 function openCreateTransactionModal(): void {
@@ -279,11 +306,14 @@ function handleFiltersModalAction(actionKey: string): void {
 }
 
 async function handleTransactionSubmit(payload: TransactionWritePayload): Promise<void> {
-  const wasCreated = await createTransaction(payload);
+  const result = await createTransaction(payload);
 
-  if (wasCreated) {
-    closeCreateTransactionModal();
+  if (!result) {
+    return;
   }
+
+  applyMutationBalance(result.meta);
+  closeCreateTransactionModal();
 }
 
 async function handleEditTransactionSubmit(payload: TransactionWritePayload): Promise<void> {
@@ -291,11 +321,14 @@ async function handleEditTransactionSubmit(payload: TransactionWritePayload): Pr
     return;
   }
 
-  const wasUpdated = await updateTransaction(selectedTransaction.value.id, payload);
+  const result = await updateTransaction(selectedTransaction.value.id, payload);
 
-  if (wasUpdated) {
-    closeEditTransactionModal();
+  if (!result) {
+    return;
   }
+
+  applyMutationBalance(result.meta);
+  closeEditTransactionModal();
 }
 
 async function confirmDeleteTransaction(): Promise<void> {
@@ -303,11 +336,14 @@ async function confirmDeleteTransaction(): Promise<void> {
     return;
   }
 
-  const wasDeleted = await deleteTransaction(selectedTransaction.value.id, accountId.value);
+  const result = await deleteTransaction(selectedTransaction.value.id, accountId.value);
 
-  if (wasDeleted) {
-    closeDeleteTransactionModal();
+  if (!result) {
+    return;
   }
+
+  applyMutationBalance(result.meta);
+  closeDeleteTransactionModal();
 }
 
 function handleCreateFormStateChange(state: FormState): void {
@@ -323,7 +359,7 @@ function handleEditFormStateChange(state: FormState): void {
   <section class="space-y-4">
     <AppCard class="rounded-3xl">
       <div class="space-y-5">
-        <AppHeroMetric label="Balance" :value="formatCurrency(props.account?.balance ?? 0)">
+        <AppHeroMetric label="Balance" :value="formatCurrency(accountBalance)">
           <template #adornment>
             <div
               class="flex h-12 w-12 items-center justify-center rounded-full border bg-(--app-color-surface-muted)"

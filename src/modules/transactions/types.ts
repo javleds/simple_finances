@@ -38,3 +38,17 @@ export type TransactionWritePayload = {
   financialGoalId: string | null;
   userPayments: Record<string, number>;
 };
+
+export type TransactionMutationMeta = {
+  accountBalance: number | null;
+  previousAccountBalance: number | null;
+};
+
+export type CreatedTransactionResult = {
+  transaction: Transaction;
+  meta: TransactionMutationMeta;
+};
+
+export type DeletedTransactionResult = {
+  meta: TransactionMutationMeta;
+};

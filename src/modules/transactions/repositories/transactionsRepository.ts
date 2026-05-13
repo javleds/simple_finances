@@ -6,7 +6,13 @@ import {
   mapTransactionApiToDomain,
   transactionApiSchema,
 } from '../schemas/transactionSchemas';
-import type { Transaction, TransactionWritePayload } from '../types';
+import type {
+  CreatedTransactionResult,
+  DeletedTransactionResult,
+  Transaction,
+  TransactionMutationMeta,
+  TransactionWritePayload,
+} from '../types';
 
 const apiClient = createApiClient();
 const transactionsPath = '/transactions';
@@ -29,6 +35,74 @@ const singleTransactionSchema = z
     }),
   ])
   .transform((payload) => ('data' in payload ? payload.data : payload));
+
+function parseNullableBalance(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === 'string') {
+    const parsedValue = Number(value);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  }
+
+  return null;
+}
+
+const mutationMetaSchema = z
+  .object({
+    meta: z
+      .object({
+        account: z
+          .object({
+            balance: z.unknown().transform(parseNullableBalance),
+          })
+          .optional(),
+        previous_account: z
+          .object({
+            balance: z.unknown().transform(parseNullableBalance),
+          })
+          .optional(),
+      })
+      .optional(),
+  })
+  .transform<TransactionMutationMeta>((payload) => ({
+    accountBalance: payload.meta?.account?.balance ?? null,
+    previousAccountBalance: payload.meta?.previous_account?.balance ?? null,
+  }));
+
+const createdTransactionResponseSchema = z
+  .union([
+    z.object({
+      data: transactionApiSchema,
+      meta: z
+        .object({
+          account: z
+            .object({
+              balance: z.unknown().transform(parseNullableBalance),
+            })
+            .optional(),
+          previous_account: z
+            .object({
+              balance: z.unknown().transform(parseNullableBalance),
+            })
+            .optional(),
+        })
+        .optional(),
+    }),
+    transactionApiSchema.transform((data) => ({ data, meta: undefined })),
+  ])
+  .transform<CreatedTransactionResult>((payload) => ({
+    transaction: mapTransactionApiToDomain(payload.data),
+    meta: {
+      accountBalance: payload.meta?.account?.balance ?? null,
+      previousAccountBalance: payload.meta?.previous_account?.balance ?? null,
+    },
+  }));
 
 function buildWritePayload(payload: TransactionWritePayload) {
   return {
@@ -54,27 +128,38 @@ export function createTransactionsRepository() {
         : await apiClient.get<unknown>(transactionsPath);
       return transactionCollectionSchema.parse(response).map(mapTransactionApiToDomain);
     },
-    async create(payload: TransactionWritePayload): Promise<Transaction> {
+    async create(payload: TransactionWritePayload): Promise<CreatedTransactionResult> {
       const response = await apiClient.post<unknown>(
         `${accountsPath}/${payload.accountId}/transactions`,
         buildWritePayload(payload),
       );
-      return mapTransactionApiToDomain(singleTransactionSchema.parse(response));
+      return createdTransactionResponseSchema.parse(response);
     },
-    async update(transactionId: string, payload: TransactionWritePayload): Promise<Transaction> {
+    async update(
+      transactionId: string,
+      payload: TransactionWritePayload,
+    ): Promise<CreatedTransactionResult> {
       const response = await apiClient.put<unknown>(
         `${accountsPath}/${payload.accountId}/transactions/${transactionId}`,
         buildWritePayload(payload),
       );
-      return mapTransactionApiToDomain(singleTransactionSchema.parse(response));
+      return createdTransactionResponseSchema.parse(response);
     },
-    async remove(transactionId: string, accountId?: string): Promise<void> {
+    async remove(transactionId: string, accountId?: string): Promise<DeletedTransactionResult> {
       if (accountId) {
-        await apiClient.delete(`${accountsPath}/${accountId}/transactions/${transactionId}`);
-        return;
+        const response = await apiClient.delete<unknown>(
+          `${accountsPath}/${accountId}/transactions/${transactionId}`,
+        );
+        return {
+          meta: mutationMetaSchema.parse(response),
+        };
       }
 
-      await apiClient.delete(`${transactionsPath}/${transactionId}`);
+      const response = await apiClient.delete<unknown>(`${transactionsPath}/${transactionId}`);
+
+      return {
+        meta: mutationMetaSchema.parse(response),
+      };
     },
   };
 }

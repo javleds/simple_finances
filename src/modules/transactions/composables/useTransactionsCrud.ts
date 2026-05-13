@@ -3,7 +3,12 @@ import { computed, ref } from 'vue';
 import { ApiError } from '@/lib/api/apiClient';
 
 import { createTransactionsRepository } from '../repositories/transactionsRepository';
-import type { Transaction, TransactionWritePayload } from '../types';
+import type {
+  CreatedTransactionResult,
+  DeletedTransactionResult,
+  Transaction,
+  TransactionWritePayload,
+} from '../types';
 
 const transactionsRepository = createTransactionsRepository();
 
@@ -43,17 +48,17 @@ export function useTransactionsCrud() {
     }
   }
 
-  async function createTransaction(payload: TransactionWritePayload): Promise<boolean> {
+  async function createTransaction(payload: TransactionWritePayload): Promise<CreatedTransactionResult | null> {
     isSaving.value = true;
     saveError.value = null;
 
     try {
-      const transaction = await transactionsRepository.create(payload);
-      transactions.value = [transaction, ...transactions.value];
-      return true;
+      const result = await transactionsRepository.create(payload);
+      transactions.value = [result.transaction, ...transactions.value];
+      return result;
     } catch (error) {
       saveError.value = resolveErrorMessage(error, 'No fue posible crear la transacción.');
-      return false;
+      return null;
     } finally {
       isSaving.value = false;
     }
@@ -62,35 +67,38 @@ export function useTransactionsCrud() {
   async function updateTransaction(
     transactionId: string,
     payload: TransactionWritePayload,
-  ): Promise<boolean> {
+  ): Promise<CreatedTransactionResult | null> {
     isSaving.value = true;
     saveError.value = null;
 
     try {
-      const updatedTransaction = await transactionsRepository.update(transactionId, payload);
+      const result = await transactionsRepository.update(transactionId, payload);
       transactions.value = transactions.value.map((transaction) =>
-        transaction.id === transactionId ? updatedTransaction : transaction,
+        transaction.id === transactionId ? result.transaction : transaction,
       );
-      return true;
+      return result;
     } catch (error) {
       saveError.value = resolveErrorMessage(error, 'No fue posible actualizar la transacción.');
-      return false;
+      return null;
     } finally {
       isSaving.value = false;
     }
   }
 
-  async function deleteTransaction(transactionId: string, accountId?: string): Promise<boolean> {
+  async function deleteTransaction(
+    transactionId: string,
+    accountId?: string,
+  ): Promise<DeletedTransactionResult | null> {
     isDeleting.value = true;
     deleteError.value = null;
 
     try {
-      await transactionsRepository.remove(transactionId, accountId);
+      const result = await transactionsRepository.remove(transactionId, accountId);
       transactions.value = transactions.value.filter((transaction) => transaction.id !== transactionId);
-      return true;
+      return result;
     } catch (error) {
       deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la transacción.');
-      return false;
+      return null;
     } finally {
       isDeleting.value = false;
     }
