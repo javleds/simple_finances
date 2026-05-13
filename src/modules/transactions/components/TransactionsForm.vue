@@ -9,6 +9,7 @@ import {
   AppDatePicker,
   AppInput,
   AppPercentageSplitEditor,
+  AppSearchSelect,
   AppText,
   AppToggleButton,
 } from '@/modules/shared/components';
@@ -28,6 +29,7 @@ const props = withDefaults(
       name: string;
       description?: string | null;
     }>;
+    isLoadingFinancialGoals?: boolean;
     initialValues?: Partial<Transaction> | null;
     lockedAccountId?: string | null;
     serverError?: string | null;
@@ -36,6 +38,7 @@ const props = withDefaults(
     formId: 'transaction-form',
     accountUsers: () => [],
     financialGoals: () => [],
+    isLoadingFinancialGoals: false,
     initialValues: null,
     lockedAccountId: null,
     serverError: null,
@@ -264,18 +267,22 @@ async function handleSubmit(): Promise<void> {
         v-model="financialGoalId"
         label="Meta financiera"
         :options="financialGoalOptions"
-        :disabled="isExpense"
+        :disabled="isExpense || props.isLoadingFinancialGoals"
         open-direction="top"
-        placeholder="Sin meta financiera"
+        :placeholder="props.isLoadingFinancialGoals ? 'Cargando metas financieras...' : 'Sin meta financiera'"
         search-placeholder="Buscar meta financiera"
-        empty-message="No encontramos metas con ese criterio."
+        :empty-message="
+          props.isLoadingFinancialGoals
+            ? 'Cargando metas financieras...'
+            : 'No encontramos metas con ese criterio.'
+        "
         :error="financialGoalError"
         @change="touchFinancialGoal"
         @blur="touchFinancialGoal"
       />
 
       <div
-        v-if="props.financialGoals.length === 0"
+        v-if="!props.isLoadingFinancialGoals && props.financialGoals.length === 0"
         class="rounded-lg border border-dashed px-4 py-4 text-center"
         :style="{ borderColor: 'var(--app-color-border)' }"
       >

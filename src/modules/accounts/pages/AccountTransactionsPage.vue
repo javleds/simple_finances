@@ -10,6 +10,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import type { Account } from '@/modules/accounts/types';
+import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import {
   AppAvatarValueRow,
   AppButton,
@@ -67,7 +68,11 @@ const accountUsers = computed(() => props.account?.users ?? []);
 const usersWithPendingExpenses = computed(() =>
   accountUsers.value.filter((user) => user.pendingExpenses > 0),
 );
-const financialGoals: Array<{ id: string; name: string; description?: string | null }> = [];
+const {
+  goals: financialGoals,
+  isLoading: isLoadingFinancialGoals,
+  loadGoals,
+} = useAccountGoalsCrud();
 
 const {
   transactions,
@@ -188,6 +193,11 @@ function formatCurrency(value: number): string {
 function openCreateTransactionModal(): void {
   clearSaveError();
   createFormState.value = { canSubmit: false, isSubmitting: false };
+
+  if (accountId.value) {
+    void loadGoals(accountId.value);
+  }
+
   isCreateTransactionModalOpen.value = true;
 }
 
@@ -200,6 +210,11 @@ function openEditTransaction(transactionId: string): void {
   clearSaveError();
   selectedTransactionId.value = transactionId;
   editFormState.value = { canSubmit: false, isSubmitting: false };
+
+  if (accountId.value) {
+    void loadGoals(accountId.value);
+  }
+
   isEditTransactionModalOpen.value = true;
 }
 
@@ -495,6 +510,7 @@ function handleEditFormStateChange(state: FormState): void {
         form-id="transaction-form"
         :account-users="accountUsers"
         :financial-goals="financialGoals"
+        :is-loading-financial-goals="isLoadingFinancialGoals"
         :locked-account-id="accountId"
         :server-error="saveError"
         @state-change="handleCreateFormStateChange"
@@ -514,6 +530,7 @@ function handleEditFormStateChange(state: FormState): void {
         form-id="edit-transaction-form"
         :account-users="accountUsers"
         :financial-goals="financialGoals"
+        :is-loading-financial-goals="isLoadingFinancialGoals"
         :locked-account-id="accountId"
         :initial-values="selectedTransaction"
         :server-error="saveError"

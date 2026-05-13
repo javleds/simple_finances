@@ -153,11 +153,18 @@ function formatDateLabel(date: string | null): string {
     return 'Sin fecha límite';
   }
 
+  const normalizedDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : date;
+  const parsedDate = new Date(normalizedDate);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return 'Sin fecha límite';
+  }
+
   return new Intl.DateTimeFormat('es-MX', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  }).format(new Date(`${date}T00:00:00`));
+  }).format(parsedDate);
 }
 
 function openFilters(): void {
@@ -271,10 +278,7 @@ function handleEditFormStateChange(state: FormState): void {
 
 <template>
   <section class="space-y-4">
-    <AppSectionBar
-      title="Metas financieras"
-      description="Cada meta vive dentro de la cuenta y comparte su mismo contexto."
-    >
+    <AppSectionBar title="Metas financieras">
       <template #actions>
         <AppButton variant="primary" @click="openCreateGoal">
           <PlusIcon class="h-4 w-4" />
