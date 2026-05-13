@@ -8,7 +8,7 @@ import DistributionRelationListItem from '@/modules/distribution/components/Dist
 import { useDistributionRelationsCrud } from '@/modules/distribution/composables/useDistributionRelationsCrud';
 import { formatDistributionFrequency } from '@/modules/distribution/schemas/distributionSchemas';
 import type { DistributionRelationWritePayload } from '@/modules/distribution/types';
-import { AppButton, AppCard, AppModal, AppText, AppTitle } from '@/modules/shared/components';
+import { AppButton, AppModal, AppSectionBar, AppText, AppTitle } from '@/modules/shared/components';
 
 type FormState = {
   canSubmit: boolean;
@@ -173,21 +173,17 @@ function handleEditFormStateChange(state: FormState): void {
 
 <template>
   <section v-if="rule" class="space-y-4">
-    <AppCard class="rounded-3xl">
-      <div class="flex items-center justify-between gap-3">
-        <div class="space-y-1">
-          <AppTitle as="h2" size="sm">{{ rule.name }}</AppTitle>
-          <AppText>
-            {{ formatDistributionFrequency(rule.frequency) }} · {{ rule.outcomesCount }} relaciones
-            registradas
-          </AppText>
-        </div>
-
+    <AppSectionBar
+      :title="rule.name"
+      :description="`${formatDistributionFrequency(rule.frequency)} · ${rule.outcomesCount} relaciones registradas`"
+    >
+      <template #actions>
         <AppButton variant="primary" @click="openCreateRelation">
           <PlusIcon class="h-4 w-4" />
+          <span>Nueva</span>
         </AppButton>
-      </div>
-    </AppCard>
+      </template>
+    </AppSectionBar>
 
     <section v-if="loadError && hasRelations" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>

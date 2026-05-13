@@ -18,12 +18,11 @@ import type {
 } from '@/modules/accounts/schemas/accountInviteSchemas';
 import {
   AppButton,
-  AppCard,
   AppIconButton,
   AppInput,
   AppModal,
+  AppSectionBar,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 type FormState = {
@@ -258,17 +257,17 @@ function handleEditFormStateChange(state: FormState): void {
 
 <template>
   <section class="space-y-4">
-    <AppCard class="rounded-3xl">
-      <div class="flex items-center justify-between gap-3">
-        <div class="space-y-1">
-          <AppTitle as="h2" size="sm">Invitaciones</AppTitle>
-          <AppText>Invita usuarios a colaborar dentro de esta cuenta.</AppText>
-        </div>
+    <AppSectionBar
+      title="Invitaciones"
+      description="Invita usuarios a colaborar dentro de esta cuenta."
+    >
+      <template #actions>
         <AppButton variant="primary" @click="openCreateInvitation">
           <PlusIcon class="h-4 w-4" />
+          <span>Nueva</span>
         </AppButton>
-      </div>
-    </AppCard>
+      </template>
+    </AppSectionBar>
 
     <div class="flex items-center gap-3">
       <div class="relative flex-1">

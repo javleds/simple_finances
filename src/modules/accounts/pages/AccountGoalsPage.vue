@@ -15,12 +15,11 @@ import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGo
 import type { AccountGoalWritePayload } from '@/modules/accounts/schemas/accountGoalSchemas';
 import {
   AppButton,
-  AppCard,
   AppIconButton,
   AppInput,
   AppModal,
+  AppSectionBar,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 type GoalStatus = 'on-track' | 'at-risk' | 'completed';
@@ -271,18 +270,17 @@ function handleEditFormStateChange(state: FormState): void {
 
 <template>
   <section class="space-y-4">
-    <AppCard class="rounded-3xl">
-      <div class="flex items-center justify-between gap-3">
-        <div class="space-y-1">
-          <AppTitle as="h2" size="sm">Metas financieras</AppTitle>
-          <AppText>Cada meta vive dentro de la cuenta y comparte su mismo contexto.</AppText>
-        </div>
-
+    <AppSectionBar
+      title="Metas financieras"
+      description="Cada meta vive dentro de la cuenta y comparte su mismo contexto."
+    >
+      <template #actions>
         <AppButton variant="primary" @click="openCreateGoal">
           <PlusIcon class="h-4 w-4" />
+          <span>Nueva</span>
         </AppButton>
-      </div>
-    </AppCard>
+      </template>
+    </AppSectionBar>
 
     <div class="flex items-center gap-3">
       <div class="relative flex-1">

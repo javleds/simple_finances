@@ -9,11 +9,10 @@ import type { AccountMember } from '@/modules/accounts/types';
 import { ApiError } from '@/lib/api/apiClient';
 import {
   AppButton,
-  AppCard,
   AppInput,
   AppModal,
+  AppSectionBar,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 const accountsRepository = createAccountsRepository();
@@ -222,18 +221,17 @@ async function confirmDeleteUser(): Promise<void> {
 
 <template>
   <section class="space-y-4">
-    <AppCard class="rounded-3xl">
-      <div class="flex items-center justify-between gap-3">
-        <div class="space-y-1">
-          <AppTitle as="h2" size="sm">Usuarios</AppTitle>
-          <AppText>Miembros reales compartidos en la cuenta y su porcentaje asignado.</AppText>
-        </div>
-
+    <AppSectionBar
+      title="Usuarios"
+      description="Miembros reales compartidos en la cuenta y su porcentaje asignado."
+    >
+      <template #actions>
         <AppButton variant="primary" @click="openCreateUser">
           <PlusIcon class="h-4 w-4" />
+          <span>Nuevo</span>
         </AppButton>
-      </div>
-    </AppCard>
+      </template>
+    </AppSectionBar>
 
     <div class="relative flex-1">
       <div

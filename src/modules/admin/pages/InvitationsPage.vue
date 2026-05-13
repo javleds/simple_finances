@@ -10,8 +10,8 @@ import {
   AppButton,
   AppInput,
   AppModal,
+  AppSectionBar,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 type PendingInvitationAction = 'accepted' | 'declined';
@@ -190,10 +190,10 @@ async function confirmInvitationAction(): Promise<void> {
 
 <template>
   <section class="space-y-4">
-    <div class="space-y-1">
-      <AppTitle as="h2" size="sm">Invitaciones</AppTitle>
-      <AppText>Revisa las cuentas a las que aún no te has unido y responde desde aquí.</AppText>
-    </div>
+    <AppSectionBar
+      title="Invitaciones"
+      description="Revisa las cuentas a las que aún no te has unido y responde desde aquí."
+    />
 
     <div class="relative flex-1">
       <div

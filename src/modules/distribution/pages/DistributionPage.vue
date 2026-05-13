@@ -14,11 +14,10 @@ import { formatDistributionFrequency } from '@/modules/distribution/schemas/dist
 import type { DistributionFrequency, DistributionRuleWritePayload } from '@/modules/distribution/types';
 import {
   AppButton,
-  AppCard,
   AppInput,
   AppModal,
+  AppSectionBar,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 type FormState = {
@@ -233,18 +232,17 @@ function handleEditFormStateChange(state: FormState): void {
 
 <template>
   <div class="space-y-5">
-    <AppCard class="rounded-3xl">
-      <div class="flex items-center justify-between gap-3">
-        <div class="space-y-1">
-          <AppTitle as="h2" size="sm">Ingresos fijos</AppTitle>
-          <AppText>Cada regla define un ingreso fijo y agrupa sus distribuciones asociadas.</AppText>
-        </div>
-
+    <AppSectionBar
+      title="Ingresos fijos"
+      description="Cada regla define un ingreso fijo y agrupa sus distribuciones asociadas."
+    >
+      <template #actions>
         <AppButton variant="primary" @click="openCreateRule">
           <PlusIcon class="h-4 w-4" />
+          <span>Nueva</span>
         </AppButton>
-      </div>
-    </AppCard>
+      </template>
+    </AppSectionBar>
 
     <div class="flex items-center gap-3">
       <div class="relative flex-1">

@@ -19,12 +19,11 @@ import type {
 } from '@/modules/subscriptions/types';
 import {
   AppButton,
-  AppCard,
   AppIconButton,
   AppInput,
   AppModal,
+  AppSectionBar,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 type FormState = {
@@ -300,18 +299,17 @@ function formatDateLabel(date: string | null): string {
 
 <template>
   <div class="space-y-5">
-    <AppCard class="rounded-3xl">
-      <div class="flex items-center justify-between gap-3">
-        <div class="space-y-1">
-          <AppTitle as="h2" size="sm">Planes y cargos</AppTitle>
-          <AppText>Detalle de las suscripciones vinculadas a esta organización.</AppText>
-        </div>
-
+    <AppSectionBar
+      title="Planes y cargos"
+      description="Detalle de las suscripciones vinculadas a esta organización."
+    >
+      <template #actions>
         <AppButton variant="primary" @click="openCreateSubscription">
           <PlusIcon class="h-4 w-4" />
+          <span>Nueva</span>
         </AppButton>
-      </div>
-    </AppCard>
+      </template>
+    </AppSectionBar>
 
     <div class="flex items-center gap-3">
       <div class="relative flex-1">

@@ -17,8 +17,8 @@ import {
   AppIconButton,
   AppInput,
   AppModal,
+  AppSectionBar,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 type FormState = {
@@ -242,16 +242,17 @@ function handleEditFormStateChange(state: FormState): void {
 
 <template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between gap-3">
-      <div class="space-y-1">
-        <AppTitle as="h2" size="sm">Gestión de cuentas</AppTitle>
-        <AppText>La navegación por default es entrar al detalle de cada cuenta.</AppText>
-      </div>
-
+    <AppSectionBar
+      title="Gestión de cuentas"
+      description="La navegación por default es entrar al detalle de cada cuenta."
+    >
+      <template #actions>
       <AppButton variant="primary" @click="openCreateAccount">
         <PlusIcon class="h-4 w-4" />
+        <span>Nueva</span>
       </AppButton>
-    </div>
+      </template>
+    </AppSectionBar>
 
     <div class="flex items-center gap-3">
       <div class="relative flex-1">
