@@ -163,7 +163,7 @@ async function handleSubmit(): Promise<void> {
       class="space-y-4 rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
       :style="{ borderColor: 'var(--app-color-border)' }"
     >
-      <div class="space-y-2">
+      <div class="flex items-center justify-between space-y-2">
         <label for="transaction-type" class="text-sm font-medium text-(--app-color-label)">
           Tipo
         </label>
@@ -175,7 +175,7 @@ async function handleSubmit(): Promise<void> {
         />
       </div>
 
-      <div v-if="isIncome" class="space-y-2">
+      <div v-if="isIncome" class="flex items-center justify-between space-y-2">
         <label for="transaction-status" class="text-sm font-medium text-(--app-color-label)">
           Estatus
         </label>
