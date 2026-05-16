@@ -58,6 +58,27 @@ function parseAccountStatus(value: unknown): AccountStatus {
   return 'Inactivo';
 }
 
+function parseEntityId(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  return null;
+}
+
+function resolveAccountUserId(value: {
+  id?: string | null;
+  user_id?: string | null;
+  user?: { id?: string | null } | null;
+  pivot?: { user_id?: string | null } | null;
+}): string {
+  return value.user_id ?? value.user?.id ?? value.pivot?.user_id ?? value.id ?? '';
+}
+
 export const accountFormSchema = z
   .object({
     name: z.string().trim().min(1, 'El nombre es obligatorio.'),
@@ -129,7 +150,22 @@ export const accountApiSchema = z.object({
       z
         .union([
           z.object({
-            id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+            id: z
+              .union([z.string(), z.number(), z.null(), z.undefined()])
+              .transform(parseEntityId),
+            user_id: z
+              .union([z.string(), z.number(), z.null(), z.undefined()])
+              .optional()
+              .transform(parseEntityId),
+            user: z
+              .object({
+                id: z
+                  .union([z.string(), z.number(), z.null(), z.undefined()])
+                  .optional()
+                  .transform(parseEntityId),
+              })
+              .optional()
+              .nullable(),
             name: z.string(),
             email: z.string().email().catch(''),
             percentage: z.unknown().optional().transform((value) => parseNullableNumber(value) ?? 0),
@@ -137,22 +173,53 @@ export const accountApiSchema = z.object({
               .unknown()
               .optional()
               .transform((value) => parseNullableNumber(value) ?? 0),
-          }),
+          }).transform((value) => ({
+            id: resolveAccountUserId(value),
+            name: value.name,
+            email: value.email,
+            percentage: value.percentage,
+            pending_expenses: value.pending_expenses,
+          })),
           z.object({
-            id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+            id: z
+              .union([z.string(), z.number(), z.null(), z.undefined()])
+              .transform(parseEntityId),
+            user_id: z
+              .union([z.string(), z.number(), z.null(), z.undefined()])
+              .optional()
+              .transform(parseEntityId),
+            user: z
+              .object({
+                id: z
+                  .union([z.string(), z.number(), z.null(), z.undefined()])
+                  .optional()
+                  .transform(parseEntityId),
+              })
+              .optional()
+              .nullable(),
             name: z.string(),
             email: z.string().email().catch(''),
             pivot: z
               .object({
                 percentage: z.unknown().optional().transform((value) => parseNullableNumber(value) ?? 0),
+                user_id: z
+                  .union([z.string(), z.number(), z.null(), z.undefined()])
+                  .optional()
+                  .transform(parseEntityId),
               })
               .optional()
-              .transform((value) => value ?? { percentage: 0 }),
+              .transform((value) => value ?? { percentage: 0, user_id: null }),
             pending_expenses: z
               .unknown()
               .optional()
               .transform((value) => parseNullableNumber(value) ?? 0),
-          }),
+          }).transform((value) => ({
+            id: resolveAccountUserId(value),
+            name: value.name,
+            email: value.email,
+            pivot: value.pivot,
+            pending_expenses: value.pending_expenses,
+          })),
         ])
         .transform((value) => {
           if ('percentage' in value) {
@@ -172,17 +239,43 @@ export const accountApiSchema = z.object({
     .transform((value) => value ?? []),
 });
 
-export const accountUserApiSchema = z.object({
-  id: z.union([z.string(), z.number()]).transform((value) => String(value)),
-  name: z.string(),
-  email: z.string().email().catch(''),
-  pivot: z
-    .object({
-      percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    })
-    .optional()
-    .transform((value) => value ?? { percentage: 0 }),
-});
+export const accountUserApiSchema = z
+  .object({
+    id: z
+      .union([z.string(), z.number(), z.null(), z.undefined()])
+      .transform(parseEntityId),
+    user_id: z
+      .union([z.string(), z.number(), z.null(), z.undefined()])
+      .optional()
+      .transform(parseEntityId),
+    user: z
+      .object({
+        id: z
+          .union([z.string(), z.number(), z.null(), z.undefined()])
+          .optional()
+          .transform(parseEntityId),
+      })
+      .optional()
+      .nullable(),
+    name: z.string(),
+    email: z.string().email().catch(''),
+    pivot: z
+      .object({
+        percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+        user_id: z
+          .union([z.string(), z.number(), z.null(), z.undefined()])
+          .optional()
+          .transform(parseEntityId),
+      })
+      .optional()
+      .transform((value) => value ?? { percentage: 0, user_id: null }),
+  })
+  .transform((value) => ({
+    id: resolveAccountUserId(value),
+    name: value.name,
+    email: value.email,
+    pivot: value.pivot,
+  }));
 
 export function createDefaultAccountFormValues(
   account?: Partial<Account> | null,

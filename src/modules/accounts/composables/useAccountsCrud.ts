@@ -22,24 +22,79 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 export function useAccountsCrud() {
   const accounts = ref<Account[]>([]);
   const isLoading = ref(false);
+  const isLoadingMore = ref(false);
   const isSaving = ref(false);
   const isDeleting = ref(false);
   const loadError = ref<string | null>(null);
   const saveError = ref<string | null>(null);
   const deleteError = ref<string | null>(null);
+  const currentPage = ref(1);
+  const lastPage = ref(1);
+  const perPage = ref(20);
+  const total = ref<number | null>(null);
 
   const hasAccounts = computed(() => accounts.value.length > 0);
+  const hasMoreAccounts = computed(() => currentPage.value < lastPage.value);
+  const hasReachedEnd = computed(
+    () => hasAccounts.value && !hasMoreAccounts.value && !isLoadingMore.value,
+  );
 
-  async function loadAccounts(): Promise<void> {
-    isLoading.value = true;
+  async function loadAccounts(options?: { reset?: boolean; perPage?: number }): Promise<void> {
+    const shouldReset = options?.reset ?? true;
+    const nextPerPage = options?.perPage ?? perPage.value;
+
+    perPage.value = nextPerPage;
     loadError.value = null;
 
+    if (shouldReset) {
+      isLoading.value = true;
+    } else {
+      isLoadingMore.value = true;
+    }
+
     try {
-      accounts.value = await accountsRepository.list();
+      const response = await accountsRepository.list({
+        page: 1,
+        perPage: nextPerPage,
+      });
+
+      accounts.value = response.items;
+      currentPage.value = response.currentPage;
+      lastPage.value = response.lastPage;
+      total.value = response.total;
     } catch (error) {
       loadError.value = resolveErrorMessage(error, 'No fue posible cargar las cuentas.');
     } finally {
-      isLoading.value = false;
+      if (shouldReset) {
+        isLoading.value = false;
+      } else {
+        isLoadingMore.value = false;
+      }
+    }
+  }
+
+  async function loadMoreAccounts(): Promise<void> {
+    if (isLoading.value || isLoadingMore.value || !hasMoreAccounts.value) {
+      return;
+    }
+
+    isLoadingMore.value = true;
+    loadError.value = null;
+
+    try {
+      const response = await accountsRepository.list({
+        page: currentPage.value + 1,
+        perPage: perPage.value,
+      });
+
+      accounts.value = [...accounts.value, ...response.items];
+      currentPage.value = response.currentPage;
+      lastPage.value = response.lastPage;
+      total.value = response.total;
+    } catch (error) {
+      loadError.value = resolveErrorMessage(error, 'No fue posible cargar más cuentas.');
+    } finally {
+      isLoadingMore.value = false;
     }
   }
 
@@ -104,7 +159,10 @@ export function useAccountsCrud() {
   return {
     accounts,
     hasAccounts,
+    hasMoreAccounts,
+    hasReachedEnd,
     isLoading,
+    isLoadingMore,
     isSaving,
     isDeleting,
     loadError,
@@ -113,8 +171,13 @@ export function useAccountsCrud() {
     clearSaveError,
     clearDeleteError,
     loadAccounts,
+    loadMoreAccounts,
     createAccount,
     updateAccount,
     deleteAccount,
+    currentPage,
+    lastPage,
+    perPage,
+    total,
   };
 }

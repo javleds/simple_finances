@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 import { createApiClient } from '@/lib/api/apiClient';
+import {
+  createPaginatedCollectionSchema,
+  type PaginatedCollection,
+} from '@/modules/shared/lib/pagination';
 
 import {
   accountApiSchema,
@@ -13,14 +17,7 @@ import type { Account, AccountMember, AccountWritePayload } from '../types';
 const apiClient = createApiClient();
 const accountsPath = '/accounts';
 
-const accountCollectionSchema = z
-  .union([
-    z.array(accountApiSchema),
-    z.object({
-      data: z.array(accountApiSchema),
-    }),
-  ])
-  .transform((payload) => ('data' in payload ? payload.data : payload));
+const accountCollectionSchema = createPaginatedCollectionSchema(accountApiSchema);
 
 const singleAccountSchema = z
   .union([
@@ -63,9 +60,27 @@ function mapWritePayloadToApi(payload: AccountWritePayload) {
 
 export function createAccountsRepository() {
   return {
-    async list(): Promise<Account[]> {
-      const response = await apiClient.get<unknown>(accountsPath);
-      return accountCollectionSchema.parse(response).map(mapAccountApiToDomain);
+    async list(options?: { page?: number; perPage?: number }): Promise<PaginatedCollection<Account>> {
+      const searchParams = new URLSearchParams();
+
+      if (options?.page) {
+        searchParams.set('page', String(options.page));
+      }
+
+      if (options?.perPage) {
+        searchParams.set('per_page', String(options.perPage));
+      }
+
+      const query = searchParams.toString();
+      const response = await apiClient.get<unknown>(
+        query ? `${accountsPath}?${query}` : accountsPath,
+      );
+      const parsedResponse = accountCollectionSchema.parse(response);
+
+      return {
+        ...parsedResponse,
+        items: parsedResponse.items.map(mapAccountApiToDomain),
+      };
     },
     async getById(accountId: string): Promise<Account> {
       const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}`);

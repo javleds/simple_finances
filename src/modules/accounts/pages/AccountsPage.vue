@@ -6,12 +6,14 @@ import {
   PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
 import AccountsForm from '@/modules/accounts/components/AccountsForm.vue';
 import AccountListItem from '@/modules/accounts/components/AccountListItem.vue';
 import { useAccountsCrud } from '@/modules/accounts/composables/useAccountsCrud';
 import type { Account, AccountStatus, AccountWritePayload } from '@/modules/accounts/types';
+import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
   AppButton,
   AppIconButton,
@@ -28,6 +30,7 @@ type FormState = {
 };
 
 const searchTerm = ref('');
+const route = useRoute();
 const isCreateAccountOpen = ref(false);
 const isDeleteAccountOpen = ref(false);
 const isEditAccountOpen = ref(false);
@@ -39,11 +42,15 @@ const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false }
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 
 const statusOptions = ['Activo', 'Inactivo'] as const;
+const defaultAccountsPerPage = 20;
 
 const {
   accounts,
   hasAccounts,
+  hasMoreAccounts,
+  hasReachedEnd,
   isLoading,
+  isLoadingMore,
   isSaving,
   isDeleting,
   loadError,
@@ -52,10 +59,28 @@ const {
   clearSaveError,
   clearDeleteError,
   loadAccounts,
+  loadMoreAccounts,
   createAccount,
   updateAccount,
   deleteAccount,
 } = useAccountsCrud();
+
+const accountsPerPage = computed(() => {
+  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+
+  if (!Number.isInteger(rawValue) || rawValue <= 0) {
+    return defaultAccountsPerPage;
+  }
+
+  return rawValue;
+});
+
+const { target: loadMoreSentinel } = useInfiniteScroll({
+  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreAccounts.value),
+  onIntersect: () => {
+    void loadMoreAccounts();
+  },
+});
 
 const filteredAccounts = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
@@ -117,9 +142,16 @@ const deleteAccountActions = computed(() => [
   },
 ]);
 
-onMounted(() => {
-  void loadAccounts();
-});
+watch(
+  accountsPerPage,
+  (nextPerPage) => {
+    void loadAccounts({
+      reset: true,
+      perPage: nextPerPage,
+    });
+  },
+  { immediate: true },
+);
 
 function toggleStatus(status: AccountStatus): void {
   if (selectedStatuses.value.includes(status)) {
@@ -200,6 +232,29 @@ function handleFiltersModalAction(actionKey: string): void {
   }
 }
 
+function reloadAccounts(): void {
+  void loadAccounts({
+    reset: true,
+    perPage: accountsPerPage.value,
+  });
+}
+
+function handleLoadMoreRetry(): void {
+  void loadMoreAccounts();
+}
+
+function infiniteStatusLabel(): string {
+  if (isLoadingMore.value) {
+    return 'Cargando más cuentas...';
+  }
+
+  if (hasReachedEnd.value) {
+    return 'Has llegado al final.';
+  }
+
+  return 'Sigue desplazándote para explorar más cuentas cuando la facility crezca.';
+}
+
 async function handleCreateAccountSubmit(payload: AccountWritePayload): Promise<void> {
   const wasCreated = await createAccount(payload);
 
@@ -275,15 +330,6 @@ function handleEditFormStateChange(state: FormState): void {
       </AppIconButton>
     </div>
 
-    <section
-      v-if="loadError && hasAccounts"
-      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
-    >
-      <AppText class="text-(--app-color-danger)!">
-        {{ loadError }}
-      </AppText>
-    </section>
-
     <section v-if="isLoading && !hasAccounts" class="rounded-2xl border px-4 py-10 text-center">
       <AppText>Cargando cuentas...</AppText>
     </section>
@@ -294,7 +340,7 @@ function handleEditFormStateChange(state: FormState): void {
     >
       <AppText>{{ loadError }}</AppText>
       <div class="flex justify-center">
-        <AppButton variant="outline" @click="loadAccounts"> Reintentar </AppButton>
+        <AppButton variant="outline" @click="reloadAccounts"> Reintentar </AppButton>
       </div>
     </section>
 
@@ -328,9 +374,28 @@ function handleEditFormStateChange(state: FormState): void {
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
           <AppText size="sm">
-            Sigue desplazándote para explorar más cuentas cuando la facility crezca.
+            {{ infiniteStatusLabel() }}
           </AppText>
         </div>
+
+        <div
+          v-if="loadError && hasAccounts"
+          class="rounded-2xl border border-(--app-color-danger) px-4 py-4 text-center"
+        >
+          <AppText size="sm" class="text-(--app-color-danger)!">
+            {{ loadError }}
+          </AppText>
+          <div class="mt-3 flex justify-center">
+            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+          </div>
+        </div>
+
+        <div
+          v-if="hasMoreAccounts || isLoadingMore || hasReachedEnd"
+          ref="loadMoreSentinel"
+          class="h-1 w-full"
+          aria-hidden="true"
+        />
       </div>
     </section>
 
