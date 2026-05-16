@@ -7,6 +7,12 @@ type ApiRequestOptions = {
 };
 
 const AUTH_TOKEN_STORAGE_KEY = 'finsi_20_auth_token';
+let isRedirectingAfterUnauthorized = false;
+
+import {
+  clearPendingVerificationEmail,
+  clearStoredAuthSession,
+} from '@/modules/auth/lib/authSession';
 
 function canAccessStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -34,6 +40,22 @@ export function clearStoredAuthToken(): void {
   }
 
   window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+}
+
+function clearStoredAuthState(): void {
+  clearStoredAuthToken();
+  clearStoredAuthSession();
+  clearPendingVerificationEmail();
+}
+
+function redirectToLogin(): void {
+  if (typeof window === 'undefined' || isRedirectingAfterUnauthorized) {
+    return;
+  }
+
+  isRedirectingAfterUnauthorized = true;
+  clearStoredAuthState();
+  window.location.assign(`${import.meta.env.BASE_URL}auth`);
 }
 
 export class ApiError extends Error {
@@ -111,6 +133,10 @@ async function request<T>(path: string, options: ApiRequestOptions = {}): Promis
   const payload = await parseResponse(response);
 
   if (!response.ok) {
+    if (response.status === 401) {
+      redirectToLogin();
+    }
+
     const message =
       typeof payload === 'object' &&
       payload !== null &&
