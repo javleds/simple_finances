@@ -133,7 +133,7 @@ async function request<T>(path: string, options: ApiRequestOptions = {}): Promis
   const payload = await parseResponse(response);
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && authToken) {
       redirectToLogin();
     }
 

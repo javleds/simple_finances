@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { ApiError } from '@/lib/api/apiClient';
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { useLoginForm } from '@/modules/auth/composables/useLoginForm';
 import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
@@ -28,29 +30,52 @@ const themeOptions = [
 const { email, password, isSubmitting, isSubmitDisabled, submitForm } = useLoginForm();
 const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
 const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('password');
+const submitError = ref<string | null>(null);
 
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
 }
 
 async function handleSubmit(): Promise<void> {
+  submitError.value = null;
+
   const payload = await submitForm();
 
   if (!payload) {
     return;
   }
 
-  const session = await authRepository.login(payload);
+  try {
+    const session = await authRepository.login(payload);
 
-  if (session.user.isEmailVerified) {
-    await router.push({ name: 'admin.dashboard' });
-    return;
+    if (session.user.isEmailVerified) {
+      await router.push({ name: 'admin.dashboard' });
+      return;
+    }
+
+    await router.push({
+      name: 'auth.email-verification-required',
+      query: { email: session.user.email },
+    });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      if (error.status === 401 || error.status === 422) {
+        submitError.value = 'Las credenciales no son correctas. Verifica tu correo y contraseña.';
+        return;
+      }
+
+      if (error.status >= 500) {
+        submitError.value =
+          'No fue posible iniciar sesión por un problema del servidor. Intenta de nuevo en unos minutos.';
+        return;
+      }
+
+      submitError.value = error.message || 'No fue posible iniciar sesión.';
+      return;
+    }
+
+    submitError.value = 'No fue posible iniciar sesión. Revisa tu conexión e inténtalo de nuevo.';
   }
-
-  await router.push({
-    name: 'auth.email-verification-required',
-    query: { email: session.user.email },
-  });
 }
 </script>
 
@@ -93,6 +118,15 @@ async function handleSubmit(): Promise<void> {
           </div>
 
           <form class="space-y-5" @submit.prevent="handleSubmit">
+            <section
+              v-if="submitError"
+              class="rounded-xl border border-(--app-color-danger) px-4 py-3"
+            >
+              <AppText size="sm" class="text-(--app-color-danger)!">
+                {{ submitError }}
+              </AppText>
+            </section>
+
             <AppInput
               id="email"
               v-model="email"
