@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { ApiError } from '@/lib/api/apiClient';
+import AuthFeedbackBanner from '@/modules/auth/components/AuthFeedbackBanner.vue';
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { useLoginForm } from '@/modules/auth/composables/useLoginForm';
 import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
@@ -118,14 +119,7 @@ async function handleSubmit(): Promise<void> {
           </div>
 
           <form class="space-y-5" @submit.prevent="handleSubmit">
-            <section
-              v-if="submitError"
-              class="rounded-xl border border-(--app-color-danger) px-4 py-3"
-            >
-              <AppText size="sm" class="text-(--app-color-danger)!">
-                {{ submitError }}
-              </AppText>
-            </section>
+            <AuthFeedbackBanner v-if="submitError" :message="submitError" tone="danger" />
 
             <AppInput
               id="email"
