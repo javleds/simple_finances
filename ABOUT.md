@@ -1888,3 +1888,102 @@ La aplicación actual no es solamente un CRUD de cuentas y movimientos. Su compo
 - OpenAI.
 
 Si la migración a UI nativa quiere conservar la misma aplicación y no solo la misma base de datos, estos flujos deben considerarse parte del producto actual.
+
+## Factory de escenarios para Tinker
+
+El proyecto incluye una factory de escenarios orientada a Tinker para generar cuentas, usuarios relacionados e historiales de transacciones con datos coherentes.
+
+Clase principal:
+
+- `Database\Factories\Scenarios\UserScenarioFactory`
+
+Objetivos del helper:
+
+- generar cuentas individuales para un usuario,
+- generar cuentas compartidas donde el usuario es owner,
+- generar cuentas compartidas donde el usuario entra por invitación aceptada,
+- agregar usuarios adicionales a las cuentas generadas,
+- crear transacciones mixtas con preferencia por balances positivos,
+- generar egresos compartidos con distribución equitativa entre los usuarios de la cuenta.
+
+### Uso base
+
+```php
+use App\Models\User;
+use Database\Factories\Scenarios\UserScenarioFactory;
+
+UserScenarioFactory::for(User::find(1));
+```
+
+### Escenario: cuentas individuales
+
+```php
+UserScenarioFactory::for(User::find(1))
+    ->individualAccounts(5)
+    ->withMixedTransactions(20)
+    ->getAccounts();
+```
+
+Resultado esperado:
+
+- crea 5 cuentas del usuario,
+- agrega 20 transacciones por cada cuenta,
+- mezcla ingresos y egresos,
+- favorece ingresos mayores para terminar con saldo positivo.
+
+### Escenario: cuentas compartidas creadas por el usuario
+
+```php
+UserScenarioFactory::for(User::find(1))
+    ->sharedOwnedAccounts(1)
+    ->withUsers(2)
+    ->withMixedTransactions(20)
+    ->getAccounts();
+```
+
+Resultado esperado:
+
+- crea 1 cuenta compartida cuyo owner es el usuario,
+- agrega 2 usuarios adicionales a la cuenta,
+- reparte porcentajes de participación de forma equilibrada,
+- genera 20 transacciones,
+- varios movimientos son creados por distintos miembros,
+- muchos egresos compartidos generan subtransacciones distribuidas entre todos los miembros,
+- el balance final tiende a ser positivo.
+
+### Escenario: cuentas compartidas donde el usuario es invitado
+
+```php
+UserScenarioFactory::for(User::find(1))
+    ->sharedInvitedAccounts(1)
+    ->withUsers(1)
+    ->withMixedTransactions(20)
+    ->getAccounts();
+```
+
+Resultado esperado:
+
+- crea 1 cuenta cuyo owner es otro usuario,
+- agrega al usuario objetivo mediante una invitación aceptada,
+- agrega 1 usuario extra además del owner y del invitado,
+- genera transacciones mixtas para esa cuenta,
+- mantiene el mismo criterio de saldo final preferentemente positivo.
+
+### Métodos disponibles
+
+- `for(User $user)`: crea el escenario base asociado a un usuario existente.
+- `individualAccounts(int $count)`: crea cuentas individuales pertenecientes al usuario.
+- `sharedOwnedAccounts(int $count)`: crea cuentas compartidas donde el usuario es el creador.
+- `sharedInvitedAccounts(int $count)`: crea cuentas compartidas donde otro usuario es el owner y el usuario entra vía invitación aceptada.
+- `withUsers(int $count)`: agrega usuarios adicionales a cada cuenta generada en el escenario actual.
+- `withMixedTransactions(int $count)`: genera transacciones mixtas por cuenta, favoreciendo saldo positivo.
+- `withMidexTransactions(int $count)`: alias compatible de `withMixedTransactions(int $count)`.
+- `getAccounts()`: devuelve la colección final de cuentas creadas.
+- `getUsers()`: devuelve todos los usuarios involucrados en el escenario generado.
+
+### Consideraciones
+
+- Estas utilidades están pensadas para Tinker, seeds manuales y armado rápido de escenarios de demo.
+- La lógica vive fuera de los modelos para evitar mezclar reglas de dominio con helpers de testing o poblamiento de datos.
+- Las transacciones se crean con factories y relaciones reales del dominio actual.
+- Las cuentas compartidas creadas con invitación generan un registro de invitación aceptada en la base de datos.
