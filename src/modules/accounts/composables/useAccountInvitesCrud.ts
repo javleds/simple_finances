@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 
 import { ApiError } from '@/lib/api/apiClient';
+import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createAccountInvitesRepository } from '../repositories/accountInvitesRepository';
 import type { AccountInvite, AccountInviteWritePayload } from '../schemas/accountInviteSchemas';
@@ -20,27 +21,28 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useAccountInvitesCrud() {
-  const invites = ref<AccountInvite[]>([]);
-  const isLoading = ref(false);
+  const invitesState = usePaginatedCollection<AccountInvite, [string]>({
+    defaultPerPage: 20,
+    loadPage: (options, accountId) => accountInvitesRepository.list(accountId, options),
+    resolveErrorMessage,
+    loadErrorMessage: 'No fue posible cargar las invitaciones.',
+    loadMoreErrorMessage: 'No fue posible cargar más invitaciones.',
+  });
   const isSaving = ref(false);
   const isDeleting = ref(false);
-  const loadError = ref<string | null>(null);
   const saveError = ref<string | null>(null);
   const deleteError = ref<string | null>(null);
 
-  const hasInvites = computed(() => invites.value.length > 0);
+  const hasInvites = computed(() => invitesState.hasItems.value);
+  const hasMoreInvites = computed(() => invitesState.hasMoreItems.value);
+  const hasReachedEnd = computed(() => invitesState.hasReachedEnd.value);
 
-  async function loadInvites(accountId: string): Promise<void> {
-    isLoading.value = true;
-    loadError.value = null;
+  async function loadInvites(accountId: string, options?: { reset?: boolean; perPage?: number }): Promise<void> {
+    await invitesState.load([accountId], options);
+  }
 
-    try {
-      invites.value = await accountInvitesRepository.list(accountId);
-    } catch (error) {
-      loadError.value = resolveErrorMessage(error, 'No fue posible cargar las invitaciones.');
-    } finally {
-      isLoading.value = false;
-    }
+  async function loadMoreInvites(): Promise<void> {
+    await invitesState.loadMore();
   }
 
   async function createInvite(payload: AccountInviteWritePayload): Promise<boolean> {
@@ -49,7 +51,7 @@ export function useAccountInvitesCrud() {
 
     try {
       const invite = await accountInvitesRepository.create(payload);
-      invites.value = [invite, ...invites.value];
+      invitesState.prependItem(invite);
       return true;
     } catch (error) {
       saveError.value = resolveErrorMessage(error, 'No fue posible crear la invitación.');
@@ -65,7 +67,7 @@ export function useAccountInvitesCrud() {
 
     try {
       const updatedInvite = await accountInvitesRepository.update(inviteId, payload);
-      invites.value = invites.value.map((invite) => (invite.id === inviteId ? updatedInvite : invite));
+      invitesState.replaceItem((invite) => invite.id === inviteId, updatedInvite);
       return true;
     } catch (error) {
       saveError.value = resolveErrorMessage(error, 'No fue posible actualizar la invitación.');
@@ -81,7 +83,7 @@ export function useAccountInvitesCrud() {
 
     try {
       await accountInvitesRepository.remove(inviteId, accountId);
-      invites.value = invites.value.filter((invite) => invite.id !== inviteId);
+      invitesState.removeItem((invite) => invite.id === inviteId);
       return true;
     } catch (error) {
       deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la invitación.');
@@ -100,19 +102,24 @@ export function useAccountInvitesCrud() {
   }
 
   return {
-    invites,
+    invites: invitesState.items,
     hasInvites,
-    isLoading,
+    hasMoreInvites,
+    hasReachedEnd,
+    isLoading: invitesState.isLoading,
+    isLoadingMore: invitesState.isLoadingMore,
     isSaving,
     isDeleting,
-    loadError,
+    loadError: invitesState.loadError,
     saveError,
     deleteError,
     clearSaveError,
     clearDeleteError,
     loadInvites,
+    loadMoreInvites,
     createInvite,
     updateInvite,
     deleteInvite,
+    perPage: invitesState.perPage,
   };
 }

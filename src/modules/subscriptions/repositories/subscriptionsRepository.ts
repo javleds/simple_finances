@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 import { createApiClient } from '@/lib/api/apiClient';
+import {
+  createPaginatedCollectionSchema,
+  type PaginatedCollection,
+} from '@/modules/shared/lib/pagination';
 
 import {
   mapSubscriptionApiToDomain,
@@ -11,14 +15,7 @@ import type { Subscription, SubscriptionWritePayload } from '../types';
 const apiClient = createApiClient();
 const subscriptionsPath = '/subscriptions';
 
-const subscriptionCollectionSchema = z
-  .union([
-    z.array(subscriptionApiSchema),
-    z.object({
-      data: z.array(subscriptionApiSchema),
-    }),
-  ])
-  .transform((payload) => ('data' in payload ? payload.data : payload));
+const subscriptionCollectionSchema = createPaginatedCollectionSchema(subscriptionApiSchema);
 
 const singleSubscriptionSchema = z
   .union([
@@ -43,9 +40,27 @@ function buildWritePayload(payload: SubscriptionWritePayload) {
 
 export function createSubscriptionsRepository() {
   return {
-    async list(): Promise<Subscription[]> {
-      const response = await apiClient.get<unknown>(subscriptionsPath);
-      return subscriptionCollectionSchema.parse(response).map(mapSubscriptionApiToDomain);
+    async list(options?: { page?: number; perPage?: number }): Promise<PaginatedCollection<Subscription>> {
+      const searchParams = new URLSearchParams();
+
+      if (options?.page) {
+        searchParams.set('page', String(options.page));
+      }
+
+      if (options?.perPage) {
+        searchParams.set('per_page', String(options.perPage));
+      }
+
+      const query = searchParams.toString();
+      const response = await apiClient.get<unknown>(
+        query ? `${subscriptionsPath}?${query}` : subscriptionsPath,
+      );
+      const parsedResponse = subscriptionCollectionSchema.parse(response);
+
+      return {
+        ...parsedResponse,
+        items: parsedResponse.items.map(mapSubscriptionApiToDomain),
+      };
     },
     async create(payload: SubscriptionWritePayload): Promise<Subscription> {
       const response = await apiClient.post<unknown>(subscriptionsPath, buildWritePayload(payload));

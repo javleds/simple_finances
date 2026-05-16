@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 
 import { ApiError } from '@/lib/api/apiClient';
+import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createDistributionRepository } from '../repositories/distributionRepository';
 import type { DistributionRelation, DistributionRelationWritePayload, DistributionRule } from '../types';
@@ -21,32 +22,43 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 
 export function useDistributionRelationsCrud() {
   const rule = ref<DistributionRule | null>(null);
-  const relations = ref<DistributionRelation[]>([]);
-  const isLoading = ref(false);
+  const relationsState = usePaginatedCollection<DistributionRelation, [string]>({
+    defaultPerPage: 20,
+    loadPage: (options, fixedIncomeId) => distributionRepository.listRelations(fixedIncomeId, options),
+    resolveErrorMessage,
+    loadErrorMessage: 'No fue posible cargar la regla.',
+    loadMoreErrorMessage: 'No fue posible cargar más relaciones.',
+  });
   const isSaving = ref(false);
   const isDeleting = ref(false);
-  const loadError = ref<string | null>(null);
   const saveError = ref<string | null>(null);
   const deleteError = ref<string | null>(null);
 
-  const hasRelations = computed(() => relations.value.length > 0);
+  const hasRelations = computed(() => relationsState.hasItems.value);
+  const hasMoreRelations = computed(() => relationsState.hasMoreItems.value);
+  const hasReachedEnd = computed(() => relationsState.hasReachedEnd.value);
 
-  async function loadRule(ruleId: string): Promise<void> {
-    isLoading.value = true;
-    loadError.value = null;
+  async function loadRule(ruleId: string, options?: { reset?: boolean; perPage?: number }): Promise<void> {
+    relationsState.loadError.value = null;
 
     try {
-      const [loadedRule, loadedRelations] = await Promise.all([
+      relationsState.isLoading.value = true;
+
+      const [loadedRule] = await Promise.all([
         distributionRepository.getRule(ruleId),
-        distributionRepository.listRelations(ruleId),
       ]);
       rule.value = loadedRule;
-      relations.value = loadedRelations;
     } catch (error) {
-      loadError.value = resolveErrorMessage(error, 'No fue posible cargar la regla.');
+      relationsState.loadError.value = resolveErrorMessage(error, 'No fue posible cargar la regla.');
     } finally {
-      isLoading.value = false;
+      relationsState.isLoading.value = false;
     }
+
+    await relationsState.load([ruleId], options);
+  }
+
+  async function loadMoreRelations(): Promise<void> {
+    await relationsState.loadMore();
   }
 
   async function createRelation(payload: DistributionRelationWritePayload): Promise<boolean> {
@@ -55,7 +67,7 @@ export function useDistributionRelationsCrud() {
 
     try {
       const relation = await distributionRepository.createRelation(payload);
-      relations.value = [relation, ...relations.value];
+      relationsState.prependItem(relation);
       await loadRule(payload.fixedIncomeId);
       return true;
     } catch (error) {
@@ -75,9 +87,7 @@ export function useDistributionRelationsCrud() {
 
     try {
       const updatedRelation = await distributionRepository.updateRelation(relationId, payload);
-      relations.value = relations.value.map((relation) =>
-        relation.id === relationId ? updatedRelation : relation,
-      );
+      relationsState.replaceItem((relation) => relation.id === relationId, updatedRelation);
       await loadRule(payload.fixedIncomeId);
       return true;
     } catch (error) {
@@ -94,7 +104,7 @@ export function useDistributionRelationsCrud() {
 
     try {
       await distributionRepository.removeRelation(relationId);
-      relations.value = relations.value.filter((relation) => relation.id !== relationId);
+      relationsState.removeItem((relation) => relation.id === relationId);
       await loadRule(fixedIncomeId);
       return true;
     } catch (error) {
@@ -115,19 +125,24 @@ export function useDistributionRelationsCrud() {
 
   return {
     rule,
-    relations,
+    relations: relationsState.items,
     hasRelations,
-    isLoading,
+    hasMoreRelations,
+    hasReachedEnd,
+    isLoading: relationsState.isLoading,
+    isLoadingMore: relationsState.isLoadingMore,
     isSaving,
     isDeleting,
-    loadError,
+    loadError: relationsState.loadError,
     saveError,
     deleteError,
     clearSaveError,
     clearDeleteError,
     loadRule,
+    loadMoreRelations,
     createRelation,
     updateRelation,
     deleteRelation,
+    perPage: relationsState.perPage,
   };
 }

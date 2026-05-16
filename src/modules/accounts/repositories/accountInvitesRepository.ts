@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 import { createApiClient } from '@/lib/api/apiClient';
+import {
+  createPaginatedCollectionSchema,
+  type PaginatedCollection,
+} from '@/modules/shared/lib/pagination';
 
 import {
   accountInviteApiSchema,
@@ -12,14 +16,7 @@ const apiClient = createApiClient();
 const invitesPath = '/account-invites';
 const accountsPath = '/accounts';
 
-const inviteCollectionSchema = z
-  .union([
-    z.array(accountInviteApiSchema),
-    z.object({
-      data: z.array(accountInviteApiSchema),
-    }),
-  ])
-  .transform((payload) => ('data' in payload ? payload.data : payload));
+const inviteCollectionSchema = createPaginatedCollectionSchema(accountInviteApiSchema);
 
 const singleInviteSchema = z
   .union([
@@ -49,13 +46,50 @@ function buildGlobalWritePayload(payload: AccountInviteWritePayload) {
 
 export function createAccountInvitesRepository() {
   return {
-    async listAll(): Promise<AccountInvite[]> {
-      const response = await apiClient.get<unknown>(invitesPath);
-      return inviteCollectionSchema.parse(response).map(mapAccountInviteApiToDomain);
+    async listAll(options?: { page?: number; perPage?: number }): Promise<PaginatedCollection<AccountInvite>> {
+      const searchParams = new URLSearchParams();
+
+      if (options?.page) {
+        searchParams.set('page', String(options.page));
+      }
+
+      if (options?.perPage) {
+        searchParams.set('per_page', String(options.perPage));
+      }
+
+      const query = searchParams.toString();
+      const response = await apiClient.get<unknown>(query ? `${invitesPath}?${query}` : invitesPath);
+      const parsedResponse = inviteCollectionSchema.parse(response);
+
+      return {
+        ...parsedResponse,
+        items: parsedResponse.items.map(mapAccountInviteApiToDomain),
+      };
     },
-    async list(accountId: string): Promise<AccountInvite[]> {
-      const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}/invites`);
-      return inviteCollectionSchema.parse(response).map(mapAccountInviteApiToDomain);
+    async list(
+      accountId: string,
+      options?: { page?: number; perPage?: number },
+    ): Promise<PaginatedCollection<AccountInvite>> {
+      const searchParams = new URLSearchParams();
+
+      if (options?.page) {
+        searchParams.set('page', String(options.page));
+      }
+
+      if (options?.perPage) {
+        searchParams.set('per_page', String(options.perPage));
+      }
+
+      const query = searchParams.toString();
+      const response = await apiClient.get<unknown>(
+        query ? `${accountsPath}/${accountId}/invites?${query}` : `${accountsPath}/${accountId}/invites`,
+      );
+      const parsedResponse = inviteCollectionSchema.parse(response);
+
+      return {
+        ...parsedResponse,
+        items: parsedResponse.items.map(mapAccountInviteApiToDomain),
+      };
     },
     async create(payload: AccountInviteWritePayload): Promise<AccountInvite> {
       const response = await apiClient.post<unknown>(

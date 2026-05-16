@@ -6,7 +6,7 @@ import {
   PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import AccountInvitationForm from '@/modules/accounts/components/AccountInvitationForm.vue';
@@ -16,6 +16,7 @@ import type {
   AccountInviteStatus,
   AccountInviteWritePayload,
 } from '@/modules/accounts/schemas/accountInviteSchemas';
+import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
   AppButton,
   AppIconButton,
@@ -47,6 +48,7 @@ const invitationStatusOptions = [
   { value: 'accepted', label: 'Aceptada' },
   { value: 'declined', label: 'Declinada' },
 ] as const;
+const defaultInvitesPerPage = 20;
 
 const accountId = computed(() =>
   typeof route.params.accountId === 'string' ? route.params.accountId : '',
@@ -55,7 +57,10 @@ const accountId = computed(() =>
 const {
   invites,
   hasInvites,
+  hasMoreInvites,
+  hasReachedEnd,
   isLoading,
+  isLoadingMore,
   isSaving,
   isDeleting,
   loadError,
@@ -64,10 +69,28 @@ const {
   clearSaveError,
   clearDeleteError,
   loadInvites,
+  loadMoreInvites,
   createInvite,
   updateInvite,
   deleteInvite,
 } = useAccountInvitesCrud();
+
+const invitationsPerPage = computed(() => {
+  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+
+  if (!Number.isInteger(rawValue) || rawValue <= 0) {
+    return defaultInvitesPerPage;
+  }
+
+  return rawValue;
+});
+
+const { target: loadMoreSentinel } = useInfiniteScroll({
+  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreInvites.value),
+  onIntersect: () => {
+    void loadMoreInvites();
+  },
+});
 
 const filteredInvitationItems = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
@@ -130,11 +153,20 @@ const deleteInviteActions = computed(() => [
   },
 ]);
 
-onMounted(() => {
-  if (accountId.value) {
-    void loadInvites(accountId.value);
-  }
-});
+watch(
+  [accountId, invitationsPerPage],
+  ([nextAccountId, nextPerPage]) => {
+    if (!nextAccountId) {
+      return;
+    }
+
+    void loadInvites(nextAccountId, {
+      reset: true,
+      perPage: nextPerPage,
+    });
+  },
+  { immediate: true },
+);
 
 function formatDateLabel(date: string | null): string {
   if (!date) {
@@ -255,6 +287,33 @@ function handleCreateFormStateChange(state: FormState): void {
 function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
 }
+
+function reloadInvitations(): void {
+  if (!accountId.value) {
+    return;
+  }
+
+  void loadInvites(accountId.value, {
+    reset: true,
+    perPage: invitationsPerPage.value,
+  });
+}
+
+function handleLoadMoreRetry(): void {
+  void loadMoreInvites();
+}
+
+function infiniteStatusLabel(): string {
+  if (isLoadingMore.value) {
+    return 'Cargando más invitaciones...';
+  }
+
+  if (hasReachedEnd.value) {
+    return 'Has llegado al final.';
+  }
+
+  return 'Sigue desplazándote para revisar más invitaciones conforme se amplíe la colaboración.';
+}
 </script>
 
 <template>
@@ -302,6 +361,16 @@ function handleEditFormStateChange(state: FormState): void {
       <AppText>Cargando invitaciones...</AppText>
     </section>
 
+    <section
+      v-else-if="loadError && !hasInvites"
+      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    >
+      <AppText>{{ loadError }}</AppText>
+      <div class="flex justify-center">
+        <AppButton variant="secondary" @click="reloadInvitations">Reintentar</AppButton>
+      </div>
+    </section>
+
     <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle"
@@ -333,13 +402,14 @@ function handleEditFormStateChange(state: FormState): void {
         </div>
 
         <div
+          ref="loadMoreSentinel"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <AppText size="sm"
-            >Sigue desplazándote para revisar más invitaciones conforme se amplíe la
-            colaboración.</AppText
-          >
+          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
+          <div v-if="loadError && hasInvites" class="mt-3 flex justify-center">
+            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+          </div>
         </div>
       </div>
     </section>

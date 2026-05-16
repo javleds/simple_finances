@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 
 import { ApiError } from '@/lib/api/apiClient';
+import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createSubscriptionsRepository } from '../repositories/subscriptionsRepository';
 import type { Subscription, SubscriptionWritePayload } from '../types';
@@ -20,27 +21,28 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useSubscriptionsCrud() {
-  const subscriptions = ref<Subscription[]>([]);
-  const isLoading = ref(false);
+  const subscriptionsState = usePaginatedCollection<Subscription, []>({
+    defaultPerPage: 20,
+    loadPage: (options) => subscriptionsRepository.list(options),
+    resolveErrorMessage,
+    loadErrorMessage: 'No fue posible cargar las suscripciones.',
+    loadMoreErrorMessage: 'No fue posible cargar más suscripciones.',
+  });
   const isSaving = ref(false);
   const isDeleting = ref(false);
-  const loadError = ref<string | null>(null);
   const saveError = ref<string | null>(null);
   const deleteError = ref<string | null>(null);
 
-  const hasSubscriptions = computed(() => subscriptions.value.length > 0);
+  const hasSubscriptions = computed(() => subscriptionsState.hasItems.value);
+  const hasMoreSubscriptions = computed(() => subscriptionsState.hasMoreItems.value);
+  const hasReachedEnd = computed(() => subscriptionsState.hasReachedEnd.value);
 
-  async function loadSubscriptions(): Promise<void> {
-    isLoading.value = true;
-    loadError.value = null;
+  async function loadSubscriptions(options?: { reset?: boolean; perPage?: number }): Promise<void> {
+    await subscriptionsState.load([], options);
+  }
 
-    try {
-      subscriptions.value = await subscriptionsRepository.list();
-    } catch (error) {
-      loadError.value = resolveErrorMessage(error, 'No fue posible cargar las suscripciones.');
-    } finally {
-      isLoading.value = false;
-    }
+  async function loadMoreSubscriptions(): Promise<void> {
+    await subscriptionsState.loadMore();
   }
 
   async function createSubscription(payload: SubscriptionWritePayload): Promise<boolean> {
@@ -49,7 +51,7 @@ export function useSubscriptionsCrud() {
 
     try {
       const subscription = await subscriptionsRepository.create(payload);
-      subscriptions.value = [subscription, ...subscriptions.value];
+      subscriptionsState.prependItem(subscription);
       return true;
     } catch (error) {
       saveError.value = resolveErrorMessage(error, 'No fue posible crear la suscripción.');
@@ -68,8 +70,9 @@ export function useSubscriptionsCrud() {
 
     try {
       const updatedSubscription = await subscriptionsRepository.update(subscriptionId, payload);
-      subscriptions.value = subscriptions.value.map((subscription) =>
-        subscription.id === subscriptionId ? updatedSubscription : subscription,
+      subscriptionsState.replaceItem(
+        (subscription) => subscription.id === subscriptionId,
+        updatedSubscription,
       );
       return true;
     } catch (error) {
@@ -86,9 +89,7 @@ export function useSubscriptionsCrud() {
 
     try {
       await subscriptionsRepository.remove(subscriptionId);
-      subscriptions.value = subscriptions.value.filter(
-        (subscription) => subscription.id !== subscriptionId,
-      );
+      subscriptionsState.removeItem((subscription) => subscription.id === subscriptionId);
       return true;
     } catch (error) {
       deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la suscripción.');
@@ -107,19 +108,24 @@ export function useSubscriptionsCrud() {
   }
 
   return {
-    subscriptions,
+    subscriptions: subscriptionsState.items,
     hasSubscriptions,
-    isLoading,
+    hasMoreSubscriptions,
+    hasReachedEnd,
+    isLoading: subscriptionsState.isLoading,
+    isLoadingMore: subscriptionsState.isLoadingMore,
     isSaving,
     isDeleting,
-    loadError,
+    loadError: subscriptionsState.loadError,
     saveError,
     deleteError,
     clearSaveError,
     clearDeleteError,
     loadSubscriptions,
+    loadMoreSubscriptions,
     createSubscription,
     updateSubscription,
     deleteSubscription,
+    perPage: subscriptionsState.perPage,
   };
 }

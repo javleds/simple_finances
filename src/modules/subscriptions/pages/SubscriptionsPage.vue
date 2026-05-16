@@ -6,7 +6,8 @@ import {
   PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import SubscriptionsForm from '@/modules/subscriptions/components/SubscriptionsForm.vue';
@@ -17,6 +18,7 @@ import type {
   SubscriptionFrequencyType,
   SubscriptionWritePayload,
 } from '@/modules/subscriptions/types';
+import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
   AppButton,
   AppIconButton,
@@ -35,6 +37,7 @@ type FormState = {
 type SubscriptionStatusFilter = 'active' | 'cancelled';
 
 const accountsRepository = createAccountsRepository();
+const route = useRoute();
 
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
@@ -60,11 +63,15 @@ const subscriptionUnitOptions = [
   { value: 'months', label: 'Meses' },
   { value: 'years', label: 'Años' },
 ] as const;
+const defaultSubscriptionsPerPage = 20;
 
 const {
   subscriptions,
   hasSubscriptions,
+  hasMoreSubscriptions,
+  hasReachedEnd,
   isLoading,
+  isLoadingMore,
   isSaving,
   isDeleting,
   loadError,
@@ -73,10 +80,28 @@ const {
   clearSaveError,
   clearDeleteError,
   loadSubscriptions,
+  loadMoreSubscriptions,
   createSubscription,
   updateSubscription,
   deleteSubscription,
 } = useSubscriptionsCrud();
+
+const subscriptionsPerPage = computed(() => {
+  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+
+  if (!Number.isInteger(rawValue) || rawValue <= 0) {
+    return defaultSubscriptionsPerPage;
+  }
+
+  return rawValue;
+});
+
+const { target: loadMoreSentinel } = useInfiniteScroll({
+  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreSubscriptions.value),
+  onIntersect: () => {
+    void loadMoreSubscriptions();
+  },
+});
 
 const filteredSubscriptions = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
@@ -152,13 +177,24 @@ const deleteSubscriptionActions = computed(() => [
 ]);
 
 onMounted(() => {
-  void Promise.all([loadSubscriptions(), loadFundingAccounts()]);
+  void loadFundingAccounts();
 });
+
+watch(
+  subscriptionsPerPage,
+  (nextPerPage) => {
+    void loadSubscriptions({
+      reset: true,
+      perPage: nextPerPage,
+    });
+  },
+  { immediate: true },
+);
 
 async function loadFundingAccounts(): Promise<void> {
   try {
-    const accounts = await accountsRepository.list();
-    fundingAccountOptions.value = accounts.map((account) => ({
+    const response = await accountsRepository.list();
+    fundingAccountOptions.value = response.items.map((account) => ({
       value: account.id,
       label: account.name,
       description: account.description,
@@ -297,6 +333,29 @@ function formatDateLabel(date: string | null): string {
     year: 'numeric',
   }).format(new Date(`${date}T00:00:00`));
 }
+
+function reloadSubscriptions(): void {
+  void loadSubscriptions({
+    reset: true,
+    perPage: subscriptionsPerPage.value,
+  });
+}
+
+function handleLoadMoreRetry(): void {
+  void loadMoreSubscriptions();
+}
+
+function infiniteStatusLabel(): string {
+  if (isLoadingMore.value) {
+    return 'Cargando más suscripciones...';
+  }
+
+  if (hasReachedEnd.value) {
+    return 'Has llegado al final.';
+  }
+
+  return 'Sigue desplazándote para revisar más planes y complementos conforme crezca la cobertura contratada.';
+}
 </script>
 
 <template>
@@ -355,7 +414,7 @@ function formatDateLabel(date: string | null): string {
     >
       <AppText>{{ loadError }}</AppText>
       <div class="flex justify-center">
-        <AppButton variant="outline" @click="loadSubscriptions"> Reintentar </AppButton>
+        <AppButton variant="secondary" @click="reloadSubscriptions">Reintentar</AppButton>
       </div>
     </section>
 
@@ -394,13 +453,14 @@ function formatDateLabel(date: string | null): string {
         </div>
 
         <div
+          ref="loadMoreSentinel"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <AppText size="sm">
-            Sigue desplazándote para revisar más planes y complementos conforme crezca la cobertura
-            contratada.
-          </AppText>
+          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
+          <div v-if="loadError && hasSubscriptions" class="mt-3 flex justify-center">
+            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+          </div>
         </div>
       </div>
     </section>

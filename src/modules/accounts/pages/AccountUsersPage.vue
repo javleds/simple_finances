@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import AccountUserListItem from '@/modules/accounts/components/AccountUserListItem.vue';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import type { AccountMember } from '@/modules/accounts/types';
 import { ApiError } from '@/lib/api/apiClient';
+import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
+import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 import {
   AppButton,
   AppInput,
@@ -18,13 +20,13 @@ import {
 
 const accountsRepository = createAccountsRepository();
 const route = useRoute();
+const defaultUsersPerPage = 20;
 
 const searchTerm = ref('');
 const users = ref<AccountMember[]>([]);
 const isLoading = ref(false);
 const isSaving = ref(false);
 const isDeleting = ref(false);
-const loadError = ref<string | null>(null);
 const saveError = ref<string | null>(null);
 const deleteError = ref<string | null>(null);
 const isCreateUserOpen = ref(false);
@@ -36,6 +38,31 @@ const editPercentage = ref('');
 const accountId = computed(() =>
   typeof route.params.accountId === 'string' ? route.params.accountId : '',
 );
+
+const usersPerPage = computed(() => {
+  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+
+  if (!Number.isInteger(rawValue) || rawValue <= 0) {
+    return defaultUsersPerPage;
+  }
+
+  return rawValue;
+});
+
+const usersState = usePaginatedCollection<AccountMember, [string]>({
+  defaultPerPage: defaultUsersPerPage,
+  loadPage: (options, nextAccountId) => accountsRepository.listUsers(nextAccountId, options),
+  resolveErrorMessage,
+  loadErrorMessage: 'No fue posible cargar los usuarios.',
+  loadMoreErrorMessage: 'No fue posible cargar más usuarios.',
+});
+
+const { target: loadMoreSentinel } = useInfiniteScroll({
+  enabled: computed(() => !usersState.isLoading.value && !usersState.isLoadingMore.value && usersState.hasMoreItems.value),
+  onIntersect: () => {
+    void usersState.loadMore();
+  },
+});
 
 const filteredUsers = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
@@ -81,10 +108,6 @@ const deleteUserActions = computed(() => [
   },
 ]);
 
-onMounted(() => {
-  void loadUsers();
-});
-
 function resolveErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError) {
     return error.message;
@@ -123,17 +146,19 @@ async function loadUsers(): Promise<void> {
     return;
   }
 
-  isLoading.value = true;
-  loadError.value = null;
-
-  try {
-    users.value = await accountsRepository.listUsers(accountId.value);
-  } catch (error) {
-    loadError.value = resolveErrorMessage(error, 'No fue posible cargar los usuarios.');
-  } finally {
-    isLoading.value = false;
-  }
+  await usersState.load([accountId.value], {
+    reset: true,
+    perPage: usersPerPage.value,
+  });
 }
+
+watch(
+  [accountId, usersPerPage],
+  () => {
+    void loadUsers();
+  },
+  { immediate: true },
+);
 
 function openCreateUser(): void {
   isCreateUserOpen.value = true;
@@ -218,6 +243,26 @@ async function confirmDeleteUser(): Promise<void> {
     isDeleting.value = false;
   }
 }
+
+function reloadUsers(): void {
+  void loadUsers();
+}
+
+function handleLoadMoreRetry(): void {
+  void usersState.loadMore();
+}
+
+function infiniteStatusLabel(): string {
+  if (usersState.isLoadingMore.value) {
+    return 'Cargando más usuarios...';
+  }
+
+  if (usersState.hasReachedEnd.value) {
+    return 'Has llegado al final.';
+  }
+
+  return 'Sigue desplazándote para revisar más miembros conforme crezca la colaboración de la cuenta.';
+}
 </script>
 
 <template>
@@ -250,26 +295,26 @@ async function confirmDeleteUser(): Promise<void> {
     </div>
 
     <section
-      v-if="loadError && users.length > 0"
+      v-if="usersState.loadError.value && users.length > 0"
       class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
     >
-      <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
+      <AppText class="text-(--app-color-danger)!">{{ usersState.loadError.value }}</AppText>
     </section>
 
     <section
-      v-if="isLoading && users.length === 0"
+      v-if="usersState.isLoading.value && users.length === 0"
       class="rounded-2xl border px-4 py-10 text-center"
     >
       <AppText>Cargando usuarios...</AppText>
     </section>
 
     <section
-      v-else-if="loadError && users.length === 0"
+      v-else-if="usersState.loadError.value && users.length === 0"
       class="space-y-3 rounded-2xl border px-4 py-6 text-center"
     >
-      <AppText>{{ loadError }}</AppText>
+      <AppText>{{ usersState.loadError.value }}</AppText>
       <div class="flex justify-center">
-        <AppButton variant="secondary" @click="loadUsers">Reintentar</AppButton>
+        <AppButton variant="secondary" @click="reloadUsers">Reintentar</AppButton>
       </div>
     </section>
 
@@ -304,13 +349,14 @@ async function confirmDeleteUser(): Promise<void> {
         </div>
 
         <div
+          ref="loadMoreSentinel"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <AppText size="sm">
-            Sigue desplazándote para revisar más miembros conforme crezca la colaboración de la
-            cuenta.
-          </AppText>
+          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
+          <div v-if="usersState.loadError.value && users.length > 0" class="mt-3 flex justify-center">
+            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+          </div>
         </div>
       </div>
     </section>

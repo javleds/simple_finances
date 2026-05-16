@@ -1,25 +1,52 @@
 <script setup lang="ts">
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
 import FacilityInvitationListItem from '@/modules/admin/components/FacilityInvitationListItem.vue';
 import { createAccountInvitesRepository } from '@/modules/accounts/repositories/accountInvitesRepository';
 import type { AccountInvite } from '@/modules/accounts/schemas/accountInviteSchemas';
 import { ApiError } from '@/lib/api/apiClient';
+import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
+import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 import { AppButton, AppInput, AppModal, AppSectionBar, AppText } from '@/modules/shared/components';
 
 type PendingInvitationAction = 'accepted' | 'declined';
 
 const accountInvitesRepository = createAccountInvitesRepository();
+const route = useRoute();
+const defaultInvitationsPerPage = 20;
 
 const searchTerm = ref('');
-const invitations = ref<AccountInvite[]>([]);
-const isLoading = ref(false);
 const isSaving = ref(false);
-const loadError = ref<string | null>(null);
 const saveError = ref<string | null>(null);
 const selectedInvitationId = ref<string | null>(null);
 const pendingAction = ref<PendingInvitationAction | null>(null);
+
+const invitationsPerPage = computed(() => {
+  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+
+  if (!Number.isInteger(rawValue) || rawValue <= 0) {
+    return defaultInvitationsPerPage;
+  }
+
+  return rawValue;
+});
+
+const invitationsState = usePaginatedCollection<AccountInvite, []>({
+  defaultPerPage: defaultInvitationsPerPage,
+  loadPage: (options) => accountInvitesRepository.listAll(options),
+  resolveErrorMessage,
+  loadErrorMessage: 'No fue posible cargar las invitaciones.',
+  loadMoreErrorMessage: 'No fue posible cargar más invitaciones.',
+});
+
+const { target: loadMoreSentinel } = useInfiniteScroll({
+  enabled: computed(() => !invitationsState.isLoading.value && !invitationsState.isLoadingMore.value && invitationsState.hasMoreItems.value),
+  onIntersect: () => {
+    void invitationsState.loadMore();
+  },
+});
 
 const selectedInvitation = computed(() => {
   if (!selectedInvitationId.value) {
@@ -80,10 +107,6 @@ const actionModalActions = computed(() => [
   },
 ]);
 
-onMounted(() => {
-  void loadInvitations();
-});
-
 function resolveErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError) {
     return error.message;
@@ -131,17 +154,19 @@ function resolveMetaLabel(invitation: AccountInvite): string {
 }
 
 async function loadInvitations(): Promise<void> {
-  isLoading.value = true;
-  loadError.value = null;
-
-  try {
-    invitations.value = await accountInvitesRepository.listAll();
-  } catch (error) {
-    loadError.value = resolveErrorMessage(error, 'No fue posible cargar las invitaciones.');
-  } finally {
-    isLoading.value = false;
-  }
+  await invitationsState.load([], {
+    reset: true,
+    perPage: invitationsPerPage.value,
+  });
 }
+
+watch(
+  invitationsPerPage,
+  () => {
+    void loadInvitations();
+  },
+  { immediate: true },
+);
 
 function openInvitationAction(inviteId: string, action: PendingInvitationAction): void {
   saveError.value = null;
@@ -182,6 +207,26 @@ async function confirmInvitationAction(): Promise<void> {
     isSaving.value = false;
   }
 }
+
+function reloadInvitations(): void {
+  void loadInvitations();
+}
+
+function handleLoadMoreRetry(): void {
+  void invitationsState.loadMore();
+}
+
+function infiniteStatusLabel(): string {
+  if (invitationsState.isLoadingMore.value) {
+    return 'Cargando más invitaciones...';
+  }
+
+  if (invitationsState.hasReachedEnd.value) {
+    return 'Has llegado al final.';
+  }
+
+  return 'Sigue desplazándote para revisar más invitaciones conforme se compartan nuevas cuentas.';
+}
 </script>
 
 <template>
@@ -207,26 +252,26 @@ async function confirmInvitationAction(): Promise<void> {
     </div>
 
     <section
-      v-if="loadError && invitations.length > 0"
+      v-if="invitationsState.loadError.value && invitations.length > 0"
       class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
     >
-      <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
+      <AppText class="text-(--app-color-danger)!">{{ invitationsState.loadError.value }}</AppText>
     </section>
 
     <section
-      v-if="isLoading && invitations.length === 0"
+      v-if="invitationsState.isLoading.value && invitations.length === 0"
       class="rounded-2xl border px-4 py-10 text-center"
     >
       <AppText>Cargando invitaciones...</AppText>
     </section>
 
     <section
-      v-else-if="loadError && invitations.length === 0"
+      v-else-if="invitationsState.loadError.value && invitations.length === 0"
       class="space-y-3 rounded-2xl border px-4 py-6 text-center"
     >
-      <AppText>{{ loadError }}</AppText>
+      <AppText>{{ invitationsState.loadError.value }}</AppText>
       <div class="flex justify-center">
-        <AppButton variant="secondary" @click="loadInvitations">Reintentar</AppButton>
+        <AppButton variant="secondary" @click="reloadInvitations">Reintentar</AppButton>
       </div>
     </section>
 
@@ -260,12 +305,14 @@ async function confirmInvitationAction(): Promise<void> {
         </div>
 
         <div
+          ref="loadMoreSentinel"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <AppText size="sm">
-            Sigue desplazándote para revisar más invitaciones conforme se compartan nuevas cuentas.
-          </AppText>
+          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
+          <div v-if="invitationsState.loadError.value && invitations.length > 0" class="mt-3 flex justify-center">
+            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+          </div>
         </div>
       </div>
     </section>

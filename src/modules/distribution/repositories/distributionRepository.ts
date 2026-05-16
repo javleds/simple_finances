@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 import { createApiClient } from '@/lib/api/apiClient';
+import {
+  createPaginatedCollectionSchema,
+  type PaginatedCollection,
+} from '@/modules/shared/lib/pagination';
 
 import {
   fixedIncomeApiSchema,
@@ -17,14 +21,7 @@ import type {
 
 const apiClient = createApiClient();
 
-const fixedIncomeCollectionSchema = z
-  .union([
-    z.array(fixedIncomeApiSchema),
-    z.object({
-      data: z.array(fixedIncomeApiSchema),
-    }),
-  ])
-  .transform((payload) => ('data' in payload ? payload.data : payload));
+const fixedIncomeCollectionSchema = createPaginatedCollectionSchema(fixedIncomeApiSchema);
 
 const fixedIncomeItemSchema = z
   .union([
@@ -35,14 +32,7 @@ const fixedIncomeItemSchema = z
   ])
   .transform((payload) => ('data' in payload ? payload.data : payload));
 
-const fixedOutcomeCollectionSchema = z
-  .union([
-    z.array(fixedOutcomeApiSchema),
-    z.object({
-      data: z.array(fixedOutcomeApiSchema),
-    }),
-  ])
-  .transform((payload) => ('data' in payload ? payload.data : payload));
+const fixedOutcomeCollectionSchema = createPaginatedCollectionSchema(fixedOutcomeApiSchema);
 
 const fixedOutcomeItemSchema = z
   .union([
@@ -55,23 +45,39 @@ const fixedOutcomeItemSchema = z
 
 export function createDistributionRepository() {
   return {
-    async listRules(): Promise<DistributionRule[]> {
+    async listRules(options?: { page?: number; perPage?: number }): Promise<PaginatedCollection<DistributionRule>> {
+      const searchParams = new URLSearchParams();
+
+      if (options?.page) {
+        searchParams.set('page', String(options.page));
+      }
+
+      if (options?.perPage) {
+        searchParams.set('per_page', String(options.perPage));
+      }
+
+      const query = searchParams.toString();
       const [fixedIncomesResponse, fixedOutcomesResponse] = await Promise.all([
-        apiClient.get<unknown>('/fixed-incomes'),
+        apiClient.get<unknown>(query ? `/fixed-incomes?${query}` : '/fixed-incomes'),
         apiClient.get<unknown>('/fixed-outcomes'),
       ]);
 
-      const rules = fixedIncomeCollectionSchema.parse(fixedIncomesResponse).map(mapFixedIncomeApiToDomain);
-      const relations = fixedOutcomeCollectionSchema.parse(fixedOutcomesResponse).map(mapFixedOutcomeApiToDomain);
+      const parsedRules = fixedIncomeCollectionSchema.parse(fixedIncomesResponse);
+      const parsedRelations = fixedOutcomeCollectionSchema.parse(fixedOutcomesResponse);
+      const rules = parsedRules.items.map(mapFixedIncomeApiToDomain);
+      const relations = parsedRelations.items.map(mapFixedOutcomeApiToDomain);
 
-      return rules.map((rule) => {
-        const ruleRelations = relations.filter((relation) => relation.fixedIncomeId === rule.id);
-        return {
-          ...rule,
-          outcomesCount: ruleRelations.length,
-          totalAmount: ruleRelations.reduce((sum, relation) => sum + relation.amount, 0),
-        };
-      });
+      return {
+        ...parsedRules,
+        items: rules.map((rule) => {
+          const ruleRelations = relations.filter((relation) => relation.fixedIncomeId === rule.id);
+          return {
+            ...rule,
+            outcomesCount: ruleRelations.length,
+            totalAmount: ruleRelations.reduce((sum, relation) => sum + relation.amount, 0),
+          };
+        }),
+      };
     },
     async getRule(ruleId: string): Promise<DistributionRule> {
       const [fixedIncomeResponse, fixedOutcomesResponse] = await Promise.all([
@@ -80,7 +86,7 @@ export function createDistributionRepository() {
       ]);
 
       const rule = mapFixedIncomeApiToDomain(fixedIncomeItemSchema.parse(fixedIncomeResponse));
-      const relations = fixedOutcomeCollectionSchema.parse(fixedOutcomesResponse).map(mapFixedOutcomeApiToDomain);
+      const relations = fixedOutcomeCollectionSchema.parse(fixedOutcomesResponse).items.map(mapFixedOutcomeApiToDomain);
 
       return {
         ...rule,
@@ -99,9 +105,29 @@ export function createDistributionRepository() {
     async removeRule(ruleId: string): Promise<void> {
       await apiClient.delete(`/fixed-incomes/${ruleId}`);
     },
-    async listRelations(fixedIncomeId: string): Promise<DistributionRelation[]> {
-      const response = await apiClient.get<unknown>(`/fixed-outcomes?fixed_income_id=${fixedIncomeId}`);
-      return fixedOutcomeCollectionSchema.parse(response).map(mapFixedOutcomeApiToDomain);
+    async listRelations(
+      fixedIncomeId: string,
+      options?: { page?: number; perPage?: number },
+    ): Promise<PaginatedCollection<DistributionRelation>> {
+      const searchParams = new URLSearchParams({
+        fixed_income_id: fixedIncomeId,
+      });
+
+      if (options?.page) {
+        searchParams.set('page', String(options.page));
+      }
+
+      if (options?.perPage) {
+        searchParams.set('per_page', String(options.perPage));
+      }
+
+      const response = await apiClient.get<unknown>(`/fixed-outcomes?${searchParams.toString()}`);
+      const parsedResponse = fixedOutcomeCollectionSchema.parse(response);
+
+      return {
+        ...parsedResponse,
+        items: parsedResponse.items.map(mapFixedOutcomeApiToDomain),
+      };
     },
     async createRelation(payload: DistributionRelationWritePayload): Promise<DistributionRelation> {
       const response = await apiClient.post<unknown>('/fixed-outcomes', {

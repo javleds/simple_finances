@@ -6,13 +6,14 @@ import {
   PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import AccountGoalForm from '@/modules/accounts/components/AccountGoalForm.vue';
 import AccountGoalListItem from '@/modules/accounts/components/AccountGoalListItem.vue';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import type { AccountGoalWritePayload } from '@/modules/accounts/schemas/accountGoalSchemas';
+import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
   AppButton,
   AppIconButton,
@@ -45,6 +46,7 @@ const goalStatusOptions = [
   { value: 'at-risk', label: 'En riesgo' },
   { value: 'completed', label: 'Completada' },
 ] as const;
+const defaultGoalsPerPage = 20;
 
 const accountId = computed(() =>
   typeof route.params.accountId === 'string' ? route.params.accountId : '',
@@ -53,7 +55,10 @@ const accountId = computed(() =>
 const {
   goals,
   hasGoals,
+  hasMoreGoals,
+  hasReachedEnd,
   isLoading,
+  isLoadingMore,
   isSaving,
   isDeleting,
   loadError,
@@ -62,10 +67,28 @@ const {
   clearSaveError,
   clearDeleteError,
   loadGoals,
+  loadMoreGoals,
   createGoal,
   updateGoal,
   deleteGoal,
 } = useAccountGoalsCrud();
+
+const goalsPerPage = computed(() => {
+  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+
+  if (!Number.isInteger(rawValue) || rawValue <= 0) {
+    return defaultGoalsPerPage;
+  }
+
+  return rawValue;
+});
+
+const { target: loadMoreSentinel } = useInfiniteScroll({
+  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreGoals.value),
+  onIntersect: () => {
+    void loadMoreGoals();
+  },
+});
 
 const filteredGoalItems = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
@@ -130,11 +153,20 @@ const deleteGoalActions = computed(() => [
   },
 ]);
 
-onMounted(() => {
-  if (accountId.value) {
-    void loadGoals(accountId.value);
-  }
-});
+watch(
+  [accountId, goalsPerPage],
+  ([nextAccountId, nextPerPage]) => {
+    if (!nextAccountId) {
+      return;
+    }
+
+    void loadGoals(nextAccountId, {
+      reset: true,
+      perPage: nextPerPage,
+    });
+  },
+  { immediate: true },
+);
 
 function resolveGoalStatus(progress: number): GoalStatus {
   if (progress >= 100) {
@@ -274,6 +306,33 @@ function handleCreateFormStateChange(state: FormState): void {
 function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
 }
+
+function reloadGoals(): void {
+  if (!accountId.value) {
+    return;
+  }
+
+  void loadGoals(accountId.value, {
+    reset: true,
+    perPage: goalsPerPage.value,
+  });
+}
+
+function handleLoadMoreRetry(): void {
+  void loadMoreGoals();
+}
+
+function infiniteStatusLabel(): string {
+  if (isLoadingMore.value) {
+    return 'Cargando más metas...';
+  }
+
+  if (hasReachedEnd.value) {
+    return 'Has llegado al final.';
+  }
+
+  return 'Sigue desplazándote para revisar más metas conforme la cuenta acumule objetivos.';
+}
 </script>
 
 <template>
@@ -318,6 +377,16 @@ function handleEditFormStateChange(state: FormState): void {
       <AppText>Cargando metas...</AppText>
     </section>
 
+    <section
+      v-else-if="loadError && !hasGoals"
+      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    >
+      <AppText>{{ loadError }}</AppText>
+      <div class="flex justify-center">
+        <AppButton variant="secondary" @click="reloadGoals">Reintentar</AppButton>
+      </div>
+    </section>
+
     <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle">{{ filteredGoalItems.length }} metas visibles</AppText>
@@ -352,13 +421,14 @@ function handleEditFormStateChange(state: FormState): void {
         </div>
 
         <div
+          ref="loadMoreSentinel"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <AppText size="sm"
-            >Sigue desplazándote para revisar más metas conforme la cuenta acumule
-            objetivos.</AppText
-          >
+          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
+          <div v-if="loadError && hasGoals" class="mt-3 flex justify-center">
+            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+          </div>
         </div>
       </div>
     </section>

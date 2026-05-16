@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import DistributionRelationForm from '@/modules/distribution/components/DistributionRelationForm.vue';
@@ -8,6 +8,7 @@ import DistributionRelationListItem from '@/modules/distribution/components/Dist
 import { useDistributionRelationsCrud } from '@/modules/distribution/composables/useDistributionRelationsCrud';
 import { formatDistributionFrequency } from '@/modules/distribution/schemas/distributionSchemas';
 import type { DistributionRelationWritePayload } from '@/modules/distribution/types';
+import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { AppButton, AppModal, AppSectionBar, AppText, AppTitle } from '@/modules/shared/components';
 
 type FormState = {
@@ -16,6 +17,7 @@ type FormState = {
 };
 
 const route = useRoute();
+const defaultRelationsPerPage = 20;
 
 const ruleId = computed(() => (typeof route.params.ruleId === 'string' ? route.params.ruleId : ''));
 
@@ -30,7 +32,10 @@ const {
   rule,
   relations,
   hasRelations,
+  hasMoreRelations,
+  hasReachedEnd,
   isLoading,
+  isLoadingMore,
   isSaving,
   isDeleting,
   loadError,
@@ -39,10 +44,28 @@ const {
   clearSaveError,
   clearDeleteError,
   loadRule,
+  loadMoreRelations,
   createRelation,
   updateRelation,
   deleteRelation,
 } = useDistributionRelationsCrud();
+
+const relationsPerPage = computed(() => {
+  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+
+  if (!Number.isInteger(rawValue) || rawValue <= 0) {
+    return defaultRelationsPerPage;
+  }
+
+  return rawValue;
+});
+
+const { target: loadMoreSentinel } = useInfiniteScroll({
+  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreRelations.value),
+  onIntersect: () => {
+    void loadMoreRelations();
+  },
+});
 
 const selectedRelation = computed(() => {
   if (!selectedRelationId.value) {
@@ -86,11 +109,20 @@ const deleteRelationActions = computed(() => [
   },
 ]);
 
-onMounted(() => {
-  if (ruleId.value) {
-    void loadRule(ruleId.value);
-  }
-});
+watch(
+  [ruleId, relationsPerPage],
+  ([nextRuleId, nextPerPage]) => {
+    if (!nextRuleId) {
+      return;
+    }
+
+    void loadRule(nextRuleId, {
+      reset: true,
+      perPage: nextPerPage,
+    });
+  },
+  { immediate: true },
+);
 
 function openCreateRelation(): void {
   clearSaveError();
@@ -169,6 +201,33 @@ function handleCreateFormStateChange(state: FormState): void {
 function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
 }
+
+function reloadRelations(): void {
+  if (!ruleId.value) {
+    return;
+  }
+
+  void loadRule(ruleId.value, {
+    reset: true,
+    perPage: relationsPerPage.value,
+  });
+}
+
+function handleLoadMoreRetry(): void {
+  void loadMoreRelations();
+}
+
+function infiniteStatusLabel(): string {
+  if (isLoadingMore.value) {
+    return 'Cargando más relaciones...';
+  }
+
+  if (hasReachedEnd.value) {
+    return 'Has llegado al final.';
+  }
+
+  return 'Sigue desplazándote para revisar más relaciones conforme crezca la regla.';
+}
 </script>
 
 <template>
@@ -195,6 +254,16 @@ function handleEditFormStateChange(state: FormState): void {
       <AppText>Cargando relaciones...</AppText>
     </section>
 
+    <section
+      v-else-if="loadError && !hasRelations"
+      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    >
+      <AppText>{{ loadError }}</AppText>
+      <div class="flex justify-center">
+        <AppButton variant="secondary" @click="reloadRelations">Reintentar</AppButton>
+      </div>
+    </section>
+
     <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle">{{ relations.length }} relaciones visibles</AppText>
@@ -218,6 +287,17 @@ function handleEditFormStateChange(state: FormState): void {
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
           <AppText size="sm">Esta regla todavía no tiene relaciones registradas.</AppText>
+        </div>
+
+        <div
+          ref="loadMoreSentinel"
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
+          <div v-if="loadError && hasRelations" class="mt-3 flex justify-center">
+            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+          </div>
         </div>
       </div>
     </section>

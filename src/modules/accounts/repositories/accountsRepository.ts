@@ -18,21 +18,13 @@ const apiClient = createApiClient();
 const accountsPath = '/accounts';
 
 const accountCollectionSchema = createPaginatedCollectionSchema(accountApiSchema);
+const accountUserCollectionSchema = createPaginatedCollectionSchema(accountUserApiSchema);
 
 const singleAccountSchema = z
   .union([
     accountApiSchema,
     z.object({
       data: accountApiSchema,
-    }),
-  ])
-  .transform((payload) => ('data' in payload ? payload.data : payload));
-
-const accountUserCollectionSchema = z
-  .union([
-    z.array(accountUserApiSchema),
-    z.object({
-      data: z.array(accountUserApiSchema),
     }),
   ])
   .transform((payload) => ('data' in payload ? payload.data : payload));
@@ -86,9 +78,30 @@ export function createAccountsRepository() {
       const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}`);
       return mapAccountApiToDomain(singleAccountSchema.parse(response));
     },
-    async listUsers(accountId: string): Promise<AccountMember[]> {
-      const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}/users`);
-      return accountUserCollectionSchema.parse(response).map(mapAccountUserApiToDomain);
+    async listUsers(
+      accountId: string,
+      options?: { page?: number; perPage?: number },
+    ): Promise<PaginatedCollection<AccountMember>> {
+      const searchParams = new URLSearchParams();
+
+      if (options?.page) {
+        searchParams.set('page', String(options.page));
+      }
+
+      if (options?.perPage) {
+        searchParams.set('per_page', String(options.perPage));
+      }
+
+      const query = searchParams.toString();
+      const response = await apiClient.get<unknown>(
+        query ? `${accountsPath}/${accountId}/users?${query}` : `${accountsPath}/${accountId}/users`,
+      );
+      const parsedResponse = accountUserCollectionSchema.parse(response);
+
+      return {
+        ...parsedResponse,
+        items: parsedResponse.items.map(mapAccountUserApiToDomain),
+      };
     },
     async updateUserPercentage(accountId: string, userId: string, percentage: number): Promise<AccountMember> {
       const response = await apiClient.put<unknown>(`${accountsPath}/${accountId}/users/${userId}`, {

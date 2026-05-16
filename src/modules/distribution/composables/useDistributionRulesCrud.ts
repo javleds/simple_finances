@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 
 import { ApiError } from '@/lib/api/apiClient';
+import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createDistributionRepository } from '../repositories/distributionRepository';
 import type { DistributionRule, DistributionRuleWritePayload } from '../types';
@@ -20,27 +21,28 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useDistributionRulesCrud() {
-  const rules = ref<DistributionRule[]>([]);
-  const isLoading = ref(false);
+  const rulesState = usePaginatedCollection<DistributionRule, []>({
+    defaultPerPage: 20,
+    loadPage: (options) => distributionRepository.listRules(options),
+    resolveErrorMessage,
+    loadErrorMessage: 'No fue posible cargar las reglas.',
+    loadMoreErrorMessage: 'No fue posible cargar más reglas.',
+  });
   const isSaving = ref(false);
   const isDeleting = ref(false);
-  const loadError = ref<string | null>(null);
   const saveError = ref<string | null>(null);
   const deleteError = ref<string | null>(null);
 
-  const hasRules = computed(() => rules.value.length > 0);
+  const hasRules = computed(() => rulesState.hasItems.value);
+  const hasMoreRules = computed(() => rulesState.hasMoreItems.value);
+  const hasReachedEnd = computed(() => rulesState.hasReachedEnd.value);
 
-  async function loadRules(): Promise<void> {
-    isLoading.value = true;
-    loadError.value = null;
+  async function loadRules(options?: { reset?: boolean; perPage?: number }): Promise<void> {
+    await rulesState.load([], options);
+  }
 
-    try {
-      rules.value = await distributionRepository.listRules();
-    } catch (error) {
-      loadError.value = resolveErrorMessage(error, 'No fue posible cargar las reglas.');
-    } finally {
-      isLoading.value = false;
-    }
+  async function loadMoreRules(): Promise<void> {
+    await rulesState.loadMore();
   }
 
   async function createRule(payload: DistributionRuleWritePayload): Promise<boolean> {
@@ -49,7 +51,7 @@ export function useDistributionRulesCrud() {
 
     try {
       const rule = await distributionRepository.createRule(payload);
-      rules.value = [rule, ...rules.value];
+      rulesState.prependItem(rule);
       await loadRules();
       return true;
     } catch (error) {
@@ -66,7 +68,7 @@ export function useDistributionRulesCrud() {
 
     try {
       const updatedRule = await distributionRepository.updateRule(ruleId, payload);
-      rules.value = rules.value.map((rule) => (rule.id === ruleId ? { ...rule, ...updatedRule } : rule));
+      rulesState.replaceItem((rule) => rule.id === ruleId, { ...updatedRule });
       await loadRules();
       return true;
     } catch (error) {
@@ -83,7 +85,7 @@ export function useDistributionRulesCrud() {
 
     try {
       await distributionRepository.removeRule(ruleId);
-      rules.value = rules.value.filter((rule) => rule.id !== ruleId);
+      rulesState.removeItem((rule) => rule.id === ruleId);
       return true;
     } catch (error) {
       deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la regla.');
@@ -102,19 +104,24 @@ export function useDistributionRulesCrud() {
   }
 
   return {
-    rules,
+    rules: rulesState.items,
     hasRules,
-    isLoading,
+    hasMoreRules,
+    hasReachedEnd,
+    isLoading: rulesState.isLoading,
+    isLoadingMore: rulesState.isLoadingMore,
     isSaving,
     isDeleting,
-    loadError,
+    loadError: rulesState.loadError,
     saveError,
     deleteError,
     clearSaveError,
     clearDeleteError,
     loadRules,
+    loadMoreRules,
     createRule,
     updateRule,
     deleteRule,
+    perPage: rulesState.perPage,
   };
 }

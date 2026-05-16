@@ -23,6 +23,7 @@ import {
   AppText,
   AppTitle,
 } from '@/modules/shared/components';
+import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
 import TransactionsForm from '@/modules/transactions/components/TransactionsForm.vue';
 import TransactionListItem from '@/modules/transactions/components/TransactionListItem.vue';
@@ -59,6 +60,7 @@ const transactionTypeOptions = [
   { value: 'income', label: 'Ingreso' },
   { value: 'expense', label: 'Egreso' },
 ] as const;
+const defaultTransactionsPerPage = 20;
 
 const accountId = computed(() =>
   typeof route.params.accountId === 'string' ? route.params.accountId : '',
@@ -78,7 +80,10 @@ const {
 const {
   transactions,
   hasTransactions,
+  hasMoreTransactions,
+  hasReachedEnd,
   isLoading,
+  isLoadingMore,
   isSaving,
   isDeleting,
   loadError,
@@ -87,10 +92,28 @@ const {
   clearSaveError,
   clearDeleteError,
   loadTransactions,
+  loadMoreTransactions,
   createTransaction,
   updateTransaction,
   deleteTransaction,
 } = useTransactionsCrud();
+
+const transactionsPerPage = computed(() => {
+  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+
+  if (!Number.isInteger(rawValue) || rawValue <= 0) {
+    return defaultTransactionsPerPage;
+  }
+
+  return rawValue;
+});
+
+const { target: loadMoreSentinel } = useInfiniteScroll({
+  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreTransactions.value),
+  onIntersect: () => {
+    void loadMoreTransactions();
+  },
+});
 
 const filteredTransactionItems = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
@@ -163,13 +186,16 @@ const deleteTransactionActions = computed(() => [
 ]);
 
 watch(
-  accountId,
-  (nextAccountId) => {
+  [accountId, transactionsPerPage],
+  ([nextAccountId, nextPerPage]) => {
     if (!nextAccountId) {
       return;
     }
 
-    void loadTransactions(nextAccountId);
+    void loadTransactions(nextAccountId, {
+      reset: true,
+      perPage: nextPerPage,
+    });
   },
   { immediate: true },
 );
@@ -353,6 +379,33 @@ function handleCreateFormStateChange(state: FormState): void {
 function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
 }
+
+function reloadTransactions(): void {
+  if (!accountId.value) {
+    return;
+  }
+
+  void loadTransactions(accountId.value, {
+    reset: true,
+    perPage: transactionsPerPage.value,
+  });
+}
+
+function handleLoadMoreRetry(): void {
+  void loadMoreTransactions();
+}
+
+function infiniteStatusLabel(): string {
+  if (isLoadingMore.value) {
+    return 'Cargando más transacciones...';
+  }
+
+  if (hasReachedEnd.value) {
+    return 'Has llegado al final.';
+  }
+
+  return 'Sigue desplazándote para revisar más actividad conforme la cuenta acumule movimientos.';
+}
 </script>
 
 <template>
@@ -432,6 +485,16 @@ function handleEditFormStateChange(state: FormState): void {
       <AppText>Cargando transacciones...</AppText>
     </section>
 
+    <section
+      v-else-if="loadError && !hasTransactions"
+      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    >
+      <AppText>{{ loadError }}</AppText>
+      <div class="flex justify-center">
+        <AppButton variant="secondary" @click="reloadTransactions">Reintentar</AppButton>
+      </div>
+    </section>
+
     <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle">
@@ -465,12 +528,14 @@ function handleEditFormStateChange(state: FormState): void {
         </div>
 
         <div
+          ref="loadMoreSentinel"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
-          <AppText size="sm">
-            Sigue desplazándote para revisar más actividad conforme la cuenta acumule movimientos.
-          </AppText>
+          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
+          <div v-if="loadError && hasTransactions" class="mt-3 flex justify-center">
+            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+          </div>
         </div>
       </div>
     </section>

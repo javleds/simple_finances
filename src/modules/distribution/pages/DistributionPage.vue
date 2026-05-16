@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArrowPathIcon, MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
 import DistributionRuleForm from '@/modules/distribution/components/DistributionRuleForm.vue';
 import DistributionRuleListItem from '@/modules/distribution/components/DistributionRuleListItem.vue';
@@ -10,6 +11,7 @@ import type {
   DistributionFrequency,
   DistributionRuleWritePayload,
 } from '@/modules/distribution/types';
+import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
   AppButton,
   AppInput,
@@ -25,6 +27,7 @@ type FormState = {
 };
 
 const searchTerm = ref('');
+const route = useRoute();
 const selectedFrequencies = ref<DistributionFrequency[]>([]);
 const isCreateRuleOpen = ref(false);
 const isEditRuleOpen = ref(false);
@@ -38,11 +41,15 @@ const frequencyOptions = [
   { value: 'monthly', label: 'Mensual' },
   { value: 'semi_monthly', label: 'Quincenal' },
 ] as const;
+const defaultRulesPerPage = 20;
 
 const {
   rules,
   hasRules,
+  hasMoreRules,
+  hasReachedEnd,
   isLoading,
+  isLoadingMore,
   isSaving,
   isDeleting,
   loadError,
@@ -51,10 +58,28 @@ const {
   clearSaveError,
   clearDeleteError,
   loadRules,
+  loadMoreRules,
   createRule,
   updateRule,
   deleteRule,
 } = useDistributionRulesCrud();
+
+const rulesPerPage = computed(() => {
+  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+
+  if (!Number.isInteger(rawValue) || rawValue <= 0) {
+    return defaultRulesPerPage;
+  }
+
+  return rawValue;
+});
+
+const { target: loadMoreSentinel } = useInfiniteScroll({
+  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreRules.value),
+  onIntersect: () => {
+    void loadMoreRules();
+  },
+});
 
 const filteredRules = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
@@ -120,9 +145,16 @@ const deleteRuleActions = computed(() => [
   },
 ]);
 
-onMounted(() => {
-  void loadRules();
-});
+watch(
+  rulesPerPage,
+  (nextPerPage) => {
+    void loadRules({
+      reset: true,
+      perPage: nextPerPage,
+    });
+  },
+  { immediate: true },
+);
 
 function openFilters(): void {
   isFiltersOpen.value = true;
@@ -231,6 +263,29 @@ function handleCreateFormStateChange(state: FormState): void {
 function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
 }
+
+function reloadRules(): void {
+  void loadRules({
+    reset: true,
+    perPage: rulesPerPage.value,
+  });
+}
+
+function handleLoadMoreRetry(): void {
+  void loadMoreRules();
+}
+
+function infiniteStatusLabel(): string {
+  if (isLoadingMore.value) {
+    return 'Cargando más reglas...';
+  }
+
+  if (hasReachedEnd.value) {
+    return 'Has llegado al final.';
+  }
+
+  return 'Sigue desplazándote para revisar más reglas conforme crezca la facility.';
+}
 </script>
 
 <template>
@@ -282,7 +337,7 @@ function handleEditFormStateChange(state: FormState): void {
     >
       <AppText>{{ loadError }}</AppText>
       <div class="flex justify-center">
-        <AppButton variant="secondary" @click="loadRules">Reintentar</AppButton>
+        <AppButton variant="secondary" @click="reloadRules">Reintentar</AppButton>
       </div>
     </section>
 
@@ -313,6 +368,17 @@ function handleEditFormStateChange(state: FormState): void {
           <AppText size="sm"
             >No hay reglas que coincidan con la búsqueda o filtros actuales.</AppText
           >
+        </div>
+
+        <div
+          ref="loadMoreSentinel"
+          class="rounded-2xl border border-dashed px-4 py-4 text-center"
+          :style="{ borderColor: 'var(--app-color-border)' }"
+        >
+          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
+          <div v-if="loadError && hasRules" class="mt-3 flex justify-center">
+            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+          </div>
         </div>
       </div>
     </section>

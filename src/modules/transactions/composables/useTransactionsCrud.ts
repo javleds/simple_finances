@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 
 import { ApiError } from '@/lib/api/apiClient';
+import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createTransactionsRepository } from '../repositories/transactionsRepository';
 import type {
@@ -25,27 +26,28 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useTransactionsCrud() {
-  const transactions = ref<Transaction[]>([]);
-  const isLoading = ref(false);
+  const transactionsState = usePaginatedCollection<Transaction, [string?]>({
+    defaultPerPage: 20,
+    loadPage: (options, accountId) => transactionsRepository.list(accountId, options),
+    resolveErrorMessage,
+    loadErrorMessage: 'No fue posible cargar las transacciones.',
+    loadMoreErrorMessage: 'No fue posible cargar más transacciones.',
+  });
   const isSaving = ref(false);
   const isDeleting = ref(false);
-  const loadError = ref<string | null>(null);
   const saveError = ref<string | null>(null);
   const deleteError = ref<string | null>(null);
 
-  const hasTransactions = computed(() => transactions.value.length > 0);
+  const hasTransactions = computed(() => transactionsState.hasItems.value);
+  const hasMoreTransactions = computed(() => transactionsState.hasMoreItems.value);
+  const hasReachedEnd = computed(() => transactionsState.hasReachedEnd.value);
 
-  async function loadTransactions(accountId?: string): Promise<void> {
-    isLoading.value = true;
-    loadError.value = null;
+  async function loadTransactions(accountId?: string, options?: { reset?: boolean; perPage?: number }): Promise<void> {
+    await transactionsState.load([accountId], options);
+  }
 
-    try {
-      transactions.value = await transactionsRepository.list(accountId);
-    } catch (error) {
-      loadError.value = resolveErrorMessage(error, 'No fue posible cargar las transacciones.');
-    } finally {
-      isLoading.value = false;
-    }
+  async function loadMoreTransactions(): Promise<void> {
+    await transactionsState.loadMore();
   }
 
   async function createTransaction(payload: TransactionWritePayload): Promise<CreatedTransactionResult | null> {
@@ -54,7 +56,7 @@ export function useTransactionsCrud() {
 
     try {
       const result = await transactionsRepository.create(payload);
-      transactions.value = [result.transaction, ...transactions.value];
+      transactionsState.prependItem(result.transaction);
       return result;
     } catch (error) {
       saveError.value = resolveErrorMessage(error, 'No fue posible crear la transacción.');
@@ -73,8 +75,9 @@ export function useTransactionsCrud() {
 
     try {
       const result = await transactionsRepository.update(transactionId, payload);
-      transactions.value = transactions.value.map((transaction) =>
-        transaction.id === transactionId ? result.transaction : transaction,
+      transactionsState.replaceItem(
+        (transaction) => transaction.id === transactionId,
+        result.transaction,
       );
       return result;
     } catch (error) {
@@ -94,7 +97,7 @@ export function useTransactionsCrud() {
 
     try {
       const result = await transactionsRepository.remove(transactionId, accountId);
-      transactions.value = transactions.value.filter((transaction) => transaction.id !== transactionId);
+      transactionsState.removeItem((transaction) => transaction.id === transactionId);
       return result;
     } catch (error) {
       deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la transacción.');
@@ -113,19 +116,24 @@ export function useTransactionsCrud() {
   }
 
   return {
-    transactions,
+    transactions: transactionsState.items,
     hasTransactions,
-    isLoading,
+    hasMoreTransactions,
+    hasReachedEnd,
+    isLoading: transactionsState.isLoading,
+    isLoadingMore: transactionsState.isLoadingMore,
     isSaving,
     isDeleting,
-    loadError,
+    loadError: transactionsState.loadError,
     saveError,
     deleteError,
     clearSaveError,
     clearDeleteError,
     loadTransactions,
+    loadMoreTransactions,
     createTransaction,
     updateTransaction,
     deleteTransaction,
+    perPage: transactionsState.perPage,
   };
 }

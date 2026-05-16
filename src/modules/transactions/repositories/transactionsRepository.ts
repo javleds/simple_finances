@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 import { createApiClient } from '@/lib/api/apiClient';
+import {
+  createPaginatedCollectionSchema,
+  type PaginatedCollection,
+} from '@/modules/shared/lib/pagination';
 
 import {
   mapTransactionApiToDomain,
@@ -18,14 +22,7 @@ const apiClient = createApiClient();
 const transactionsPath = '/transactions';
 const accountsPath = '/accounts';
 
-const transactionCollectionSchema = z
-  .union([
-    z.array(transactionApiSchema),
-    z.object({
-      data: z.array(transactionApiSchema),
-    }),
-  ])
-  .transform((payload) => ('data' in payload ? payload.data : payload));
+const transactionCollectionSchema = createPaginatedCollectionSchema(transactionApiSchema);
 
 const singleTransactionSchema = z
   .union([
@@ -122,11 +119,29 @@ function buildWritePayload(payload: TransactionWritePayload) {
 
 export function createTransactionsRepository() {
   return {
-    async list(accountId?: string): Promise<Transaction[]> {
-      const response = accountId
-        ? await apiClient.get<unknown>(`${accountsPath}/${accountId}/transactions`)
-        : await apiClient.get<unknown>(transactionsPath);
-      return transactionCollectionSchema.parse(response).map(mapTransactionApiToDomain);
+    async list(
+      accountId?: string,
+      options?: { page?: number; perPage?: number },
+    ): Promise<PaginatedCollection<Transaction>> {
+      const searchParams = new URLSearchParams();
+
+      if (options?.page) {
+        searchParams.set('page', String(options.page));
+      }
+
+      if (options?.perPage) {
+        searchParams.set('per_page', String(options.perPage));
+      }
+
+      const query = searchParams.toString();
+      const path = accountId ? `${accountsPath}/${accountId}/transactions` : transactionsPath;
+      const response = await apiClient.get<unknown>(query ? `${path}?${query}` : path);
+      const parsedResponse = transactionCollectionSchema.parse(response);
+
+      return {
+        ...parsedResponse,
+        items: parsedResponse.items.map(mapTransactionApiToDomain),
+      };
     },
     async create(payload: TransactionWritePayload): Promise<CreatedTransactionResult> {
       const response = await apiClient.post<unknown>(

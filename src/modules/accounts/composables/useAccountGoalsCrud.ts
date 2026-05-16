@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 
 import { ApiError } from '@/lib/api/apiClient';
+import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createAccountGoalsRepository } from '../repositories/accountGoalsRepository';
 import type { AccountGoal, AccountGoalWritePayload } from '../schemas/accountGoalSchemas';
@@ -20,27 +21,28 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useAccountGoalsCrud() {
-  const goals = ref<AccountGoal[]>([]);
-  const isLoading = ref(false);
+  const goalsState = usePaginatedCollection<AccountGoal, [string]>({
+    defaultPerPage: 20,
+    loadPage: (options, accountId) => accountGoalsRepository.list(accountId, options),
+    resolveErrorMessage,
+    loadErrorMessage: 'No fue posible cargar las metas.',
+    loadMoreErrorMessage: 'No fue posible cargar más metas.',
+  });
   const isSaving = ref(false);
   const isDeleting = ref(false);
-  const loadError = ref<string | null>(null);
   const saveError = ref<string | null>(null);
   const deleteError = ref<string | null>(null);
 
-  const hasGoals = computed(() => goals.value.length > 0);
+  const hasGoals = computed(() => goalsState.hasItems.value);
+  const hasMoreGoals = computed(() => goalsState.hasMoreItems.value);
+  const hasReachedEnd = computed(() => goalsState.hasReachedEnd.value);
 
-  async function loadGoals(accountId: string): Promise<void> {
-    isLoading.value = true;
-    loadError.value = null;
+  async function loadGoals(accountId: string, options?: { reset?: boolean; perPage?: number }): Promise<void> {
+    await goalsState.load([accountId], options);
+  }
 
-    try {
-      goals.value = await accountGoalsRepository.list(accountId);
-    } catch (error) {
-      loadError.value = resolveErrorMessage(error, 'No fue posible cargar las metas.');
-    } finally {
-      isLoading.value = false;
-    }
+  async function loadMoreGoals(): Promise<void> {
+    await goalsState.loadMore();
   }
 
   async function createGoal(payload: AccountGoalWritePayload): Promise<boolean> {
@@ -49,7 +51,7 @@ export function useAccountGoalsCrud() {
 
     try {
       const goal = await accountGoalsRepository.create(payload);
-      goals.value = [goal, ...goals.value];
+      goalsState.prependItem(goal);
       return true;
     } catch (error) {
       saveError.value = resolveErrorMessage(error, 'No fue posible crear la meta.');
@@ -65,7 +67,7 @@ export function useAccountGoalsCrud() {
 
     try {
       const updatedGoal = await accountGoalsRepository.update(goalId, payload);
-      goals.value = goals.value.map((goal) => (goal.id === goalId ? updatedGoal : goal));
+      goalsState.replaceItem((goal) => goal.id === goalId, updatedGoal);
       return true;
     } catch (error) {
       saveError.value = resolveErrorMessage(error, 'No fue posible actualizar la meta.');
@@ -81,7 +83,7 @@ export function useAccountGoalsCrud() {
 
     try {
       await accountGoalsRepository.remove(goalId, accountId);
-      goals.value = goals.value.filter((goal) => goal.id !== goalId);
+      goalsState.removeItem((goal) => goal.id === goalId);
       return true;
     } catch (error) {
       deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la meta.');
@@ -100,19 +102,24 @@ export function useAccountGoalsCrud() {
   }
 
   return {
-    goals,
+    goals: goalsState.items,
     hasGoals,
-    isLoading,
+    hasMoreGoals,
+    hasReachedEnd,
+    isLoading: goalsState.isLoading,
+    isLoadingMore: goalsState.isLoadingMore,
     isSaving,
     isDeleting,
-    loadError,
+    loadError: goalsState.loadError,
     saveError,
     deleteError,
     clearSaveError,
     clearDeleteError,
     loadGoals,
+    loadMoreGoals,
     createGoal,
     updateGoal,
     deleteGoal,
+    perPage: goalsState.perPage,
   };
 }
