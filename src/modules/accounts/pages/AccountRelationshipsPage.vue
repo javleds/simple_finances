@@ -148,7 +148,11 @@ function handleAccountUsersChange(nextUsers: AccountMember[]): void {
         :account="account"
         :is-loading-account="isLoadingAccount"
         :account-load-error="loadError"
-        @account-users-change="handleAccountUsersChange"
+        v-bind="
+          activeSection === 'users'
+            ? { onAccountUsersChange: handleAccountUsersChange }
+            : undefined
+        "
       />
     </RouterView>
 

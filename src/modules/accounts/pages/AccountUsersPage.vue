@@ -193,7 +193,7 @@ watch(
       splitDraft.value = mergeAllocationRecords(splitDraft.value, nextRecord);
     }
 
-    emit('account-users-change', nextUsers);
+    emit('accountUsersChange', nextUsers);
   },
   { immediate: true, deep: true },
 );
