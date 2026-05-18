@@ -5,7 +5,6 @@ import { useRoute } from 'vue-router';
 
 import AccountUserListItem from '@/modules/accounts/components/AccountUserListItem.vue';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
-import type { AccountMember } from '@/modules/accounts/types';
 import { ApiError } from '@/lib/api/apiClient';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
@@ -23,8 +22,6 @@ const route = useRoute();
 const defaultUsersPerPage = 20;
 
 const searchTerm = ref('');
-const users = ref<AccountMember[]>([]);
-const isLoading = ref(false);
 const isSaving = ref(false);
 const isDeleting = ref(false);
 const saveError = ref<string | null>(null);
@@ -67,7 +64,7 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
 const filteredUsers = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
-  return users.value.filter((user) => {
+  return usersState.items.value.filter((user) => {
     if (normalizedQuery.length === 0) {
       return true;
     }
@@ -84,7 +81,7 @@ const selectedUser = computed(() => {
     return null;
   }
 
-  return users.value.find((user) => user.id === selectedUserId.value) ?? null;
+  return usersState.items.value.find((user) => user.id === selectedUserId.value) ?? null;
 });
 
 const editUserActions = computed(() => [
@@ -216,7 +213,7 @@ async function saveUserPercentage(): Promise<void> {
       percentage,
     );
 
-    users.value = users.value.map((user) => (user.id === updatedUser.id ? updatedUser : user));
+    usersState.replaceItem((user) => user.id === updatedUser.id, updatedUser);
     closeEditUser();
   } catch (error) {
     saveError.value = resolveErrorMessage(error, 'No fue posible actualizar el porcentaje.');
@@ -235,7 +232,7 @@ async function confirmDeleteUser(): Promise<void> {
 
   try {
     await accountsRepository.removeUser(accountId.value, selectedUser.value.id);
-    users.value = users.value.filter((user) => user.id !== selectedUser.value?.id);
+    usersState.removeItem((user) => user.id === selectedUser.value?.id);
     closeDeleteUser();
   } catch (error) {
     deleteError.value = resolveErrorMessage(error, 'No fue posible quitar al usuario.');
@@ -295,21 +292,21 @@ function infiniteStatusLabel(): string {
     </div>
 
     <section
-      v-if="usersState.loadError.value && users.length > 0"
+      v-if="usersState.loadError.value && usersState.items.value.length > 0"
       class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
     >
       <AppText class="text-(--app-color-danger)!">{{ usersState.loadError.value }}</AppText>
     </section>
 
     <section
-      v-if="usersState.isLoading.value && users.length === 0"
+      v-if="usersState.isLoading.value && usersState.items.value.length === 0"
       class="rounded-2xl border px-4 py-10 text-center"
     >
       <AppText>Cargando usuarios...</AppText>
     </section>
 
     <section
-      v-else-if="usersState.loadError.value && users.length === 0"
+      v-else-if="usersState.loadError.value && usersState.items.value.length === 0"
       class="space-y-3 rounded-2xl border px-4 py-6 text-center"
     >
       <AppText>{{ usersState.loadError.value }}</AppText>
@@ -354,7 +351,10 @@ function infiniteStatusLabel(): string {
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
           <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
-          <div v-if="usersState.loadError.value && users.length > 0" class="mt-3 flex justify-center">
+          <div
+            v-if="usersState.loadError.value && usersState.items.value.length > 0"
+            class="mt-3 flex justify-center"
+          >
             <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
           </div>
         </div>

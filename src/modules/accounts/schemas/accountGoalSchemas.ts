@@ -23,6 +23,18 @@ function parseNullableNumber(value: unknown): number | null {
   return null;
 }
 
+function parseEntityId(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  return null;
+}
+
 export type AccountGoal = {
   id: string;
   accountId: string;
@@ -64,7 +76,19 @@ export const accountGoalFormSchema = z.object({
 
 export const accountGoalApiSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
-  account_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+  account_id: z
+    .union([z.string(), z.number(), z.null(), z.undefined()])
+    .optional()
+    .transform(parseEntityId),
+  account: z
+    .object({
+      id: z
+        .union([z.string(), z.number(), z.null(), z.undefined()])
+        .optional()
+        .transform(parseEntityId),
+    })
+    .optional()
+    .nullable(),
   name: z.string(),
   amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   progress: z
@@ -95,7 +119,7 @@ export function mapAccountGoalApiToDomain(
 ): AccountGoal {
   return {
     id: payload.id,
-    accountId: payload.account_id,
+    accountId: payload.account_id ?? payload.account?.id ?? '',
     name: payload.name,
     amount: payload.amount,
     progress: payload.progress,

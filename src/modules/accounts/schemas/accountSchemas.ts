@@ -259,9 +259,14 @@ export const accountUserApiSchema = z
       .nullable(),
     name: z.string(),
     email: z.string().email().catch(''),
+    percentage: z.unknown().optional().transform((value) => parseNullableNumber(value) ?? 0),
+    pending_expenses: z
+      .unknown()
+      .optional()
+      .transform((value) => parseNullableNumber(value) ?? 0),
     pivot: z
       .object({
-        percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+        percentage: z.unknown().optional().transform((value) => parseNullableNumber(value) ?? 0),
         user_id: z
           .union([z.string(), z.number(), z.null(), z.undefined()])
           .optional()
@@ -274,7 +279,11 @@ export const accountUserApiSchema = z
     id: resolveAccountUserId(value),
     name: value.name,
     email: value.email,
-    pivot: value.pivot,
+    pending_expenses: value.pending_expenses,
+    pivot: {
+      percentage: value.pivot.percentage || value.percentage,
+      user_id: value.pivot.user_id,
+    },
   }));
 
 export function createDefaultAccountFormValues(
@@ -326,7 +335,7 @@ export function mapAccountUserApiToDomain(
     name: payload.name,
     email: payload.email,
     allocationPercentage: payload.pivot.percentage,
-    pendingExpenses: 0,
+    pendingExpenses: payload.pending_expenses,
   };
 }
 

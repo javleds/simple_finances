@@ -54,14 +54,14 @@ const selectedInvitation = computed(() => {
   }
 
   return (
-    invitations.value.find((invitation) => invitation.id === selectedInvitationId.value) ?? null
+    invitationsState.items.value.find((invitation) => invitation.id === selectedInvitationId.value) ?? null
   );
 });
 
 const visibleInvitations = computed(() => {
   const normalizedQuery = searchTerm.value.trim().toLowerCase();
 
-  return invitations.value.filter((invitation) => {
+  return invitationsState.items.value.filter((invitation) => {
     if (invitation.status !== 'pending') {
       return false;
     }
@@ -196,8 +196,10 @@ async function confirmInvitationAction(): Promise<void> {
       status: pendingAction.value,
     });
 
-    invitations.value = invitations.value.map((invitation) =>
-      invitation.id === updatedInvitation.id ? updatedInvitation : invitation,
+    invitationsState.setItems(
+      invitationsState.items.value.map((invitation) =>
+        invitation.id === updatedInvitation.id ? updatedInvitation : invitation,
+      ),
     );
 
     closeInvitationAction();
@@ -252,21 +254,21 @@ function infiniteStatusLabel(): string {
     </div>
 
     <section
-      v-if="invitationsState.loadError.value && invitations.length > 0"
+      v-if="invitationsState.loadError.value && invitationsState.items.value.length > 0"
       class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
     >
       <AppText class="text-(--app-color-danger)!">{{ invitationsState.loadError.value }}</AppText>
     </section>
 
     <section
-      v-if="invitationsState.isLoading.value && invitations.length === 0"
+      v-if="invitationsState.isLoading.value && invitationsState.items.value.length === 0"
       class="rounded-2xl border px-4 py-10 text-center"
     >
       <AppText>Cargando invitaciones...</AppText>
     </section>
 
     <section
-      v-else-if="invitationsState.loadError.value && invitations.length === 0"
+      v-else-if="invitationsState.loadError.value && invitationsState.items.value.length === 0"
       class="space-y-3 rounded-2xl border px-4 py-6 text-center"
     >
       <AppText>{{ invitationsState.loadError.value }}</AppText>
@@ -310,7 +312,10 @@ function infiniteStatusLabel(): string {
           :style="{ borderColor: 'var(--app-color-border)' }"
         >
           <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
-          <div v-if="invitationsState.loadError.value && invitations.length > 0" class="mt-3 flex justify-center">
+          <div
+            v-if="invitationsState.loadError.value && invitationsState.items.value.length > 0"
+            class="mt-3 flex justify-center"
+          >
             <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
           </div>
         </div>
