@@ -94,6 +94,7 @@ const splitUsers = computed(() =>
     name: user.name,
   })),
 );
+const canShowSplitEditor = computed(() => splitUsers.value.length > 1);
 
 const hasLoadedEveryUserForSplit = computed(() => !usersState.hasMoreItems.value);
 
@@ -355,7 +356,7 @@ function resetSplitDraft(): void {
     </AppSectionBar>
 
     <AppCard
-      v-if="splitUsers.length > 0"
+      v-if="canShowSplitEditor"
       class="space-y-4 rounded-2xl p-4!"
     >
       <AppPercentageSplitEditor

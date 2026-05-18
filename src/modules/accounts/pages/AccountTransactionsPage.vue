@@ -67,6 +67,7 @@ const accountId = computed(() =>
 );
 
 const accountUsers = computed(() => props.account?.users ?? []);
+const isSharedAccount = computed(() => accountUsers.value.length > 1);
 const usersWithPendingExpenses = computed(() =>
   accountUsers.value.filter((user) => user.pendingExpenses > 0),
 );
@@ -423,25 +424,27 @@ function infiniteStatusLabel(): string {
           </template>
         </AppHeroMetric>
 
-        <div class="border-t" :style="{ borderColor: 'var(--app-color-border)' }"></div>
+        <template v-if="isSharedAccount">
+          <div class="border-t" :style="{ borderColor: 'var(--app-color-border)' }"></div>
 
-        <div class="space-y-3">
-          <AppText size="sm" tone="subtle">Pendientes por usuario</AppText>
+          <div class="space-y-3">
+            <AppText size="sm" tone="subtle">Pendientes por usuario</AppText>
 
-          <div v-if="usersWithPendingExpenses.length > 0" class="space-y-2">
-            <AppAvatarValueRow
-              v-for="user in usersWithPendingExpenses"
-              :key="user.id"
-              :name="user.name"
-              :seed="user.id"
-              :value="formatCurrency(user.pendingExpenses)"
-            />
+            <div v-if="usersWithPendingExpenses.length > 0" class="space-y-2">
+              <AppAvatarValueRow
+                v-for="user in usersWithPendingExpenses"
+                :key="user.id"
+                :name="user.name"
+                :seed="user.id"
+                :value="formatCurrency(user.pendingExpenses)"
+              />
+            </div>
+
+            <div v-else class="rounded-2xl bg-(--app-color-surface-muted) px-3 py-3">
+              <AppText size="sm" tone="subtle">No hay montos pendientes por usuario.</AppText>
+            </div>
           </div>
-
-          <div v-else class="rounded-2xl bg-(--app-color-surface-muted) px-3 py-3">
-            <AppText size="sm" tone="subtle">No hay montos pendientes por usuario.</AppText>
-          </div>
-        </div>
+        </template>
       </div>
     </AppCard>
 

@@ -15,6 +15,7 @@ const props = defineProps<{
 const usersPendingSummary = computed(() => {
   return props.account.users.filter((user) => user.pendingExpenses > 0).length;
 });
+const isSharedAccount = computed(() => props.account.users.length > 1);
 
 function statusClasses(status: Account['status']): string {
   if (status === 'Activo') {
@@ -192,13 +193,12 @@ function formatCurrency(value: number | null): string {
           </div>
 
           <div
+            v-if="isSharedAccount"
             class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <AppText size="sm" tone="subtle">Reparto base</AppText>
-            <p class="mt-1 text-lg font-semibold text-(--app-color-text)">
-              {{ props.account.users.length > 0 ? 'Activo' : 'Sin usuarios' }}
-            </p>
+            <p class="mt-1 text-lg font-semibold text-(--app-color-text)">Activo</p>
           </div>
         </div>
 
