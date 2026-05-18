@@ -75,6 +75,42 @@ it('creates sub transactions for outcome type with user payments', function () {
         ->and($subTransactions->pluck('parent_transaction_id')->unique()->values()->all())->toBe([$mainTransaction->id]);
 });
 
+it('does not create pending incomes for users with zero percentage', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 100],
+        $partner->id => ['percentage' => 0],
+    ]);
+    $this->actingAs($owner);
+
+    $dto = TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Shared expense with zero allocation',
+        'amount' => 200.0,
+        'account_id' => $account->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 100],
+            ['user_id' => $partner->id, 'percentage' => 0],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]);
+
+    $mainTransaction = app(TransactionCreator::class)->execute($dto);
+    $subTransactions = Transaction::query()
+        ->where('parent_transaction_id', $mainTransaction->id)
+        ->orderBy('id')
+        ->get();
+
+    expect($subTransactions)->toHaveCount(1)
+        ->and($subTransactions->pluck('user_id')->all())->toBe([$owner->id])
+        ->and($subTransactions->pluck('percentage')->all())->toBe([100.0]);
+});
+
 it('Throws an exception when creating an income transaction with non-completed status', function () {
     $user = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $user->id]);

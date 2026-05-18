@@ -132,7 +132,7 @@ class TransactionUpdater
 
     private function createSubTransactions(Transaction $transaction, TransactionFormDto $dto): void
     {
-        foreach ($dto->userPayments as $paymentData) {
+        foreach ($this->positiveUserPayments($dto) as $paymentData) {
             $user = User::withoutGlobalScopes()->find($paymentData->userId);
 
             if (! $user) {
@@ -155,6 +155,14 @@ class TransactionUpdater
 
             $subTransaction->save();
         }
+    }
+
+    private function positiveUserPayments(TransactionFormDto $dto): array
+    {
+        return array_values(array_filter(
+            $dto->userPayments,
+            fn (object $payment): bool => $payment->percentage > 0
+        ));
     }
 
     private function resolveScheduleDate(string|CarbonInterface $scheduledAt): CarbonInterface

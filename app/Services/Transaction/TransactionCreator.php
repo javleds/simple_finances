@@ -74,7 +74,7 @@ class TransactionCreator
         $mainTransaction->user_id = $this->auth->id();
         $mainTransaction->save();
 
-        foreach ($dto->userPayments as $paymentData) {
+        foreach ($this->positiveUserPayments($dto) as $paymentData) {
             $user = User::withoutGlobalScopes()->find($paymentData->userId);
             $amount = round($dto->amount * ($paymentData->percentage / 100), 2);
 
@@ -94,6 +94,14 @@ class TransactionCreator
         }
 
         return $mainTransaction;
+    }
+
+    private function positiveUserPayments(TransactionFormDto $dto): array
+    {
+        return array_values(array_filter(
+            $dto->userPayments,
+            fn (object $payment): bool => $payment->percentage > 0
+        ));
     }
 
     private function resolveScheduleDate(string|CarbonInterface $scheduledAt): CarbonInterface

@@ -65,6 +65,57 @@ it('creates sub transactions when enabling split on an existing outcome transact
         ]);
 });
 
+it('does not create pending incomes with zero percentage when enabling split', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 100],
+        $partner->id => ['percentage' => 0],
+    ]);
+    $this->actingAs($owner);
+
+    $createDto = TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Split with zero allocation',
+        'amount' => 180.0,
+        'account_id' => $account->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]);
+
+    $mainTransaction = app(TransactionCreator::class)->execute($createDto);
+
+    $updateDto = TransactionFormDto::fromFormArray([
+        'id' => $mainTransaction->id,
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Split with zero allocation',
+        'amount' => 180.0,
+        'account_id' => $account->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 100],
+            ['user_id' => $partner->id, 'percentage' => 0],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]);
+
+    $updatedTransaction = app(TransactionUpdater::class)->execute($mainTransaction, $updateDto);
+    $subTransactions = Transaction::query()
+        ->where('parent_transaction_id', $updatedTransaction->id)
+        ->orderBy('id')
+        ->get();
+
+    expect($subTransactions)->toHaveCount(1)
+        ->and($subTransactions->pluck('user_id')->all())->toBe([$owner->id])
+        ->and($subTransactions->pluck('percentage')->all())->toBe([100.0]);
+});
+
 it('rebalances sub transactions when amount changes', function () {
     $owner = User::factory()->create();
     $partner = User::factory()->create();
