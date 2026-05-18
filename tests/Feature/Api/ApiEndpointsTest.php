@@ -535,6 +535,64 @@ it('returns every created transaction when storing a split account transaction',
         ->and((float) $response->json('meta.account.balance'))->toBe(-300.0);
 });
 
+it('lists split transactions with pending incomes before the origin outcome', function () {
+    $owner = User::factory()->create();
+    $memberOne = User::factory()->create();
+    $memberTwo = User::factory()->create();
+    $memberThree = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+
+    $account->users()->attach($owner->id, ['percentage' => 100]);
+    $account->users()->attach($memberOne->id, ['percentage' => 33.33]);
+    $account->users()->attach($memberTwo->id, ['percentage' => 33.33]);
+    $account->users()->attach($memberThree->id, ['percentage' => 33.34]);
+
+    $this->withHeaders(apiHeaders($owner))
+        ->postJson("/api/accounts/{$account->id}/transactions", [
+            'type' => 'outcome',
+            'status' => 'completed',
+            'concept' => 'Split order',
+            'amount' => 100,
+            'split_between_users' => true,
+            'user_payments' => [
+                [
+                    'user_id' => $memberOne->id,
+                    'percentage' => 33.33,
+                ],
+                [
+                    'user_id' => $memberTwo->id,
+                    'percentage' => 33.33,
+                ],
+                [
+                    'user_id' => $memberThree->id,
+                    'percentage' => 33.34,
+                ],
+            ],
+            'scheduled_at' => now()->toDateString(),
+        ])
+        ->assertCreated();
+
+    $response = $this->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/transactions")
+        ->assertOk();
+
+    $transactions = collect($response->json('data'));
+
+    expect($transactions)->toHaveCount(4)
+        ->and($transactions->pluck('type')->take(4)->all())->toBe([
+            'income',
+            'income',
+            'income',
+            'outcome',
+        ])
+        ->and($transactions->pluck('status')->take(4)->all())->toBe([
+            'pending',
+            'pending',
+            'pending',
+            'completed',
+        ]);
+});
+
 it('creates subscription payments and registers a transaction when paid', function () {
     seedNotificationTypes();
     $user = User::factory()->create();

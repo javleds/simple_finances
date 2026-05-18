@@ -23,6 +23,7 @@ class AccountTransactionController extends ApiController
             ->with(['account', 'user', 'financialGoal', 'subTransactions'])
             ->orderByDesc('scheduled_at')
             ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->getQuery();
 
         return $this->respondPaginated(
