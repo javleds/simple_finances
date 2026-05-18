@@ -68,6 +68,7 @@ Route::middleware('api.auth')->group(function (): void {
     Route::delete('accounts/{account}/invites/{invite}', [AccountRelationInviteController::class, 'delete']);
     Route::get('accounts/{account}/users', [AccountUserController::class, 'index']);
     Route::post('accounts/{account}/users', [AccountUserController::class, 'store']);
+    Route::put('accounts/{account}/users', [AccountUserController::class, 'bulkUpdate']);
     Route::get('accounts/{account}/users/{user}', [AccountUserController::class, 'show']);
     Route::put('accounts/{account}/users/{user}', [AccountUserController::class, 'update']);
     Route::delete('accounts/{account}/users/{user}', [AccountUserController::class, 'delete']);

@@ -479,6 +479,102 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ->assertOk();
 });
 
+it('bulk updates account user percentages with an exact normalized total', function () {
+    $owner = User::factory()->create();
+    $memberOne = User::factory()->create();
+    $memberTwo = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+
+    $account->users()->sync([
+        $owner->id => ['percentage' => 100],
+        $memberOne->id => ['percentage' => 0],
+        $memberTwo->id => ['percentage' => 0],
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($owner))
+        ->putJson("/api/accounts/{$account->id}/users", [
+            'users' => [
+                ['user_id' => $owner->id, 'percentage' => 33.334],
+                ['user_id' => $memberOne->id, 'percentage' => 33.331],
+                ['user_id' => $memberTwo->id, 'percentage' => 33.335],
+            ],
+        ])
+        ->assertOk()
+        ->assertJsonPath('meta.account_id', $account->id)
+        ->assertJsonCount(3, 'data');
+
+    expect($response->json('data'))->toBe([
+        [
+            'id' => $owner->id,
+            'user_id' => $owner->id,
+            'name' => $owner->name,
+            'email' => $owner->email,
+            'percentage' => '33.33',
+        ],
+        [
+            'id' => $memberOne->id,
+            'user_id' => $memberOne->id,
+            'name' => $memberOne->name,
+            'email' => $memberOne->email,
+            'percentage' => '33.33',
+        ],
+        [
+            'id' => $memberTwo->id,
+            'user_id' => $memberTwo->id,
+            'name' => $memberTwo->name,
+            'email' => $memberTwo->email,
+            'percentage' => '33.34',
+        ],
+    ])
+        ->and((float) $response->json('meta.total_percentage'))->toBe(100.0)
+        ->and((float) $account->fresh()->users()->findOrFail($owner->id)->pivot->percentage)->toBe(33.33)
+        ->and((float) $account->fresh()->users()->findOrFail($memberOne->id)->pivot->percentage)->toBe(33.33)
+        ->and((float) $account->fresh()->users()->findOrFail($memberTwo->id)->pivot->percentage)->toBe(33.34);
+});
+
+it('rejects bulk account user percentage updates when the total is not exactly one hundred', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $member->id => ['percentage' => 50],
+    ]);
+
+    $this->withHeaders(apiHeaders($owner))
+        ->putJson("/api/accounts/{$account->id}/users", [
+            'users' => [
+                ['user_id' => $owner->id, 'percentage' => 60],
+                ['user_id' => $member->id, 'percentage' => 39.99],
+            ],
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['users']);
+});
+
+it('rejects bulk account user percentage updates when the request users do not match the account users', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $outsider = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $member->id => ['percentage' => 50],
+    ]);
+
+    $this->withHeaders(apiHeaders($owner))
+        ->putJson("/api/accounts/{$account->id}/users", [
+            'users' => [
+                ['user_id' => $owner->id, 'percentage' => 50],
+                ['user_id' => $outsider->id, 'percentage' => 50],
+            ],
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['users']);
+});
+
 it('returns every created transaction when storing a split account transaction', function () {
     $owner = User::factory()->create();
     $memberOne = User::factory()->create();

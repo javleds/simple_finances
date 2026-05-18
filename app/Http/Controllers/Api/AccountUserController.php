@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Api\BulkUpdateAccountUsersRequest;
 use App\Http\Requests\Api\AccountUserRequest;
 use App\Models\Account;
 use App\Models\User;
+use App\Services\Accounts\UpdateAccountUsersPercentages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -63,6 +65,30 @@ class AccountUserController extends ApiController
         return $this->respondModel(
             $account->users()->withPivot('percentage')->findOrFail($user->id)
         );
+    }
+
+    public function bulkUpdate(
+        Account $account,
+        BulkUpdateAccountUsersRequest $request,
+        UpdateAccountUsersPercentages $updateAccountUsersPercentages,
+    ): JsonResponse {
+        $this->ensureOwner($account);
+
+        $users = $updateAccountUsersPercentages->execute(
+            $account,
+            $request->normalizedUsers(),
+        );
+
+        return $this->respond([
+            'data' => $users,
+            'meta' => [
+                'account_id' => $account->id,
+                'total_percentage' => round(
+                    collect($request->normalizedUsers())->sum('percentage'),
+                    2,
+                ),
+            ],
+        ]);
     }
 
     public function delete(Account $account, User $user): JsonResponse
