@@ -10,7 +10,21 @@ import adminRoutes from '@/modules/admin/routes';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [...authRoutes, ...adminRoutes],
+  routes: [
+    {
+      path: '/',
+      redirect: {
+        name: 'auth.login',
+      },
+    },
+    ...authRoutes,
+    ...adminRoutes,
+    {
+      name: 'not-found',
+      path: '/:pathMatch(.*)*',
+      component: () => import('@/pages/NotFoundPage.vue'),
+    },
+  ],
 });
 
 router.beforeEach((to) => {
