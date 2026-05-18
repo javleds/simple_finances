@@ -689,6 +689,72 @@ it('lists split transactions with pending incomes before the origin outcome', fu
         ]);
 });
 
+it('updates split child transactions when editing a parent transaction through the api', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $member->id => ['percentage' => 50],
+    ]);
+
+    $createResponse = $this->withHeaders(apiHeaders($owner))
+        ->postJson("/api/accounts/{$account->id}/transactions", [
+            'type' => 'outcome',
+            'status' => 'completed',
+            'concept' => 'Original dinner',
+            'amount' => 200,
+            'split_between_users' => true,
+            'user_payments' => [
+                [
+                    'user_id' => $owner->id,
+                    'percentage' => 50,
+                ],
+                [
+                    'user_id' => $member->id,
+                    'percentage' => 50,
+                ],
+            ],
+            'scheduled_at' => '2026-01-10',
+        ])
+        ->assertCreated();
+
+    $transactionId = $createResponse->json('data.0.id');
+
+    $updateResponse = $this->withHeaders(apiHeaders($owner))
+        ->putJson("/api/accounts/{$account->id}/transactions/{$transactionId}", [
+            'type' => 'outcome',
+            'status' => 'completed',
+            'concept' => 'Updated dinner',
+            'amount' => 200,
+            'split_between_users' => true,
+            'user_payments' => [
+                [
+                    'user_id' => $owner->id,
+                    'percentage' => 25,
+                ],
+                [
+                    'user_id' => $member->id,
+                    'percentage' => 75,
+                ],
+            ],
+            'scheduled_at' => '2026-01-20',
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.concept', 'Updated dinner')
+        ->assertJsonPath('data.sub_transactions.0.concept', 'Updated dinner - Parte de '.$owner->name)
+        ->assertJsonPath('data.sub_transactions.1.concept', 'Updated dinner - Parte de '.$member->name);
+
+    expect(collect($updateResponse->json('data.sub_transactions'))->pluck('amount')->all())->toBe([50, 150])
+        ->and(collect($updateResponse->json('data.sub_transactions'))->pluck('percentage')->all())->toBe([25, 75])
+        ->and(
+            collect($updateResponse->json('data.sub_transactions'))
+                ->pluck('scheduled_at')
+                ->every(fn (string $scheduledAt): bool => str_starts_with($scheduledAt, '2026-01-20'))
+        )->toBeTrue();
+});
+
 it('creates subscription payments and registers a transaction when paid', function () {
     seedNotificationTypes();
     $user = User::factory()->create();

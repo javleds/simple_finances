@@ -577,6 +577,37 @@
             }
           }
         }
+      },
+      "put": {
+        "tags": ["Account Users"],
+        "summary": "Bulk update account user percentages",
+        "description": "Actualiza en bloque los porcentajes de los usuarios adjuntos a la cuenta. El request debe incluir exactamente a todos los usuarios de la cuenta. El backend normaliza cada porcentaje a 2 decimales antes de validar y guardar, y la suma normalizada debe ser exactamente 100.00.",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUpdateAccountUsersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account user percentages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUpdateAccountUsersResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error when users do not match the account or the normalized total is not exactly 100.00"
+          }
+        }
       }
     },
     "/api/accounts/{account}/users/{user}": {
@@ -3007,6 +3038,26 @@
         },
         "required": ["percentage"]
       },
+      "BulkUpdateAccountUsersRequest": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkUpdateAccountUsersUser"
+            }
+          }
+        },
+        "required": ["users"]
+      },
+      "BulkUpdateAccountUsersUser": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "integer" },
+          "percentage": { "type": "number" }
+        },
+        "required": ["user_id", "percentage"]
+      },
       "AccountUserNotificationRequest": {
         "type": "object",
         "properties": {
@@ -3244,6 +3295,36 @@
         "properties": {
           "data": { "$ref": "#/components/schemas/AccountUser" }
         }
+      },
+      "BulkUpdateAccountUsersResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkUpdatedAccountUser"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "account_id": { "type": "integer" },
+              "total_percentage": { "type": "number" }
+            },
+            "required": ["account_id", "total_percentage"]
+          }
+        }
+      },
+      "BulkUpdatedAccountUser": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "percentage": { "type": "string", "example": "33.33" }
+        },
+        "required": ["id", "user_id", "name", "email", "percentage"]
       },
       "AccountInviteItemResponse": {
         "type": "object",
