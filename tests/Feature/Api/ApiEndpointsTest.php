@@ -479,6 +479,62 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ->assertOk();
 });
 
+it('returns every created transaction when storing a split account transaction', function () {
+    $owner = User::factory()->create();
+    $memberOne = User::factory()->create();
+    $memberTwo = User::factory()->create();
+    $memberThree = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+
+    $account->users()->attach($owner->id, ['percentage' => 100]);
+    $account->users()->attach($memberOne->id, ['percentage' => 33.0]);
+    $account->users()->attach($memberTwo->id, ['percentage' => 33.33]);
+    $account->users()->attach($memberThree->id, ['percentage' => 33.67]);
+
+    $response = $this->withHeaders(apiHeaders($owner))
+        ->postJson("/api/accounts/{$account->id}/transactions", [
+            'type' => 'outcome',
+            'status' => 'completed',
+            'concept' => 'Shared dinner',
+            'amount' => 300,
+            'split_between_users' => true,
+            'user_payments' => [
+                [
+                    'user_id' => $memberOne->id,
+                    'percentage' => 33.0,
+                ],
+                [
+                    'user_id' => $memberTwo->id,
+                    'percentage' => 33.33,
+                ],
+                [
+                    'user_id' => $memberThree->id,
+                    'percentage' => 33.67,
+                ],
+            ],
+            'scheduled_at' => now()->toDateString(),
+        ])
+        ->assertCreated()
+        ->assertJsonCount(4, 'data')
+        ->assertJsonPath('data.0.type', 'outcome')
+        ->assertJsonPath('data.0.status', 'completed')
+        ->assertJsonPath('data.1.type', 'income')
+        ->assertJsonPath('data.1.status', 'pending')
+        ->assertJsonPath('meta.account.id', $account->id);
+
+    $transactions = collect($response->json('data'));
+    $transactionIds = $transactions->pluck('id')->all();
+
+    expect($transactionIds)->toHaveCount(4)
+        ->and(Transaction::query()->whereIn('id', $transactionIds)->count())->toBe(4)
+        ->and(Transaction::query()->where('parent_transaction_id', $transactionIds[0])->count())->toBe(3)
+        ->and((float) $transactions[0]['amount'])->toBe(300.0)
+        ->and((float) $transactions[1]['percentage'])->toBe(33.0)
+        ->and((float) $transactions[2]['percentage'])->toBe(33.33)
+        ->and((float) $transactions[3]['percentage'])->toBe(33.67)
+        ->and((float) $response->json('meta.account.balance'))->toBe(-300.0);
+});
+
 it('creates subscription payments and registers a transaction when paid', function () {
     seedNotificationTypes();
     $user = User::factory()->create();

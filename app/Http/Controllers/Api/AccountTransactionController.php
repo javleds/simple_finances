@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
 use App\Services\Transaction\TransactionUpdater;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -43,6 +44,15 @@ class AccountTransactionController extends ApiController
         $transaction = $transactionCreator->execute(
             TransactionFormDto::fromFormArray($payload)
         );
+
+        $createdTransactions = $this->createdTransactions($transaction);
+
+        if ($createdTransactions !== null) {
+            return $this->respond([
+                'data' => $createdTransactions,
+                'meta' => $this->transactionAccountMeta($account->id),
+            ], 201);
+        }
 
         return $this->respondModel(
             $transaction->fresh(),
@@ -131,5 +141,20 @@ class AccountTransactionController extends ApiController
             'id' => $account->id,
             'balance' => $account->balance,
         ];
+    }
+
+    private function createdTransactions(Transaction $transaction): ?EloquentCollection
+    {
+        if (! $transaction->subTransactions()->exists()) {
+            return null;
+        }
+
+        return Transaction::query()
+            ->with(['account', 'user', 'financialGoal'])
+            ->where('id', $transaction->id)
+            ->orWhere('parent_transaction_id', $transaction->id)
+            ->orderByRaw('case when id = ? then 0 else 1 end', [$transaction->id])
+            ->orderBy('id')
+            ->get();
     }
 }
