@@ -3,7 +3,6 @@ import {
   ArrowsRightLeftIcon,
   EnvelopeIcon,
   FlagIcon,
-  InformationCircleIcon,
   UsersIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
@@ -20,7 +19,7 @@ import {
   AppTitle,
 } from '@/modules/shared/components';
 
-type AccountRelationSection = 'view' | 'transactions' | 'invitations' | 'goals' | 'users';
+type AccountRelationSection = 'transactions' | 'invitations' | 'goals' | 'users';
 
 const route = useRoute();
 const router = useRouter();
@@ -34,11 +33,6 @@ const accountId = computed(() =>
 );
 
 const relationshipSections = [
-  {
-    value: 'view',
-    label: 'Detalles',
-    icon: InformationCircleIcon,
-  },
   {
     value: 'transactions',
     label: 'Transacciones',
@@ -62,7 +56,7 @@ const relationshipSections = [
 ] as const;
 
 const activeSection = computed<AccountRelationSection>(
-  () => (String(route.name).split('.').pop() as AccountRelationSection) || 'view',
+  () => (String(route.name).split('.').pop() as AccountRelationSection) || 'transactions',
 );
 
 watch(

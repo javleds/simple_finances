@@ -11,9 +11,10 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./pages/AccountRelationshipsPage.vue'),
     children: [
       {
-        name: 'admin.accounts.view',
         path: '',
-        component: () => import('./pages/AccountDetailsPage.vue'),
+        redirect: {
+          name: 'admin.accounts.transactions',
+        },
       },
       {
         name: 'admin.accounts.transactions',

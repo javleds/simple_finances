@@ -42,7 +42,7 @@ function handleDelete(): void {
 
 function openAccountDetails(): void {
   router.push({
-    name: 'admin.accounts.view',
+    name: 'admin.accounts.transactions',
     params: { accountId: props.account.id },
   });
 }
