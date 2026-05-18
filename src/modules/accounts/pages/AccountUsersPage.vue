@@ -24,6 +24,10 @@ const accountsRepository = createAccountsRepository();
 const route = useRoute();
 const defaultUsersPerPage = 20;
 
+const emit = defineEmits<{
+  accountUsersChange: [users: AccountMember[]];
+}>();
+
 const searchTerm = ref('');
 const isSaving = ref(false);
 const isDeleting = ref(false);
@@ -185,10 +189,11 @@ watch(
 
     if (!hasSplitChanges.value) {
       splitDraft.value = nextRecord;
-      return;
+    } else {
+      splitDraft.value = mergeAllocationRecords(splitDraft.value, nextRecord);
     }
 
-    splitDraft.value = mergeAllocationRecords(splitDraft.value, nextRecord);
+    emit('account-users-change', nextUsers);
   },
   { immediate: true, deep: true },
 );

@@ -11,7 +11,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { ApiError } from '@/lib/api/apiClient';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
-import type { Account } from '@/modules/accounts/types';
+import type { Account, AccountMember } from '@/modules/accounts/types';
 import {
   AppCard,
   AppContextTabs,
@@ -117,6 +117,17 @@ function updateActiveSection(nextSection: string): void {
     },
   });
 }
+
+function handleAccountUsersChange(nextUsers: AccountMember[]): void {
+  if (!account.value) {
+    return;
+  }
+
+  account.value = {
+    ...account.value,
+    users: [...nextUsers],
+  };
+}
 </script>
 
 <template>
@@ -143,6 +154,7 @@ function updateActiveSection(nextSection: string): void {
         :account="account"
         :is-loading-account="isLoadingAccount"
         :account-load-error="loadError"
+        @account-users-change="handleAccountUsersChange"
       />
     </RouterView>
 
