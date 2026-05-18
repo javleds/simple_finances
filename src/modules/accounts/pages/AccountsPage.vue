@@ -7,7 +7,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import AccountsForm from '@/modules/accounts/components/AccountsForm.vue';
 import AccountListItem from '@/modules/accounts/components/AccountListItem.vue';
@@ -28,14 +28,19 @@ type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;
 };
+type AccountKindFilter = 'credit' | 'debit';
+type AccountSurfaceFilter = 'virtual' | 'physical';
 
 const searchTerm = ref('');
 const route = useRoute();
+const router = useRouter();
 const isCreateAccountOpen = ref(false);
 const isDeleteAccountOpen = ref(false);
 const isEditAccountOpen = ref(false);
 const isFiltersOpen = ref(false);
 const selectedStatuses = ref<AccountStatus[]>([]);
+const selectedKinds = ref<AccountKindFilter[]>([]);
+const selectedSurfaces = ref<AccountSurfaceFilter[]>([]);
 const selectedAccountId = ref<string | null>(null);
 const editAccountInitialValues = ref<Partial<Account> | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
@@ -43,6 +48,17 @@ const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 
 const statusOptions = ['Activo', 'Inactivo'] as const;
 const defaultAccountsPerPage = 20;
+const kindOptions = [
+  { value: 'credit', label: 'Crédito' },
+  { value: 'debit', label: 'Débito' },
+] as const;
+const surfaceOptions = [
+  { value: 'virtual', label: 'Virtual' },
+  { value: 'physical', label: 'Física' },
+] as const;
+const availableStatuses = [...statusOptions];
+const availableKinds = kindOptions.map((option) => option.value);
+const availableSurfaces = surfaceOptions.map((option) => option.value);
 
 const {
   accounts,
@@ -93,10 +109,42 @@ const filteredAccounts = computed(() => {
     }
 
     if (selectedStatuses.value.length === 0) {
+      if (
+        selectedKinds.value.length > 0 &&
+        !selectedKinds.value.includes(account.isCredit ? 'credit' : 'debit')
+      ) {
+        return false;
+      }
+
+      if (
+        selectedSurfaces.value.length > 0 &&
+        !selectedSurfaces.value.includes(account.isVirtual ? 'virtual' : 'physical')
+      ) {
+        return false;
+      }
+
       return true;
     }
 
-    return selectedStatuses.value.includes(account.status);
+    if (!selectedStatuses.value.includes(account.status)) {
+      return false;
+    }
+
+    if (
+      selectedKinds.value.length > 0 &&
+      !selectedKinds.value.includes(account.isCredit ? 'credit' : 'debit')
+    ) {
+      return false;
+    }
+
+    if (
+      selectedSurfaces.value.length > 0 &&
+      !selectedSurfaces.value.includes(account.isVirtual ? 'virtual' : 'physical')
+    ) {
+      return false;
+    }
+
+    return true;
   });
 });
 
@@ -153,6 +201,37 @@ watch(
   { immediate: true },
 );
 
+watch(
+  () => route.query,
+  (nextQuery) => {
+    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
+    selectedStatuses.value = parseQueryValues(nextQuery.status, isAccountStatus);
+    selectedKinds.value = parseQueryValues(nextQuery.kind, isAccountKindFilter);
+    selectedSurfaces.value = parseQueryValues(nextQuery.surface, isAccountSurfaceFilter);
+  },
+  { immediate: true },
+);
+
+watch(
+  [searchTerm, selectedStatuses, selectedKinds, selectedSurfaces],
+  () => {
+    const nextQuery = {
+      ...route.query,
+      search: searchTerm.value.trim() ? searchTerm.value.trim() : undefined,
+      status: selectedStatuses.value.length > 0 ? selectedStatuses.value.join(',') : undefined,
+      kind: selectedKinds.value.length > 0 ? selectedKinds.value.join(',') : undefined,
+      surface: selectedSurfaces.value.length > 0 ? selectedSurfaces.value.join(',') : undefined,
+    };
+
+    if (areQueriesEqual(route.query, nextQuery)) {
+      return;
+    }
+
+    void router.replace({ query: nextQuery });
+  },
+  { deep: true },
+);
+
 function toggleStatus(status: AccountStatus): void {
   if (selectedStatuses.value.includes(status)) {
     selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
@@ -160,6 +239,24 @@ function toggleStatus(status: AccountStatus): void {
   }
 
   selectedStatuses.value = [...selectedStatuses.value, status];
+}
+
+function toggleKind(kind: AccountKindFilter): void {
+  if (selectedKinds.value.includes(kind)) {
+    selectedKinds.value = selectedKinds.value.filter((item) => item !== kind);
+    return;
+  }
+
+  selectedKinds.value = [...selectedKinds.value, kind];
+}
+
+function toggleSurface(surface: AccountSurfaceFilter): void {
+  if (selectedSurfaces.value.includes(surface)) {
+    selectedSurfaces.value = selectedSurfaces.value.filter((item) => item !== surface);
+    return;
+  }
+
+  selectedSurfaces.value = [...selectedSurfaces.value, surface];
 }
 
 function openFilters(): void {
@@ -218,7 +315,10 @@ function closeFilters(): void {
 }
 
 function clearFilters(): void {
+  searchTerm.value = '';
   selectedStatuses.value = [];
+  selectedKinds.value = [];
+  selectedSurfaces.value = [];
 }
 
 function handleFiltersModalAction(actionKey: string): void {
@@ -293,6 +393,52 @@ function handleCreateFormStateChange(state: FormState): void {
 
 function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
+}
+
+function parseQueryValues<TValue extends string>(
+  value: unknown,
+  isAllowedValue: (value: string) => value is TValue,
+): TValue[] {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return [];
+  }
+
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(isAllowedValue);
+}
+
+function areQueriesEqual(
+  currentQuery: Record<string, unknown>,
+  nextQuery: Record<string, unknown>,
+): boolean {
+  const normalizedCurrent = normalizeQueryRecord(currentQuery);
+  const normalizedNext = normalizeQueryRecord(nextQuery);
+
+  return JSON.stringify(normalizedCurrent) === JSON.stringify(normalizedNext);
+}
+
+function normalizeQueryRecord(query: Record<string, unknown>): Record<string, string> {
+  return Object.entries(query).reduce<Record<string, string>>((accumulator, [key, value]) => {
+    if (typeof value === 'string' && value.length > 0) {
+      accumulator[key] = value;
+    }
+
+    return accumulator;
+  }, {});
+}
+
+function isAccountStatus(value: string): value is AccountStatus {
+  return availableStatuses.includes(value as AccountStatus);
+}
+
+function isAccountKindFilter(value: string): value is AccountKindFilter {
+  return availableKinds.includes(value as AccountKindFilter);
+}
+
+function isAccountSurfaceFilter(value: string): value is AccountSurfaceFilter {
+  return availableSurfaces.includes(value as AccountSurfaceFilter);
 }
 </script>
 
@@ -431,6 +577,52 @@ function handleEditFormStateChange(state: FormState): void {
             @click="toggleStatus(status)"
           >
             {{ status }}
+          </button>
+        </div>
+
+        <div class="space-y-2">
+          <AppTitle as="h2" size="sm">Tipo de cuenta</AppTitle>
+          <AppText>Filtra entre cuentas de crédito y débito.</AppText>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="kind in kindOptions"
+            :key="kind.value"
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+            :class="
+              selectedKinds.includes(kind.value)
+                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
+                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
+            "
+            :style="{ borderColor: 'var(--app-color-border)' }"
+            @click="toggleKind(kind.value)"
+          >
+            {{ kind.label }}
+          </button>
+        </div>
+
+        <div class="space-y-2">
+          <AppTitle as="h2" size="sm">Superficie</AppTitle>
+          <AppText>Filtra entre cuentas virtuales y físicas.</AppText>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="surface in surfaceOptions"
+            :key="surface.value"
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+            :class="
+              selectedSurfaces.includes(surface.value)
+                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
+                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
+            "
+            :style="{ borderColor: 'var(--app-color-border)' }"
+            @click="toggleSurface(surface.value)"
+          >
+            {{ surface.label }}
           </button>
         </div>
       </div>
