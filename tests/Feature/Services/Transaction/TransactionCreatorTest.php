@@ -111,6 +111,44 @@ it('does not create pending incomes for users with zero percentage', function ()
         ->and($subTransactions->pluck('percentage')->all())->toBe([100.0]);
 });
 
+it('allocates the exact split total even when decimal divisions leave a remainder', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $thirdUser = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 33.33],
+        $partner->id => ['percentage' => 33.33],
+        $thirdUser->id => ['percentage' => 33.34],
+    ]);
+    $this->actingAs($owner);
+
+    $dto = TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Split remainder',
+        'amount' => 100.0,
+        'account_id' => $account->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 33.33],
+            ['user_id' => $partner->id, 'percentage' => 33.33],
+            ['user_id' => $thirdUser->id, 'percentage' => 33.34],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]);
+
+    $mainTransaction = app(TransactionCreator::class)->execute($dto);
+    $subTransactions = Transaction::query()
+        ->where('parent_transaction_id', $mainTransaction->id)
+        ->orderBy('id')
+        ->get();
+
+    expect($subTransactions->pluck('amount')->all())->toBe([33.33, 33.33, 33.34])
+        ->and(round($subTransactions->sum('amount'), 2))->toBe(100.0);
+});
+
 it('Throws an exception when creating an income transaction with non-completed status', function () {
     $user = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $user->id]);

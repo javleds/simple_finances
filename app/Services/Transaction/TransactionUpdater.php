@@ -2,6 +2,7 @@
 
 namespace App\Services\Transaction;
 
+use App\Dto\SplitTransactionAllocationDto;
 use App\Dto\TransactionFormDto;
 use App\Enums\Action;
 use App\Enums\TransactionStatus;
@@ -21,6 +22,7 @@ class TransactionUpdater
     public function __construct(
         private Guard $auth,
         private Dispatcher $dispatcher,
+        private BuildSplitTransactionAllocations $buildSplitTransactionAllocations,
     ) {}
 
     public function execute(Transaction $transaction, TransactionFormDto $dto): Transaction
@@ -117,9 +119,9 @@ class TransactionUpdater
         $subTransactions->load('user');
 
         foreach ($subTransactions as $subTransaction) {
-            $percentage = collect($dto->userPayments)
-                ->firstWhere('userId', $subTransaction->user_id)?->percentage ?? $subTransaction->percentage ?? 0.0;
-            $amount = round($dto->amount * ($percentage / 100), 2);
+            $allocation = $this->allocationForUser($dto, $subTransaction->user_id);
+            $percentage = $allocation?->percentage ?? $subTransaction->percentage ?? 0.0;
+            $amount = $allocation?->amount ?? 0.0;
 
             $subTransaction->amount = $amount;
             $subTransaction->percentage = $percentage;
@@ -132,21 +134,19 @@ class TransactionUpdater
 
     private function createSubTransactions(Transaction $transaction, TransactionFormDto $dto): void
     {
-        foreach ($this->positiveUserPayments($dto) as $paymentData) {
-            $user = User::withoutGlobalScopes()->find($paymentData->userId);
+        foreach ($this->allocations($dto) as $allocation) {
+            $user = User::withoutGlobalScopes()->find($allocation->userId);
 
             if (! $user) {
                 continue;
             }
 
-            $amount = round($dto->amount * ($paymentData->percentage / 100), 2);
-
             $subTransaction = new Transaction;
             $subTransaction->type = TransactionType::Income;
             $subTransaction->status = TransactionStatus::Pending;
             $subTransaction->concept = $dto->concept.' - Parte de '.$user->name;
-            $subTransaction->amount = $amount;
-            $subTransaction->percentage = $paymentData->percentage;
+            $subTransaction->amount = $allocation->amount;
+            $subTransaction->percentage = $allocation->percentage;
             $subTransaction->account_id = $dto->accountId;
             $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
             $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
@@ -157,12 +157,15 @@ class TransactionUpdater
         }
     }
 
-    private function positiveUserPayments(TransactionFormDto $dto): array
+    private function allocations(TransactionFormDto $dto): array
     {
-        return array_values(array_filter(
-            $dto->userPayments,
-            fn (object $payment): bool => $payment->percentage > 0
-        ));
+        return $this->buildSplitTransactionAllocations->execute($dto->amount, $dto->userPayments);
+    }
+
+    private function allocationForUser(TransactionFormDto $dto, int $userId): ?SplitTransactionAllocationDto
+    {
+        return collect($this->allocations($dto))
+            ->first(fn (SplitTransactionAllocationDto $allocation): bool => $allocation->userId === $userId);
     }
 
     private function resolveScheduleDate(string|CarbonInterface $scheduledAt): CarbonInterface
