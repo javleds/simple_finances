@@ -45,7 +45,8 @@ const accountId = computed(() =>
 );
 
 const usersPerPage = computed(() => {
-  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+  const rawValue =
+    typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
   if (!Number.isInteger(rawValue) || rawValue <= 0) {
     return defaultUsersPerPage;
@@ -63,7 +64,12 @@ const usersState = usePaginatedCollection<AccountMember, [string]>({
 });
 
 const { target: loadMoreSentinel } = useInfiniteScroll({
-  enabled: computed(() => !usersState.isLoading.value && !usersState.isLoadingMore.value && usersState.hasMoreItems.value),
+  enabled: computed(
+    () =>
+      !usersState.isLoading.value &&
+      !usersState.isLoadingMore.value &&
+      usersState.hasMoreItems.value,
+  ),
   onIntersect: () => {
     void usersState.loadMore();
   },
@@ -102,11 +108,9 @@ const canShowSplitEditor = computed(() => splitUsers.value.length > 1);
 
 const hasLoadedEveryUserForSplit = computed(() => !usersState.hasMoreItems.value);
 
-const hasSplitChanges = computed(() =>
-  !areAllocationRecordsEqual(
-    splitDraft.value,
-    createAllocationRecord(usersState.items.value),
-  ),
+const hasSplitChanges = computed(
+  () =>
+    !areAllocationRecordsEqual(splitDraft.value, createAllocationRecord(usersState.items.value)),
 );
 
 const editUserActions = computed(() => [
@@ -355,19 +359,12 @@ function resetSplitDraft(): void {
       <template #actions>
         <AppButton variant="primary" @click="openCreateUser">
           <PlusIcon class="h-4 w-4" />
-          <span>Nuevo</span>
         </AppButton>
       </template>
     </AppSectionBar>
 
-    <AppCard
-      v-if="canShowSplitEditor"
-      class="space-y-4 rounded-2xl p-4!"
-    >
-      <AppPercentageSplitEditor
-        v-model="splitDraft"
-        :users="splitUsers"
-      />
+    <AppCard v-if="canShowSplitEditor" class="space-y-4 rounded-2xl p-4!">
+      <AppPercentageSplitEditor v-model="splitDraft" :users="splitUsers" />
 
       <div
         class="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
@@ -377,35 +374,19 @@ function resetSplitDraft(): void {
           <AppText size="sm" tone="subtle">
             Esta barra ajusta los porcentajes de los usuarios cargados en pantalla.
           </AppText>
-          <AppText
-            v-if="!hasLoadedEveryUserForSplit"
-            size="sm"
-            tone="subtle"
-          >
+          <AppText v-if="!hasLoadedEveryUserForSplit" size="sm" tone="subtle">
             Carga el resto de usuarios para repartir el 100% sobre toda la cuenta antes de guardar.
           </AppText>
-          <AppText
-            v-else
-            size="sm"
-            tone="subtle"
-          >
+          <AppText v-else size="sm" tone="subtle">
             La persistencia final requiere un endpoint masivo para enviar toda la distribución.
           </AppText>
         </div>
 
         <div class="flex gap-2 self-end sm:self-auto">
-          <AppButton
-            variant="secondary"
-            :disabled="!hasSplitChanges"
-            @click="resetSplitDraft"
-          >
+          <AppButton variant="secondary" :disabled="!hasSplitChanges" @click="resetSplitDraft">
             Restablecer
           </AppButton>
-          <AppButton
-            variant="primary"
-            :disabled="!hasSplitChanges"
-            @click="applySplitDraft"
-          >
+          <AppButton variant="primary" :disabled="!hasSplitChanges" @click="applySplitDraft">
             Aplicar
           </AppButton>
         </div>
