@@ -5,13 +5,16 @@ import { useRoute } from 'vue-router';
 
 import AccountUserListItem from '@/modules/accounts/components/AccountUserListItem.vue';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
+import type { AccountMember } from '@/modules/accounts/types';
 import { ApiError } from '@/lib/api/apiClient';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 import {
   AppButton,
+  AppCard,
   AppInput,
   AppModal,
+  AppPercentageSplitEditor,
   AppSectionBar,
   AppText,
   AppTitle,
@@ -31,6 +34,7 @@ const isEditUserOpen = ref(false);
 const isDeleteUserOpen = ref(false);
 const selectedUserId = ref<string | null>(null);
 const editPercentage = ref('');
+const splitDraft = ref<Record<string, number>>({});
 
 const accountId = computed(() =>
   typeof route.params.accountId === 'string' ? route.params.accountId : '',
@@ -83,6 +87,22 @@ const selectedUser = computed(() => {
 
   return usersState.items.value.find((user) => user.id === selectedUserId.value) ?? null;
 });
+
+const splitUsers = computed(() =>
+  usersState.items.value.map((user) => ({
+    id: user.id,
+    name: user.name,
+  })),
+);
+
+const hasLoadedEveryUserForSplit = computed(() => !usersState.hasMoreItems.value);
+
+const hasSplitChanges = computed(() =>
+  !areAllocationRecordsEqual(
+    splitDraft.value,
+    createAllocationRecord(usersState.items.value),
+  ),
+);
 
 const editUserActions = computed(() => [
   { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
@@ -155,6 +175,21 @@ watch(
     void loadUsers();
   },
   { immediate: true },
+);
+
+watch(
+  () => usersState.items.value,
+  (nextUsers) => {
+    const nextRecord = createAllocationRecord(nextUsers);
+
+    if (!hasSplitChanges.value) {
+      splitDraft.value = nextRecord;
+      return;
+    }
+
+    splitDraft.value = mergeAllocationRecords(splitDraft.value, nextRecord);
+  },
+  { immediate: true, deep: true },
 );
 
 function openCreateUser(): void {
@@ -260,6 +295,49 @@ function infiniteStatusLabel(): string {
 
   return 'Sigue desplazándote para revisar más miembros conforme crezca la colaboración de la cuenta.';
 }
+
+function createAllocationRecord(users: ReadonlyArray<AccountMember>): Record<string, number> {
+  return users.reduce<Record<string, number>>((accumulator, user) => {
+    accumulator[user.id] = Number((user.allocationPercentage ?? 0).toFixed(2));
+    return accumulator;
+  }, {});
+}
+
+function mergeAllocationRecords(
+  currentRecord: Record<string, number>,
+  nextRecord: Record<string, number>,
+): Record<string, number> {
+  return Object.keys(nextRecord).reduce<Record<string, number>>((accumulator, userId) => {
+    accumulator[userId] = currentRecord[userId] ?? nextRecord[userId] ?? 0;
+    return accumulator;
+  }, {});
+}
+
+function areAllocationRecordsEqual(
+  left: Record<string, number>,
+  right: Record<string, number>,
+): boolean {
+  const allKeys = new Set([...Object.keys(left), ...Object.keys(right)]);
+
+  return [...allKeys].every((key) => {
+    const leftValue = Number((left[key] ?? 0).toFixed(2));
+    const rightValue = Number((right[key] ?? 0).toFixed(2));
+    return leftValue === rightValue;
+  });
+}
+
+function applySplitDraft(): void {
+  usersState.setItems(
+    usersState.items.value.map((user) => ({
+      ...user,
+      allocationPercentage: splitDraft.value[user.id] ?? user.allocationPercentage,
+    })),
+  );
+}
+
+function resetSplitDraft(): void {
+  splitDraft.value = createAllocationRecord(usersState.items.value);
+}
 </script>
 
 <template>
@@ -275,6 +353,58 @@ function infiniteStatusLabel(): string {
         </AppButton>
       </template>
     </AppSectionBar>
+
+    <AppCard
+      v-if="splitUsers.length > 0"
+      class="space-y-4 rounded-2xl p-4!"
+    >
+      <AppPercentageSplitEditor
+        v-model="splitDraft"
+        :users="splitUsers"
+      />
+
+      <div
+        class="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
+        :style="{ borderColor: 'var(--app-color-border)' }"
+      >
+        <div class="space-y-1">
+          <AppText size="sm" tone="subtle">
+            Esta barra ajusta los porcentajes de los usuarios cargados en pantalla.
+          </AppText>
+          <AppText
+            v-if="!hasLoadedEveryUserForSplit"
+            size="sm"
+            tone="subtle"
+          >
+            Carga el resto de usuarios para repartir el 100% sobre toda la cuenta antes de guardar.
+          </AppText>
+          <AppText
+            v-else
+            size="sm"
+            tone="subtle"
+          >
+            La persistencia final requiere un endpoint masivo para enviar toda la distribución.
+          </AppText>
+        </div>
+
+        <div class="flex gap-2 self-end sm:self-auto">
+          <AppButton
+            variant="secondary"
+            :disabled="!hasSplitChanges"
+            @click="resetSplitDraft"
+          >
+            Restablecer
+          </AppButton>
+          <AppButton
+            variant="primary"
+            :disabled="!hasSplitChanges"
+            @click="applySplitDraft"
+          >
+            Aplicar
+          </AppButton>
+        </div>
+      </div>
+    </AppCard>
 
     <div class="relative flex-1">
       <div
