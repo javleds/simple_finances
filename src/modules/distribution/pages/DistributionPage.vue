@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowPathIcon, MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import DistributionRuleForm from '@/modules/distribution/components/DistributionRuleForm.vue';
 import DistributionRuleListItem from '@/modules/distribution/components/DistributionRuleListItem.vue';
@@ -9,9 +9,11 @@ import { useDistributionRulesCrud } from '@/modules/distribution/composables/use
 import { formatDistributionFrequency } from '@/modules/distribution/schemas/distributionSchemas';
 import type {
   DistributionFrequency,
+  DistributionRuleListFilters,
   DistributionRuleWritePayload,
 } from '@/modules/distribution/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
+import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
   AppInput,
@@ -28,6 +30,7 @@ type FormState = {
 
 const searchTerm = ref('');
 const route = useRoute();
+const router = useRouter();
 const selectedFrequencies = ref<DistributionFrequency[]>([]);
 const isCreateRuleOpen = ref(false);
 const isEditRuleOpen = ref(false);
@@ -81,27 +84,10 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   },
 });
 
-const filteredRules = computed(() => {
-  const normalizedQuery = searchTerm.value.trim().toLowerCase();
-
-  return rules.value.filter((rule) => {
-    const matchesQuery =
-      normalizedQuery.length === 0 || rule.name.toLowerCase().includes(normalizedQuery);
-
-    if (!matchesQuery) {
-      return false;
-    }
-
-    if (
-      selectedFrequencies.value.length > 0 &&
-      !selectedFrequencies.value.includes(rule.frequency)
-    ) {
-      return false;
-    }
-
-    return true;
-  });
-});
+const activeFilters = computed<DistributionRuleListFilters>(() => ({
+  search: searchTerm.value.trim() || undefined,
+  frequency: selectedFrequencies.value.length > 0 ? [...selectedFrequencies.value] : undefined,
+}));
 
 const selectedRule = computed(() => {
   if (!selectedRuleId.value) {
@@ -146,9 +132,37 @@ const deleteRuleActions = computed(() => [
 ]);
 
 watch(
-  rulesPerPage,
-  (nextPerPage) => {
-    void loadRules({
+  () => route.query,
+  (nextQuery) => {
+    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
+    selectedFrequencies.value = parseQueryValues(nextQuery.frequency, isDistributionFrequency);
+  },
+  { immediate: true },
+);
+
+watch(
+  [searchTerm, selectedFrequencies],
+  () => {
+    const nextQuery = {
+      ...route.query,
+      search: searchTerm.value.trim() || undefined,
+      frequency:
+        selectedFrequencies.value.length > 0 ? selectedFrequencies.value.join(',') : undefined,
+    };
+
+    if (areQueriesEqual(route.query, nextQuery)) {
+      return;
+    }
+
+    void router.replace({ query: nextQuery });
+  },
+  { deep: true },
+);
+
+watch(
+  [activeFilters, rulesPerPage],
+  ([nextFilters, nextPerPage]) => {
+    void loadRules(nextFilters, {
       reset: true,
       perPage: nextPerPage,
     });
@@ -265,10 +279,14 @@ function handleEditFormStateChange(state: FormState): void {
 }
 
 function reloadRules(): void {
-  void loadRules({
+  void loadRules(activeFilters.value, {
     reset: true,
     perPage: rulesPerPage.value,
   });
+}
+
+function isDistributionFrequency(value: string): value is DistributionFrequency {
+  return value === 'monthly' || value === 'semi_monthly';
 }
 
 function handleLoadMoreRetry(): void {
@@ -343,13 +361,13 @@ function infiniteStatusLabel(): string {
 
     <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">{{ filteredRules.length }} reglas visibles</AppText>
+        <AppText size="sm" tone="subtle">{{ rules.length }} reglas visibles</AppText>
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
       </div>
 
       <div class="space-y-4">
         <DistributionRuleListItem
-          v-for="rule in filteredRules"
+          v-for="rule in rules"
           :key="rule.id"
           :frequency="rule.frequency"
           :item-id="rule.id"
@@ -361,7 +379,7 @@ function infiniteStatusLabel(): string {
         />
 
         <div
-          v-if="filteredRules.length === 0"
+          v-if="rules.length === 0"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >

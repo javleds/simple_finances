@@ -5,6 +5,7 @@ import {
   createPaginatedCollectionSchema,
   type PaginatedCollection,
 } from '@/modules/shared/lib/pagination';
+import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import {
   mapTransactionApiToDomain,
@@ -14,6 +15,7 @@ import type {
   CreatedTransactionResult,
   DeletedTransactionResult,
   Transaction,
+  TransactionListFilters,
   TransactionMutationMeta,
   TransactionWritePayload,
 } from '../types';
@@ -117,22 +119,27 @@ function buildWritePayload(payload: TransactionWritePayload) {
   };
 }
 
+function mapTransactionTypesToApi(types: TransactionListFilters['type']): string[] | undefined {
+  if (!types || types.length === 0) {
+    return undefined;
+  }
+
+  return types.map((type) => (type === 'expense' ? 'outcome' : 'income'));
+}
+
 export function createTransactionsRepository() {
   return {
     async list(
       accountId?: string,
-      options?: { page?: number; perPage?: number },
+      options?: { page?: number; perPage?: number; filters?: TransactionListFilters },
     ): Promise<PaginatedCollection<Transaction>> {
-      const searchParams = new URLSearchParams();
-
-      if (options?.page) {
-        searchParams.set('page', String(options.page));
-      }
-
-      if (options?.perPage) {
-        searchParams.set('per_page', String(options.perPage));
-      }
-
+      const searchParams = buildQueryParams({
+        page: options?.page,
+        per_page: options?.perPage,
+        search: options?.filters?.search,
+        status: options?.filters?.status,
+        type: mapTransactionTypesToApi(options?.filters?.type),
+      });
       const query = searchParams.toString();
       const path = accountId ? `${accountsPath}/${accountId}/transactions` : transactionsPath;
       const response = await apiClient.get<unknown>(query ? `${path}?${query}` : path);

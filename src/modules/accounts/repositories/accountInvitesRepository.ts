@@ -5,12 +5,17 @@ import {
   createPaginatedCollectionSchema,
   type PaginatedCollection,
 } from '@/modules/shared/lib/pagination';
+import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import {
   accountInviteApiSchema,
   mapAccountInviteApiToDomain,
 } from '../schemas/accountInviteSchemas';
-import type { AccountInvite, AccountInviteWritePayload } from '../schemas/accountInviteSchemas';
+import type {
+  AccountInvite,
+  AccountInviteListFilters,
+  AccountInviteWritePayload,
+} from '../schemas/accountInviteSchemas';
 
 const apiClient = createApiClient();
 const invitesPath = '/account-invites';
@@ -46,17 +51,17 @@ function buildGlobalWritePayload(payload: AccountInviteWritePayload) {
 
 export function createAccountInvitesRepository() {
   return {
-    async listAll(options?: { page?: number; perPage?: number }): Promise<PaginatedCollection<AccountInvite>> {
-      const searchParams = new URLSearchParams();
-
-      if (options?.page) {
-        searchParams.set('page', String(options.page));
-      }
-
-      if (options?.perPage) {
-        searchParams.set('per_page', String(options.perPage));
-      }
-
+    async listAll(options?: {
+      page?: number;
+      perPage?: number;
+      filters?: AccountInviteListFilters;
+    }): Promise<PaginatedCollection<AccountInvite>> {
+      const searchParams = buildQueryParams({
+        page: options?.page,
+        per_page: options?.perPage,
+        search: options?.filters?.search,
+        status: options?.filters?.status,
+      });
       const query = searchParams.toString();
       const response = await apiClient.get<unknown>(query ? `${invitesPath}?${query}` : invitesPath);
       const parsedResponse = inviteCollectionSchema.parse(response);
@@ -68,18 +73,14 @@ export function createAccountInvitesRepository() {
     },
     async list(
       accountId: string,
-      options?: { page?: number; perPage?: number },
+      options?: { page?: number; perPage?: number; filters?: AccountInviteListFilters },
     ): Promise<PaginatedCollection<AccountInvite>> {
-      const searchParams = new URLSearchParams();
-
-      if (options?.page) {
-        searchParams.set('page', String(options.page));
-      }
-
-      if (options?.perPage) {
-        searchParams.set('per_page', String(options.perPage));
-      }
-
+      const searchParams = buildQueryParams({
+        page: options?.page,
+        per_page: options?.perPage,
+        search: options?.filters?.search,
+        status: options?.filters?.status,
+      });
       const query = searchParams.toString();
       const response = await apiClient.get<unknown>(
         query ? `${accountsPath}/${accountId}/invites?${query}` : `${accountsPath}/${accountId}/invites`,

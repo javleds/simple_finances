@@ -7,7 +7,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import SubscriptionsForm from '@/modules/subscriptions/components/SubscriptionsForm.vue';
@@ -16,9 +16,12 @@ import { useSubscriptionsCrud } from '@/modules/subscriptions/composables/useSub
 import { formatSubscriptionFrequency } from '@/modules/subscriptions/schemas/subscriptionSchemas';
 import type {
   SubscriptionFrequencyType,
+  SubscriptionListFilters,
+  SubscriptionStatusFilter,
   SubscriptionWritePayload,
 } from '@/modules/subscriptions/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
+import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
   AppIconButton,
@@ -34,10 +37,9 @@ type FormState = {
   isSubmitting: boolean;
 };
 
-type SubscriptionStatusFilter = 'active' | 'cancelled';
-
 const accountsRepository = createAccountsRepository();
 const route = useRoute();
+const router = useRouter();
 
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
@@ -103,33 +105,11 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   },
 });
 
-const filteredSubscriptions = computed(() => {
-  const normalizedQuery = searchTerm.value.trim().toLowerCase();
-
-  return subscriptions.value.filter((subscription) => {
-    const matchesQuery =
-      normalizedQuery.length === 0 || subscription.name.toLowerCase().includes(normalizedQuery);
-
-    if (!matchesQuery) {
-      return false;
-    }
-
-    const status: SubscriptionStatusFilter = subscription.finishedAt ? 'cancelled' : 'active';
-
-    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(status)) {
-      return false;
-    }
-
-    if (
-      selectedUnits.value.length > 0 &&
-      !selectedUnits.value.includes(subscription.frequencyType)
-    ) {
-      return false;
-    }
-
-    return true;
-  });
-});
+const activeFilters = computed<SubscriptionListFilters>(() => ({
+  search: searchTerm.value.trim() || undefined,
+  status: selectedStatuses.value.length > 0 ? [...selectedStatuses.value] : undefined,
+  frequencyType: selectedUnits.value.length > 0 ? [...selectedUnits.value] : undefined,
+}));
 
 const selectedSubscription = computed(() => {
   if (!selectedSubscriptionId.value) {
@@ -181,9 +161,38 @@ onMounted(() => {
 });
 
 watch(
-  subscriptionsPerPage,
-  (nextPerPage) => {
-    void loadSubscriptions({
+  () => route.query,
+  (nextQuery) => {
+    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
+    selectedStatuses.value = parseQueryValues(nextQuery.status, isSubscriptionStatusFilter);
+    selectedUnits.value = parseQueryValues(nextQuery.frequencyType, isSubscriptionFrequencyType);
+  },
+  { immediate: true },
+);
+
+watch(
+  [searchTerm, selectedStatuses, selectedUnits],
+  () => {
+    const nextQuery = {
+      ...route.query,
+      search: searchTerm.value.trim() || undefined,
+      status: selectedStatuses.value.length > 0 ? selectedStatuses.value.join(',') : undefined,
+      frequencyType: selectedUnits.value.length > 0 ? selectedUnits.value.join(',') : undefined,
+    };
+
+    if (areQueriesEqual(route.query, nextQuery)) {
+      return;
+    }
+
+    void router.replace({ query: nextQuery });
+  },
+  { deep: true },
+);
+
+watch(
+  [activeFilters, subscriptionsPerPage],
+  ([nextFilters, nextPerPage]) => {
+    void loadSubscriptions(nextFilters, {
       reset: true,
       perPage: nextPerPage,
     });
@@ -335,10 +344,18 @@ function formatDateLabel(date: string | null): string {
 }
 
 function reloadSubscriptions(): void {
-  void loadSubscriptions({
+  void loadSubscriptions(activeFilters.value, {
     reset: true,
     perPage: subscriptionsPerPage.value,
   });
+}
+
+function isSubscriptionStatusFilter(value: string): value is SubscriptionStatusFilter {
+  return value === 'active' || value === 'cancelled';
+}
+
+function isSubscriptionFrequencyType(value: string): value is SubscriptionFrequencyType {
+  return value === 'days' || value === 'months' || value === 'years';
 }
 
 function handleLoadMoreRetry(): void {
@@ -421,14 +438,14 @@ function infiniteStatusLabel(): string {
     <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle">
-          {{ filteredSubscriptions.length }} suscripciones visibles
+          {{ subscriptions.length }} suscripciones visibles
         </AppText>
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
       </div>
 
       <div class="space-y-4">
         <SubscriptionListItem
-          v-for="subscription in filteredSubscriptions"
+          v-for="subscription in subscriptions"
           :key="subscription.id"
           :amount="subscription.amount"
           :cycle="
@@ -443,7 +460,7 @@ function infiniteStatusLabel(): string {
         />
 
         <div
-          v-if="filteredSubscriptions.length === 0"
+          v-if="subscriptions.length === 0"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >

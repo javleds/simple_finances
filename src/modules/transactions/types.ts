@@ -1,5 +1,10 @@
 export type TransactionType = 'income' | 'expense';
 export type TransactionStatus = 'pending' | 'completed';
+export type TransactionListFilters = {
+  search?: string;
+  status?: TransactionStatus[];
+  type?: TransactionType[];
+};
 
 export type Transaction = {
   id: string;

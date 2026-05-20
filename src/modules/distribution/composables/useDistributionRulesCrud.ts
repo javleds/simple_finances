@@ -4,7 +4,11 @@ import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createDistributionRepository } from '../repositories/distributionRepository';
-import type { DistributionRule, DistributionRuleWritePayload } from '../types';
+import type {
+  DistributionRule,
+  DistributionRuleListFilters,
+  DistributionRuleWritePayload,
+} from '../types';
 
 const distributionRepository = createDistributionRepository();
 
@@ -21,9 +25,9 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useDistributionRulesCrud() {
-  const rulesState = usePaginatedCollection<DistributionRule, []>({
+  const rulesState = usePaginatedCollection<DistributionRule, [DistributionRuleListFilters | undefined]>({
     defaultPerPage: 20,
-    loadPage: (options) => distributionRepository.listRules(options),
+    loadPage: (options, filters) => distributionRepository.listRules({ ...options, filters }),
     resolveErrorMessage,
     loadErrorMessage: 'No fue posible cargar las reglas.',
     loadMoreErrorMessage: 'No fue posible cargar más reglas.',
@@ -37,8 +41,11 @@ export function useDistributionRulesCrud() {
   const hasMoreRules = computed(() => rulesState.hasMoreItems.value);
   const hasReachedEnd = computed(() => rulesState.hasReachedEnd.value);
 
-  async function loadRules(options?: { reset?: boolean; perPage?: number }): Promise<void> {
-    await rulesState.load([], options);
+  async function loadRules(
+    filters?: DistributionRuleListFilters,
+    options?: { reset?: boolean; perPage?: number },
+  ): Promise<void> {
+    await rulesState.load([filters], options);
   }
 
   async function loadMoreRules(): Promise<void> {
@@ -52,7 +59,7 @@ export function useDistributionRulesCrud() {
     try {
       const rule = await distributionRepository.createRule(payload);
       rulesState.prependItem(rule);
-      await loadRules();
+      await rulesState.reload();
       return true;
     } catch (error) {
       saveError.value = resolveErrorMessage(error, 'No fue posible crear la regla.');
@@ -69,7 +76,7 @@ export function useDistributionRulesCrud() {
     try {
       const updatedRule = await distributionRepository.updateRule(ruleId, payload);
       rulesState.replaceItem((rule) => rule.id === ruleId, { ...updatedRule });
-      await loadRules();
+      await rulesState.reload();
       return true;
     } catch (error) {
       saveError.value = resolveErrorMessage(error, 'No fue posible actualizar la regla.');

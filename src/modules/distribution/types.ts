@@ -1,5 +1,9 @@
 export type DistributionFrequency = 'monthly' | 'semi_monthly';
 export type DistributionRelationType = 'savings' | 'transfer';
+export type DistributionRuleListFilters = {
+  search?: string;
+  frequency?: DistributionFrequency[];
+};
 
 export type DistributionRule = {
   id: string;

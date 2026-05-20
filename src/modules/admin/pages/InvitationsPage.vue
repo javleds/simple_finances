@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import FacilityInvitationListItem from '@/modules/admin/components/FacilityInvitationListItem.vue';
 import { createAccountInvitesRepository } from '@/modules/accounts/repositories/accountInvitesRepository';
@@ -9,12 +9,14 @@ import type { AccountInvite } from '@/modules/accounts/schemas/accountInviteSche
 import { ApiError } from '@/lib/api/apiClient';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
+import { areQueriesEqual } from '@/modules/shared/lib/queryParams';
 import { AppButton, AppInput, AppModal, AppSectionBar, AppText } from '@/modules/shared/components';
 
 type PendingInvitationAction = 'accepted' | 'declined';
 
 const accountInvitesRepository = createAccountInvitesRepository();
 const route = useRoute();
+const router = useRouter();
 const defaultInvitationsPerPage = 20;
 
 const searchTerm = ref('');
@@ -35,7 +37,14 @@ const invitationsPerPage = computed(() => {
 
 const invitationsState = usePaginatedCollection<AccountInvite, []>({
   defaultPerPage: defaultInvitationsPerPage,
-  loadPage: (options) => accountInvitesRepository.listAll(options),
+  loadPage: (options) =>
+    accountInvitesRepository.listAll({
+      ...options,
+      filters: {
+        search: searchTerm.value.trim() || undefined,
+        status: ['pending'],
+      },
+    }),
   resolveErrorMessage,
   loadErrorMessage: 'No fue posible cargar las invitaciones.',
   loadMoreErrorMessage: 'No fue posible cargar más invitaciones.',
@@ -58,24 +67,7 @@ const selectedInvitation = computed(() => {
   );
 });
 
-const visibleInvitations = computed(() => {
-  const normalizedQuery = searchTerm.value.trim().toLowerCase();
-
-  return invitationsState.items.value.filter((invitation) => {
-    if (invitation.status !== 'pending') {
-      return false;
-    }
-
-    if (normalizedQuery.length === 0) {
-      return true;
-    }
-
-    const accountName = resolveAccountName(invitation).toLowerCase();
-    const invitedBy = resolveInvitedBy(invitation).toLowerCase();
-
-    return accountName.includes(normalizedQuery) || invitedBy.includes(normalizedQuery);
-  });
-});
+const visibleInvitations = computed(() => invitationsState.items.value);
 
 const actionModalTitle = computed(() => {
   if (pendingAction.value === 'accepted') {
@@ -159,6 +151,27 @@ async function loadInvitations(): Promise<void> {
     perPage: invitationsPerPage.value,
   });
 }
+
+watch(
+  () => route.query.search,
+  (nextSearch) => {
+    searchTerm.value = typeof nextSearch === 'string' ? nextSearch : '';
+  },
+  { immediate: true },
+);
+
+watch(searchTerm, () => {
+  const nextQuery = {
+    ...route.query,
+    search: searchTerm.value.trim() || undefined,
+  };
+
+  if (!areQueriesEqual(route.query, nextQuery)) {
+    void router.replace({ query: nextQuery });
+  }
+
+  void loadInvitations();
+});
 
 watch(
   invitationsPerPage,

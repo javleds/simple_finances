@@ -5,6 +5,7 @@ import {
   createPaginatedCollectionSchema,
   type PaginatedCollection,
 } from '@/modules/shared/lib/pagination';
+import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import {
   accountApiSchema,
@@ -12,7 +13,13 @@ import {
   mapAccountApiToDomain,
   mapAccountUserApiToDomain,
 } from '../schemas/accountSchemas';
-import type { Account, AccountMember, AccountWritePayload } from '../types';
+import type {
+  Account,
+  AccountListFilters,
+  AccountMember,
+  AccountUsersListFilters,
+  AccountWritePayload,
+} from '../types';
 
 const apiClient = createApiClient();
 const accountsPath = '/accounts';
@@ -50,19 +57,37 @@ function mapWritePayloadToApi(payload: AccountWritePayload) {
   };
 }
 
+function mapAccountKindsToApi(kinds: AccountListFilters['kind']): string[] | undefined {
+  if (!kinds || kinds.length === 0 || kinds.length > 1) {
+    return undefined;
+  }
+
+  return [kinds[0] === 'credit' ? 'true' : 'false'];
+}
+
+function mapAccountSurfacesToApi(surfaces: AccountListFilters['surface']): string[] | undefined {
+  if (!surfaces || surfaces.length === 0 || surfaces.length > 1) {
+    return undefined;
+  }
+
+  return [surfaces[0] === 'virtual' ? 'true' : 'false'];
+}
+
 export function createAccountsRepository() {
   return {
-    async list(options?: { page?: number; perPage?: number }): Promise<PaginatedCollection<Account>> {
-      const searchParams = new URLSearchParams();
-
-      if (options?.page) {
-        searchParams.set('page', String(options.page));
-      }
-
-      if (options?.perPage) {
-        searchParams.set('per_page', String(options.perPage));
-      }
-
+    async list(options?: {
+      page?: number;
+      perPage?: number;
+      filters?: AccountListFilters;
+    }): Promise<PaginatedCollection<Account>> {
+      const searchParams = buildQueryParams({
+        page: options?.page,
+        per_page: options?.perPage,
+        search: options?.filters?.search,
+        status: options?.filters?.status,
+        credit_card: mapAccountKindsToApi(options?.filters?.kind),
+        virtual: mapAccountSurfacesToApi(options?.filters?.surface),
+      });
       const query = searchParams.toString();
       const response = await apiClient.get<unknown>(
         query ? `${accountsPath}?${query}` : accountsPath,
@@ -80,18 +105,13 @@ export function createAccountsRepository() {
     },
     async listUsers(
       accountId: string,
-      options?: { page?: number; perPage?: number },
+      options?: { page?: number; perPage?: number; filters?: AccountUsersListFilters },
     ): Promise<PaginatedCollection<AccountMember>> {
-      const searchParams = new URLSearchParams();
-
-      if (options?.page) {
-        searchParams.set('page', String(options.page));
-      }
-
-      if (options?.perPage) {
-        searchParams.set('per_page', String(options.perPage));
-      }
-
+      const searchParams = buildQueryParams({
+        page: options?.page,
+        per_page: options?.perPage,
+        search: options?.filters?.search,
+      });
       const query = searchParams.toString();
       const response = await apiClient.get<unknown>(
         query ? `${accountsPath}/${accountId}/users?${query}` : `${accountsPath}/${accountId}/users`,

@@ -1,4 +1,10 @@
 export type SubscriptionFrequencyType = 'days' | 'months' | 'years';
+export type SubscriptionStatusFilter = 'active' | 'cancelled';
+export type SubscriptionListFilters = {
+  search?: string;
+  status?: SubscriptionStatusFilter[];
+  frequencyType?: SubscriptionFrequencyType[];
+};
 
 export type Subscription = {
   id: string;

@@ -4,7 +4,11 @@ import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createAccountInvitesRepository } from '../repositories/accountInvitesRepository';
-import type { AccountInvite, AccountInviteWritePayload } from '../schemas/accountInviteSchemas';
+import type {
+  AccountInvite,
+  AccountInviteListFilters,
+  AccountInviteWritePayload,
+} from '../schemas/accountInviteSchemas';
 
 const accountInvitesRepository = createAccountInvitesRepository();
 
@@ -21,9 +25,10 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useAccountInvitesCrud() {
-  const invitesState = usePaginatedCollection<AccountInvite, [string]>({
+  const invitesState = usePaginatedCollection<AccountInvite, [string, AccountInviteListFilters | undefined]>({
     defaultPerPage: 20,
-    loadPage: (options, accountId) => accountInvitesRepository.list(accountId, options),
+    loadPage: (options, accountId, filters) =>
+      accountInvitesRepository.list(accountId, { ...options, filters }),
     resolveErrorMessage,
     loadErrorMessage: 'No fue posible cargar las invitaciones.',
     loadMoreErrorMessage: 'No fue posible cargar más invitaciones.',
@@ -37,8 +42,12 @@ export function useAccountInvitesCrud() {
   const hasMoreInvites = computed(() => invitesState.hasMoreItems.value);
   const hasReachedEnd = computed(() => invitesState.hasReachedEnd.value);
 
-  async function loadInvites(accountId: string, options?: { reset?: boolean; perPage?: number }): Promise<void> {
-    await invitesState.load([accountId], options);
+  async function loadInvites(
+    accountId: string,
+    filters?: AccountInviteListFilters,
+    options?: { reset?: boolean; perPage?: number },
+  ): Promise<void> {
+    await invitesState.load([accountId, filters], options);
   }
 
   async function loadMoreInvites(): Promise<void> {

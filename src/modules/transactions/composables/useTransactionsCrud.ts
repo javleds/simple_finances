@@ -8,6 +8,7 @@ import type {
   CreatedTransactionResult,
   DeletedTransactionResult,
   Transaction,
+  TransactionListFilters,
   TransactionWritePayload,
 } from '../types';
 
@@ -26,9 +27,10 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useTransactionsCrud() {
-  const transactionsState = usePaginatedCollection<Transaction, [string?]>({
+  const transactionsState = usePaginatedCollection<Transaction, [string | undefined, TransactionListFilters | undefined]>({
     defaultPerPage: 20,
-    loadPage: (options, accountId) => transactionsRepository.list(accountId, options),
+    loadPage: (options, accountId, filters) =>
+      transactionsRepository.list(accountId, { ...options, filters }),
     resolveErrorMessage,
     loadErrorMessage: 'No fue posible cargar las transacciones.',
     loadMoreErrorMessage: 'No fue posible cargar más transacciones.',
@@ -42,8 +44,12 @@ export function useTransactionsCrud() {
   const hasMoreTransactions = computed(() => transactionsState.hasMoreItems.value);
   const hasReachedEnd = computed(() => transactionsState.hasReachedEnd.value);
 
-  async function loadTransactions(accountId?: string, options?: { reset?: boolean; perPage?: number }): Promise<void> {
-    await transactionsState.load([accountId], options);
+  async function loadTransactions(
+    accountId?: string,
+    filters?: TransactionListFilters,
+    options?: { reset?: boolean; perPage?: number },
+  ): Promise<void> {
+    await transactionsState.load([accountId, filters], options);
   }
 
   async function loadMoreTransactions(): Promise<void> {

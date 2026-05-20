@@ -5,12 +5,17 @@ import {
   createPaginatedCollectionSchema,
   type PaginatedCollection,
 } from '@/modules/shared/lib/pagination';
+import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import {
   accountGoalApiSchema,
   mapAccountGoalApiToDomain,
 } from '../schemas/accountGoalSchemas';
-import type { AccountGoal, AccountGoalWritePayload } from '../schemas/accountGoalSchemas';
+import type {
+  AccountGoal,
+  AccountGoalListFilters,
+  AccountGoalWritePayload,
+} from '../schemas/accountGoalSchemas';
 
 const apiClient = createApiClient();
 const goalsPath = '/financial-goals';
@@ -36,22 +41,37 @@ function buildWritePayload(payload: AccountGoalWritePayload) {
   };
 }
 
+function mapGoalStatusesToApi(statuses: AccountGoalListFilters['status']): string[] | undefined {
+  if (!statuses || statuses.length === 0) {
+    return undefined;
+  }
+
+  const includesCompleted = statuses.includes('completed');
+  const includesInProgress = statuses.some((status) => status !== 'completed');
+
+  if (includesCompleted && includesInProgress) {
+    return undefined;
+  }
+
+  if (includesCompleted) {
+    return ['completed'];
+  }
+
+  return ['in progress'];
+}
+
 export function createAccountGoalsRepository() {
   return {
     async list(
       accountId: string,
-      options?: { page?: number; perPage?: number },
+      options?: { page?: number; perPage?: number; filters?: AccountGoalListFilters },
     ): Promise<PaginatedCollection<AccountGoal>> {
-      const searchParams = new URLSearchParams();
-
-      if (options?.page) {
-        searchParams.set('page', String(options.page));
-      }
-
-      if (options?.perPage) {
-        searchParams.set('per_page', String(options.perPage));
-      }
-
+      const searchParams = buildQueryParams({
+        page: options?.page,
+        per_page: options?.perPage,
+        search: options?.filters?.search,
+        status: mapGoalStatusesToApi(options?.filters?.status),
+      });
       const query = searchParams.toString();
       const response = await apiClient.get<unknown>(
         query

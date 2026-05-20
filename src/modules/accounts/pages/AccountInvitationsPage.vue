@@ -7,7 +7,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import AccountInvitationForm from '@/modules/accounts/components/AccountInvitationForm.vue';
 import AccountInvitationListItem from '@/modules/accounts/components/AccountInvitationListItem.vue';
@@ -17,6 +17,7 @@ import type {
   AccountInviteWritePayload,
 } from '@/modules/accounts/schemas/accountInviteSchemas';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
+import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
   AppIconButton,
@@ -33,6 +34,7 @@ type FormState = {
 };
 
 const route = useRoute();
+const router = useRouter();
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateInvitationOpen = ref(false);
@@ -92,24 +94,10 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   },
 });
 
-const filteredInvitationItems = computed(() => {
-  const normalizedQuery = searchTerm.value.trim().toLowerCase();
-
-  return invites.value.filter((invitation) => {
-    const matchesQuery =
-      normalizedQuery.length === 0 || invitation.email.toLowerCase().includes(normalizedQuery);
-
-    if (!matchesQuery) {
-      return false;
-    }
-
-    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(invitation.status)) {
-      return false;
-    }
-
-    return true;
-  });
-});
+const activeFilters = computed(() => ({
+  search: searchTerm.value.trim() || undefined,
+  status: selectedStatuses.value.length > 0 ? [...selectedStatuses.value] : undefined,
+}));
 
 const selectedInvitation = computed(() => {
   if (!selectedInvitationId.value) {
@@ -154,13 +142,40 @@ const deleteInviteActions = computed(() => [
 ]);
 
 watch(
-  [accountId, invitationsPerPage],
-  ([nextAccountId, nextPerPage]) => {
+  () => route.query,
+  (nextQuery) => {
+    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
+    selectedStatuses.value = parseQueryValues(nextQuery.status, isInvitationStatus);
+  },
+  { immediate: true },
+);
+
+watch(
+  [searchTerm, selectedStatuses],
+  () => {
+    const nextQuery = {
+      ...route.query,
+      search: searchTerm.value.trim() || undefined,
+      status: selectedStatuses.value.length > 0 ? selectedStatuses.value.join(',') : undefined,
+    };
+
+    if (areQueriesEqual(route.query, nextQuery)) {
+      return;
+    }
+
+    void router.replace({ query: nextQuery });
+  },
+  { deep: true },
+);
+
+watch(
+  [accountId, activeFilters, invitationsPerPage],
+  ([nextAccountId, nextFilters, nextPerPage]) => {
     if (!nextAccountId) {
       return;
     }
 
-    void loadInvites(nextAccountId, {
+    void loadInvites(nextAccountId, nextFilters, {
       reset: true,
       perPage: nextPerPage,
     });
@@ -293,10 +308,14 @@ function reloadInvitations(): void {
     return;
   }
 
-  void loadInvites(accountId.value, {
+  void loadInvites(accountId.value, activeFilters.value, {
     reset: true,
     perPage: invitationsPerPage.value,
   });
+}
+
+function isInvitationStatus(value: string): value is AccountInviteStatus {
+  return value === 'pending' || value === 'accepted' || value === 'declined';
 }
 
 function handleLoadMoreRetry(): void {
@@ -374,14 +393,14 @@ function infiniteStatusLabel(): string {
     <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle"
-          >{{ filteredInvitationItems.length }} invitaciones visibles</AppText
+          >{{ invites.length }} invitaciones visibles</AppText
         >
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
       </div>
 
       <div class="space-y-4">
         <AccountInvitationListItem
-          v-for="invitation in filteredInvitationItems"
+          v-for="invitation in invites"
           :key="invitation.id"
           :email="invitation.email"
           :item-id="invitation.id"
@@ -392,7 +411,7 @@ function infiniteStatusLabel(): string {
         />
 
         <div
-          v-if="filteredInvitationItems.length === 0"
+          v-if="invites.length === 0"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >

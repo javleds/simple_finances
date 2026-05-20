@@ -1,4 +1,6 @@
 export type AccountStatus = 'Activo' | 'Inactivo';
+export type AccountKindFilter = 'credit' | 'debit';
+export type AccountSurfaceFilter = 'virtual' | 'physical';
 
 export type AccountMember = {
   id: string;
@@ -43,4 +45,15 @@ export type AccountWritePayload = {
   isCredit: boolean;
   creditLine: number | null;
   closingDay: number | null;
+};
+
+export type AccountListFilters = {
+  search?: string;
+  status?: AccountStatus[];
+  kind?: AccountKindFilter[];
+  surface?: AccountSurfaceFilter[];
+};
+
+export type AccountUsersListFilters = {
+  search?: string;
 };

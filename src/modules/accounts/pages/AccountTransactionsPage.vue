@@ -7,7 +7,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import type { Account } from '@/modules/accounts/types';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
@@ -24,10 +24,16 @@ import {
   AppTitle,
 } from '@/modules/shared/components';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
+import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
 import TransactionsForm from '@/modules/transactions/components/TransactionsForm.vue';
 import TransactionListItem from '@/modules/transactions/components/TransactionListItem.vue';
-import type { TransactionWritePayload } from '@/modules/transactions/types';
+import type {
+  TransactionListFilters,
+  TransactionStatus,
+  TransactionType,
+  TransactionWritePayload,
+} from '@/modules/transactions/types';
 
 type FormState = {
   canSubmit: boolean;
@@ -39,14 +45,15 @@ const props = defineProps<{
 }>();
 
 const route = useRoute();
+const router = useRouter();
 
 const isCreateTransactionModalOpen = ref(false);
 const isEditTransactionModalOpen = ref(false);
 const isDeleteTransactionModalOpen = ref(false);
 const isFiltersOpen = ref(false);
 const searchTerm = ref('');
-const selectedStatuses = ref<Array<'completed' | 'pending'>>([]);
-const selectedTypes = ref<Array<'income' | 'expense'>>([]);
+const selectedStatuses = ref<TransactionStatus[]>([]);
+const selectedTypes = ref<TransactionType[]>([]);
 const selectedTransactionId = ref<string | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
@@ -116,31 +123,11 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   },
 });
 
-const filteredTransactionItems = computed(() => {
-  const normalizedQuery = searchTerm.value.trim().toLowerCase();
-
-  return transactions.value.filter((transaction) => {
-    const matchesQuery =
-      normalizedQuery.length === 0 || transaction.concept.toLowerCase().includes(normalizedQuery);
-
-    if (!matchesQuery) {
-      return false;
-    }
-
-    if (
-      selectedStatuses.value.length > 0 &&
-      !selectedStatuses.value.includes(transaction.status ?? 'completed')
-    ) {
-      return false;
-    }
-
-    if (selectedTypes.value.length > 0 && !selectedTypes.value.includes(transaction.type)) {
-      return false;
-    }
-
-    return true;
-  });
-});
+const activeFilters = computed<TransactionListFilters>(() => ({
+  search: searchTerm.value.trim() || undefined,
+  status: selectedStatuses.value.length > 0 ? [...selectedStatuses.value] : undefined,
+  type: selectedTypes.value.length > 0 ? [...selectedTypes.value] : undefined,
+}));
 
 const selectedTransaction = computed(() => {
   if (!selectedTransactionId.value) {
@@ -187,21 +174,6 @@ const deleteTransactionActions = computed(() => [
 ]);
 
 watch(
-  [accountId, transactionsPerPage],
-  ([nextAccountId, nextPerPage]) => {
-    if (!nextAccountId) {
-      return;
-    }
-
-    void loadTransactions(nextAccountId, {
-      reset: true,
-      perPage: nextPerPage,
-    });
-  },
-  { immediate: true },
-);
-
-watch(
   () => props.account?.balance,
   (nextBalance) => {
     if (typeof nextBalance !== 'number') {
@@ -209,6 +181,50 @@ watch(
     }
 
     accountBalance.value = nextBalance;
+  },
+  { immediate: true },
+);
+
+watch(
+  () => route.query,
+  (nextQuery) => {
+    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
+    selectedStatuses.value = parseQueryValues(nextQuery.status, isTransactionStatus);
+    selectedTypes.value = parseQueryValues(nextQuery.type, isTransactionType);
+  },
+  { immediate: true },
+);
+
+watch(
+  [searchTerm, selectedStatuses, selectedTypes],
+  () => {
+    const nextQuery = {
+      ...route.query,
+      search: searchTerm.value.trim() || undefined,
+      status: selectedStatuses.value.length > 0 ? selectedStatuses.value.join(',') : undefined,
+      type: selectedTypes.value.length > 0 ? selectedTypes.value.join(',') : undefined,
+    };
+
+    if (areQueriesEqual(route.query, nextQuery)) {
+      return;
+    }
+
+    void router.replace({ query: nextQuery });
+  },
+  { deep: true },
+);
+
+watch(
+  [accountId, activeFilters, transactionsPerPage],
+  ([nextAccountId, nextFilters, nextPerPage]) => {
+    if (!nextAccountId) {
+      return;
+    }
+
+    void loadTransactions(nextAccountId, nextFilters, {
+      reset: true,
+      perPage: nextPerPage,
+    });
   },
   { immediate: true },
 );
@@ -303,7 +319,7 @@ function clearFilters(): void {
   selectedTypes.value = [];
 }
 
-function toggleStatus(status: 'completed' | 'pending'): void {
+function toggleStatus(status: TransactionStatus): void {
   if (selectedStatuses.value.includes(status)) {
     selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
     return;
@@ -312,7 +328,7 @@ function toggleStatus(status: 'completed' | 'pending'): void {
   selectedStatuses.value = [...selectedStatuses.value, status];
 }
 
-function toggleType(type: 'income' | 'expense'): void {
+function toggleType(type: TransactionType): void {
   if (selectedTypes.value.includes(type)) {
     selectedTypes.value = selectedTypes.value.filter((item) => item !== type);
     return;
@@ -381,12 +397,20 @@ function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
 }
 
+function isTransactionStatus(value: string): value is TransactionStatus {
+  return value === 'completed' || value === 'pending';
+}
+
+function isTransactionType(value: string): value is TransactionType {
+  return value === 'income' || value === 'expense';
+}
+
 function reloadTransactions(): void {
   if (!accountId.value) {
     return;
   }
 
-  void loadTransactions(accountId.value, {
+  void loadTransactions(accountId.value, activeFilters.value, {
     reset: true,
     perPage: transactionsPerPage.value,
   });
@@ -501,14 +525,14 @@ function infiniteStatusLabel(): string {
     <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
         <AppText size="sm" tone="subtle">
-          {{ filteredTransactionItems.length }} transacciones visibles
+          {{ transactions.length }} transacciones visibles
         </AppText>
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
       </div>
 
       <div class="space-y-4">
         <TransactionListItem
-          v-for="transaction in filteredTransactionItems"
+          v-for="transaction in transactions"
           :key="transaction.id"
           :amount="transaction.amount"
           :concept="transaction.concept"
@@ -521,7 +545,7 @@ function infiniteStatusLabel(): string {
         />
 
         <div
-          v-if="filteredTransactionItems.length === 0"
+          v-if="transactions.length === 0"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >

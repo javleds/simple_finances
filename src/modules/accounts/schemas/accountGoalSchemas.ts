@@ -45,6 +45,11 @@ export type AccountGoal = {
   status: 'in progress' | 'completed';
 };
 
+export type AccountGoalListFilters = {
+  search?: string;
+  status?: Array<'on-track' | 'at-risk' | 'completed'>;
+};
+
 export type AccountGoalFormValues = {
   name: string;
   amount: string;

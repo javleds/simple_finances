@@ -4,7 +4,11 @@ import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createAccountGoalsRepository } from '../repositories/accountGoalsRepository';
-import type { AccountGoal, AccountGoalWritePayload } from '../schemas/accountGoalSchemas';
+import type {
+  AccountGoal,
+  AccountGoalListFilters,
+  AccountGoalWritePayload,
+} from '../schemas/accountGoalSchemas';
 
 const accountGoalsRepository = createAccountGoalsRepository();
 
@@ -21,9 +25,10 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useAccountGoalsCrud() {
-  const goalsState = usePaginatedCollection<AccountGoal, [string]>({
+  const goalsState = usePaginatedCollection<AccountGoal, [string, AccountGoalListFilters | undefined]>({
     defaultPerPage: 20,
-    loadPage: (options, accountId) => accountGoalsRepository.list(accountId, options),
+    loadPage: (options, accountId, filters) =>
+      accountGoalsRepository.list(accountId, { ...options, filters }),
     resolveErrorMessage,
     loadErrorMessage: 'No fue posible cargar las metas.',
     loadMoreErrorMessage: 'No fue posible cargar más metas.',
@@ -37,8 +42,12 @@ export function useAccountGoalsCrud() {
   const hasMoreGoals = computed(() => goalsState.hasMoreItems.value);
   const hasReachedEnd = computed(() => goalsState.hasReachedEnd.value);
 
-  async function loadGoals(accountId: string, options?: { reset?: boolean; perPage?: number }): Promise<void> {
-    await goalsState.load([accountId], options);
+  async function loadGoals(
+    accountId: string,
+    filters?: AccountGoalListFilters,
+    options?: { reset?: boolean; perPage?: number },
+  ): Promise<void> {
+    await goalsState.load([accountId, filters], options);
   }
 
   async function loadMoreGoals(): Promise<void> {

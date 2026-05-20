@@ -12,8 +12,16 @@ import { useRoute, useRouter } from 'vue-router';
 import AccountsForm from '@/modules/accounts/components/AccountsForm.vue';
 import AccountListItem from '@/modules/accounts/components/AccountListItem.vue';
 import { useAccountsCrud } from '@/modules/accounts/composables/useAccountsCrud';
-import type { Account, AccountStatus, AccountWritePayload } from '@/modules/accounts/types';
+import type {
+  Account,
+  AccountKindFilter,
+  AccountListFilters,
+  AccountSurfaceFilter,
+  AccountStatus,
+  AccountWritePayload,
+} from '@/modules/accounts/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
+import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
   AppIconButton,
@@ -28,8 +36,6 @@ type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;
 };
-type AccountKindFilter = 'credit' | 'debit';
-type AccountSurfaceFilter = 'virtual' | 'physical';
 
 const searchTerm = ref('');
 const route = useRoute();
@@ -98,55 +104,12 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   },
 });
 
-const filteredAccounts = computed(() => {
-  const normalizedQuery = searchTerm.value.trim().toLowerCase();
-
-  return accounts.value.filter((account) => {
-    const matchesQuery = account.name.toLowerCase().includes(normalizedQuery);
-
-    if (!matchesQuery) {
-      return false;
-    }
-
-    if (selectedStatuses.value.length === 0) {
-      if (
-        selectedKinds.value.length > 0 &&
-        !selectedKinds.value.includes(account.isCredit ? 'credit' : 'debit')
-      ) {
-        return false;
-      }
-
-      if (
-        selectedSurfaces.value.length > 0 &&
-        !selectedSurfaces.value.includes(account.isVirtual ? 'virtual' : 'physical')
-      ) {
-        return false;
-      }
-
-      return true;
-    }
-
-    if (!selectedStatuses.value.includes(account.status)) {
-      return false;
-    }
-
-    if (
-      selectedKinds.value.length > 0 &&
-      !selectedKinds.value.includes(account.isCredit ? 'credit' : 'debit')
-    ) {
-      return false;
-    }
-
-    if (
-      selectedSurfaces.value.length > 0 &&
-      !selectedSurfaces.value.includes(account.isVirtual ? 'virtual' : 'physical')
-    ) {
-      return false;
-    }
-
-    return true;
-  });
-});
+const activeFilters = computed<AccountListFilters>(() => ({
+  search: searchTerm.value.trim() || undefined,
+  status: selectedStatuses.value.length > 0 ? [...selectedStatuses.value] : undefined,
+  kind: selectedKinds.value.length > 0 ? [...selectedKinds.value] : undefined,
+  surface: selectedSurfaces.value.length > 0 ? [...selectedSurfaces.value] : undefined,
+}));
 
 const selectedAccount = computed(() => {
   if (!selectedAccountId.value) {
@@ -191,17 +154,6 @@ const deleteAccountActions = computed(() => [
 ]);
 
 watch(
-  accountsPerPage,
-  (nextPerPage) => {
-    void loadAccounts({
-      reset: true,
-      perPage: nextPerPage,
-    });
-  },
-  { immediate: true },
-);
-
-watch(
   () => route.query,
   (nextQuery) => {
     searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
@@ -230,6 +182,17 @@ watch(
     void router.replace({ query: nextQuery });
   },
   { deep: true },
+);
+
+watch(
+  [activeFilters, accountsPerPage],
+  ([nextFilters, nextPerPage]) => {
+    void loadAccounts(nextFilters, {
+      reset: true,
+      perPage: nextPerPage,
+    });
+  },
+  { immediate: true },
 );
 
 function toggleStatus(status: AccountStatus): void {
@@ -333,7 +296,7 @@ function handleFiltersModalAction(actionKey: string): void {
 }
 
 function reloadAccounts(): void {
-  void loadAccounts({
+  void loadAccounts(activeFilters.value, {
     reset: true,
     perPage: accountsPerPage.value,
   });
@@ -393,40 +356,6 @@ function handleCreateFormStateChange(state: FormState): void {
 
 function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
-}
-
-function parseQueryValues<TValue extends string>(
-  value: unknown,
-  isAllowedValue: (value: string) => value is TValue,
-): TValue[] {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    return [];
-  }
-
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(isAllowedValue);
-}
-
-function areQueriesEqual(
-  currentQuery: Record<string, unknown>,
-  nextQuery: Record<string, unknown>,
-): boolean {
-  const normalizedCurrent = normalizeQueryRecord(currentQuery);
-  const normalizedNext = normalizeQueryRecord(nextQuery);
-
-  return JSON.stringify(normalizedCurrent) === JSON.stringify(normalizedNext);
-}
-
-function normalizeQueryRecord(query: Record<string, unknown>): Record<string, string> {
-  return Object.entries(query).reduce<Record<string, string>>((accumulator, [key, value]) => {
-    if (typeof value === 'string' && value.length > 0) {
-      accumulator[key] = value;
-    }
-
-    return accumulator;
-  }, {});
 }
 
 function isAccountStatus(value: string): value is AccountStatus {
@@ -492,13 +421,13 @@ function isAccountSurfaceFilter(value: string): value is AccountSurfaceFilter {
 
     <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle"> {{ filteredAccounts.length }} cuentas visibles </AppText>
+        <AppText size="sm" tone="subtle"> {{ accounts.length }} cuentas visibles </AppText>
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
       </div>
 
       <div class="space-y-4">
         <AccountListItem
-          v-for="account in filteredAccounts"
+          v-for="account in accounts"
           :key="account.id"
           :account="account"
           @delete="openDeleteAccount"
@@ -506,7 +435,7 @@ function isAccountSurfaceFilter(value: string): value is AccountSurfaceFilter {
         />
 
         <div
-          v-if="filteredAccounts.length === 0"
+          v-if="accounts.length === 0"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >

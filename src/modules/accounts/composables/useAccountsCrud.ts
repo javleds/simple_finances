@@ -4,7 +4,7 @@ import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createAccountsRepository } from '../repositories/accountsRepository';
-import type { Account, AccountWritePayload } from '../types';
+import type { Account, AccountListFilters, AccountWritePayload } from '../types';
 
 const accountsRepository = createAccountsRepository();
 
@@ -21,9 +21,9 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useAccountsCrud() {
-  const accountsState = usePaginatedCollection<Account, []>({
+  const accountsState = usePaginatedCollection<Account, [AccountListFilters | undefined]>({
     defaultPerPage: 20,
-    loadPage: (options) => accountsRepository.list(options),
+    loadPage: (options, filters) => accountsRepository.list({ ...options, filters }),
     resolveErrorMessage,
     loadErrorMessage: 'No fue posible cargar las cuentas.',
     loadMoreErrorMessage: 'No fue posible cargar más cuentas.',
@@ -37,8 +37,11 @@ export function useAccountsCrud() {
   const hasMoreAccounts = computed(() => accountsState.hasMoreItems.value);
   const hasReachedEnd = computed(() => accountsState.hasReachedEnd.value);
 
-  async function loadAccounts(options?: { reset?: boolean; perPage?: number }): Promise<void> {
-    await accountsState.load([], options);
+  async function loadAccounts(
+    filters?: AccountListFilters,
+    options?: { reset?: boolean; perPage?: number },
+  ): Promise<void> {
+    await accountsState.load([filters], options);
   }
 
   async function loadMoreAccounts(): Promise<void> {

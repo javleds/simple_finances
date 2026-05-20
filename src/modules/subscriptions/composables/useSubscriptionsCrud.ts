@@ -4,7 +4,7 @@ import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createSubscriptionsRepository } from '../repositories/subscriptionsRepository';
-import type { Subscription, SubscriptionWritePayload } from '../types';
+import type { Subscription, SubscriptionListFilters, SubscriptionWritePayload } from '../types';
 
 const subscriptionsRepository = createSubscriptionsRepository();
 
@@ -21,9 +21,9 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useSubscriptionsCrud() {
-  const subscriptionsState = usePaginatedCollection<Subscription, []>({
+  const subscriptionsState = usePaginatedCollection<Subscription, [SubscriptionListFilters | undefined]>({
     defaultPerPage: 20,
-    loadPage: (options) => subscriptionsRepository.list(options),
+    loadPage: (options, filters) => subscriptionsRepository.list({ ...options, filters }),
     resolveErrorMessage,
     loadErrorMessage: 'No fue posible cargar las suscripciones.',
     loadMoreErrorMessage: 'No fue posible cargar más suscripciones.',
@@ -37,8 +37,11 @@ export function useSubscriptionsCrud() {
   const hasMoreSubscriptions = computed(() => subscriptionsState.hasMoreItems.value);
   const hasReachedEnd = computed(() => subscriptionsState.hasReachedEnd.value);
 
-  async function loadSubscriptions(options?: { reset?: boolean; perPage?: number }): Promise<void> {
-    await subscriptionsState.load([], options);
+  async function loadSubscriptions(
+    filters?: SubscriptionListFilters,
+    options?: { reset?: boolean; perPage?: number },
+  ): Promise<void> {
+    await subscriptionsState.load([filters], options);
   }
 
   async function loadMoreSubscriptions(): Promise<void> {

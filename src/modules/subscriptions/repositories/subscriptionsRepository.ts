@@ -5,12 +5,13 @@ import {
   createPaginatedCollectionSchema,
   type PaginatedCollection,
 } from '@/modules/shared/lib/pagination';
+import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import {
   mapSubscriptionApiToDomain,
   subscriptionApiSchema,
 } from '../schemas/subscriptionSchemas';
-import type { Subscription, SubscriptionWritePayload } from '../types';
+import type { Subscription, SubscriptionListFilters, SubscriptionWritePayload } from '../types';
 
 const apiClient = createApiClient();
 const subscriptionsPath = '/subscriptions';
@@ -40,17 +41,18 @@ function buildWritePayload(payload: SubscriptionWritePayload) {
 
 export function createSubscriptionsRepository() {
   return {
-    async list(options?: { page?: number; perPage?: number }): Promise<PaginatedCollection<Subscription>> {
-      const searchParams = new URLSearchParams();
-
-      if (options?.page) {
-        searchParams.set('page', String(options.page));
-      }
-
-      if (options?.perPage) {
-        searchParams.set('per_page', String(options.perPage));
-      }
-
+    async list(options?: {
+      page?: number;
+      perPage?: number;
+      filters?: SubscriptionListFilters;
+    }): Promise<PaginatedCollection<Subscription>> {
+      const searchParams = buildQueryParams({
+        page: options?.page,
+        per_page: options?.perPage,
+        search: options?.filters?.search,
+        status: options?.filters?.status,
+        frequency_type: options?.filters?.frequencyType,
+      });
       const query = searchParams.toString();
       const response = await apiClient.get<unknown>(
         query ? `${subscriptionsPath}?${query}` : subscriptionsPath,

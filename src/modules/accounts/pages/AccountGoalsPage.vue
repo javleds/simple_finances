@@ -7,13 +7,14 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import AccountGoalForm from '@/modules/accounts/components/AccountGoalForm.vue';
 import AccountGoalListItem from '@/modules/accounts/components/AccountGoalListItem.vue';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import type { AccountGoalWritePayload } from '@/modules/accounts/schemas/accountGoalSchemas';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
+import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
   AppIconButton,
@@ -31,6 +32,7 @@ type FormState = {
 };
 
 const route = useRoute();
+const router = useRouter();
 const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateGoalOpen = ref(false);
@@ -91,16 +93,7 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
 });
 
 const filteredGoalItems = computed(() => {
-  const normalizedQuery = searchTerm.value.trim().toLowerCase();
-
   return goals.value.filter((goal) => {
-    const matchesQuery =
-      normalizedQuery.length === 0 || goal.name.toLowerCase().includes(normalizedQuery);
-
-    if (!matchesQuery) {
-      return false;
-    }
-
     const status = goal.status === 'completed' ? 'completed' : resolveGoalStatus(goal.progress);
 
     if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(status)) {
@@ -118,6 +111,11 @@ const selectedGoal = computed(() => {
 
   return goals.value.find((goal) => goal.id === selectedGoalId.value) ?? null;
 });
+
+const activeFilters = computed(() => ({
+  search: searchTerm.value.trim() || undefined,
+  status: selectedStatuses.value.length > 0 ? [...selectedStatuses.value] : undefined,
+}));
 
 const createGoalActions = computed(() => [
   { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
@@ -154,13 +152,40 @@ const deleteGoalActions = computed(() => [
 ]);
 
 watch(
-  [accountId, goalsPerPage],
-  ([nextAccountId, nextPerPage]) => {
+  () => route.query,
+  (nextQuery) => {
+    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
+    selectedStatuses.value = parseQueryValues(nextQuery.status, isGoalStatus);
+  },
+  { immediate: true },
+);
+
+watch(
+  [searchTerm, selectedStatuses],
+  () => {
+    const nextQuery = {
+      ...route.query,
+      search: searchTerm.value.trim() || undefined,
+      status: selectedStatuses.value.length > 0 ? selectedStatuses.value.join(',') : undefined,
+    };
+
+    if (areQueriesEqual(route.query, nextQuery)) {
+      return;
+    }
+
+    void router.replace({ query: nextQuery });
+  },
+  { deep: true },
+);
+
+watch(
+  [accountId, activeFilters, goalsPerPage],
+  ([nextAccountId, nextFilters, nextPerPage]) => {
     if (!nextAccountId) {
       return;
     }
 
-    void loadGoals(nextAccountId, {
+    void loadGoals(nextAccountId, nextFilters, {
       reset: true,
       perPage: nextPerPage,
     });
@@ -312,10 +337,14 @@ function reloadGoals(): void {
     return;
   }
 
-  void loadGoals(accountId.value, {
+  void loadGoals(accountId.value, activeFilters.value, {
     reset: true,
     perPage: goalsPerPage.value,
   });
+}
+
+function isGoalStatus(value: string): value is GoalStatus {
+  return value === 'on-track' || value === 'at-risk' || value === 'completed';
 }
 
 function handleLoadMoreRetry(): void {

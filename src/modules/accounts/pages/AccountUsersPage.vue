@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import AccountUserListItem from '@/modules/accounts/components/AccountUserListItem.vue';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
@@ -9,6 +9,7 @@ import type { AccountMember } from '@/modules/accounts/types';
 import { ApiError } from '@/lib/api/apiClient';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
+import { areQueriesEqual } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
   AppCard,
@@ -22,6 +23,7 @@ import {
 
 const accountsRepository = createAccountsRepository();
 const route = useRoute();
+const router = useRouter();
 const defaultUsersPerPage = 20;
 
 const emit = defineEmits<{
@@ -57,7 +59,13 @@ const usersPerPage = computed(() => {
 
 const usersState = usePaginatedCollection<AccountMember, [string]>({
   defaultPerPage: defaultUsersPerPage,
-  loadPage: (options, nextAccountId) => accountsRepository.listUsers(nextAccountId, options),
+  loadPage: (options, nextAccountId) =>
+    accountsRepository.listUsers(nextAccountId, {
+      ...options,
+      filters: {
+        search: searchTerm.value.trim() || undefined,
+      },
+    }),
   resolveErrorMessage,
   loadErrorMessage: 'No fue posible cargar los usuarios.',
   loadMoreErrorMessage: 'No fue posible cargar más usuarios.',
@@ -73,21 +81,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   onIntersect: () => {
     void usersState.loadMore();
   },
-});
-
-const filteredUsers = computed(() => {
-  const normalizedQuery = searchTerm.value.trim().toLowerCase();
-
-  return usersState.items.value.filter((user) => {
-    if (normalizedQuery.length === 0) {
-      return true;
-    }
-
-    return (
-      user.name.toLowerCase().includes(normalizedQuery) ||
-      user.email.toLowerCase().includes(normalizedQuery)
-    );
-  });
 });
 
 const selectedUser = computed(() => {
@@ -185,6 +178,28 @@ watch(
   },
   { immediate: true },
 );
+
+watch(
+  () => route.query.search,
+  (nextSearch) => {
+    searchTerm.value = typeof nextSearch === 'string' ? nextSearch : '';
+  },
+  { immediate: true },
+);
+
+watch(searchTerm, () => {
+  const nextQuery = {
+    ...route.query,
+    search: searchTerm.value.trim() || undefined,
+  };
+
+  if (areQueriesEqual(route.query, nextQuery)) {
+    return;
+  }
+
+  void router.replace({ query: nextQuery });
+  void loadUsers();
+});
 
 watch(
   () => usersState.items.value,
@@ -434,13 +449,13 @@ function resetSplitDraft(): void {
 
     <section v-else class="space-y-3">
       <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">{{ filteredUsers.length }} usuarios visibles</AppText>
+        <AppText size="sm" tone="subtle">{{ usersState.items.value.length }} usuarios visibles</AppText>
         <AppText size="sm" tone="subtle">Scroll continuo</AppText>
       </div>
 
       <div class="space-y-4">
         <AccountUserListItem
-          v-for="user in filteredUsers"
+          v-for="user in usersState.items.value"
           :key="user.id"
           access-label="Cuenta compartida"
           :allocation-percentage="user.allocationPercentage"
@@ -455,7 +470,7 @@ function resetSplitDraft(): void {
         />
 
         <div
-          v-if="filteredUsers.length === 0"
+          v-if="usersState.items.value.length === 0"
           class="rounded-2xl border border-dashed px-4 py-4 text-center"
           :style="{ borderColor: 'var(--app-color-border)' }"
         >

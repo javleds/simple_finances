@@ -5,6 +5,7 @@ import {
   createPaginatedCollectionSchema,
   type PaginatedCollection,
 } from '@/modules/shared/lib/pagination';
+import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import {
   fixedIncomeApiSchema,
@@ -16,6 +17,7 @@ import type {
   DistributionRelation,
   DistributionRelationWritePayload,
   DistributionRule,
+  DistributionRuleListFilters,
   DistributionRuleWritePayload,
 } from '../types';
 
@@ -45,17 +47,17 @@ const fixedOutcomeItemSchema = z
 
 export function createDistributionRepository() {
   return {
-    async listRules(options?: { page?: number; perPage?: number }): Promise<PaginatedCollection<DistributionRule>> {
-      const searchParams = new URLSearchParams();
-
-      if (options?.page) {
-        searchParams.set('page', String(options.page));
-      }
-
-      if (options?.perPage) {
-        searchParams.set('per_page', String(options.perPage));
-      }
-
+    async listRules(options?: {
+      page?: number;
+      perPage?: number;
+      filters?: DistributionRuleListFilters;
+    }): Promise<PaginatedCollection<DistributionRule>> {
+      const searchParams = buildQueryParams({
+        page: options?.page,
+        per_page: options?.perPage,
+        search: options?.filters?.search,
+        frequency: options?.filters?.frequency,
+      });
       const query = searchParams.toString();
       const [fixedIncomesResponse, fixedOutcomesResponse] = await Promise.all([
         apiClient.get<unknown>(query ? `/fixed-incomes?${query}` : '/fixed-incomes'),

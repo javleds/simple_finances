@@ -24,6 +24,10 @@ function parseNullableNumber(value: unknown): number | null {
 }
 
 export type AccountInviteStatus = 'pending' | 'accepted' | 'declined';
+export type AccountInviteListFilters = {
+  search?: string;
+  status?: AccountInviteStatus[];
+};
 
 export type AccountInvite = {
   id: string;
