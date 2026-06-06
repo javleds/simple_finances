@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AccountRelationInviteController;
 use App\Http\Controllers\Api\AccountTransactionController;
 use App\Http\Controllers\Api\AccountUserController;
 use App\Http\Controllers\Api\AccountUserNotificationController;
+use App\Http\Controllers\Api\BatchTransactionController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\Auth\EmailVerificationNotificationByEmailController;
 use App\Http\Controllers\Api\Auth\EmailVerificationNotificationController;
@@ -15,6 +16,9 @@ use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Api\Auth\PasswordResetController;
 use App\Http\Controllers\Api\Auth\RegisterController;
+use App\Http\Controllers\Api\DashboardAccountController;
+use App\Http\Controllers\Api\DashboardGraphController;
+use App\Http\Controllers\Api\DashboardSubscriptionController;
 use App\Http\Controllers\Api\FinancialGoalController;
 use App\Http\Controllers\Api\FixedIncomeController;
 use App\Http\Controllers\Api\FixedOutcomeController;
@@ -52,6 +56,11 @@ Route::prefix('auth')->group(function (): void {
 Route::middleware('api.auth')->group(function (): void {
     Route::get('profile', [ProfileController::class, 'show']);
     Route::put('profile', [ProfileController::class, 'update']);
+
+    Route::get('dashboard/graph', [DashboardGraphController::class, 'index']);
+    Route::get('dashboard/accounts', [DashboardAccountController::class, 'index']);
+    Route::get('dashboard/subscriptions', [DashboardSubscriptionController::class, 'index']);
+    Route::post('batch/transactions', [BatchTransactionController::class, 'store']);
 
     Route::get('notification-settings', [NotificationSettingsController::class, 'show']);
     Route::put('notification-settings', [NotificationSettingsController::class, 'update']);
