@@ -9,13 +9,7 @@ import type { CallbackDataParams } from 'echarts/types/src/util/types.js';
 import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 import { accounts } from '@/modules/accounts/data/accounts';
-import {
-  AppCard,
-  AppModal,
-  AppText,
-  AppToggleButton,
-  AppTitle,
-} from '@/modules/shared/components';
+import { AppCard, AppModal, AppText, AppToggleButton, AppTitle } from '@/modules/shared/components';
 import { useThemeStore } from '@/stores/theme';
 
 use([BarChart, CanvasRenderer, GridComponent, TooltipComponent]);
@@ -110,7 +104,9 @@ const pendingActions = computed<PendingTransactionItem[]>(() =>
             accountName: account.name,
             concept: `Egreso pendiente por comprobar de ${user.name}`,
             amount: parseCurrency(user.pendingExpenses),
-            date: pendingTransactionDates[index % pendingTransactionDates.length] ?? pendingTransactionDates[0],
+            date:
+              pendingTransactionDates[index % pendingTransactionDates.length] ??
+              pendingTransactionDates[0],
           };
         }),
     )
@@ -409,7 +405,10 @@ function confirmCompletePendingAction(): void {
             class="space-y-2 rounded-2xl border bg-(--app-color-surface-muted) px-3 py-3"
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
-            <div class="flex items-start justify-between gap-3 border-b pb-2" :style="{ borderColor: 'var(--app-color-border)' }">
+            <div
+              class="flex items-start justify-between gap-3 border-b pb-2"
+              :style="{ borderColor: 'var(--app-color-border)' }"
+            >
               <div class="min-w-0 space-y-1">
                 <div class="flex items-center gap-2">
                   <span
@@ -436,11 +435,7 @@ function confirmCompletePendingAction(): void {
             </div>
 
             <div class="space-y-1">
-              <div
-                v-for="action in group.items"
-                :key="action.id"
-                class="rounded-xl px-1 py-2"
-              >
+              <div v-for="action in group.items" :key="action.id" class="rounded-xl px-1 py-2">
                 <div class="min-w-0 space-y-2">
                   <div class="flex items-start justify-between gap-3">
                     <p
@@ -480,18 +475,15 @@ function confirmCompletePendingAction(): void {
 
     <AppCard class="rounded-3xl">
       <div class="flex items-center justify-between gap-4">
-        <div class="space-y-1">
+        <div class="flex flex-col items-center gap-4 space-y-1">
           <AppTitle as="h2" size="sm">Planeación de subscripciones</AppTitle>
-          <AppText>
-            Cambia la cadencia recomendada para separar el gasto sin acumular golpes fuertes.
-          </AppText>
-        </div>
 
-        <AppToggleButton
-          :model-value="savingsCadence"
-          :options="cadenceOptions"
-          @update:model-value="savingsCadence = $event as SavingsCadence"
-        />
+          <AppToggleButton
+            :model-value="savingsCadence"
+            :options="cadenceOptions"
+            @update:model-value="savingsCadence = $event as SavingsCadence"
+          />
+        </div>
       </div>
     </AppCard>
 
@@ -525,11 +517,16 @@ function confirmCompletePendingAction(): void {
       :open="isCompletePendingActionOpen"
       :actions="[
         { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        { key: 'confirm-complete', label: 'Completar movimiento', tone: 'primary', icon: CheckIcon },
+        {
+          key: 'confirm-complete',
+          label: 'Completar movimiento',
+          tone: 'primary',
+          icon: CheckIcon,
+        },
       ]"
       title="Completar movimiento"
       variant="warning"
-      @action="($event === 'confirm-complete') && confirmCompletePendingAction()"
+      @action="$event === 'confirm-complete' && confirmCompletePendingAction()"
       @close="closeCompletePendingAction"
     >
       <div class="space-y-3">
@@ -537,7 +534,8 @@ function confirmCompletePendingAction(): void {
           Vas a marcar como completado el pendiente de
           <strong>{{ selectedPendingAction.accountName }}</strong>
           por
-          <strong>{{ formatCurrency(selectedPendingAction.amount) }}</strong>.
+          <strong>{{ formatCurrency(selectedPendingAction.amount) }}</strong
+          >.
         </AppText>
 
         <AppText v-else-if="selectedPendingAccountActions.length > 0">
@@ -549,8 +547,8 @@ function confirmCompletePendingAction(): void {
               formatCurrency(
                 selectedPendingAccountActions.reduce((sum, item) => sum + item.amount, 0),
               )
-            }}
-          </strong>.
+            }} </strong
+          >.
         </AppText>
 
         <AppText v-else>
