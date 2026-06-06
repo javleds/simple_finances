@@ -332,8 +332,15 @@ function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
 }
 
-function formatDateLabel(date: string | null): string {
+function formatDateLabel(date: string | null | undefined): string {
   if (!date) {
+    return 'Sin fecha';
+  }
+
+  const normalizedDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : date;
+  const parsedDate = new Date(normalizedDate);
+
+  if (Number.isNaN(parsedDate.getTime())) {
     return 'Sin fecha';
   }
 
@@ -341,7 +348,7 @@ function formatDateLabel(date: string | null): string {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  }).format(new Date(`${date}T00:00:00`));
+  }).format(parsedDate);
 }
 
 function reloadSubscriptions(): void {
