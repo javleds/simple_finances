@@ -89,7 +89,8 @@ const {
 } = useSubscriptionsCrud();
 
 const subscriptionsPerPage = computed(() => {
-  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+  const rawValue =
+    typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
   if (!Number.isInteger(rawValue) || rawValue <= 0) {
     return defaultSubscriptionsPerPage;
@@ -377,10 +378,7 @@ function infiniteStatusLabel(): string {
 
 <template>
   <div class="space-y-5">
-    <AppSectionBar
-      title="Planes y cargos"
-      description="Detalle de las suscripciones vinculadas a esta organización."
-    >
+    <AppSectionBar title="Subscripciones">
       <template #actions>
         <AppButton variant="primary" @click="openCreateSubscription">
           <PlusIcon class="h-4 w-4" />
