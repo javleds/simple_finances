@@ -29,7 +29,7 @@ function balanceClasses(amount: Account['balance']): string {
     return 'text-red-700 dark:text-red-300';
   }
 
-  return 'bg-slate-500/10 text-slate-600 dark:text-slate-300';
+  return 'text-slate-600 dark:text-slate-300';
 }
 
 function statusClasses(status: Account['status']): string {
