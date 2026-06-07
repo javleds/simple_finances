@@ -37,23 +37,13 @@ type FormState = {
   isSubmitting: boolean;
 };
 
-const searchTerm = ref('');
 const route = useRoute();
 const router = useRouter();
-const isCreateAccountOpen = ref(false);
-const isDeleteAccountOpen = ref(false);
-const isEditAccountOpen = ref(false);
-const isFiltersOpen = ref(false);
-const selectedStatuses = ref<AccountStatus[]>([]);
-const selectedKinds = ref<AccountKindFilter[]>([]);
-const selectedSurfaces = ref<AccountSurfaceFilter[]>([]);
-const selectedAccountId = ref<string | null>(null);
-const editAccountInitialValues = ref<Partial<Account> | null>(null);
-const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
-const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 
 const statusOptions = ['Activo', 'Inactivo'] as const;
 const defaultAccountsPerPage = 20;
+const defaultAccountStatuses: AccountStatus[] = ['Activo'];
+const defaultAccountSurfaces: AccountSurfaceFilter[] = ['physical'];
 const kindOptions = [
   { value: 'credit', label: 'Crédito' },
   { value: 'debit', label: 'Débito' },
@@ -65,6 +55,23 @@ const surfaceOptions = [
 const availableStatuses = [...statusOptions];
 const availableKinds = kindOptions.map((option) => option.value);
 const availableSurfaces = surfaceOptions.map((option) => option.value);
+
+const searchTerm = ref(typeof route.query.search === 'string' ? route.query.search : '');
+const isCreateAccountOpen = ref(false);
+const isDeleteAccountOpen = ref(false);
+const isEditAccountOpen = ref(false);
+const isFiltersOpen = ref(false);
+const selectedStatuses = ref<AccountStatus[]>(
+  parseQueryValuesOrDefault(route.query.status, isAccountStatus, defaultAccountStatuses),
+);
+const selectedKinds = ref<AccountKindFilter[]>(parseQueryValues(route.query.kind, isAccountKindFilter));
+const selectedSurfaces = ref<AccountSurfaceFilter[]>(
+  parseQueryValuesOrDefault(route.query.surface, isAccountSurfaceFilter, defaultAccountSurfaces),
+);
+const selectedAccountId = ref<string | null>(null);
+const editAccountInitialValues = ref<Partial<Account> | null>(null);
+const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 
 const {
   accounts,
@@ -157,11 +164,13 @@ watch(
   () => route.query,
   (nextQuery) => {
     searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
-    selectedStatuses.value = parseQueryValues(nextQuery.status, isAccountStatus);
-    selectedKinds.value = parseQueryValues(nextQuery.kind, isAccountKindFilter);
-    selectedSurfaces.value = parseQueryValues(nextQuery.surface, isAccountSurfaceFilter);
+    setArrayValueIfChanged(selectedStatuses, parseQueryValues(nextQuery.status, isAccountStatus));
+    setArrayValueIfChanged(selectedKinds, parseQueryValues(nextQuery.kind, isAccountKindFilter));
+    setArrayValueIfChanged(
+      selectedSurfaces,
+      parseQueryValues(nextQuery.surface, isAccountSurfaceFilter),
+    );
   },
-  { immediate: true },
 );
 
 watch(
@@ -181,7 +190,7 @@ watch(
 
     void router.replace({ query: nextQuery });
   },
-  { deep: true },
+  { deep: true, immediate: true },
 );
 
 watch(
@@ -356,6 +365,37 @@ function handleCreateFormStateChange(state: FormState): void {
 
 function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
+}
+
+function parseQueryValuesOrDefault<TValue extends string>(
+  value: unknown,
+  isAllowedValue: (value: string) => value is TValue,
+  defaultValues: TValue[],
+): TValue[] {
+  if (typeof value !== 'string') {
+    return [...defaultValues];
+  }
+
+  return parseQueryValues(value, isAllowedValue);
+}
+
+function setArrayValueIfChanged<TValue>(
+  target: { value: TValue[] },
+  nextValue: TValue[],
+): void {
+  if (areArraysEqual(target.value, nextValue)) {
+    return;
+  }
+
+  target.value = nextValue;
+}
+
+function areArraysEqual<TValue>(currentValue: TValue[], nextValue: TValue[]): boolean {
+  if (currentValue.length !== nextValue.length) {
+    return false;
+  }
+
+  return currentValue.every((item, index) => item === nextValue[index]);
 }
 
 function isAccountStatus(value: string): value is AccountStatus {
