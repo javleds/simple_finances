@@ -16,6 +16,7 @@ class SubscriptionController extends ApiController
             ->with(['feedAccount', 'payments'])
             ->orderBy('next_payment_date'),
             $request,
+            ['finished' => 'finished_at'],
         );
     }
 

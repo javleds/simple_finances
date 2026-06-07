@@ -805,6 +805,52 @@ it('creates subscription payments and registers a transaction when paid', functi
     expect(Transaction::query()->where('account_id', $account->id)->count())->toBe(1);
 });
 
+it('filters finished subscriptions from the API', function () {
+    $user = User::factory()->create();
+
+    Subscription::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Active subscription',
+        'finished_at' => null,
+        'next_payment_date' => '2026-01-10',
+    ]);
+    Subscription::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Finished subscription',
+        'finished_at' => '2026-01-01',
+        'next_payment_date' => '2026-01-11',
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/subscriptions?finished=1')
+        ->assertOk();
+
+    expect(collect($response->json('data'))->pluck('name')->all())->toBe(['Finished subscription']);
+});
+
+it('filters active subscriptions from the API', function () {
+    $user = User::factory()->create();
+
+    Subscription::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Active subscription',
+        'finished_at' => null,
+        'next_payment_date' => '2026-01-10',
+    ]);
+    Subscription::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Finished subscription',
+        'finished_at' => '2026-01-01',
+        'next_payment_date' => '2026-01-11',
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/subscriptions?finished=0')
+        ->assertOk();
+
+    expect(collect($response->json('data'))->pluck('name')->all())->toBe(['Active subscription']);
+});
+
 it('manages fixed incomes, partials and outcomes', function () {
     $user = User::factory()->create();
 

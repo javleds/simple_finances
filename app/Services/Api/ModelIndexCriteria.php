@@ -10,12 +10,16 @@ use Illuminate\Support\Facades\Schema;
 
 class ModelIndexCriteria
 {
-    public function apply(Builder $query, Request $request): Builder
+    public function apply(Builder $query, Request $request, array $nullableBooleanFilters = []): Builder
     {
         $model = $query->getModel();
         $columns = Schema::getColumnListing($model->getTable());
 
         foreach ($request->query() as $key => $value) {
+            if ($this->applyNullableBooleanFilter($query, $key, $value, $nullableBooleanFilters)) {
+                continue;
+            }
+
             if ($this->shouldSkip($key, $value, $columns)) {
                 continue;
             }
@@ -27,6 +31,35 @@ class ModelIndexCriteria
         }
 
         return $query;
+    }
+
+    private function applyNullableBooleanFilter(
+        Builder $query,
+        string $key,
+        mixed $value,
+        array $nullableBooleanFilters
+    ): bool {
+        $column = $nullableBooleanFilters[$key] ?? null;
+
+        if ($column === null) {
+            return false;
+        }
+
+        $parsedValue = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        if ($parsedValue === null) {
+            return true;
+        }
+
+        if ($parsedValue) {
+            $query->whereNotNull($column);
+
+            return true;
+        }
+
+        $query->whereNull($column);
+
+        return true;
     }
 
     private function shouldSkip(string $key, mixed $value, array $columns): bool
