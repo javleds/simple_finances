@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Filament\Resources\AccountInviteResource;
 use App\Models\AccountInvite;
+use App\Support\SpaUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -25,7 +25,7 @@ class InviteAccountApiEmail extends Notification
     {
         return (new MailMessage)->markdown('mail.accounts.invite', [
             'invite' => $this->invite,
-            'link' => AccountInviteResource::getUrl(panel: 'admin'),
+            'link' => app(SpaUrl::class)->to('account-invites'),
         ])->subject(sprintf('%s - Invitación a cuenta compartida', config('app.name')));
     }
 

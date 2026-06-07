@@ -3,8 +3,10 @@
 namespace App\Notifications;
 
 use App\Enums\Action;
+use App\Filament\Resources\AccountResource\Pages\ViewAccount;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Support\SpaUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -16,10 +18,12 @@ class SharedTransactionChangedEmail extends Notification
     /**
      * Create a new notification instance.
      */
-    public function __construct(public readonly User $user, public readonly Transaction $transaction, public readonly Action $action)
-    {
-        //
-    }
+    public function __construct(
+        public readonly User $user,
+        public readonly Transaction $transaction,
+        public readonly Action $action,
+        private readonly bool $useSpaUrl = false,
+    ) {}
 
     /**
      * Get the notification's delivery channels.
@@ -41,7 +45,17 @@ class SharedTransactionChangedEmail extends Notification
             'user' => $this->user,
             'transaction' => $this->transaction,
             'action' => $this->action,
+            'link' => $this->link(),
         ])->subject(sprintf('%s - Movimiento en cuenta compartida', config('app.name')));
+    }
+
+    private function link(): string
+    {
+        if ($this->useSpaUrl) {
+            return app(SpaUrl::class)->to('accounts/'.$this->transaction->account_id);
+        }
+
+        return ViewAccount::getUrl([$this->transaction->account_id]);
     }
 
     /**

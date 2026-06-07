@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Account;
 use App\Models\User;
+use App\Support\SpaUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -30,6 +31,7 @@ class SharedTransactionBatchChangedEmail extends Notification
             'user' => $this->user,
             'account' => $this->account,
             'items' => $this->items,
+            'link' => app(SpaUrl::class)->to('accounts/'.$this->account->id),
         ])->subject(sprintf('%s - Movimientos en cuenta compartida', config('app.name')));
     }
 

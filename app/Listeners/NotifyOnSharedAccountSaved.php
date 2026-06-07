@@ -51,7 +51,12 @@ class NotifyOnSharedAccountSaved
             if (config('notifications.shared_transactions.mode') !== 'grouped') {
                 Notification::send(
                     $user,
-                    new SharedTransactionChangedEmail($user, $event->transaction, $event->action)
+                    new SharedTransactionChangedEmail(
+                        $user,
+                        $event->transaction,
+                        $event->action,
+                        request()->is('api/*'),
+                    )
                 );
                 continue;
             }

@@ -202,7 +202,9 @@ it('rate limits password recovery requests by email and ip', function () {
         ->assertStatus(429);
 });
 
-it('builds password recovery links with the configured frontend url', function () {
+it('builds password recovery links with the configured spa url', function () {
+    config()->set('app.spa_url', 'https://spa.example.test');
+
     $user = User::factory()->create([
         'email' => 'password-reset@example.com',
     ]);
@@ -210,7 +212,27 @@ it('builds password recovery links with the configured frontend url', function (
     $notification = new ResetPassword('reset-token');
     $mailMessage = $notification->toMail($user);
 
-    expect($mailMessage->actionUrl)->toBe('http://localhost:5173/password-reset/reset?token=reset-token&email=password-reset%40example.com');
+    expect($mailMessage->actionUrl)->toBe('https://spa.example.test/password-reset/reset?token=reset-token&email=password-reset%40example.com');
+});
+
+it('builds email verification links that verify through the api and redirect to the spa', function () {
+    config()->set('app.spa_url', 'https://spa.example.test');
+
+    $user = User::factory()->unverified()->create([
+        'email' => 'verification-link@example.com',
+    ]);
+
+    $notification = new VerifyEmail;
+    $mailMessage = $notification->toMail($user);
+    $verificationUrl = $mailMessage->actionUrl;
+
+    expect($verificationUrl)->toContain('/api/auth/email-verification/'.$user->id.'/')
+        ->and($verificationUrl)->toContain('redirect_to_spa=1');
+
+    $this->get($verificationUrl)
+        ->assertRedirect('https://spa.example.test/email-verification?status=verified');
+
+    expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
 });
 
 it('updates notification settings', function () {

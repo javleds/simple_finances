@@ -9,6 +9,7 @@ use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Notification;
 
 it('sends the api invitation email without relying on the current filament panel', function () {
+    config()->set('app.spa_url', 'https://spa.example.test');
     Notification::fake();
 
     $notificationType = NotificationType::factory()->create([
@@ -35,5 +36,8 @@ it('sends the api invitation email without relying on the current filament panel
 
     app(SendApiInvitationNotification::class)->execute($invite);
 
-    Notification::assertSentOnDemand(InviteAccountApiEmail::class);
+    Notification::assertSentOnDemand(
+        InviteAccountApiEmail::class,
+        fn (InviteAccountApiEmail $notification): bool => $notification->toMail($invitee)->viewData['link'] === 'https://spa.example.test/account-invites',
+    );
 });
