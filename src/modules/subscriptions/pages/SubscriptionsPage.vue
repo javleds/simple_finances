@@ -247,7 +247,7 @@ function toggleStatus(status: SubscriptionStatusFilter): void {
     return;
   }
 
-  selectedStatuses.value = [...selectedStatuses.value, status];
+  selectedStatuses.value = [status];
 }
 
 function toggleUnit(unit: SubscriptionFrequencyType): void {

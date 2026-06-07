@@ -39,14 +39,14 @@ function buildWritePayload(payload: SubscriptionWritePayload) {
   };
 }
 
-function mapSubscriptionStatusesToApi(
+function mapSubscriptionStatusesToFinishedFilter(
   statuses: SubscriptionListFilters['status'],
-): string[] | undefined {
+): number | undefined {
   if (!statuses || statuses.length === 0 || statuses.length > 1) {
     return undefined;
   }
 
-  return [statuses[0] === 'active' ? 'null' : 'not_null'];
+  return statuses[0] === 'active' ? 0 : 1;
 }
 
 export function createSubscriptionsRepository() {
@@ -60,7 +60,7 @@ export function createSubscriptionsRepository() {
         page: options?.page,
         per_page: options?.perPage,
         search: options?.filters?.search,
-        canceled_at: mapSubscriptionStatusesToApi(options?.filters?.status),
+        finished: mapSubscriptionStatusesToFinishedFilter(options?.filters?.status),
         frequency_type: options?.filters?.frequencyType,
       });
       const query = searchParams.toString();
