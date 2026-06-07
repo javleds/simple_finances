@@ -24,6 +24,14 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function balanceClasses(amount: Account['balance']): string {
+  if (amount < 0) {
+    return 'text-red-700 dark:text-red-300';
+  }
+
+  return 'bg-slate-500/10 text-slate-600 dark:text-slate-300';
+}
+
 function statusClasses(status: Account['status']): string {
   if (status === 'Activo') {
     return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
@@ -75,30 +83,29 @@ function openAccountDetails(): void {
           </p>
         </div>
 
-        <span
-          class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
-          :class="statusClasses(props.account.status)"
+        <p
+          class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap text-(--app-color-text) tabular-nums sm:text-base"
+          :class="balanceClasses(props.account.balance)"
         >
-          {{ props.account.status }}
-        </span>
+          {{ formatCurrency(props.account.balance) }}
+        </p>
 
-        <div class="col-span-3 flex min-w-0 items-center justify-between">
+        <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
+
+        <div class="col-span-3 flex min-w-0 items-center gap-2">
           <p
-            class="text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
+            class="truncate text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
           >
-            Balance
+            {{ props.account.isVirtual ? 'Virtual' : 'Fisica' }}
           </p>
-          <p
-            class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap text-(--app-color-text) tabular-nums sm:text-base"
+          <span
+            class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
+            :class="statusClasses(props.account.status)"
           >
-            {{ formatCurrency(props.account.balance) }}
-          </p>
+            {{ props.account.status }}
+          </span>
         </div>
       </button>
-
-      <div class="col-start-3 row-start-1 self-start">
-        <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
-      </div>
     </div>
   </AppCard>
 </template>
