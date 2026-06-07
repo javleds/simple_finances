@@ -6,6 +6,7 @@ defineOptions({
 });
 
 type AppInputMask = 'none' | 'amount';
+type AppInputMode = 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
 
 const props = withDefaults(
   defineProps<{
@@ -43,12 +44,16 @@ const inputType = computed(() => {
   return 'text';
 });
 
-const inputMode = computed(() => {
+const inputMode = computed<AppInputMode | undefined>(() => {
   if (props.mask !== 'amount') {
     return undefined;
   }
 
-  return typeof attrs.inputmode === 'string' ? attrs.inputmode : 'decimal';
+  if (isAppInputMode(attrs.inputmode)) {
+    return attrs.inputmode;
+  }
+
+  return 'decimal';
 });
 
 const inputAttrs = computed(() => {
@@ -152,7 +157,7 @@ function normalizeAmountValue(
     return '';
   }
 
-  const rawValue = String(value).replace(',', '.').replaceAll(/[^0-9.]/g, '');
+  const rawValue = String(value).replace(',', '.').replace(/[^0-9.]/g, '');
 
   if (rawValue === '') {
     return '';
@@ -176,13 +181,26 @@ function normalizeAmountValue(
 }
 
 function normalizeIntegerPart(value: string): string {
-  const digitsOnly = value.replaceAll(/\D/g, '');
+  const digitsOnly = value.replace(/\D/g, '');
 
   if (digitsOnly === '') {
     return '0';
   }
 
   return digitsOnly.replace(/^0+(?=\d)/, '');
+}
+
+function isAppInputMode(value: unknown): value is AppInputMode {
+  return (
+    value === 'none' ||
+    value === 'text' ||
+    value === 'tel' ||
+    value === 'url' ||
+    value === 'email' ||
+    value === 'numeric' ||
+    value === 'decimal' ||
+    value === 'search'
+  );
 }
 
 function formatAmountDisplay(value: string | number | null | undefined): string {

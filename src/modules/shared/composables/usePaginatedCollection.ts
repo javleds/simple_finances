@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 
 import type { PaginatedCollection } from '@/modules/shared/lib/pagination';
 
@@ -18,7 +18,7 @@ type UsePaginatedCollectionOptions<TItem, TArgs extends unknown[]> = {
 export function usePaginatedCollection<TItem, TArgs extends unknown[]>(
   options: UsePaginatedCollectionOptions<TItem, TArgs>,
 ) {
-  const items = ref<TItem[]>([]);
+  const items = shallowRef<TItem[]>([]);
   const isLoading = ref(false);
   const isLoadingMore = ref(false);
   const loadError = ref<string | null>(null);

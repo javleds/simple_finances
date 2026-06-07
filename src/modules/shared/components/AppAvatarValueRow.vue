@@ -15,11 +15,15 @@ const initials = computed(() => {
     return '?';
   }
 
+  const firstWord = words[0] ?? '';
+
   if (words.length === 1) {
-    return words[0].slice(0, 2).toUpperCase();
+    return firstWord.slice(0, 2).toUpperCase();
   }
 
-  return `${words[0][0] ?? ''}${words[1][0] ?? ''}`.toUpperCase();
+  const secondWord = words[1] ?? '';
+
+  return `${firstWord[0] ?? ''}${secondWord[0] ?? ''}`.toUpperCase();
 });
 
 const avatarStyle = computed<Record<string, string>>(() => {
