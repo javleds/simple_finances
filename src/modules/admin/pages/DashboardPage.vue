@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { use } from 'echarts/core';
 import { BarChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent } from 'echarts/components';
@@ -8,133 +8,78 @@ import VChart from 'vue-echarts';
 import type { CallbackDataParams } from 'echarts/types/src/util/types.js';
 import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
-import { accounts } from '@/modules/accounts/data/accounts';
-import { AppCard, AppModal, AppText, AppToggleButton, AppTitle } from '@/modules/shared/components';
+import { useDashboard } from '@/modules/admin/composables/useDashboard';
+import type {
+  DashboardPendingAction,
+  DashboardPendingActionGroup,
+} from '@/modules/admin/types/dashboard';
+import {
+  AppButton,
+  AppCard,
+  AppModal,
+  AppText,
+  AppToggleButton,
+  AppTitle,
+} from '@/modules/shared/components';
 import { useThemeStore } from '@/stores/theme';
 
 use([BarChart, CanvasRenderer, GridComponent, TooltipComponent]);
 
 type SavingsCadence = 'monthly' | 'biweekly';
 
-type SubscriptionSummary = {
-  id: string;
-  plan: string;
-  annualCost: number;
-};
-
-type PendingTransactionItem = {
-  id: string;
-  accountId: string;
-  accountName: string;
-  concept: string;
-  amount: number;
-  date: string;
-};
-
-type PendingTransactionGroup = {
-  accountId: string;
-  accountName: string;
-  accountColor: string;
-  totalAmount: number;
-  items: PendingTransactionItem[];
-};
-
 const savingsCadence = ref<SavingsCadence>('monthly');
 const themeStore = useThemeStore();
 const isCompletePendingActionOpen = ref(false);
 const selectedPendingActionId = ref<string | null>(null);
 const selectedPendingAccountId = ref<string | null>(null);
+const {
+  dashboard,
+  hasDashboardData,
+  isLoading,
+  isCompletingPendingActions,
+  loadError,
+  completeError,
+  clearCompleteError,
+  loadDashboard,
+  completePendingTransactions,
+} = useDashboard();
 
 const cadenceOptions = [
   { value: 'monthly', label: 'Mensual' },
   { value: 'biweekly', label: 'Quincenal' },
 ] as const;
 
-const subscriptions: SubscriptionSummary[] = [
-  {
-    id: 'premium-facility',
-    plan: 'Plan Premium Facility',
-    annualCost: 12000,
-  },
-  {
-    id: 'additional-users',
-    plan: 'Usuarios adicionales',
-    annualCost: 1280 * 12,
-  },
-  {
-    id: 'advanced-analytics',
-    plan: 'Analítica avanzada',
-    annualCost: 860 * 12,
-  },
-];
-
-const pendingTransactionDates = [
-  '2026-05-02T10:30:00.000Z',
-  '2026-05-01T18:15:00.000Z',
-  '2026-04-30T12:00:00.000Z',
-  '2026-04-29T09:45:00.000Z',
-  '2026-04-28T16:20:00.000Z',
-  '2026-04-27T14:10:00.000Z',
-] as const;
-
-const activeAccounts = computed(() => accounts.filter((account) => account.status === 'Activo'));
-
-const sharedAccountsCount = computed(
-  () => accounts.filter((account) => account.users.length > 1).length,
+const pendingActions = computed<DashboardPendingAction[]>(() =>
+  [...dashboard.value.pendingActions].sort(
+    (left, right) => parseDate(right.date) - parseDate(left.date),
+  ),
 );
 
-const totalPendingPayments = computed(() =>
-  accounts.reduce((sum, account) => {
-    return (
-      sum +
-      account.users.reduce((usersSum, user) => usersSum + parseCurrency(user.pendingExpenses), 0)
-    );
-  }, 0),
-);
+const pendingActionGroups = computed<DashboardPendingActionGroup[]>(() => {
+  const groups = new Map<string, DashboardPendingActionGroup>();
 
-const pendingActions = computed<PendingTransactionItem[]>(() =>
-  accounts
-    .flatMap((account) =>
-      account.users
-        .filter((user) => parseCurrency(user.pendingExpenses) > 0)
-        .map((user, index) => {
-          return {
-            id: `${account.id}-${user.id}`,
-            accountId: account.id,
-            accountName: account.name,
-            concept: `Egreso pendiente por comprobar de ${user.name}`,
-            amount: parseCurrency(user.pendingExpenses),
-            date:
-              pendingTransactionDates[index % pendingTransactionDates.length] ??
-              pendingTransactionDates[0],
-          };
-        }),
-    )
-    .sort((left, right) => parseDate(right.date) - parseDate(left.date)),
-);
+  for (const action of pendingActions.value) {
+    const group = groups.get(action.accountId);
 
-const pendingActionGroups = computed<PendingTransactionGroup[]>(() =>
-  accounts
-    .map((account) => {
-      const items = pendingActions.value
-        .filter((item) => item.accountId === account.id)
-        .sort((left, right) => parseDate(right.date) - parseDate(left.date));
+    if (group) {
+      group.items.push(action);
+      group.totalAmount += action.amount;
+      continue;
+    }
 
-      if (items.length === 0) {
-        return null;
-      }
+    groups.set(action.accountId, {
+      accountId: action.accountId,
+      accountName: action.accountName,
+      accountColor: action.accountColor,
+      totalAmount: action.amount,
+      items: [action],
+    });
+  }
 
-      return {
-        accountId: account.id,
-        accountName: account.name,
-        accountColor: account.color,
-        totalAmount: items.reduce((sum, item) => sum + item.amount, 0),
-        items,
-      };
-    })
-    .filter((group): group is PendingTransactionGroup => group !== null)
-    .sort((left, right) => parseDate(right.items[0]?.date) - parseDate(left.items[0]?.date)),
-);
+  return [...groups.values()].sort(
+    (left, right) => parseDate(right.items[0]?.date) - parseDate(left.items[0]?.date),
+  );
+});
 
 const selectedPendingAction = computed(() => {
   if (!selectedPendingActionId.value) {
@@ -152,9 +97,7 @@ const selectedPendingAccountActions = computed(() => {
   return pendingActions.value.filter((item) => item.accountId === selectedPendingAccountId.value);
 });
 
-const annualSubscriptionsSpend = computed(() =>
-  subscriptions.reduce((sum, subscription) => sum + subscription.annualCost, 0),
-);
+const annualSubscriptionsSpend = computed(() => dashboard.value.subscriptionsSummary.annualTotal);
 
 const recommendedSavings = computed(() => {
   const divisor = savingsCadence.value === 'monthly' ? 12 : 24;
@@ -225,7 +168,7 @@ const balanceChartOption = computed(() => ({
   },
   xAxis: {
     type: 'category',
-    data: accounts.map((account) => shortenLabel(account.name)),
+    data: dashboard.value.graphAccounts.map((account) => shortenLabel(account.accountName)),
     axisTick: {
       show: false,
     },
@@ -242,9 +185,7 @@ const balanceChartOption = computed(() => ({
     },
   },
   yAxis: {
-    type: 'log',
-    logBase: 10,
-    min: 1000,
+    type: 'value',
     axisLine: {
       show: false,
     },
@@ -263,11 +204,11 @@ const balanceChartOption = computed(() => ({
     {
       type: 'bar',
       barMaxWidth: 13,
-      data: accounts.map((account) => ({
-        value: parseCurrency(account.balance),
+      data: dashboard.value.graphAccounts.map((account) => ({
+        value: account.balance,
         itemStyle: {
           color: 'transparent',
-          borderColor: account.color,
+          borderColor: account.color ?? chartColors.value.textSubtle,
           borderWidth: 2,
           borderRadius: 0,
         },
@@ -276,9 +217,9 @@ const balanceChartOption = computed(() => ({
   ],
 }));
 
-function parseCurrency(value: string): number {
-  return Number(value.replace(/[^0-9.-]/g, '')) || 0;
-}
+onMounted(() => {
+  void loadDashboard();
+});
 
 function parseDate(value?: string): number {
   if (!value) {
@@ -318,12 +259,14 @@ function shortenLabel(label: string): string {
 }
 
 function openCompletePendingAction(actionId: string): void {
+  clearCompleteError();
   selectedPendingActionId.value = actionId;
   selectedPendingAccountId.value = null;
   isCompletePendingActionOpen.value = true;
 }
 
 function openCompletePendingAccount(accountId: string): void {
+  clearCompleteError();
   selectedPendingActionId.value = null;
   selectedPendingAccountId.value = accountId;
   isCompletePendingActionOpen.value = true;
@@ -335,21 +278,54 @@ function closeCompletePendingAction(): void {
   selectedPendingAccountId.value = null;
 }
 
-function confirmCompletePendingAction(): void {
-  closeCompletePendingAction();
+async function confirmCompletePendingAction(): Promise<void> {
+  const transactionIds = selectedPendingAction.value
+    ? [selectedPendingAction.value.id]
+    : selectedPendingAccountActions.value.map((action) => action.id);
+
+  const wasCompleted = await completePendingTransactions(transactionIds);
+
+  if (wasCompleted) {
+    closeCompletePendingAction();
+  }
 }
 </script>
 
 <template>
   <div class="space-y-5">
+    <section
+      v-if="loadError && !hasDashboardData"
+      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+      :style="{ borderColor: 'var(--app-color-border)' }"
+    >
+      <AppText>{{ loadError }}</AppText>
+      <div class="flex justify-center">
+        <AppButton variant="secondary" @click="loadDashboard">Reintentar</AppButton>
+      </div>
+    </section>
+
+    <section
+      v-else-if="isLoading && !hasDashboardData"
+      class="rounded-2xl border px-4 py-10 text-center"
+      :style="{ borderColor: 'var(--app-color-border)' }"
+    >
+      <AppText>Cargando dashboard...</AppText>
+    </section>
+
+    <section
+      v-if="loadError && hasDashboardData"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
+      <AppText class="text-(--app-color-danger)!">
+        {{ loadError }}
+      </AppText>
+    </section>
+
     <AppCard class="rounded-3xl">
       <div class="space-y-4">
         <div class="space-y-1">
           <AppTitle as="h2" size="sm">Balance por cuenta</AppTitle>
-          <AppText>
-            Vista comparativa con escala logarítmica para leer cuentas grandes y chicas sin perder
-            proporción.
-          </AppText>
+          <AppText> Vista comparativa para leer el balance actual de cada cuenta. </AppText>
         </div>
 
         <VChart :option="balanceChartOption" autoresize class="h-72 max-h-[250px] w-full" />
@@ -363,7 +339,7 @@ function confirmCompletePendingAction(): void {
         <div class="space-y-1">
           <AppText size="sm" tone="subtle">Cuentas activas</AppText>
           <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
-            {{ activeAccounts.length }}
+            {{ dashboard.accountsSummary.activeAccounts }}
           </p>
         </div>
       </AppCard>
@@ -374,7 +350,7 @@ function confirmCompletePendingAction(): void {
         <div class="space-y-1">
           <AppText size="sm" tone="subtle">Cuentas compartidas</AppText>
           <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
-            {{ sharedAccountsCount }}
+            {{ dashboard.accountsSummary.sharedAccounts }}
           </p>
         </div>
       </AppCard>
@@ -385,7 +361,7 @@ function confirmCompletePendingAction(): void {
         <div class="space-y-1">
           <AppText size="sm" tone="subtle">Por pagar</AppText>
           <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
-            {{ formatCurrency(totalPendingPayments) }}
+            {{ formatCurrency(dashboard.accountsSummary.pendingTotal) }}
           </p>
         </div>
       </AppCard>
@@ -413,7 +389,9 @@ function confirmCompletePendingAction(): void {
                 <div class="flex items-center gap-2">
                   <span
                     class="h-2.5 w-2.5 shrink-0 rounded-full"
-                    :style="{ backgroundColor: group.accountColor }"
+                    :style="{
+                      backgroundColor: group.accountColor ?? 'var(--app-color-text-subtle)',
+                    }"
                   />
                   <p class="truncate text-sm font-semibold text-(--app-color-text)">
                     {{ group.accountName }}
@@ -519,17 +497,22 @@ function confirmCompletePendingAction(): void {
         { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
         {
           key: 'confirm-complete',
-          label: 'Completar movimiento',
+          label: isCompletingPendingActions ? 'Completando...' : 'Completar movimiento',
           tone: 'primary',
           icon: CheckIcon,
+          disabled: isCompletingPendingActions,
         },
       ]"
       title="Completar movimiento"
       variant="warning"
-      @action="$event === 'confirm-complete' && confirmCompletePendingAction()"
+      @action="$event === 'confirm-complete' && void confirmCompletePendingAction()"
       @close="closeCompletePendingAction"
     >
       <div class="space-y-3">
+        <AppText v-if="completeError" class="text-(--app-color-danger)!">
+          {{ completeError }}
+        </AppText>
+
         <AppText v-if="selectedPendingAction">
           Vas a marcar como completado el pendiente de
           <strong>{{ selectedPendingAction.accountName }}</strong>
