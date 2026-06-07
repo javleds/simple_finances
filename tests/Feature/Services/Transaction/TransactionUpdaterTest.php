@@ -65,6 +65,57 @@ it('creates sub transactions when enabling split on an existing outcome transact
         ]);
 });
 
+it('does not create pending incomes with zero percentage when enabling split', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 100],
+        $partner->id => ['percentage' => 0],
+    ]);
+    $this->actingAs($owner);
+
+    $createDto = TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Split with zero allocation',
+        'amount' => 180.0,
+        'account_id' => $account->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]);
+
+    $mainTransaction = app(TransactionCreator::class)->execute($createDto);
+
+    $updateDto = TransactionFormDto::fromFormArray([
+        'id' => $mainTransaction->id,
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Split with zero allocation',
+        'amount' => 180.0,
+        'account_id' => $account->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 100],
+            ['user_id' => $partner->id, 'percentage' => 0],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]);
+
+    $updatedTransaction = app(TransactionUpdater::class)->execute($mainTransaction, $updateDto);
+    $subTransactions = Transaction::query()
+        ->where('parent_transaction_id', $updatedTransaction->id)
+        ->orderBy('id')
+        ->get();
+
+    expect($subTransactions)->toHaveCount(1)
+        ->and($subTransactions->pluck('user_id')->all())->toBe([$owner->id])
+        ->and($subTransactions->pluck('percentage')->all())->toBe([100.0]);
+});
+
 it('rebalances sub transactions when amount changes', function () {
     $owner = User::factory()->create();
     $partner = User::factory()->create();
@@ -117,6 +168,180 @@ it('rebalances sub transactions when amount changes', function () {
         ->and($subTransactions->pluck('percentage')->values()->all())->toBe([30.0, 70.0])
         ->and($subTransactions->pluck('status')->unique()->all())->toBe([TransactionStatus::Pending])
         ->and($subTransactions->pluck('parent_transaction_id')->unique()->values()->all())->toBe([$updatedTransaction->id]);
+});
+
+it('updates sub transaction metadata when editing a parent transaction with children', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $partner->id => ['percentage' => 50],
+    ]);
+    $this->actingAs($owner);
+
+    $createDto = TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Original shared expense',
+        'amount' => 200.0,
+        'account_id' => $account->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 50],
+            ['user_id' => $partner->id, 'percentage' => 50],
+        ],
+        'scheduled_at' => '2026-01-10',
+        'financial_goal_id' => null,
+    ]);
+
+    $mainTransaction = app(TransactionCreator::class)->execute($createDto);
+
+    $updateDto = TransactionFormDto::fromFormArray([
+        'id' => $mainTransaction->id,
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Updated shared expense',
+        'amount' => 200.0,
+        'account_id' => $account->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 50],
+            ['user_id' => $partner->id, 'percentage' => 50],
+        ],
+        'scheduled_at' => '2026-01-20',
+        'financial_goal_id' => null,
+    ]);
+
+    app(TransactionUpdater::class)->execute($mainTransaction, $updateDto);
+
+    $subTransactions = Transaction::query()
+        ->where('parent_transaction_id', $mainTransaction->id)
+        ->orderBy('id')
+        ->get();
+
+    expect($subTransactions->pluck('concept')->all())->toBe([
+        'Updated shared expense - Parte de '.$owner->name,
+        'Updated shared expense - Parte de '.$partner->name,
+    ])
+        ->and($subTransactions->pluck('scheduled_at')->map(fn ($date) => $date->format('Y-m-d'))->all())->toBe([
+            '2026-01-20',
+            '2026-01-20',
+        ]);
+});
+
+it('rebalances sub transactions when percentages change without changing the amount', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $partner->id => ['percentage' => 50],
+    ]);
+    $this->actingAs($owner);
+
+    $createDto = TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Shared expense',
+        'amount' => 200.0,
+        'account_id' => $account->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 50],
+            ['user_id' => $partner->id, 'percentage' => 50],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]);
+
+    $mainTransaction = app(TransactionCreator::class)->execute($createDto);
+
+    $updateDto = TransactionFormDto::fromFormArray([
+        'id' => $mainTransaction->id,
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Shared expense adjusted',
+        'amount' => 200.0,
+        'account_id' => $account->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 25],
+            ['user_id' => $partner->id, 'percentage' => 75],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]);
+
+    $updatedTransaction = app(TransactionUpdater::class)->execute($mainTransaction, $updateDto);
+    $subTransactions = Transaction::query()
+        ->where('parent_transaction_id', $updatedTransaction->id)
+        ->orderBy('id')
+        ->get();
+
+    expect($subTransactions->pluck('amount')->all())->toBe([50.0, 150.0])
+        ->and($subTransactions->pluck('percentage')->all())->toBe([25.0, 75.0])
+        ->and($subTransactions->pluck('concept')->all())->toBe([
+            'Shared expense adjusted - Parte de '.$owner->name,
+            'Shared expense adjusted - Parte de '.$partner->name,
+        ]);
+});
+
+it('rebalances sub transactions to keep the exact split total', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $thirdUser = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 40],
+        $partner->id => ['percentage' => 30],
+        $thirdUser->id => ['percentage' => 30],
+    ]);
+    $this->actingAs($owner);
+
+    $createDto = TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Shared expense exact rebalance',
+        'amount' => 99.99,
+        'account_id' => $account->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 40],
+            ['user_id' => $partner->id, 'percentage' => 30],
+            ['user_id' => $thirdUser->id, 'percentage' => 30],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]);
+
+    $mainTransaction = app(TransactionCreator::class)->execute($createDto);
+
+    $updateDto = TransactionFormDto::fromFormArray([
+        'id' => $mainTransaction->id,
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Shared expense exact rebalance',
+        'amount' => 100.0,
+        'account_id' => $account->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 33.33],
+            ['user_id' => $partner->id, 'percentage' => 33.33],
+            ['user_id' => $thirdUser->id, 'percentage' => 33.34],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]);
+
+    $updatedTransaction = app(TransactionUpdater::class)->execute($mainTransaction, $updateDto);
+    $subTransactions = Transaction::query()
+        ->where('parent_transaction_id', $updatedTransaction->id)
+        ->orderBy('id')
+        ->get();
+
+    expect($subTransactions->pluck('amount')->all())->toBe([33.33, 33.33, 33.34])
+        ->and(round($subTransactions->sum('amount'), 2))->toBe(100.0);
 });
 
 it('removes pending sub transactions and detaches completed ones on type change', function () {

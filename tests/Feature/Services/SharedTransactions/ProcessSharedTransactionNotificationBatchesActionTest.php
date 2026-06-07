@@ -15,6 +15,7 @@ use App\Services\SharedTransactions\ProcessSharedTransactionNotificationBatchesA
 use Illuminate\Support\Facades\Notification;
 
 it('sends grouped notifications and marks batch as sent', function () {
+    config()->set('app.spa_url', 'https://spa.example.test');
     config()->set('notifications.shared_transactions.mode', 'grouped');
     config()->set('notifications.shared_transactions.debounce_minutes', 5);
 
@@ -62,7 +63,11 @@ it('sends grouped notifications and marks batch as sent', function () {
 
     app(ProcessSharedTransactionNotificationBatchesAction::class)->execute();
 
-    Notification::assertSentTo($recipient, SharedTransactionBatchChangedEmail::class);
+    Notification::assertSentTo(
+        $recipient,
+        SharedTransactionBatchChangedEmail::class,
+        fn (SharedTransactionBatchChangedEmail $notification): bool => $notification->toMail($recipient)->viewData['link'] === 'https://spa.example.test/accounts/'.$account->id,
+    );
 
     $batch->refresh();
 

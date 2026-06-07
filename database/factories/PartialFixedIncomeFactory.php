@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\FixedIncome;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,7 +19,10 @@ class PartialFixedIncomeFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'fixed_income_id' => FixedIncome::factory(),
+            'name' => $this->faker->words(3, true),
+            'amount' => $this->faker->randomFloat(2, 1, 1000),
+            'user_id' => User::factory(),
         ];
     }
 }

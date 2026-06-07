@@ -7,6 +7,7 @@ use App\Models\Account;
 use App\Services\Accounts\AttachAccountToSignedInUser;
 use App\Services\Accounts\EnableNotificationsForAccount;
 use App\Services\Accounts\UpdateCreditCardBalance;
+use Illuminate\Support\Facades\Schema;
 
 readonly class AccountCreator
 {
@@ -18,10 +19,16 @@ readonly class AccountCreator
 
     public function execute(AccountDto $dto): Account
     {
+        $payload = $dto->toModelArray();
+
+        if (! Schema::hasColumn('accounts', 'feed_account_id')) {
+            unset($payload['feed_account_id']);
+        }
+
         $account = new Account;
         $account->fill(
             array_merge(
-                $dto->toModelArray(),
+                $payload,
                 ['user_id' => auth()->id()]
             )
         );

@@ -3,33 +3,16 @@
 namespace App\Listeners;
 
 use App\Events\AccountInviteCreated;
-use App\Models\NotificationType;
-use App\Models\User;
-use App\Notifications\InviteAccountEmail;
-use Illuminate\Support\Facades\Notification;
+use App\Services\AccountInvites\SendInvitationNotification;
 
 class NotifyOnAccountInviteCreated
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(
+        private readonly SendInvitationNotification $sendInvitationNotification,
+    ) {}
 
-    /**
-     * Handle the event.
-     */
     public function handle(AccountInviteCreated $event): void
     {
-        $user = User::withoutGlobalScopes()->where('email', $event->invite->email)->first();
-
-        if ($user && ! $user->canReceiveNotification(NotificationType::INVITATION_NOTIFICATION)) {
-            return;
-        }
-
-        Notification::route('mail', $event->invite->email)
-            ->notify(new InviteAccountEmail($event->invite));
+        $this->sendInvitationNotification->execute($event->invite);
     }
 }

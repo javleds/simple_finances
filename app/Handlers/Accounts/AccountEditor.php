@@ -5,6 +5,7 @@ namespace App\Handlers\Accounts;
 use App\Dto\AccountDto;
 use App\Models\Account;
 use App\Services\Accounts\UpdateCreditCardBalance;
+use Illuminate\Support\Facades\Schema;
 
 readonly class AccountEditor
 {
@@ -14,7 +15,13 @@ readonly class AccountEditor
 
     public function execute(Account $account, AccountDto $dto): Account
     {
-        $account->update($dto->toModelArray());
+        $payload = $dto->toModelArray();
+
+        if (! Schema::hasColumn('accounts', 'feed_account_id')) {
+            unset($payload['feed_account_id']);
+        }
+
+        $account->update($payload);
 
         $this->updateCreditCardBalance->execute($account);
 

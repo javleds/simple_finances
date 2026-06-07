@@ -1,0 +1,3515 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Simple Finances API",
+    "version": "1.0.0",
+    "description": "Documentacion OpenAPI de la API SPA de Simple Finances. Todos los endpoints index aceptan filtros automáticos por columnas reales del modelo a través de query string, además de page y per_page. Los booleanos se envían como 1 o 0."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "security": [],
+        "summary": "Register user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "security": [],
+        "summary": "Login user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/email-verification-notification-by-email": {
+      "post": {
+        "tags": ["Auth"],
+        "security": [],
+        "summary": "Resend verification email by email address",
+        "description": "Returns a neutral response to avoid exposing whether the account exists or is already verified. This endpoint is rate limited.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailVerificationNotificationByEmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          },
+          "429": {
+            "description": "Too many resend attempts"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "delete": {
+        "tags": ["Auth"],
+        "summary": "Logout current token",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/auth/password-recovery": {
+      "post": {
+        "tags": ["Auth"],
+        "security": [],
+        "summary": "Send password recovery link",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordRecoveryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/auth/password-reset": {
+      "put": {
+        "tags": ["Auth"],
+        "security": [],
+        "summary": "Reset password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/auth/email-verification/{id}/{hash}": {
+      "get": {
+        "tags": ["Auth"],
+        "security": [],
+        "summary": "Verify email",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          },
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/auth/email-verification-notification": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Resend verification email",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Get current profile",
+        "description": "Returns the authenticated user, including the is_email_verified flag.",
+        "responses": {
+          "200": {
+            "description": "Profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Profile"],
+        "summary": "Update current profile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notification-settings": {
+      "get": {
+        "tags": ["Notification Settings"],
+        "summary": "Get notification settings",
+        "responses": {
+          "200": {
+            "description": "Notification settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Notification Settings"],
+        "summary": "Update notification settings",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationSettingsUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/accounts": {
+      "get": {
+        "tags": ["Accounts"],
+        "summary": "List accounts",
+        "description": "Filtros disponibles por cualquier propiedad real del modelo Account.",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/AccountIdFilter" },
+          { "$ref": "#/components/parameters/AccountNameFilter" },
+          { "$ref": "#/components/parameters/AccountDescriptionFilter" },
+          { "$ref": "#/components/parameters/AccountColorFilter" },
+          { "$ref": "#/components/parameters/AccountBalanceFilter" },
+          { "$ref": "#/components/parameters/AccountUserIdFilter" },
+          { "$ref": "#/components/parameters/AccountCreditCardFilter" },
+          { "$ref": "#/components/parameters/AccountCreditLineFilter" },
+          { "$ref": "#/components/parameters/AccountCutoffDayFilter" },
+          { "$ref": "#/components/parameters/AccountNextCutoffDateFilter" },
+          { "$ref": "#/components/parameters/AccountAvailableCreditFilter" },
+          { "$ref": "#/components/parameters/AccountSpentFilter" },
+          { "$ref": "#/components/parameters/AccountFeedAccountIdFilter" },
+          { "$ref": "#/components/parameters/AccountVirtualFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" },
+          { "$ref": "#/components/parameters/DeletedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Accounts"],
+        "summary": "Create account",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}": {
+      "get": {
+        "tags": ["Accounts"],
+        "summary": "Show account",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Accounts"],
+        "summary": "Update account",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Accounts"],
+        "summary": "Delete account",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/invites": {
+      "get": {
+        "tags": ["Account Invites"],
+        "summary": "List account invites for an account",
+        "description": "Filtros disponibles por cualquier propiedad real del modelo AccountInvite dentro de la cuenta seleccionada.",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/AccountInviteIdFilter" },
+          { "$ref": "#/components/parameters/AccountInviteEmailFilter" },
+          { "$ref": "#/components/parameters/AccountInviteStatusFilter" },
+          { "$ref": "#/components/parameters/AccountInviteAccountIdFilter" },
+          { "$ref": "#/components/parameters/AccountInviteUserIdFilter" },
+          { "$ref": "#/components/parameters/AccountInvitePercentageFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated account invites for the account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Account Invites"],
+        "summary": "Create account invite for an account",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountRelationInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/invites/{invite}": {
+      "get": {
+        "tags": ["Account Invites"],
+        "summary": "Show account invite for an account",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/InvitePath" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Account Invites"],
+        "summary": "Update account invite for an account",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/InvitePath" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountRelationInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Account Invites"],
+        "summary": "Delete account invite for an account",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/InvitePath" }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/users": {
+      "get": {
+        "tags": ["Account Users"],
+        "summary": "List account users for an account",
+        "description": "Filtros disponibles por propiedades del usuario compartido y por el porcentaje pivot de la cuenta.",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/UserIdFilter" },
+          { "$ref": "#/components/parameters/UserNameFilter" },
+          { "$ref": "#/components/parameters/UserEmailFilter" },
+          { "$ref": "#/components/parameters/UserEmailVerifiedAtFilter" },
+          { "$ref": "#/components/parameters/UserPhoneNumberFilter" },
+          { "$ref": "#/components/parameters/UserTelegramChatIdFilter" },
+          { "$ref": "#/components/parameters/AccountUserPercentageFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated account users for the account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Account Users"],
+        "summary": "Attach a user to an account",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account user relation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Account Users"],
+        "summary": "Bulk update account user percentages",
+        "description": "Actualiza en bloque los porcentajes de los usuarios adjuntos a la cuenta. El request debe incluir exactamente a todos los usuarios de la cuenta. El backend normaliza cada porcentaje a 2 decimales antes de validar y guardar, y la suma normalizada debe ser exactamente 100.00.",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUpdateAccountUsersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account user percentages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUpdateAccountUsersResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error when users do not match the account or the normalized total is not exactly 100.00"
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/users/{user}": {
+      "get": {
+        "tags": ["Account Users"],
+        "summary": "Show account user for an account",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/UserPath" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account user relation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Account Users"],
+        "summary": "Update account user percentage",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/UserPath" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account user relation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Account Users"],
+        "summary": "Detach a user from an account",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/UserPath" }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/transactions": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "List account transactions",
+        "description": "Filtros disponibles por cualquier propiedad real del modelo Transaction dentro de la cuenta seleccionada.",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/TransactionIdFilter" },
+          { "$ref": "#/components/parameters/TransactionParentTransactionIdFilter" },
+          { "$ref": "#/components/parameters/TransactionUserIdFilter" },
+          { "$ref": "#/components/parameters/TransactionAccountIdFilter" },
+          { "$ref": "#/components/parameters/TransactionConceptFilter" },
+          { "$ref": "#/components/parameters/TransactionAmountFilter" },
+          { "$ref": "#/components/parameters/TransactionPercentageFilter" },
+          { "$ref": "#/components/parameters/TransactionTypeFilter" },
+          { "$ref": "#/components/parameters/TransactionStatusFilter" },
+          { "$ref": "#/components/parameters/TransactionScheduledAtFilter" },
+          { "$ref": "#/components/parameters/TransactionFinancialGoalIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated account transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "Create account transaction",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/transactions/{transaction}": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Show account transaction",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/TransactionPath" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Transactions"],
+        "summary": "Update account transaction",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/TransactionPath" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Transactions"],
+        "summary": "Delete account transaction",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/TransactionPath" }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/financial-goals": {
+      "get": {
+        "tags": ["Financial Goals"],
+        "summary": "List account financial goals",
+        "description": "Filtros disponibles por cualquier propiedad real del modelo FinancialGoal dentro de la cuenta seleccionada.",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/FinancialGoalIdFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalNameFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalAmountFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalProgressFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalMustCompletedAtFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalStatusFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalAccountIdFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalUserIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated account financial goals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Financial Goals"],
+        "summary": "Create account financial goal",
+        "parameters": [{ "$ref": "#/components/parameters/AccountPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountFinancialGoalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account financial goal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/financial-goals/{financialGoal}": {
+      "get": {
+        "tags": ["Financial Goals"],
+        "summary": "Show account financial goal",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/FinancialGoalPath" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account financial goal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Financial Goals"],
+        "summary": "Update account financial goal",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/FinancialGoalPath" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountFinancialGoalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account financial goal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Financial Goals"],
+        "summary": "Delete account financial goal",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountPath" },
+          { "$ref": "#/components/parameters/FinancialGoalPath" }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/account-invites": {
+      "get": {
+        "tags": ["Account Invites"],
+        "summary": "List account invites",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/AccountInviteIdFilter" },
+          { "$ref": "#/components/parameters/AccountInviteEmailFilter" },
+          { "$ref": "#/components/parameters/AccountInviteStatusFilter" },
+          { "$ref": "#/components/parameters/AccountInviteAccountIdFilter" },
+          { "$ref": "#/components/parameters/AccountInviteUserIdFilter" },
+          { "$ref": "#/components/parameters/AccountInvitePercentageFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated account invites",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Account Invites"],
+        "summary": "Create account invite",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account-invites/{accountInvite}": {
+      "get": {
+        "tags": ["Account Invites"],
+        "summary": "Show account invite",
+        "parameters": [{ "$ref": "#/components/parameters/AccountInvitePath" }],
+        "responses": {
+          "200": {
+            "description": "Account invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Account Invites"],
+        "summary": "Update or respond to account invite",
+        "parameters": [{ "$ref": "#/components/parameters/AccountInvitePath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInviteItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Account Invites"],
+        "summary": "Delete account invite",
+        "parameters": [{ "$ref": "#/components/parameters/AccountInvitePath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/account-user-notifications": {
+      "get": {
+        "tags": ["Account User Notifications"],
+        "summary": "List account user notifications",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/AccountUserNotificationIdFilter" },
+          { "$ref": "#/components/parameters/AccountUserNotificationUserIdFilter" },
+          { "$ref": "#/components/parameters/AccountUserNotificationAccountIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated account user notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserNotificationCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Account User Notifications"],
+        "summary": "Create account user notification",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountUserNotificationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account user notification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserNotificationItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account-user-notifications/{accountUserNotification}": {
+      "get": {
+        "tags": ["Account User Notifications"],
+        "summary": "Show account user notification",
+        "parameters": [{ "$ref": "#/components/parameters/AccountUserNotificationPath" }],
+        "responses": {
+          "200": {
+            "description": "Account user notification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserNotificationItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Account User Notifications"],
+        "summary": "Update account user notification",
+        "parameters": [{ "$ref": "#/components/parameters/AccountUserNotificationPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountUserNotificationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account user notification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUserNotificationItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Account User Notifications"],
+        "summary": "Delete account user notification",
+        "parameters": [{ "$ref": "#/components/parameters/AccountUserNotificationPath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/financial-goals": {
+      "get": {
+        "tags": ["Financial Goals"],
+        "summary": "List financial goals",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/FinancialGoalIdFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalNameFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalAmountFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalProgressFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalMustCompletedAtFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalStatusFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalAccountIdFilter" },
+          { "$ref": "#/components/parameters/FinancialGoalUserIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated financial goals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Financial Goals"],
+        "summary": "Create financial goal",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialGoalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created financial goal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/financial-goals/{financialGoal}": {
+      "get": {
+        "tags": ["Financial Goals"],
+        "summary": "Show financial goal",
+        "parameters": [{ "$ref": "#/components/parameters/FinancialGoalPath" }],
+        "responses": {
+          "200": {
+            "description": "Financial goal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Financial Goals"],
+        "summary": "Update financial goal",
+        "parameters": [{ "$ref": "#/components/parameters/FinancialGoalPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialGoalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated financial goal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialGoalItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Financial Goals"],
+        "summary": "Delete financial goal",
+        "parameters": [{ "$ref": "#/components/parameters/FinancialGoalPath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/fixed-incomes": {
+      "get": {
+        "tags": ["Fixed Incomes"],
+        "summary": "List fixed incomes",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/FixedIncomeIdFilter" },
+          { "$ref": "#/components/parameters/FixedIncomeNameFilter" },
+          { "$ref": "#/components/parameters/FixedIncomeFrequencyFilter" },
+          { "$ref": "#/components/parameters/FixedIncomeUserIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated fixed incomes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedIncomeCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Fixed Incomes"],
+        "summary": "Create fixed income",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixedIncomeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created fixed income",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedIncomeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/fixed-incomes/{fixedIncome}": {
+      "get": {
+        "tags": ["Fixed Incomes"],
+        "summary": "Show fixed income",
+        "parameters": [{ "$ref": "#/components/parameters/FixedIncomePath" }],
+        "responses": {
+          "200": {
+            "description": "Fixed income",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedIncomeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Fixed Incomes"],
+        "summary": "Update fixed income",
+        "parameters": [{ "$ref": "#/components/parameters/FixedIncomePath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixedIncomeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated fixed income",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedIncomeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Fixed Incomes"],
+        "summary": "Delete fixed income",
+        "parameters": [{ "$ref": "#/components/parameters/FixedIncomePath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/fixed-outcomes": {
+      "get": {
+        "tags": ["Fixed Outcomes"],
+        "summary": "List fixed outcomes",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/FixedOutcomeIdFilter" },
+          { "$ref": "#/components/parameters/FixedOutcomeFixedIncomeIdFilter" },
+          { "$ref": "#/components/parameters/FixedOutcomeNameFilter" },
+          { "$ref": "#/components/parameters/FixedOutcomeAmountFilter" },
+          { "$ref": "#/components/parameters/FixedOutcomeTypeFilter" },
+          { "$ref": "#/components/parameters/FixedOutcomeUserIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated fixed outcomes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedOutcomeCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Fixed Outcomes"],
+        "summary": "Create fixed outcome",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixedOutcomeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created fixed outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedOutcomeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/fixed-outcomes/{fixedOutcome}": {
+      "get": {
+        "tags": ["Fixed Outcomes"],
+        "summary": "Show fixed outcome",
+        "parameters": [{ "$ref": "#/components/parameters/FixedOutcomePath" }],
+        "responses": {
+          "200": {
+            "description": "Fixed outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedOutcomeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Fixed Outcomes"],
+        "summary": "Update fixed outcome",
+        "parameters": [{ "$ref": "#/components/parameters/FixedOutcomePath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixedOutcomeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated fixed outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedOutcomeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Fixed Outcomes"],
+        "summary": "Delete fixed outcome",
+        "parameters": [{ "$ref": "#/components/parameters/FixedOutcomePath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/notification-types": {
+      "get": {
+        "tags": ["Notification Types"],
+        "summary": "List notification types",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/NotificationTypeIdFilter" },
+          { "$ref": "#/components/parameters/NotificationTypeNameFilter" },
+          { "$ref": "#/components/parameters/NotificationTypeDescriptionFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated notification types",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationTypeCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Notification Types"],
+        "summary": "Create notification type",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationTypeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created notification type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationTypeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notification-types/{notificationType}": {
+      "get": {
+        "tags": ["Notification Types"],
+        "summary": "Show notification type",
+        "parameters": [{ "$ref": "#/components/parameters/NotificationTypePath" }],
+        "responses": {
+          "200": {
+            "description": "Notification type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationTypeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Notification Types"],
+        "summary": "Update notification type",
+        "parameters": [{ "$ref": "#/components/parameters/NotificationTypePath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationTypeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated notification type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationTypeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Notification Types"],
+        "summary": "Delete notification type",
+        "parameters": [{ "$ref": "#/components/parameters/NotificationTypePath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/partial-fixed-incomes": {
+      "get": {
+        "tags": ["Partial Fixed Incomes"],
+        "summary": "List partial fixed incomes",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/PartialFixedIncomeIdFilter" },
+          { "$ref": "#/components/parameters/PartialFixedIncomeFixedIncomeIdFilter" },
+          { "$ref": "#/components/parameters/PartialFixedIncomeNameFilter" },
+          { "$ref": "#/components/parameters/PartialFixedIncomeAmountFilter" },
+          { "$ref": "#/components/parameters/PartialFixedIncomeUserIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated partial fixed incomes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartialFixedIncomeCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Partial Fixed Incomes"],
+        "summary": "Create partial fixed income",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialFixedIncomeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created partial fixed income",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartialFixedIncomeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/partial-fixed-incomes/{partialFixedIncome}": {
+      "get": {
+        "tags": ["Partial Fixed Incomes"],
+        "summary": "Show partial fixed income",
+        "parameters": [{ "$ref": "#/components/parameters/PartialFixedIncomePath" }],
+        "responses": {
+          "200": {
+            "description": "Partial fixed income",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartialFixedIncomeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Partial Fixed Incomes"],
+        "summary": "Update partial fixed income",
+        "parameters": [{ "$ref": "#/components/parameters/PartialFixedIncomePath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialFixedIncomeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated partial fixed income",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartialFixedIncomeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Partial Fixed Incomes"],
+        "summary": "Delete partial fixed income",
+        "parameters": [{ "$ref": "#/components/parameters/PartialFixedIncomePath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/shared-transaction-notification-batches": {
+      "get": {
+        "tags": ["Shared Transaction Notification Batches"],
+        "summary": "List shared transaction notification batches",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/SharedBatchIdFilter" },
+          { "$ref": "#/components/parameters/SharedBatchUserIdFilter" },
+          { "$ref": "#/components/parameters/SharedBatchAccountIdFilter" },
+          { "$ref": "#/components/parameters/SharedBatchStatusFilter" },
+          { "$ref": "#/components/parameters/SharedBatchWindowStartedAtFilter" },
+          { "$ref": "#/components/parameters/SharedBatchLastActivityAtFilter" },
+          { "$ref": "#/components/parameters/SharedBatchSentAtFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated shared notification batches",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBatchCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Shared Transaction Notification Batches"],
+        "summary": "Create shared transaction notification batch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedBatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created shared transaction notification batch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBatchItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shared-transaction-notification-batches/{batch}": {
+      "get": {
+        "tags": ["Shared Transaction Notification Batches"],
+        "summary": "Show shared transaction notification batch",
+        "parameters": [{ "$ref": "#/components/parameters/BatchPath" }],
+        "responses": {
+          "200": {
+            "description": "Shared transaction notification batch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBatchItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Shared Transaction Notification Batches"],
+        "summary": "Update shared transaction notification batch",
+        "parameters": [{ "$ref": "#/components/parameters/BatchPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedBatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated shared transaction notification batch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBatchItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Shared Transaction Notification Batches"],
+        "summary": "Delete shared transaction notification batch",
+        "parameters": [{ "$ref": "#/components/parameters/BatchPath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/shared-transaction-notification-items": {
+      "get": {
+        "tags": ["Shared Transaction Notification Items"],
+        "summary": "List shared transaction notification items",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/SharedItemIdFilter" },
+          { "$ref": "#/components/parameters/SharedItemBatchIdFilter" },
+          { "$ref": "#/components/parameters/SharedItemTransactionIdFilter" },
+          { "$ref": "#/components/parameters/SharedItemModifierIdFilter" },
+          { "$ref": "#/components/parameters/SharedItemActionFilter" },
+          { "$ref": "#/components/parameters/SharedItemConceptFilter" },
+          { "$ref": "#/components/parameters/SharedItemTypeFilter" },
+          { "$ref": "#/components/parameters/SharedItemAmountFilter" },
+          { "$ref": "#/components/parameters/SharedItemScheduledAtFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated shared notification items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedItemCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Shared Transaction Notification Items"],
+        "summary": "Create shared transaction notification item",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created shared transaction notification item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedItemItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shared-transaction-notification-items/{item}": {
+      "get": {
+        "tags": ["Shared Transaction Notification Items"],
+        "summary": "Show shared transaction notification item",
+        "parameters": [{ "$ref": "#/components/parameters/ItemPath" }],
+        "responses": {
+          "200": {
+            "description": "Shared transaction notification item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedItemItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Shared Transaction Notification Items"],
+        "summary": "Update shared transaction notification item",
+        "parameters": [{ "$ref": "#/components/parameters/ItemPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated shared transaction notification item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedItemItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Shared Transaction Notification Items"],
+        "summary": "Delete shared transaction notification item",
+        "parameters": [{ "$ref": "#/components/parameters/ItemPath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/subscriptions": {
+      "get": {
+        "tags": ["Subscriptions"],
+        "summary": "List subscriptions",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/SubscriptionIdFilter" },
+          { "$ref": "#/components/parameters/SubscriptionNameFilter" },
+          { "$ref": "#/components/parameters/SubscriptionAmountFilter" },
+          { "$ref": "#/components/parameters/SubscriptionFrequencyTypeFilter" },
+          { "$ref": "#/components/parameters/SubscriptionFrequencyUnitFilter" },
+          { "$ref": "#/components/parameters/SubscriptionStartedAtFilter" },
+          { "$ref": "#/components/parameters/SubscriptionFinishedAtFilter" },
+          { "$ref": "#/components/parameters/SubscriptionNextPaymentDateFilter" },
+          { "$ref": "#/components/parameters/SubscriptionPreviousPaymentDateFilter" },
+          { "$ref": "#/components/parameters/SubscriptionUserIdFilter" },
+          { "$ref": "#/components/parameters/SubscriptionFeedAccountIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Subscriptions"],
+        "summary": "Create subscription",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created subscription",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/subscriptions/{subscription}": {
+      "get": {
+        "tags": ["Subscriptions"],
+        "summary": "Show subscription",
+        "parameters": [{ "$ref": "#/components/parameters/SubscriptionPath" }],
+        "responses": {
+          "200": {
+            "description": "Subscription",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Subscriptions"],
+        "summary": "Update subscription",
+        "parameters": [{ "$ref": "#/components/parameters/SubscriptionPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated subscription",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Subscriptions"],
+        "summary": "Delete subscription",
+        "parameters": [{ "$ref": "#/components/parameters/SubscriptionPath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/subscription-payments": {
+      "get": {
+        "tags": ["Subscription Payments"],
+        "summary": "List subscription payments",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/SubscriptionPaymentIdFilter" },
+          { "$ref": "#/components/parameters/SubscriptionPaymentScheduledAtFilter" },
+          { "$ref": "#/components/parameters/SubscriptionPaymentAmountFilter" },
+          { "$ref": "#/components/parameters/SubscriptionPaymentStatusFilter" },
+          { "$ref": "#/components/parameters/SubscriptionPaymentSubscriptionIdFilter" },
+          { "$ref": "#/components/parameters/SubscriptionPaymentUserIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated subscription payments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPaymentCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Subscription Payments"],
+        "summary": "Create subscription payment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionPaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created subscription payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPaymentItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/subscription-payments/{subscriptionPayment}": {
+      "get": {
+        "tags": ["Subscription Payments"],
+        "summary": "Show subscription payment",
+        "parameters": [{ "$ref": "#/components/parameters/SubscriptionPaymentPath" }],
+        "responses": {
+          "200": {
+            "description": "Subscription payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPaymentItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Subscription Payments"],
+        "summary": "Update subscription payment",
+        "parameters": [{ "$ref": "#/components/parameters/SubscriptionPaymentPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionPaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated subscription payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPaymentItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Subscription Payments"],
+        "summary": "Delete subscription payment",
+        "parameters": [{ "$ref": "#/components/parameters/SubscriptionPaymentPath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/telegram-verification-codes": {
+      "get": {
+        "tags": ["Telegram Verification Codes"],
+        "summary": "List telegram verification codes",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/TelegramCodeIdFilter" },
+          { "$ref": "#/components/parameters/TelegramCodeUserIdFilter" },
+          { "$ref": "#/components/parameters/TelegramCodeCodeFilter" },
+          { "$ref": "#/components/parameters/TelegramCodeExpiresAtFilter" },
+          { "$ref": "#/components/parameters/TelegramCodeUsedAtFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated telegram verification codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramCodeCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Telegram Verification Codes"],
+        "summary": "Create telegram verification code",
+        "responses": {
+          "201": {
+            "description": "Created telegram verification code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramCodeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/telegram-verification-codes/{telegramVerificationCode}": {
+      "get": {
+        "tags": ["Telegram Verification Codes"],
+        "summary": "Show telegram verification code",
+        "parameters": [{ "$ref": "#/components/parameters/TelegramCodePath" }],
+        "responses": {
+          "200": {
+            "description": "Telegram verification code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramCodeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Telegram Verification Codes"],
+        "summary": "Update telegram verification code",
+        "parameters": [{ "$ref": "#/components/parameters/TelegramCodePath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramCodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated telegram verification code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramCodeItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Telegram Verification Codes"],
+        "summary": "Delete telegram verification code",
+        "parameters": [{ "$ref": "#/components/parameters/TelegramCodePath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/transactions": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "List transactions",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PerPage" },
+          { "$ref": "#/components/parameters/TransactionIdFilter" },
+          { "$ref": "#/components/parameters/TransactionParentTransactionIdFilter" },
+          { "$ref": "#/components/parameters/TransactionUserIdFilter" },
+          { "$ref": "#/components/parameters/TransactionAccountIdFilter" },
+          { "$ref": "#/components/parameters/TransactionConceptFilter" },
+          { "$ref": "#/components/parameters/TransactionAmountFilter" },
+          { "$ref": "#/components/parameters/TransactionPercentageFilter" },
+          { "$ref": "#/components/parameters/TransactionTypeFilter" },
+          { "$ref": "#/components/parameters/TransactionStatusFilter" },
+          { "$ref": "#/components/parameters/TransactionScheduledAtFilter" },
+          { "$ref": "#/components/parameters/TransactionFinancialGoalIdFilter" },
+          { "$ref": "#/components/parameters/CreatedAtFilter" },
+          { "$ref": "#/components/parameters/UpdatedAtFilter" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionCollectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "Create transaction",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transactions/{transaction}": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Show transaction",
+        "parameters": [{ "$ref": "#/components/parameters/TransactionPath" }],
+        "responses": {
+          "200": {
+            "description": "Transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Transactions"],
+        "summary": "Update transaction",
+        "parameters": [{ "$ref": "#/components/parameters/TransactionPath" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Transactions"],
+        "summary": "Delete transaction",
+        "parameters": [{ "$ref": "#/components/parameters/TransactionPath" }],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    },
+    "/api/telegram-webhook": {
+      "post": {
+        "tags": ["Telegram"],
+        "security": [],
+        "summary": "Telegram webhook endpoint",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/MessageResponse"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "MessageResponse": {
+        "description": "Message response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": ["message"]
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
+        "description": "Pagina solicitada"
+      },
+      "PerPage": {
+        "name": "per_page",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 20
+        },
+        "description": "Registros por pagina. Default 20."
+      },
+      "IdPath": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "AccountPath": {
+        "name": "account",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "InvitePath": {
+        "name": "invite",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "UserPath": {
+        "name": "user",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "AccountInvitePath": {
+        "name": "accountInvite",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "AccountUserNotificationPath": {
+        "name": "accountUserNotification",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "FinancialGoalPath": {
+        "name": "financialGoal",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "FixedIncomePath": {
+        "name": "fixedIncome",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "FixedOutcomePath": {
+        "name": "fixedOutcome",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "NotificationTypePath": {
+        "name": "notificationType",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "PartialFixedIncomePath": {
+        "name": "partialFixedIncome",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "BatchPath": {
+        "name": "batch",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "ItemPath": {
+        "name": "item",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "SubscriptionPath": {
+        "name": "subscription",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "SubscriptionPaymentPath": {
+        "name": "subscriptionPayment",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "TelegramCodePath": {
+        "name": "telegramVerificationCode",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "TransactionPath": {
+        "name": "transaction",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "CreatedAtFilter": {
+        "name": "created_at",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string", "format": "date-time" }
+      },
+      "UpdatedAtFilter": {
+        "name": "updated_at",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string", "format": "date-time" }
+      },
+      "DeletedAtFilter": {
+        "name": "deleted_at",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string", "format": "date-time" }
+      },
+
+      "AccountIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "AccountNameFilter": { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } },
+      "AccountDescriptionFilter": { "name": "description", "in": "query", "required": false, "schema": { "type": "string" } },
+      "AccountColorFilter": { "name": "color", "in": "query", "required": false, "schema": { "type": "string" } },
+      "AccountBalanceFilter": { "name": "balance", "in": "query", "required": false, "schema": { "type": "number" } },
+      "AccountUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "AccountCreditCardFilter": { "name": "credit_card", "in": "query", "required": false, "schema": { "type": "integer", "enum": [0, 1] } },
+      "AccountCreditLineFilter": { "name": "credit_line", "in": "query", "required": false, "schema": { "type": "number" } },
+      "AccountCutoffDayFilter": { "name": "cutoff_day", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "AccountNextCutoffDateFilter": { "name": "next_cutoff_date", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" } },
+      "AccountAvailableCreditFilter": { "name": "available_credit", "in": "query", "required": false, "schema": { "type": "number" } },
+      "AccountSpentFilter": { "name": "spent", "in": "query", "required": false, "schema": { "type": "number" } },
+      "AccountFeedAccountIdFilter": { "name": "feed_account_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "AccountVirtualFilter": { "name": "virtual", "in": "query", "required": false, "schema": { "type": "integer", "enum": [0, 1] } },
+
+      "AccountInviteIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "AccountInviteEmailFilter": { "name": "email", "in": "query", "required": false, "schema": { "type": "string", "format": "email" } },
+      "AccountInviteStatusFilter": { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["pending", "accepted", "declined"] } },
+      "AccountInviteAccountIdFilter": { "name": "account_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "AccountInviteUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "AccountInvitePercentageFilter": { "name": "percentage", "in": "query", "required": false, "schema": { "type": "number" } },
+      "UserIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "UserNameFilter": { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } },
+      "UserEmailFilter": { "name": "email", "in": "query", "required": false, "schema": { "type": "string", "format": "email" } },
+      "UserEmailVerifiedAtFilter": { "name": "email_verified_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" } },
+      "UserPhoneNumberFilter": { "name": "phone_number", "in": "query", "required": false, "schema": { "type": "string" } },
+      "UserTelegramChatIdFilter": { "name": "telegram_chat_id", "in": "query", "required": false, "schema": { "type": "string" } },
+      "AccountUserPercentageFilter": { "name": "percentage", "in": "query", "required": false, "schema": { "type": "number" } },
+
+      "AccountUserNotificationIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "AccountUserNotificationUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "AccountUserNotificationAccountIdFilter": { "name": "account_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+
+      "FinancialGoalIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "FinancialGoalNameFilter": { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } },
+      "FinancialGoalAmountFilter": { "name": "amount", "in": "query", "required": false, "schema": { "type": "number" } },
+      "FinancialGoalProgressFilter": { "name": "progress", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "FinancialGoalMustCompletedAtFilter": { "name": "must_completed_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+      "FinancialGoalStatusFilter": { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["in progress", "completed"] } },
+      "FinancialGoalAccountIdFilter": { "name": "account_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "FinancialGoalUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+
+      "FixedIncomeIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "FixedIncomeNameFilter": { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } },
+      "FixedIncomeFrequencyFilter": { "name": "frequency", "in": "query", "required": false, "schema": { "type": "string", "enum": ["monthly", "semi_monthly"] } },
+      "FixedIncomeUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+
+      "FixedOutcomeIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "FixedOutcomeFixedIncomeIdFilter": { "name": "fixed_income_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "FixedOutcomeNameFilter": { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } },
+      "FixedOutcomeAmountFilter": { "name": "amount", "in": "query", "required": false, "schema": { "type": "number" } },
+      "FixedOutcomeTypeFilter": { "name": "type", "in": "query", "required": false, "schema": { "type": "string", "enum": ["savings", "transfer"] } },
+      "FixedOutcomeUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+
+      "NotificationTypeIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "NotificationTypeNameFilter": { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } },
+      "NotificationTypeDescriptionFilter": { "name": "description", "in": "query", "required": false, "schema": { "type": "string" } },
+
+      "PartialFixedIncomeIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "PartialFixedIncomeFixedIncomeIdFilter": { "name": "fixed_income_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "PartialFixedIncomeNameFilter": { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } },
+      "PartialFixedIncomeAmountFilter": { "name": "amount", "in": "query", "required": false, "schema": { "type": "number" } },
+      "PartialFixedIncomeUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+
+      "SharedBatchIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SharedBatchUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SharedBatchAccountIdFilter": { "name": "account_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SharedBatchStatusFilter": { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["pending", "processing", "sent"] } },
+      "SharedBatchWindowStartedAtFilter": { "name": "window_started_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" } },
+      "SharedBatchLastActivityAtFilter": { "name": "last_activity_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" } },
+      "SharedBatchSentAtFilter": { "name": "sent_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" } },
+
+      "SharedItemIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SharedItemBatchIdFilter": { "name": "batch_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SharedItemTransactionIdFilter": { "name": "transaction_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SharedItemModifierIdFilter": { "name": "modifier_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SharedItemActionFilter": { "name": "action", "in": "query", "required": false, "schema": { "type": "string", "enum": ["created", "updated", "deleted"] } },
+      "SharedItemConceptFilter": { "name": "concept", "in": "query", "required": false, "schema": { "type": "string" } },
+      "SharedItemTypeFilter": { "name": "type", "in": "query", "required": false, "schema": { "type": "string", "enum": ["income", "outcome"] } },
+      "SharedItemAmountFilter": { "name": "amount", "in": "query", "required": false, "schema": { "type": "number" } },
+      "SharedItemScheduledAtFilter": { "name": "scheduled_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" } },
+
+      "SubscriptionIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SubscriptionNameFilter": { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } },
+      "SubscriptionAmountFilter": { "name": "amount", "in": "query", "required": false, "schema": { "type": "number" } },
+      "SubscriptionFrequencyTypeFilter": { "name": "frequency_type", "in": "query", "required": false, "schema": { "type": "string", "enum": ["days", "months", "years"] } },
+      "SubscriptionFrequencyUnitFilter": { "name": "frequency_unit", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SubscriptionStartedAtFilter": { "name": "started_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+      "SubscriptionFinishedAtFilter": { "name": "finished_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+      "SubscriptionNextPaymentDateFilter": { "name": "next_payment_date", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+      "SubscriptionPreviousPaymentDateFilter": { "name": "previous_payment_date", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+      "SubscriptionUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SubscriptionFeedAccountIdFilter": { "name": "feed_account_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+
+      "SubscriptionPaymentIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SubscriptionPaymentScheduledAtFilter": { "name": "scheduled_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
+      "SubscriptionPaymentAmountFilter": { "name": "amount", "in": "query", "required": false, "schema": { "type": "number" } },
+      "SubscriptionPaymentStatusFilter": { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["pending", "paid"] } },
+      "SubscriptionPaymentSubscriptionIdFilter": { "name": "subscription_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "SubscriptionPaymentUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+
+      "TelegramCodeIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "TelegramCodeUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "TelegramCodeCodeFilter": { "name": "code", "in": "query", "required": false, "schema": { "type": "string" } },
+      "TelegramCodeExpiresAtFilter": { "name": "expires_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" } },
+      "TelegramCodeUsedAtFilter": { "name": "used_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" } },
+
+      "TransactionIdFilter": { "name": "id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "TransactionParentTransactionIdFilter": { "name": "parent_transaction_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "TransactionUserIdFilter": { "name": "user_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "TransactionAccountIdFilter": { "name": "account_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+      "TransactionConceptFilter": { "name": "concept", "in": "query", "required": false, "schema": { "type": "string" } },
+      "TransactionAmountFilter": { "name": "amount", "in": "query", "required": false, "schema": { "type": "number" } },
+      "TransactionPercentageFilter": { "name": "percentage", "in": "query", "required": false, "schema": { "type": "number" } },
+      "TransactionTypeFilter": { "name": "type", "in": "query", "required": false, "schema": { "type": "string", "enum": ["income", "outcome"] } },
+      "TransactionStatusFilter": { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["pending", "completed"] } },
+      "TransactionScheduledAtFilter": { "name": "scheduled_at", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" } },
+      "TransactionFinancialGoalIdFilter": { "name": "financial_goal_id", "in": "query", "required": false, "schema": { "type": "integer" } }
+    },
+    "schemas": {
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "current_page": { "type": "integer" },
+          "from": { "type": ["integer", "null"] },
+          "last_page": { "type": "integer" },
+          "per_page": { "type": "integer" },
+          "to": { "type": ["integer", "null"] },
+          "total": { "type": "integer" }
+        },
+        "required": ["current_page", "last_page", "per_page", "total"]
+      },
+      "AuthMeta": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string" },
+          "expires_at": { "type": "string", "format": "date-time" },
+          "token_type": { "type": "string", "example": "Bearer" }
+        },
+        "required": ["token", "expires_at", "token_type"]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "is_email_verified": { "type": "boolean" },
+          "email_verified_at": { "type": ["string", "null"], "format": "date-time" },
+          "phone_number": { "type": ["string", "null"] },
+          "telegram_chat_id": { "type": ["string", "null"] },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "color": { "type": ["string", "null"] },
+          "balance": { "type": ["number", "null"] },
+          "user_id": { "type": "integer" },
+          "credit_card": { "type": "boolean" },
+          "credit_line": { "type": ["number", "null"] },
+          "cutoff_day": { "type": ["integer", "null"] },
+          "next_cutoff_date": { "type": ["string", "null"], "format": "date-time" },
+          "available_credit": { "type": ["number", "null"] },
+          "spent": { "type": ["number", "null"] },
+          "feed_account_id": { "type": ["integer", "null"] },
+          "virtual": { "type": "boolean" },
+          "deleted_at": { "type": ["string", "null"], "format": "date-time" },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "AccountInvite": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "email": { "type": "string", "format": "email" },
+          "status": { "type": "string", "enum": ["pending", "accepted", "declined"] },
+          "account_id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "percentage": { "type": ["number", "null"] },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "AccountUserNotification": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "account_id": { "type": "integer" },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "FinancialGoal": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "amount": { "type": "number" },
+          "progress": { "type": "integer" },
+          "must_completed_at": { "type": ["string", "null"], "format": "date" },
+          "status": { "type": "string", "enum": ["in progress", "completed"] },
+          "account_id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "FixedIncome": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "frequency": { "type": "string", "enum": ["monthly", "semi_monthly"] },
+          "user_id": { "type": "integer" },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "FixedOutcome": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "fixed_income_id": { "type": "integer" },
+          "name": { "type": "string" },
+          "amount": { "type": "number" },
+          "type": { "type": "string", "enum": ["savings", "transfer"] },
+          "user_id": { "type": "integer" },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "NotificationType": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "PartialFixedIncome": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "fixed_income_id": { "type": "integer" },
+          "name": { "type": "string" },
+          "amount": { "type": "number" },
+          "user_id": { "type": "integer" },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "SharedTransactionNotificationBatch": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "account_id": { "type": "integer" },
+          "status": { "type": "string", "enum": ["pending", "processing", "sent"] },
+          "window_started_at": { "type": "string", "format": "date-time" },
+          "last_activity_at": { "type": "string", "format": "date-time" },
+          "sent_at": { "type": ["string", "null"], "format": "date-time" },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "SharedTransactionNotificationItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "batch_id": { "type": "integer" },
+          "transaction_id": { "type": ["integer", "null"] },
+          "modifier_id": { "type": "integer" },
+          "action": { "type": "string", "enum": ["created", "updated", "deleted"] },
+          "concept": { "type": "string" },
+          "type": { "type": "string", "enum": ["income", "outcome"] },
+          "amount": { "type": "number" },
+          "scheduled_at": { "type": "string", "format": "date-time" },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "Subscription": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "amount": { "type": "number" },
+          "frequency_type": { "type": "string", "enum": ["days", "months", "years"] },
+          "frequency_unit": { "type": "integer" },
+          "started_at": { "type": "string", "format": "date" },
+          "finished_at": { "type": ["string", "null"], "format": "date" },
+          "next_payment_date": { "type": ["string", "null"], "format": "date" },
+          "previous_payment_date": { "type": ["string", "null"], "format": "date" },
+          "user_id": { "type": "integer" },
+          "feed_account_id": { "type": ["integer", "null"] },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "SubscriptionPayment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "scheduled_at": { "type": "string", "format": "date" },
+          "amount": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "paid"] },
+          "subscription_id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "TelegramVerificationCode": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "code": { "type": "string" },
+          "expires_at": { "type": "string", "format": "date-time" },
+          "used_at": { "type": ["string", "null"], "format": "date-time" },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "parent_transaction_id": { "type": ["integer", "null"] },
+          "user_id": { "type": "integer" },
+          "account_id": { "type": "integer" },
+          "concept": { "type": "string" },
+          "amount": { "type": "number" },
+          "percentage": { "type": "number" },
+          "type": { "type": "string", "enum": ["income", "outcome"] },
+          "status": { "type": "string", "enum": ["pending", "completed"] },
+          "scheduled_at": { "type": "string", "format": "date-time" },
+          "financial_goal_id": { "type": ["integer", "null"] },
+          "created_at": { "type": ["string", "null"], "format": "date-time" },
+          "updated_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" },
+          "password_confirmation": { "type": "string" },
+          "phone_number": { "type": ["string", "null"] },
+          "terms_accepted": { "type": "boolean" },
+          "privacy_policy_accepted": { "type": "boolean" }
+        },
+        "required": ["name", "email", "password", "password_confirmation", "terms_accepted", "privacy_policy_accepted"]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" }
+        },
+        "required": ["email", "password"]
+      },
+      "PasswordRecoveryRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" }
+        },
+        "required": ["email"]
+      },
+      "EmailVerificationNotificationByEmailRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" }
+        },
+        "required": ["email"]
+      },
+      "PasswordResetRequest": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" },
+          "password_confirmation": { "type": "string" }
+        },
+        "required": ["token", "email", "password", "password_confirmation"]
+      },
+      "ProfileUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "phone_number": { "type": ["string", "null"] },
+          "password": { "type": ["string", "null"] },
+          "password_confirmation": { "type": ["string", "null"] }
+        },
+        "required": ["name", "email"]
+      },
+      "NotificationSettingsUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "notification_type_ids": {
+            "type": "array",
+            "items": { "type": "integer" }
+          },
+          "account_ids": {
+            "type": "array",
+            "items": { "type": "integer" }
+          }
+        },
+        "required": ["notification_type_ids", "account_ids"]
+      },
+      "AccountRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "color": { "type": ["string", "null"] },
+          "description": { "type": ["string", "null"] },
+          "virtual": { "type": "boolean" },
+          "credit_card": { "type": "boolean" },
+          "credit_line": { "type": ["number", "null"] },
+          "cutoff_day": { "type": ["integer", "null"] },
+          "feed_account_id": { "type": ["integer", "null"] }
+        },
+        "required": ["name", "virtual", "credit_card"]
+      },
+      "AccountInviteRequest": {
+        "type": "object",
+        "properties": {
+          "account_id": { "type": ["integer", "null"] },
+          "email": { "type": "string", "format": "email" },
+          "percentage": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "accepted", "declined"] }
+        }
+      },
+      "AccountRelationInviteRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "percentage": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "accepted", "declined"] }
+        }
+      },
+      "AccountUserRequest": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "integer" },
+          "percentage": { "type": "number" }
+        },
+        "required": ["percentage"]
+      },
+      "BulkUpdateAccountUsersRequest": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkUpdateAccountUsersUser"
+            }
+          }
+        },
+        "required": ["users"]
+      },
+      "BulkUpdateAccountUsersUser": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "integer" },
+          "percentage": { "type": "number" }
+        },
+        "required": ["user_id", "percentage"]
+      },
+      "AccountUserNotificationRequest": {
+        "type": "object",
+        "properties": {
+          "account_id": { "type": "integer" }
+        },
+        "required": ["account_id"]
+      },
+      "AccountFinancialGoalRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "amount": { "type": "number" },
+          "must_completed_at": { "type": ["string", "null"], "format": "date" },
+          "status": { "type": "string", "enum": ["in progress", "completed"] }
+        },
+        "required": ["name", "amount"]
+      },
+      "FinancialGoalRequest": {
+        "type": "object",
+        "properties": {
+          "account_id": { "type": "integer" },
+          "name": { "type": "string" },
+          "amount": { "type": "number" },
+          "must_completed_at": { "type": ["string", "null"], "format": "date" },
+          "status": { "type": "string", "enum": ["in progress", "completed"] }
+        },
+        "required": ["account_id", "name", "amount"]
+      },
+      "FixedIncomeRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "frequency": { "type": "string", "enum": ["monthly", "semi_monthly"] }
+        },
+        "required": ["name", "frequency"]
+      },
+      "FixedOutcomeRequest": {
+        "type": "object",
+        "properties": {
+          "fixed_income_id": { "type": "integer" },
+          "name": { "type": "string" },
+          "amount": { "type": "number" },
+          "type": { "type": "string", "enum": ["savings", "transfer"] }
+        },
+        "required": ["fixed_income_id", "name", "amount", "type"]
+      },
+      "NotificationTypeRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "required": ["name", "description"]
+      },
+      "PartialFixedIncomeRequest": {
+        "type": "object",
+        "properties": {
+          "fixed_income_id": { "type": "integer" },
+          "name": { "type": "string" },
+          "amount": { "type": "number" }
+        },
+        "required": ["fixed_income_id", "name", "amount"]
+      },
+      "SharedBatchRequest": {
+        "type": "object",
+        "properties": {
+          "account_id": { "type": "integer" },
+          "status": { "type": "string", "enum": ["pending", "processing", "sent"] },
+          "window_started_at": { "type": "string", "format": "date-time" },
+          "last_activity_at": { "type": "string", "format": "date-time" },
+          "sent_at": { "type": ["string", "null"], "format": "date-time" }
+        },
+        "required": ["account_id", "status", "window_started_at", "last_activity_at"]
+      },
+      "SharedItemRequest": {
+        "type": "object",
+        "properties": {
+          "batch_id": { "type": "integer" },
+          "transaction_id": { "type": ["integer", "null"] },
+          "modifier_id": { "type": "integer" },
+          "action": { "type": "string", "enum": ["created", "updated", "deleted"] },
+          "concept": { "type": "string" },
+          "type": { "type": "string", "enum": ["income", "outcome"] },
+          "amount": { "type": "number" },
+          "scheduled_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["batch_id", "modifier_id", "action", "concept", "type", "amount", "scheduled_at"]
+      },
+      "SubscriptionRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "amount": { "type": "number" },
+          "started_at": { "type": "string", "format": "date" },
+          "finished_at": { "type": ["string", "null"], "format": "date" },
+          "frequency_unit": { "type": "integer" },
+          "frequency_type": { "type": "string", "enum": ["days", "months", "years"] },
+          "feed_account_id": { "type": ["integer", "null"] }
+        },
+        "required": ["name", "amount", "started_at", "frequency_unit", "frequency_type"]
+      },
+      "SubscriptionPaymentRequest": {
+        "type": "object",
+        "properties": {
+          "subscription_id": { "type": ["integer", "null"] },
+          "scheduled_at": { "type": "string", "format": "date" },
+          "amount": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "paid"] },
+          "account_id": { "type": ["integer", "null"] }
+        }
+      },
+      "TelegramCodeRequest": {
+        "type": "object",
+        "properties": {
+          "used_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "TransactionUserPayment": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "integer" },
+          "percentage": { "type": "number" }
+        },
+        "required": ["user_id", "percentage"]
+      },
+      "TransactionRequest": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["income", "outcome"] },
+          "status": { "type": "string", "enum": ["pending", "completed"] },
+          "concept": { "type": "string" },
+          "amount": { "type": "number" },
+          "account_id": { "type": "integer" },
+          "split_between_users": { "type": "boolean" },
+          "user_payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionUserPayment"
+            }
+          },
+          "scheduled_at": { "type": "string", "format": "date" },
+          "financial_goal_id": { "type": ["integer", "null"] }
+        },
+        "required": ["type", "status", "concept", "amount", "account_id", "scheduled_at"]
+      },
+      "AccountTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["income", "outcome"] },
+          "status": { "type": "string", "enum": ["pending", "completed"] },
+          "concept": { "type": "string" },
+          "amount": { "type": "number" },
+          "split_between_users": { "type": ["boolean", "null"] },
+          "user_payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionUserPayment"
+            }
+          },
+          "scheduled_at": { "type": "string", "format": "date" },
+          "financial_goal_id": { "type": ["integer", "null"] }
+        },
+        "required": ["type", "status", "concept", "amount", "scheduled_at"]
+      },
+
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/User" },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "auth": { "$ref": "#/components/schemas/AuthMeta" }
+            },
+            "required": ["auth"]
+          }
+        }
+      },
+      "NotificationSettingsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "notification_types": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "accounts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "UserItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "AccountUser": {
+        "allOf": [
+          { "$ref": "#/components/schemas/User" },
+          {
+            "type": "object",
+            "properties": {
+              "pivot": {
+                "type": "object",
+                "properties": {
+                  "percentage": { "type": "number" }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AccountItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/Account" }
+        }
+      },
+      "AccountUserItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/AccountUser" }
+        }
+      },
+      "BulkUpdateAccountUsersResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkUpdatedAccountUser"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "account_id": { "type": "integer" },
+              "total_percentage": { "type": "number" }
+            },
+            "required": ["account_id", "total_percentage"]
+          }
+        }
+      },
+      "BulkUpdatedAccountUser": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "percentage": { "type": "string", "example": "33.33" }
+        },
+        "required": ["id", "user_id", "name", "email", "percentage"]
+      },
+      "AccountInviteItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/AccountInvite" }
+        }
+      },
+      "AccountUserNotificationItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/AccountUserNotification" }
+        }
+      },
+      "FinancialGoalItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/FinancialGoal" }
+        }
+      },
+      "FixedIncomeItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/FixedIncome" }
+        }
+      },
+      "FixedOutcomeItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/FixedOutcome" }
+        }
+      },
+      "NotificationTypeItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/NotificationType" }
+        }
+      },
+      "PartialFixedIncomeItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/PartialFixedIncome" }
+        }
+      },
+      "SharedBatchItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/SharedTransactionNotificationBatch" }
+        }
+      },
+      "SharedItemItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/SharedTransactionNotificationItem" }
+        }
+      },
+      "SubscriptionItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/Subscription" }
+        }
+      },
+      "SubscriptionPaymentItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/SubscriptionPayment" }
+        }
+      },
+      "TelegramCodeItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/TelegramVerificationCode" }
+        }
+      },
+      "TransactionItemResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/Transaction" }
+        }
+      },
+
+      "AccountCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Account" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "AccountUserCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/AccountUser" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "AccountInviteCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/AccountInvite" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "AccountUserNotificationCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/AccountUserNotification" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "FinancialGoalCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/FinancialGoal" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "FixedIncomeCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/FixedIncome" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "FixedOutcomeCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/FixedOutcome" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "NotificationTypeCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/NotificationType" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "PartialFixedIncomeCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/PartialFixedIncome" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "SharedBatchCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/SharedTransactionNotificationBatch" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "SharedItemCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/SharedTransactionNotificationItem" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "SubscriptionCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Subscription" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "SubscriptionPaymentCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/SubscriptionPayment" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "TelegramCodeCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/TelegramVerificationCode" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "TransactionCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Transaction" } },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 namespace App\Services\Transaction;
 
+use App\Dto\SplitTransactionAllocationDto;
 use App\Dto\TransactionFormDto;
 use App\Enums\Action;
 use App\Enums\TransactionStatus;
@@ -20,6 +21,7 @@ class TransactionCreator
     public function __construct(
         private Guard $auth,
         private Dispatcher $dispatcher,
+        private BuildSplitTransactionAllocations $buildSplitTransactionAllocations,
     ) {}
 
     public function execute(TransactionFormDto $dto): Transaction
@@ -74,16 +76,15 @@ class TransactionCreator
         $mainTransaction->user_id = $this->auth->id();
         $mainTransaction->save();
 
-        foreach ($dto->userPayments as $paymentData) {
-            $user = User::withoutGlobalScopes()->find($paymentData->userId);
-            $amount = round($dto->amount * ($paymentData->percentage / 100), 2);
+        foreach ($this->allocations($dto) as $allocation) {
+            $user = User::withoutGlobalScopes()->find($allocation->userId);
 
             $subTransaction = new Transaction;
             $subTransaction->type = TransactionType::Income;
             $subTransaction->status = TransactionStatus::Pending;
             $subTransaction->concept = $dto->concept.' - Parte de '.$user->name;
-            $subTransaction->amount = $amount;
-            $subTransaction->percentage = $paymentData->percentage;
+            $subTransaction->amount = $allocation->amount;
+            $subTransaction->percentage = $allocation->percentage;
             $subTransaction->account_id = $dto->accountId;
             $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
             $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
@@ -94,6 +95,11 @@ class TransactionCreator
         }
 
         return $mainTransaction;
+    }
+
+    private function allocations(TransactionFormDto $dto): array
+    {
+        return $this->buildSplitTransactionAllocations->execute($dto->amount, $dto->userPayments);
     }
 
     private function resolveScheduleDate(string|CarbonInterface $scheduledAt): CarbonInterface

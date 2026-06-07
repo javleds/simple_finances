@@ -5,13 +5,20 @@ namespace App\Providers;
 use App\Contracts\TelegramServiceInterface;
 use App\Services\Telegram\DummyTelegramService;
 use App\Services\Telegram\TelegramService;
+use App\Support\SpaUrl;
 use Filament\Actions\Action;
 use Filament\Infolists\Infolist;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Alignment;
 use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Table;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -49,6 +56,31 @@ class AppServiceProvider extends ServiceProvider
     {
         $defaultCurrency = 'MXN';
         $defaultLocale = config('app.locale');
+
+        RateLimiter::for('auth-email-action', function (Request $request): Limit {
+            $email = mb_strtolower((string) $request->input('email'));
+
+            return Limit::perMinute(3)->by($request->ip().'|'.$email);
+        });
+
+        ResetPassword::createUrlUsing(function (object $user, string $token): string {
+            return app(SpaUrl::class)->to('password-reset/reset', [
+                'token' => $token,
+                'email' => $user->email,
+            ]);
+        });
+
+        VerifyEmail::createUrlUsing(function (object $user): string {
+            return URL::temporarySignedRoute(
+                'verification.verify',
+                now()->addMinutes((int) config('auth.verification.expire', 60)),
+                [
+                    'id' => $user->getKey(),
+                    'hash' => sha1($user->getEmailForVerification()),
+                    'redirect_to_spa' => 1,
+                ],
+            );
+        });
 
         Model::unguard();
         Table::$defaultCurrency = $defaultCurrency;

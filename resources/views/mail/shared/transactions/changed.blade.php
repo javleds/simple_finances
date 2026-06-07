@@ -12,7 +12,7 @@
 Balance después del movimiento: `{{ as_money($transaction->account->updateBalance()) }}`.
 </x-mail::panel>
 
-<x-mail::button :url="\App\Filament\Resources\AccountResource\Pages\ViewAccount::getUrl([$transaction->account_id])">
+<x-mail::button :url="$link">
 Ir a la cuenta
 </x-mail::button>
 

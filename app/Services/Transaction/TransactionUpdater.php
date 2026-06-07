@@ -2,6 +2,7 @@
 
 namespace App\Services\Transaction;
 
+use App\Dto\SplitTransactionAllocationDto;
 use App\Dto\TransactionFormDto;
 use App\Enums\Action;
 use App\Enums\TransactionStatus;
@@ -21,6 +22,7 @@ class TransactionUpdater
     public function __construct(
         private Guard $auth,
         private Dispatcher $dispatcher,
+        private BuildSplitTransactionAllocations $buildSplitTransactionAllocations,
     ) {}
 
     public function execute(Transaction $transaction, TransactionFormDto $dto): Transaction
@@ -30,9 +32,8 @@ class TransactionUpdater
         }
 
         $originalType = $transaction->type;
-        $originalAmount = $transaction->amount;
 
-        $transaction = DB::transaction(function () use ($transaction, $dto, $originalType, $originalAmount) {
+        $transaction = DB::transaction(function () use ($transaction, $dto, $originalType) {
             $this->applyBaseData($transaction, $dto);
             $transaction->save();
 
@@ -65,14 +66,7 @@ class TransactionUpdater
                 return $transaction;
             }
 
-            if ($originalAmount === $dto->amount) {
-                return $transaction;
-            }
-
-            $this->rebalanceSubTransactions(
-                $subTransactions,
-                $dto
-            );
+            $this->syncSubTransactions($transaction, $subTransactions, $dto);
 
             return $transaction;
         });
@@ -110,51 +104,85 @@ class TransactionUpdater
         }
     }
 
-    private function rebalanceSubTransactions(
+    private function syncSubTransactions(
+        Transaction $transaction,
         Collection $subTransactions,
         TransactionFormDto $dto,
     ): void {
         $subTransactions->load('user');
+        $allocations = collect($this->allocations($dto))
+            ->keyBy(fn (SplitTransactionAllocationDto $allocation): int => $allocation->userId);
 
         foreach ($subTransactions as $subTransaction) {
-            $percentage = collect($dto->userPayments)
-                ->firstWhere('userId', $subTransaction->user_id)?->percentage ?? $subTransaction->percentage ?? 0.0;
-            $amount = round($dto->amount * ($percentage / 100), 2);
+            $allocation = $allocations->pull($subTransaction->user_id);
 
-            $subTransaction->amount = $amount;
-            $subTransaction->percentage = $percentage;
+            if (! $allocation instanceof SplitTransactionAllocationDto) {
+                $this->removeSubTransaction($subTransaction);
+
+                continue;
+            }
+
+            $subTransaction->concept = $dto->concept.' - Parte de '.$subTransaction->user->name;
+            $subTransaction->amount = $allocation->amount;
+            $subTransaction->percentage = $allocation->percentage;
             $subTransaction->account_id = $dto->accountId;
             $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
             $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
             $subTransaction->save();
+        }
+
+        foreach ($allocations as $allocation) {
+            $this->createSubTransaction($transaction, $dto, $allocation);
         }
     }
 
     private function createSubTransactions(Transaction $transaction, TransactionFormDto $dto): void
     {
-        foreach ($dto->userPayments as $paymentData) {
-            $user = User::withoutGlobalScopes()->find($paymentData->userId);
-
-            if (! $user) {
-                continue;
-            }
-
-            $amount = round($dto->amount * ($paymentData->percentage / 100), 2);
-
-            $subTransaction = new Transaction;
-            $subTransaction->type = TransactionType::Income;
-            $subTransaction->status = TransactionStatus::Pending;
-            $subTransaction->concept = $dto->concept.' - Parte de '.$user->name;
-            $subTransaction->amount = $amount;
-            $subTransaction->percentage = $paymentData->percentage;
-            $subTransaction->account_id = $dto->accountId;
-            $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
-            $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
-            $subTransaction->user_id = $user->id;
-            $subTransaction->parent_transaction_id = $transaction->id;
-
-            $subTransaction->save();
+        foreach ($this->allocations($dto) as $allocation) {
+            $this->createSubTransaction($transaction, $dto, $allocation);
         }
+    }
+
+    private function allocations(TransactionFormDto $dto): array
+    {
+        return $this->buildSplitTransactionAllocations->execute($dto->amount, $dto->userPayments);
+    }
+
+    private function createSubTransaction(
+        Transaction $transaction,
+        TransactionFormDto $dto,
+        SplitTransactionAllocationDto $allocation,
+    ): void {
+        $user = User::withoutGlobalScopes()->find($allocation->userId);
+
+        if (! $user) {
+            return;
+        }
+
+        $subTransaction = new Transaction;
+        $subTransaction->type = TransactionType::Income;
+        $subTransaction->status = TransactionStatus::Pending;
+        $subTransaction->concept = $dto->concept.' - Parte de '.$user->name;
+        $subTransaction->amount = $allocation->amount;
+        $subTransaction->percentage = $allocation->percentage;
+        $subTransaction->account_id = $dto->accountId;
+        $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
+        $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
+        $subTransaction->user_id = $user->id;
+        $subTransaction->parent_transaction_id = $transaction->id;
+        $subTransaction->save();
+    }
+
+    private function removeSubTransaction(Transaction $subTransaction): void
+    {
+        if ($subTransaction->status === TransactionStatus::Pending) {
+            $subTransaction->delete();
+
+            return;
+        }
+
+        $subTransaction->parent_transaction_id = null;
+        $subTransaction->save();
     }
 
     private function resolveScheduleDate(string|CarbonInterface $scheduledAt): CarbonInterface

@@ -24,7 +24,7 @@ class NotifyOnInteract
 
         Notification::send(
             $user,
-            new InviteAccountInteractionEmail($invite)
+            new InviteAccountInteractionEmail($invite, request()->is('api/*'))
         );
     }
 }

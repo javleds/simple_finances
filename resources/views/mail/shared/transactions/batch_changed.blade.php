@@ -17,7 +17,7 @@ Se registraron movimientos en la cuenta {{ $account->name }}:
 Balance después de los movimientos: `{{ as_money($account->updateBalance()) }}`.
 </x-mail::panel>
 
-<x-mail::button :url="\App\Filament\Resources\AccountResource\Pages\ViewAccount::getUrl([$account->id])">
+<x-mail::button :url="$link">
 Ir a la cuenta
 </x-mail::button>
 
