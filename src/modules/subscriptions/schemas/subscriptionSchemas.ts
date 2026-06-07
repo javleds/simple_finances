@@ -72,6 +72,7 @@ export const subscriptionApiSchema = z.object({
   frequency_unit: z.unknown().transform((value) => parseNullableNumber(value) ?? 1),
   frequency_type: z.unknown().transform(parseFrequencyType),
   finished_at: z.string().nullable().optional().transform((value) => value ?? null),
+  canceled_at: z.string().nullable().optional().transform((value) => value ?? null),
   feed_account_id: z
     .union([z.string(), z.number(), z.null(), z.undefined()])
     .transform((value) => (value === null || value === undefined ? null : String(value))),
@@ -117,7 +118,7 @@ export function mapSubscriptionApiToDomain(
     startDate: payload.started_at,
     frequencyUnit: payload.frequency_unit,
     frequencyType: payload.frequency_type,
-    finishedAt: payload.finished_at,
+    finishedAt: payload.canceled_at ?? payload.finished_at,
     fundingAccountId: payload.feed_account_id,
     fundingAccountName: payload.feed_account?.name ?? null,
     nextPaymentDate: payload.next_payment_date,

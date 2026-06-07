@@ -41,13 +41,22 @@ const accountsRepository = createAccountsRepository();
 const route = useRoute();
 const router = useRouter();
 
-const searchTerm = ref('');
+const defaultSubscriptionStatuses: SubscriptionStatusFilter[] = ['active'];
+const searchTerm = ref(typeof route.query.search === 'string' ? route.query.search : '');
 const isFiltersOpen = ref(false);
 const isCreateSubscriptionOpen = ref(false);
 const isEditSubscriptionOpen = ref(false);
 const isDeleteSubscriptionOpen = ref(false);
-const selectedStatuses = ref<SubscriptionStatusFilter[]>([]);
-const selectedUnits = ref<SubscriptionFrequencyType[]>([]);
+const selectedStatuses = ref<SubscriptionStatusFilter[]>(
+  parseQueryValuesOrDefault(
+    route.query.status,
+    isSubscriptionStatusFilter,
+    defaultSubscriptionStatuses,
+  ),
+);
+const selectedUnits = ref<SubscriptionFrequencyType[]>(
+  parseQueryValues(route.query.frequencyType, isSubscriptionFrequencyType),
+);
 const selectedSubscriptionId = ref<string | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
@@ -165,10 +174,15 @@ watch(
   () => route.query,
   (nextQuery) => {
     searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
-    selectedStatuses.value = parseQueryValues(nextQuery.status, isSubscriptionStatusFilter);
-    selectedUnits.value = parseQueryValues(nextQuery.frequencyType, isSubscriptionFrequencyType);
+    setArrayValueIfChanged(
+      selectedStatuses,
+      parseQueryValues(nextQuery.status, isSubscriptionStatusFilter),
+    );
+    setArrayValueIfChanged(
+      selectedUnits,
+      parseQueryValues(nextQuery.frequencyType, isSubscriptionFrequencyType),
+    );
   },
-  { immediate: true },
 );
 
 watch(
@@ -187,7 +201,7 @@ watch(
 
     void router.replace({ query: nextQuery });
   },
-  { deep: true },
+  { deep: true, immediate: true },
 );
 
 watch(
@@ -330,6 +344,37 @@ function handleCreateFormStateChange(state: FormState): void {
 
 function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
+}
+
+function parseQueryValuesOrDefault<TValue extends string>(
+  value: unknown,
+  isAllowedValue: (value: string) => value is TValue,
+  defaultValues: TValue[],
+): TValue[] {
+  if (typeof value !== 'string') {
+    return [...defaultValues];
+  }
+
+  return parseQueryValues(value, isAllowedValue);
+}
+
+function setArrayValueIfChanged<TValue>(
+  target: { value: TValue[] },
+  nextValue: TValue[],
+): void {
+  if (areArraysEqual(target.value, nextValue)) {
+    return;
+  }
+
+  target.value = nextValue;
+}
+
+function areArraysEqual<TValue>(currentValue: TValue[], nextValue: TValue[]): boolean {
+  if (currentValue.length !== nextValue.length) {
+    return false;
+  }
+
+  return currentValue.every((item, index) => item === nextValue[index]);
 }
 
 function formatDateLabel(date: string | null | undefined): string {
