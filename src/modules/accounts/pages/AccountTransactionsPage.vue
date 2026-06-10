@@ -121,6 +121,7 @@ const {
   createTransaction,
   updateTransaction,
   deleteTransaction,
+  markTransactionsCompleted,
 } = useTransactionsCrud();
 
 const transactionsPerPage = computed(() => {
@@ -519,11 +520,17 @@ async function confirmCompletePendingByUser(): Promise<void> {
     const result = await dashboardRepository.completePendingTransactions(
       selectedUser.transactionIds,
     );
+    const completedIds =
+      result.transactionIds.length > 0 ? result.transactionIds : selectedUser.transactionIds;
+    const failedIds = new Set(result.failed.map((item) => item.id));
+    const removableIds = completedIds.filter((transactionId) => !failedIds.has(transactionId));
 
     if (result.failed.length > 0) {
       completePendingByUserError.value = result.failed.map((item) => item.message).join(' ');
     }
 
+    markCompletedPendingByUser(selectedUser.userId, removableIds);
+    markTransactionsCompleted(removableIds);
     await reloadTransactions();
 
     if (result.failed.length === 0) {
@@ -570,12 +577,45 @@ function canCompletePendingByUser(user: AccountPendingByUser): boolean {
   return currentUserId.value === user.userId && user.transactionIds.length > 0;
 }
 
-function reloadTransactions(): void {
+function markCompletedPendingByUser(userId: string, transactionIds: string[]): void {
+  if (transactionIds.length === 0) {
+    return;
+  }
+
+  const completedIds = new Set(transactionIds);
+
+  pendingByUser.value = pendingByUser.value
+    .map((user) => {
+      if (user.userId !== userId) {
+        return user;
+      }
+
+      const remainingTransactionIds = user.transactionIds.filter(
+        (transactionId) => !completedIds.has(transactionId),
+      );
+
+      if (remainingTransactionIds.length === 0) {
+        return {
+          ...user,
+          amount: 0,
+          transactionIds: [],
+        };
+      }
+
+      return {
+        ...user,
+        transactionIds: remainingTransactionIds,
+      };
+    })
+    .filter((user) => user.amount > 0 && user.transactionIds.length > 0);
+}
+
+async function reloadTransactions(): Promise<void> {
   if (!accountId.value) {
     return;
   }
 
-  void loadTransactions(accountId.value, activeFilters.value, {
+  await loadTransactions(accountId.value, activeFilters.value, {
     reset: true,
     perPage: transactionsPerPage.value,
   });
