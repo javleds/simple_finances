@@ -457,15 +457,15 @@ function isTransactionType(value: string): value is TransactionType {
   return value === 'income' || value === 'expense';
 }
 
+function canManageTransaction(options: { creatorId: string | null }): boolean {
+  return Boolean(currentUserId.value && options.creatorId === currentUserId.value);
+}
+
 function canCompleteTransaction(options: {
   creatorId: string | null;
   status: TransactionStatus | null;
 }): boolean {
-  return Boolean(
-    currentUserId.value &&
-      options.creatorId === currentUserId.value &&
-      options.status === 'pending',
-  );
+  return canManageTransaction(options) && options.status === 'pending';
 }
 
 function reloadTransactions(): void {
@@ -603,6 +603,7 @@ function infiniteStatusLabel(): string {
           :creator-name="transaction.creatorName"
           :date-label="formatDateLabel(transaction.date)"
           :item-id="transaction.id"
+          :show-actions="canManageTransaction(transaction)"
           :status="transaction.status ?? 'completed'"
           :type="transaction.type"
           @complete="openCompleteTransaction"

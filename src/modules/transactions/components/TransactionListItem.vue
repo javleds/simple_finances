@@ -20,6 +20,7 @@ const props = defineProps<{
   dateLabel: string;
   creatorName: string | null;
   canComplete?: boolean;
+  showActions?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -136,7 +137,14 @@ function handleAction(actionKey: string): void {
       }"
     />
 
-    <div class="relative grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-x-3 gap-y-2">
+    <div
+      class="relative grid items-start gap-x-3 gap-y-2"
+      :class="
+        props.showActions
+          ? 'grid-cols-[minmax(0,1fr)_auto_auto]'
+          : 'grid-cols-[minmax(0,1fr)_auto]'
+      "
+    >
       <div class="min-w-0">
         <p
           class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
@@ -156,6 +164,7 @@ function handleAction(actionKey: string): void {
       </div>
 
       <AppActionMenu
+        v-if="props.showActions"
         class="shrink-0"
         :actions="actionMenuItems"
         @action="handleAction"
@@ -163,7 +172,10 @@ function handleAction(actionKey: string): void {
         @edit="handleEdit"
       />
 
-      <div class="col-span-3 flex min-w-0 items-center justify-between gap-3">
+      <div
+        class="flex min-w-0 items-center justify-between gap-3"
+        :class="props.showActions ? 'col-span-3' : 'col-span-2'"
+      >
         <p
           class="min-w-0 truncate text-[11px] font-medium text-(--app-color-text-subtle)"
         >
