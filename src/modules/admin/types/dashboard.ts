@@ -3,6 +3,7 @@ export type DashboardGraphAccount = {
   accountName: string;
   balance: number;
   color: string | null;
+  isVirtual: boolean;
 };
 
 export type DashboardAccountsSummary = {

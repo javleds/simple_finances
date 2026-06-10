@@ -17,12 +17,14 @@ import {
 } from '@/modules/shared/components';
 
 type SavingsCadence = 'monthly' | 'biweekly';
+type AccountGraphMode = 'physical' | 'virtual';
 
 const DashboardBalanceChart = defineAsyncComponent(
   () => import('@/modules/admin/components/DashboardBalanceChart.vue'),
 );
 
 const savingsCadence = ref<SavingsCadence>('monthly');
+const accountGraphMode = ref<AccountGraphMode>('physical');
 const isCompletePendingActionOpen = ref(false);
 const selectedPendingActionId = ref<string | null>(null);
 const selectedPendingAccountId = ref<string | null>(null);
@@ -41,6 +43,11 @@ const {
 const cadenceOptions = [
   { value: 'monthly', label: 'Mensual' },
   { value: 'biweekly', label: 'Quincenal' },
+] as const;
+
+const accountGraphModeOptions = [
+  { value: 'physical', label: 'Físicas' },
+  { value: 'virtual', label: 'Virtuales' },
 ] as const;
 
 const pendingActions = computed<DashboardPendingAction[]>(() =>
@@ -97,6 +104,12 @@ const recommendedSavings = computed(() => {
   const divisor = savingsCadence.value === 'monthly' ? 12 : 24;
   return annualSubscriptionsSpend.value / divisor;
 });
+
+const filteredGraphAccounts = computed(() =>
+  dashboard.value.graphAccounts.filter(
+    (account) => account.isVirtual === (accountGraphMode.value === 'virtual'),
+  ),
+);
 
 onMounted(() => {
   void loadDashboard();
@@ -186,10 +199,19 @@ async function confirmCompletePendingAction(): Promise<void> {
       <div class="space-y-4">
         <div class="space-y-1">
           <AppTitle as="h2" size="sm">Balance por cuenta</AppTitle>
-          <AppText> Vista comparativa para leer el balance actual de cada cuenta. </AppText>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <AppText> Vista comparativa para leer el balance actual de cada cuenta. </AppText>
+
+            <AppToggleButton
+              class="self-center"
+              :model-value="accountGraphMode"
+              :options="accountGraphModeOptions"
+              @update:model-value="accountGraphMode = $event as AccountGraphMode"
+            />
+          </div>
         </div>
 
-        <DashboardBalanceChart :accounts="dashboard.graphAccounts" />
+        <DashboardBalanceChart :accounts="filteredGraphAccounts" />
       </div>
     </AppCard>
 

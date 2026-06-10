@@ -31,6 +31,22 @@ function parseNullableNumber(value: unknown): number | null {
   return null;
 }
 
+function parseBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+
+  if (typeof value === 'string') {
+    return ['1', 'true', 'yes'].includes(value.trim().toLowerCase());
+  }
+
+  return false;
+}
+
 const entityIdSchema = z.union([z.string(), z.number()]).transform((value) => String(value));
 const nullableColorSchema = z
   .string()
@@ -44,12 +60,14 @@ const dashboardGraphItemApiSchema = z
     account_name: z.string(),
     balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
     color: nullableColorSchema,
+    is_virtual: z.unknown().optional().transform(parseBoolean),
   })
   .transform<DashboardGraphAccount>((payload) => ({
     accountId: payload.account_id,
     accountName: payload.account_name,
     balance: payload.balance,
     color: payload.color,
+    isVirtual: payload.is_virtual,
   }));
 
 export const dashboardGraphResponseSchema = z
