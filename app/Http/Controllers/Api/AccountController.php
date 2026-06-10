@@ -7,6 +7,7 @@ use App\Handlers\Accounts\AccountCreator;
 use App\Handlers\Accounts\AccountEditor;
 use App\Http\Requests\Api\AccountRequest;
 use App\Models\Account;
+use App\Services\Accounts\BuildPendingIncomeByUser;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,8 +35,10 @@ class AccountController extends ApiController
         return $this->respondModel($account->fresh(), ['users', 'feedAccount'], 201);
     }
 
-    public function show(Account $account): JsonResponse
+    public function show(Account $account, BuildPendingIncomeByUser $buildPendingIncomeByUser): JsonResponse
     {
+        $account->setAttribute('pending_by_user', $buildPendingIncomeByUser->execute($account));
+
         return $this->respondModel($account, ['users', 'feedAccount', 'financialGoals', 'invites']);
     }
 

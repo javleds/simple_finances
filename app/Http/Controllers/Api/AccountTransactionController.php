@@ -6,6 +6,7 @@ use App\Dto\TransactionFormDto;
 use App\Http\Requests\Api\AccountTransactionRequest;
 use App\Models\Account;
 use App\Models\Transaction;
+use App\Services\Accounts\BuildPendingIncomeByUser;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
 use App\Services\Transaction\TransactionUpdater;
@@ -15,6 +16,10 @@ use Illuminate\Http\Request;
 
 class AccountTransactionController extends ApiController
 {
+    public function __construct(
+        private readonly BuildPendingIncomeByUser $buildPendingIncomeByUser,
+    ) {}
+
     public function index(Account $account, Request $request): JsonResponse
     {
         $this->ensureAccountMember($account);
@@ -125,6 +130,7 @@ class AccountTransactionController extends ApiController
     {
         $meta = [
             'account' => $this->accountMeta($accountId),
+            'pending_by_user' => $this->pendingByUserMeta($accountId),
         ];
 
         if ($previousAccountId && $previousAccountId !== $accountId) {
@@ -142,6 +148,13 @@ class AccountTransactionController extends ApiController
             'id' => $account->id,
             'balance' => $account->balance,
         ];
+    }
+
+    private function pendingByUserMeta(int $accountId): array
+    {
+        $account = Account::withoutGlobalScopes()->findOrFail($accountId);
+
+        return $this->buildPendingIncomeByUser->execute($account);
     }
 
     private function createdTransactions(Transaction $transaction): ?EloquentCollection

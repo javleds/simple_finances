@@ -67,7 +67,8 @@ it('sends the api invitation email when the invited email does not belong to a r
     );
 });
 
-it('does not send the api invitation email when the registered user disabled invitation notifications', function () {
+it('sends the api invitation email even when the registered user has no notification preferences', function () {
+    config()->set('app.spa_url', 'https://spa.example.test');
     Notification::fake();
 
     NotificationType::factory()->create([
@@ -91,5 +92,8 @@ it('does not send the api invitation email when the registered user disabled inv
 
     app(SendApiInvitationNotification::class)->execute($invite);
 
-    Notification::assertNothingSent();
+    Notification::assertSentOnDemand(
+        InviteAccountApiEmail::class,
+        fn (InviteAccountApiEmail $notification): bool => $notification->toMail($invitee)->viewData['link'] === 'https://spa.example.test/login?email=invitee%40example.com&post_auth_action=account-invites',
+    );
 });
