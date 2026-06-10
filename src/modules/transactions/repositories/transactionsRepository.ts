@@ -54,6 +54,11 @@ const transactionMutationDataSchema = z.union([
     }),
 ]);
 
+const transactionMutationCollectionDataSchema = z.union([
+  transactionResponseDataSchema.transform((transaction) => [transaction]),
+  z.array(transactionResponseDataSchema),
+]);
+
 const singleTransactionSchema = z.union([
   transactionMutationDataSchema,
   z
@@ -102,10 +107,48 @@ const mutationMetaSchema = z
     previousAccountBalance: payload.meta?.previous_account?.balance ?? null,
   }));
 
+function getCreatedAtTime(transaction: Transaction): number | null {
+  if (!transaction.createdAt) {
+    return null;
+  }
+
+  const timestamp = new Date(transaction.createdAt).getTime();
+
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
+function sortTransactionsByCreatedAt(transactions: Transaction[]): Transaction[] {
+  return transactions
+    .map((transaction, index) => ({ transaction, index }))
+    .sort((left, right) => {
+      const leftTime = getCreatedAtTime(left.transaction);
+      const rightTime = getCreatedAtTime(right.transaction);
+
+      if (leftTime === null && rightTime === null) {
+        return left.index - right.index;
+      }
+
+      if (leftTime === null) {
+        return 1;
+      }
+
+      if (rightTime === null) {
+        return -1;
+      }
+
+      if (rightTime === leftTime) {
+        return left.index - right.index;
+      }
+
+      return rightTime - leftTime;
+    })
+    .map((item) => item.transaction);
+}
+
 export const createdTransactionResponseSchema = z
   .union([
     z.object({
-      data: transactionMutationDataSchema,
+      data: transactionMutationCollectionDataSchema,
       meta: z
         .object({
           account: z
@@ -121,15 +164,29 @@ export const createdTransactionResponseSchema = z
         })
         .optional(),
     }),
-    singleTransactionSchema.transform((data) => ({ data, meta: undefined })),
+    singleTransactionSchema.transform((data) => ({ data: [data], meta: undefined })),
   ])
-  .transform<CreatedTransactionResult>((payload) => ({
-    transaction: mapTransactionApiToDomain(payload.data),
-    meta: {
-      accountBalance: payload.meta?.account?.balance ?? null,
-      previousAccountBalance: payload.meta?.previous_account?.balance ?? null,
-    },
-  }));
+  .transform<CreatedTransactionResult>((payload, context) => {
+    const transactions = sortTransactionsByCreatedAt(payload.data.map(mapTransactionApiToDomain));
+    const transaction = transactions[0];
+
+    if (!transaction) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'La respuesta no incluyó una transacción creada.',
+      });
+      return z.NEVER;
+    }
+
+    return {
+      transaction,
+      transactions,
+      meta: {
+        accountBalance: payload.meta?.account?.balance ?? null,
+        previousAccountBalance: payload.meta?.previous_account?.balance ?? null,
+      },
+    };
+  });
 
 function buildWritePayload(payload: TransactionWritePayload) {
   return {

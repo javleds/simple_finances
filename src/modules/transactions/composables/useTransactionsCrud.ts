@@ -62,7 +62,7 @@ export function useTransactionsCrud() {
 
     try {
       const result = await transactionsRepository.create(payload);
-      transactionsState.prependItem(result.transaction);
+      transactionsState.prependItems(result.transactions);
       return result;
     } catch (error) {
       saveError.value = resolveErrorMessage(error, 'No fue posible crear la transacción.');

@@ -15,6 +15,7 @@ export type Transaction = {
   type: TransactionType;
   status: TransactionStatus | null;
   date: string;
+  createdAt: string | null;
   financialGoalId: string | null;
   financialGoalName: string | null;
   userPayments: Record<string, number>;

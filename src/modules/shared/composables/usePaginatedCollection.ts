@@ -116,6 +116,18 @@ export function usePaginatedCollection<TItem, TArgs extends unknown[]>(
     }
   }
 
+  function prependItems(nextItems: TItem[]): void {
+    if (nextItems.length === 0) {
+      return;
+    }
+
+    items.value = [...nextItems, ...items.value];
+
+    if (typeof total.value === 'number') {
+      total.value += nextItems.length;
+    }
+  }
+
   function replaceItem(matcher: (item: TItem) => boolean, nextItem: TItem): void {
     items.value = items.value.map((item) => (matcher(item) ? nextItem : item));
   }
@@ -149,6 +161,7 @@ export function usePaginatedCollection<TItem, TArgs extends unknown[]>(
     reload,
     loadMore,
     prependItem,
+    prependItems,
     replaceItem,
     removeItem,
     setItems,

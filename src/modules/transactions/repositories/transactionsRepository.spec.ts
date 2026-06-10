@@ -14,6 +14,7 @@ const baseTransactionPayload = {
   type: 'outcome',
   status: 'completed',
   scheduled_at: '2026-06-09T00:00:00.000000Z',
+  created_at: '2026-06-09T12:00:00.000000Z',
   financial_goal_id: null,
   financial_goal: null,
 };
@@ -24,6 +25,7 @@ describe('transactions repository schemas', () => {
       data: [
         {
           ...baseTransactionPayload,
+          created_at: '2026-06-09T12:00:00.000000Z',
           user_payments: [
             {
               user_id: 7,
@@ -41,6 +43,7 @@ describe('transactions repository schemas', () => {
           type: 'income',
           status: 'pending',
           amount: '720.30',
+          created_at: '2026-06-09T12:01:00.000000Z',
         },
       ],
       meta: {
@@ -52,21 +55,52 @@ describe('transactions repository schemas', () => {
 
     expect(result).toEqual({
       transaction: {
-        id: '10',
+        id: '11',
         accountId: '20',
         accountName: 'Cuenta compartida',
         concept: 'Compra mensual',
-        amount: 1200.5,
-        type: 'expense',
-        status: null,
+        amount: 720.3,
+        type: 'income',
+        status: 'pending',
         date: '2026-06-09',
+        createdAt: '2026-06-09T12:01:00.000000Z',
         financialGoalId: null,
         financialGoalName: null,
-        userPayments: {
-          '7': 60,
-          '8': 40,
-        },
+        userPayments: {},
       },
+      transactions: [
+        {
+          id: '11',
+          accountId: '20',
+          accountName: 'Cuenta compartida',
+          concept: 'Compra mensual',
+          amount: 720.3,
+          type: 'income',
+          status: 'pending',
+          date: '2026-06-09',
+          createdAt: '2026-06-09T12:01:00.000000Z',
+          financialGoalId: null,
+          financialGoalName: null,
+          userPayments: {},
+        },
+        {
+          id: '10',
+          accountId: '20',
+          accountName: 'Cuenta compartida',
+          concept: 'Compra mensual',
+          amount: 1200.5,
+          type: 'expense',
+          status: null,
+          date: '2026-06-09',
+          createdAt: '2026-06-09T12:00:00.000000Z',
+          financialGoalId: null,
+          financialGoalName: null,
+          userPayments: {
+            '7': 60,
+            '8': 40,
+          },
+        },
+      ],
       meta: {
         accountBalance: 2400,
         previousAccountBalance: null,

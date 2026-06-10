@@ -17,6 +17,7 @@ const baseTransactionPayload = {
   type: 'outcome',
   status: 'completed',
   scheduled_at: '2026-06-09T00:00:00.000000Z',
+  created_at: '2026-06-09T12:00:00.000000Z',
   financial_goal_id: null,
   financial_goal: null,
 };
@@ -34,6 +35,7 @@ describe('transaction schemas', () => {
       type: 'expense',
       status: null,
       date: '2026-06-09',
+      createdAt: '2026-06-09T12:00:00.000000Z',
       financialGoalId: null,
       financialGoalName: null,
       userPayments: {},
