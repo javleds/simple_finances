@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\InviteStatus;
 use App\Models\Account;
 use App\Models\AccountInvite;
 use App\Models\FixedIncome;
@@ -186,6 +187,54 @@ it('rate limits register requests by email and ip', function () {
 
     $this->postJson('/api/auth/register', $payload)
         ->assertStatus(429);
+});
+
+it('returns the pending invitations redirect after registering from an invitation action', function () {
+    config()->set('app.spa_url', 'https://spa.example.test');
+    Notification::fake();
+    seedNotificationTypes();
+
+    AccountInvite::factory()->create([
+        'email' => 'invited-register@example.com',
+        'status' => InviteStatus::Pending,
+    ]);
+
+    $this->postJson('/api/auth/register', [
+        'name' => 'Invited User',
+        'email' => 'invited-register@example.com',
+        'password' => 'password123',
+        'password_confirmation' => 'password123',
+        'phone_number' => null,
+        'terms_accepted' => true,
+        'privacy_policy_accepted' => true,
+        'post_auth_action' => 'account-invites',
+    ])
+        ->assertCreated()
+        ->assertJsonPath('meta.post_auth_redirect.action', 'account-invites')
+        ->assertJsonPath('meta.post_auth_redirect.url', 'https://spa.example.test/admin/invitations');
+});
+
+it('returns the pending invitations redirect after logging in from an invitation action', function () {
+    config()->set('app.spa_url', 'https://spa.example.test');
+    Notification::fake();
+
+    $user = User::factory()->create([
+        'email' => 'invited-login@example.com',
+    ]);
+
+    AccountInvite::factory()->create([
+        'email' => $user->email,
+        'status' => InviteStatus::Pending,
+    ]);
+
+    $this->postJson('/api/auth/login', [
+        'email' => $user->email,
+        'password' => 'password',
+        'post_auth_action' => 'account-invites',
+    ])
+        ->assertOk()
+        ->assertJsonPath('meta.post_auth_redirect.action', 'account-invites')
+        ->assertJsonPath('meta.post_auth_redirect.url', 'https://spa.example.test/admin/invitations');
 });
 
 it('rate limits password recovery requests by email and ip', function () {
@@ -392,17 +441,13 @@ it('sends the invitation email before persisting account invites from the nested
     seedNotificationTypes();
 
     $owner = User::factory()->create();
-    $invitee = User::factory()->create([
-        'email' => 'invitee@example.com',
-    ]);
     $account = Account::factory()->create(['user_id' => $owner->id]);
     $account->users()->attach($owner->id);
     $owner->notificationTypes()->sync(NotificationType::query()->pluck('id')->all());
-    $invitee->notificationTypes()->sync(NotificationType::query()->pluck('id')->all());
 
     $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/invites", [
-            'email' => $invitee->email,
+            'email' => 'external@example.com',
             'percentage' => 20,
         ])
         ->assertCreated();

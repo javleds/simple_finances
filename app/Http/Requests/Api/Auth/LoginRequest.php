@@ -16,6 +16,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'post_auth_action' => ['nullable', 'string', 'in:account-invites'],
         ];
     }
 }

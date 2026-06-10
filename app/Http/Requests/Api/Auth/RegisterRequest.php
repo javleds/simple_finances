@@ -20,6 +20,7 @@ class RegisterRequest extends FormRequest
             'phone_number' => ['nullable', 'string', 'max:255'],
             'terms_accepted' => ['required', 'accepted'],
             'privacy_policy_accepted' => ['required', 'accepted'],
+            'post_auth_action' => ['nullable', 'string', 'in:account-invites'],
         ];
     }
 }
