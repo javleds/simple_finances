@@ -51,6 +51,18 @@ function parseStatus(value: unknown): TransactionStatus | null {
   return null;
 }
 
+function parseEntityId(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  return null;
+}
+
 function normalizeUserPayments(
   userPayments: Record<string, number>,
 ): Record<string, number> {
@@ -114,10 +126,17 @@ export const transactionFormSchema = z
 
 export const transactionApiSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
-  account_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+  account_id: z
+    .union([z.string(), z.number(), z.null(), z.undefined()])
+    .optional()
+    .transform(parseEntityId),
   account: z
     .object({
-      name: z.string(),
+      id: z
+        .union([z.string(), z.number(), z.null(), z.undefined()])
+        .optional()
+        .transform(parseEntityId),
+      name: z.string().optional().catch(''),
     })
     .nullable()
     .optional()
@@ -139,10 +158,27 @@ export const transactionApiSchema = z.object({
     .transform((value) => value ?? null),
   user_payments: z
     .array(
-      z.object({
-        user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
-        percentage: z.number(),
-      }),
+      z
+        .object({
+          user_id: z
+            .union([z.string(), z.number(), z.null(), z.undefined()])
+            .optional()
+            .transform(parseEntityId),
+          user: z
+            .object({
+              id: z
+                .union([z.string(), z.number(), z.null(), z.undefined()])
+                .optional()
+                .transform(parseEntityId),
+            })
+            .optional()
+            .nullable(),
+          percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+        })
+        .transform((value) => ({
+          user_id: value.user_id ?? value.user?.id ?? '',
+          percentage: value.percentage,
+        })),
     )
     .optional()
     .transform((value) => value ?? []),
@@ -173,7 +209,7 @@ export function mapTransactionApiToDomain(
 ): Transaction {
   return {
     id: payload.id,
-    accountId: payload.account_id,
+    accountId: payload.account_id ?? payload.account?.id ?? '',
     accountName: payload.account?.name ?? null,
     concept: payload.concept,
     amount: payload.amount,
@@ -183,6 +219,10 @@ export function mapTransactionApiToDomain(
     financialGoalId: payload.financial_goal_id,
     financialGoalName: payload.financial_goal?.name ?? null,
     userPayments: payload.user_payments.reduce<Record<string, number>>((accumulator, payment) => {
+      if (!payment.user_id) {
+        return accumulator;
+      }
+
       accumulator[payment.user_id] = payment.percentage;
       return accumulator;
     }, {}),

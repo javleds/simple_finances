@@ -26,11 +26,20 @@ const accountsPath = '/accounts';
 
 const transactionCollectionSchema = createPaginatedCollectionSchema(transactionApiSchema);
 
+const transactionResponseDataSchema = z.union([
+  transactionApiSchema,
+  z
+    .object({
+      transaction: transactionApiSchema,
+    })
+    .transform((payload) => payload.transaction),
+]);
+
 const singleTransactionSchema = z
   .union([
-    transactionApiSchema,
+    transactionResponseDataSchema,
     z.object({
-      data: transactionApiSchema,
+      data: transactionResponseDataSchema,
     }),
   ])
   .transform((payload) => ('data' in payload ? payload.data : payload));
@@ -45,7 +54,7 @@ function parseNullableBalance(value: unknown): number | null {
   }
 
   if (typeof value === 'string') {
-    const parsedValue = Number(value);
+    const parsedValue = Number(value.replace(/[^0-9.-]/g, ''));
     return Number.isFinite(parsedValue) ? parsedValue : null;
   }
 
@@ -77,7 +86,7 @@ const mutationMetaSchema = z
 const createdTransactionResponseSchema = z
   .union([
     z.object({
-      data: transactionApiSchema,
+      data: transactionResponseDataSchema,
       meta: z
         .object({
           account: z
@@ -93,7 +102,7 @@ const createdTransactionResponseSchema = z
         })
         .optional(),
     }),
-    transactionApiSchema.transform((data) => ({ data, meta: undefined })),
+    singleTransactionSchema.transform((data) => ({ data, meta: undefined })),
   ])
   .transform<CreatedTransactionResult>((payload) => ({
     transaction: mapTransactionApiToDomain(payload.data),
