@@ -3,6 +3,7 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowPathIcon,
   CheckCircleIcon,
+  CheckIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   XMarkIcon,
@@ -123,7 +124,8 @@ const {
 } = useTransactionsCrud();
 
 const transactionsPerPage = computed(() => {
-  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+  const rawValue =
+    typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
   if (!Number.isInteger(rawValue) || rawValue <= 0) {
     return defaultTransactionsPerPage;
@@ -280,16 +282,13 @@ watch(
   { immediate: true },
 );
 
-watch(
-  listMeta,
-  (nextMeta) => {
-    if (!nextMeta) {
-      return;
-    }
+watch(listMeta, (nextMeta) => {
+  if (!nextMeta) {
+    return;
+  }
 
-    applyMutationMeta(nextMeta);
-  },
-);
+  applyMutationMeta(nextMeta);
+});
 
 function formatDateLabel(date: string): string {
   return new Intl.DateTimeFormat('es-MX', {
@@ -517,12 +516,12 @@ async function confirmCompletePendingByUser(): Promise<void> {
   completePendingByUserError.value = null;
 
   try {
-    const result = await dashboardRepository.completePendingTransactions(selectedUser.transactionIds);
+    const result = await dashboardRepository.completePendingTransactions(
+      selectedUser.transactionIds,
+    );
 
     if (result.failed.length > 0) {
-      completePendingByUserError.value = result.failed
-        .map((item) => item.message)
-        .join(' ');
+      completePendingByUserError.value = result.failed.map((item) => item.message).join(' ');
     }
 
     await reloadTransactions();
@@ -633,7 +632,7 @@ function infiniteStatusLabel(): string {
                     :disabled="isCompletingPendingByUser"
                     @click="openCompletePendingByUser(user.userId)"
                   >
-                    <CheckCircleIcon class="h-5 w-5" />
+                    <CheckIcon class="h-4 w-4" />
                   </AppIconButton>
                 </template>
               </AppAvatarValueRow>
@@ -887,9 +886,7 @@ function infiniteStatusLabel(): string {
       :actions="completePendingByUserActions"
       title="Completar pendientes del usuario"
       variant="warning"
-      @action="
-        $event === 'confirm-complete-pending-by-user' && void confirmCompletePendingByUser()
-      "
+      @action="$event === 'confirm-complete-pending-by-user' && void confirmCompletePendingByUser()"
       @close="closeCompletePendingByUserModal"
     >
       <div class="space-y-3">
