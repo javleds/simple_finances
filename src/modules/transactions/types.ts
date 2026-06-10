@@ -1,9 +1,15 @@
+import type { PaginatedCollection } from '@/modules/shared/lib/pagination';
+
 export type TransactionType = 'income' | 'expense';
 export type TransactionStatus = 'pending' | 'completed';
 export type TransactionListFilters = {
   search?: string;
   status?: TransactionStatus[];
   type?: TransactionType[];
+};
+
+export type TransactionListResult = PaginatedCollection<Transaction> & {
+  meta: TransactionMutationMeta;
 };
 
 export type Transaction = {
@@ -50,6 +56,13 @@ export type TransactionWritePayload = {
 export type TransactionMutationMeta = {
   accountBalance: number | null;
   previousAccountBalance: number | null;
+  pendingByUser: TransactionPendingByUser[] | null;
+};
+
+export type TransactionPendingByUser = {
+  userId: string;
+  userName: string;
+  amount: number;
 };
 
 export type CreatedTransactionResult = {

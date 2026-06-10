@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { createdTransactionResponseSchema } from './transactionsRepository';
+import {
+  createdTransactionResponseSchema,
+  transactionListMetaSchema,
+} from './transactionsRepository';
 
 const baseTransactionPayload = {
   id: 10,
@@ -24,6 +27,44 @@ const baseTransactionPayload = {
 };
 
 describe('transactions repository schemas', () => {
+  it('parses pending totals from a transaction list response meta', () => {
+    expect(
+      transactionListMetaSchema.parse({
+        data: [],
+        meta: {
+          current_page: 1,
+          pending_by_user: [
+            {
+              user_id: 7,
+              user_name: 'Eliot',
+              amount: '250.00',
+            },
+            {
+              user_id: 8,
+              user_name: 'Notradame',
+              amount: '9,500.00',
+            },
+          ],
+        },
+      }),
+    ).toEqual({
+      accountBalance: null,
+      previousAccountBalance: null,
+      pendingByUser: [
+        {
+          userId: '7',
+          userName: 'Eliot',
+          amount: 250,
+        },
+        {
+          userId: '8',
+          userName: 'Notradame',
+          amount: 9500,
+        },
+      ],
+    });
+  });
+
   it('parses a shared-account create response with transaction array data', () => {
     const result = createdTransactionResponseSchema.parse({
       data: [
@@ -54,6 +95,18 @@ describe('transactions repository schemas', () => {
         account: {
           balance: '$2,400.00',
         },
+        pending_by_user: [
+          {
+            user_id: 7,
+            user_name: 'Eliot',
+            amount: '250.00',
+          },
+          {
+            user_id: 8,
+            user_name: 'Notradame',
+            amount: '9,500.00',
+          },
+        ],
       },
     });
 
@@ -114,6 +167,18 @@ describe('transactions repository schemas', () => {
       meta: {
         accountBalance: 2400,
         previousAccountBalance: null,
+        pendingByUser: [
+          {
+            userId: '7',
+            userName: 'Eliot',
+            amount: 250,
+          },
+          {
+            userId: '8',
+            userName: 'Notradame',
+            amount: 9500,
+          },
+        ],
       },
     });
   });

@@ -16,7 +16,9 @@ import type {
   DeletedTransactionResult,
   Transaction,
   TransactionListFilters,
+  TransactionListResult,
   TransactionMutationMeta,
+  TransactionPendingByUser,
   TransactionWritePayload,
 } from '../types';
 
@@ -85,27 +87,57 @@ function parseNullableBalance(value: unknown): number | null {
   return null;
 }
 
-const mutationMetaSchema = z
+const pendingByUserApiSchema = z
   .object({
-    meta: z
+    user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    user_name: z.string().catch('Usuario no disponible'),
+    amount: z.unknown().transform((value) => parseNullableBalance(value) ?? 0),
+  })
+  .transform<TransactionPendingByUser>((payload) => ({
+    userId: payload.user_id,
+    userName: payload.user_name,
+    amount: payload.amount,
+  }));
+
+const transactionMutationMetaPayloadSchema = z
+  .object({
+    account: z
       .object({
-        account: z
-          .object({
-            balance: z.unknown().transform(parseNullableBalance),
-          })
-          .optional(),
-        previous_account: z
-          .object({
-            balance: z.unknown().transform(parseNullableBalance),
-          })
-          .optional(),
+        balance: z.unknown().transform(parseNullableBalance),
       })
       .optional(),
+    previous_account: z
+      .object({
+        balance: z.unknown().transform(parseNullableBalance),
+      })
+      .optional(),
+    pending_by_user: z.array(pendingByUserApiSchema).optional(),
   })
+  .optional()
   .transform<TransactionMutationMeta>((payload) => ({
-    accountBalance: payload.meta?.account?.balance ?? null,
-    previousAccountBalance: payload.meta?.previous_account?.balance ?? null,
+    accountBalance: payload?.account?.balance ?? null,
+    previousAccountBalance: payload?.previous_account?.balance ?? null,
+    pendingByUser: payload?.pending_by_user ?? null,
   }));
+
+const mutationMetaSchema = z
+  .object({
+    meta: transactionMutationMetaPayloadSchema,
+  })
+  .transform<TransactionMutationMeta>((payload) => payload.meta);
+
+export const transactionListMetaSchema = z
+  .object({
+    meta: transactionMutationMetaPayloadSchema,
+  })
+  .catch({
+    meta: {
+      accountBalance: null,
+      previousAccountBalance: null,
+      pendingByUser: null,
+    },
+  })
+  .transform<TransactionMutationMeta>((payload) => payload.meta);
 
 function getCreatedAtTime(transaction: Transaction): number | null {
   if (!transaction.createdAt) {
@@ -149,22 +181,16 @@ export const createdTransactionResponseSchema = z
   .union([
     z.object({
       data: transactionMutationCollectionDataSchema,
-      meta: z
-        .object({
-          account: z
-            .object({
-              balance: z.unknown().transform(parseNullableBalance),
-            })
-            .optional(),
-          previous_account: z
-            .object({
-              balance: z.unknown().transform(parseNullableBalance),
-            })
-            .optional(),
-        })
-        .optional(),
+      meta: transactionMutationMetaPayloadSchema,
     }),
-    singleTransactionSchema.transform((data) => ({ data: [data], meta: undefined })),
+    singleTransactionSchema.transform((data) => ({
+      data: [data],
+      meta: {
+        accountBalance: null,
+        previousAccountBalance: null,
+        pendingByUser: null,
+      },
+    })),
   ])
   .transform<CreatedTransactionResult>((payload, context) => {
     const transactions = sortTransactionsByCreatedAt(payload.data.map(mapTransactionApiToDomain));
@@ -181,10 +207,7 @@ export const createdTransactionResponseSchema = z
     return {
       transaction,
       transactions,
-      meta: {
-        accountBalance: payload.meta?.account?.balance ?? null,
-        previousAccountBalance: payload.meta?.previous_account?.balance ?? null,
-      },
+      meta: payload.meta,
     };
   });
 
@@ -217,7 +240,7 @@ export function createTransactionsRepository() {
     async list(
       accountId?: string,
       options?: { page?: number; perPage?: number; filters?: TransactionListFilters },
-    ): Promise<PaginatedCollection<Transaction>> {
+    ): Promise<TransactionListResult> {
       const searchParams = buildQueryParams({
         page: options?.page,
         per_page: options?.perPage,
@@ -233,6 +256,7 @@ export function createTransactionsRepository() {
       return {
         ...parsedResponse,
         items: parsedResponse.items.map(mapTransactionApiToDomain),
+        meta: transactionListMetaSchema.parse(response),
       };
     },
     async create(payload: TransactionWritePayload): Promise<CreatedTransactionResult> {

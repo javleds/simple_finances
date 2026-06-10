@@ -32,6 +32,8 @@ import TransactionsForm from '@/modules/transactions/components/TransactionsForm
 import TransactionListItem from '@/modules/transactions/components/TransactionListItem.vue';
 import type {
   TransactionListFilters,
+  TransactionMutationMeta,
+  TransactionPendingByUser,
   TransactionStatus,
   TransactionType,
   TransactionWritePayload,
@@ -40,6 +42,12 @@ import type {
 type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;
+};
+
+type PendingByUserSummary = {
+  userId: string;
+  userName: string;
+  amount: number;
 };
 
 const props = defineProps<{
@@ -79,8 +87,9 @@ const accountId = computed(() =>
 
 const accountUsers = computed(() => props.account?.users ?? []);
 const isSharedAccount = computed(() => accountUsers.value.length > 1);
+const pendingByUser = ref<PendingByUserSummary[]>([]);
 const usersWithPendingExpenses = computed(() =>
-  accountUsers.value.filter((user) => user.pendingExpenses > 0),
+  pendingByUser.value.filter((user) => user.amount > 0),
 );
 const accountBalance = ref(props.account?.balance ?? 0);
 const {
@@ -101,6 +110,7 @@ const {
   loadError,
   saveError,
   deleteError,
+  listMeta,
   clearSaveError,
   clearDeleteError,
   loadTransactions,
@@ -201,6 +211,18 @@ watch(
 );
 
 watch(
+  accountUsers,
+  (nextUsers) => {
+    pendingByUser.value = nextUsers.map((user) => ({
+      userId: user.id,
+      userName: user.name,
+      amount: user.pendingExpenses,
+    }));
+  },
+  { immediate: true },
+);
+
+watch(
   () => route.query,
   (nextQuery) => {
     searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
@@ -244,6 +266,17 @@ watch(
   { immediate: true },
 );
 
+watch(
+  listMeta,
+  (nextMeta) => {
+    if (!nextMeta) {
+      return;
+    }
+
+    applyMutationMeta(nextMeta);
+  },
+);
+
 function formatDateLabel(date: string): string {
   return new Intl.DateTimeFormat('es-MX', {
     day: '2-digit',
@@ -261,17 +294,23 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function applyMutationBalance(options: {
-  accountBalance?: number | null;
-  previousAccountBalance?: number | null;
-}): void {
-  if (typeof options.accountBalance === 'number') {
-    accountBalance.value = options.accountBalance;
-    return;
+function mapPendingByUserSummary(items: TransactionPendingByUser[]): PendingByUserSummary[] {
+  return items.map((item) => ({
+    userId: item.userId,
+    userName: item.userName,
+    amount: item.amount,
+  }));
+}
+
+function applyMutationMeta(meta: TransactionMutationMeta): void {
+  if (typeof meta.accountBalance === 'number') {
+    accountBalance.value = meta.accountBalance;
+  } else if (typeof meta.previousAccountBalance === 'number') {
+    accountBalance.value = meta.previousAccountBalance;
   }
 
-  if (typeof options.previousAccountBalance === 'number') {
-    accountBalance.value = options.previousAccountBalance;
+  if (Array.isArray(meta.pendingByUser)) {
+    pendingByUser.value = mapPendingByUserSummary(meta.pendingByUser);
   }
 }
 
@@ -382,7 +421,7 @@ async function handleTransactionSubmit(payload: TransactionWritePayload): Promis
     return;
   }
 
-  applyMutationBalance(result.meta);
+  applyMutationMeta(result.meta);
   closeCreateTransactionModal();
 }
 
@@ -397,7 +436,7 @@ async function handleEditTransactionSubmit(payload: TransactionWritePayload): Pr
     return;
   }
 
-  applyMutationBalance(result.meta);
+  applyMutationMeta(result.meta);
   closeEditTransactionModal();
 }
 
@@ -412,7 +451,7 @@ async function confirmDeleteTransaction(): Promise<void> {
     return;
   }
 
-  applyMutationBalance(result.meta);
+  applyMutationMeta(result.meta);
   closeDeleteTransactionModal();
 }
 
@@ -437,7 +476,7 @@ async function confirmCompleteTransaction(): Promise<void> {
     return;
   }
 
-  applyMutationBalance(result.meta);
+  applyMutationMeta(result.meta);
   closeCompleteTransactionModal();
 }
 
@@ -520,10 +559,10 @@ function infiniteStatusLabel(): string {
             <div v-if="usersWithPendingExpenses.length > 0" class="space-y-2">
               <AppAvatarValueRow
                 v-for="user in usersWithPendingExpenses"
-                :key="user.id"
-                :name="user.name"
-                :seed="user.id"
-                :value="formatCurrency(user.pendingExpenses)"
+                :key="user.userId"
+                :name="user.userName"
+                :seed="user.userId"
+                :value="formatCurrency(user.amount)"
               />
             </div>
 

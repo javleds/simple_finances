@@ -9,6 +9,7 @@ import type {
   DeletedTransactionResult,
   Transaction,
   TransactionListFilters,
+  TransactionMutationMeta,
   TransactionWritePayload,
 } from '../types';
 
@@ -29,8 +30,11 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 export function useTransactionsCrud() {
   const transactionsState = usePaginatedCollection<Transaction, [string | undefined, TransactionListFilters | undefined]>({
     defaultPerPage: 20,
-    loadPage: (options, accountId, filters) =>
-      transactionsRepository.list(accountId, { ...options, filters }),
+    loadPage: async (options, accountId, filters) => {
+      const response = await transactionsRepository.list(accountId, { ...options, filters });
+      listMeta.value = response.meta;
+      return response;
+    },
     resolveErrorMessage,
     loadErrorMessage: 'No fue posible cargar las transacciones.',
     loadMoreErrorMessage: 'No fue posible cargar más transacciones.',
@@ -39,6 +43,7 @@ export function useTransactionsCrud() {
   const isDeleting = ref(false);
   const saveError = ref<string | null>(null);
   const deleteError = ref<string | null>(null);
+  const listMeta = ref<TransactionMutationMeta | null>(null);
 
   const hasTransactions = computed(() => transactionsState.hasItems.value);
   const hasMoreTransactions = computed(() => transactionsState.hasMoreItems.value);
@@ -133,6 +138,7 @@ export function useTransactionsCrud() {
     loadError: transactionsState.loadError,
     saveError,
     deleteError,
+    listMeta,
     clearSaveError,
     clearDeleteError,
     loadTransactions,
