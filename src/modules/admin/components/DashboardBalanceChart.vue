@@ -3,20 +3,21 @@ import { computed } from 'vue';
 import { use } from 'echarts/core';
 import { BarChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent } from 'echarts/components';
-import { CanvasRenderer } from 'echarts/renderers';
+import { SVGRenderer } from 'echarts/renderers';
 import VChart from 'vue-echarts';
 import type { CallbackDataParams } from 'echarts/types/src/util/types.js';
 
 import type { DashboardGraphAccount } from '@/modules/admin/types/dashboard';
 import { useThemeStore } from '@/stores/theme';
 
-use([BarChart, CanvasRenderer, GridComponent, TooltipComponent]);
+use([BarChart, SVGRenderer, GridComponent, TooltipComponent]);
 
 const props = defineProps<{
   accounts: DashboardGraphAccount[];
 }>();
 
 const themeStore = useThemeStore();
+const chartInitOptions = { renderer: 'svg' as const };
 
 const chartColors = computed(() => {
   themeStore.mode;
@@ -162,5 +163,12 @@ function shortenLabel(label: string): string {
 </script>
 
 <template>
-  <VChart :option="balanceChartOption" autoresize class="h-72 max-h-[250px] w-full" />
+  <div class="h-[250px] min-h-[250px] w-full">
+    <VChart
+      :init-options="chartInitOptions"
+      :option="balanceChartOption"
+      autoresize
+      class="block h-full w-full"
+    />
+  </div>
 </template>
