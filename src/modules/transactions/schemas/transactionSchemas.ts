@@ -143,13 +143,25 @@ export const transactionApiSchema = z.object({
     .transform((value) => value ?? null),
   user: z
     .object({
+      id: z
+        .union([z.string(), z.number(), z.null(), z.undefined()])
+        .optional()
+        .transform(parseEntityId),
       name: z.string().nullable().optional().transform((value) => value ?? null),
     })
     .nullable()
     .optional()
     .transform((value) => value ?? null),
+  user_id: z
+    .union([z.string(), z.number(), z.null(), z.undefined()])
+    .optional()
+    .transform(parseEntityId),
   created_by: z
     .object({
+      id: z
+        .union([z.string(), z.number(), z.null(), z.undefined()])
+        .optional()
+        .transform(parseEntityId),
       name: z.string().nullable().optional().transform((value) => value ?? null),
     })
     .nullable()
@@ -157,6 +169,10 @@ export const transactionApiSchema = z.object({
     .transform((value) => value ?? null),
   creator: z
     .object({
+      id: z
+        .union([z.string(), z.number(), z.null(), z.undefined()])
+        .optional()
+        .transform(parseEntityId),
       name: z.string().nullable().optional().transform((value) => value ?? null),
     })
     .nullable()
@@ -243,6 +259,7 @@ export function mapTransactionApiToDomain(
     status: payload.type === 'income' ? payload.status : null,
     date: payload.scheduled_at.slice(0, 10),
     createdAt: payload.created_at,
+    creatorId: payload.user_id ?? payload.user?.id ?? payload.created_by?.id ?? payload.creator?.id ?? null,
     creatorName: payload.user?.name ?? payload.created_by?.name ?? payload.creator?.name ?? null,
     financialGoalId: payload.financial_goal_id,
     financialGoalName: payload.financial_goal?.name ?? null,

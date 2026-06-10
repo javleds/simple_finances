@@ -2,6 +2,7 @@
 import {
   AdjustmentsHorizontalIcon,
   ArrowPathIcon,
+  CheckCircleIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   XMarkIcon,
@@ -9,6 +10,7 @@ import {
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import type { Account } from '@/modules/accounts/types';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import {
@@ -50,6 +52,7 @@ const router = useRouter();
 const isCreateTransactionModalOpen = ref(false);
 const isEditTransactionModalOpen = ref(false);
 const isDeleteTransactionModalOpen = ref(false);
+const isCompleteTransactionModalOpen = ref(false);
 const isFiltersOpen = ref(false);
 const searchTerm = ref('');
 const selectedStatuses = ref<TransactionStatus[]>([]);
@@ -68,6 +71,7 @@ const transactionTypeOptions = [
   { value: 'expense', label: 'Egreso' },
 ] as const;
 const defaultTransactionsPerPage = 20;
+const currentUserId = computed(() => getStoredAuthSession()?.user.id ?? null);
 
 const accountId = computed(() =>
   typeof route.params.accountId === 'string' ? route.params.accountId : '',
@@ -170,6 +174,17 @@ const deleteTransactionActions = computed(() => [
     label: isDeleting.value ? 'Eliminando...' : 'Eliminar transacción',
     tone: 'primary' as const,
     disabled: !selectedTransaction.value || isDeleting.value,
+  },
+]);
+
+const completeTransactionActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'confirm-complete-transaction',
+    label: isSaving.value ? 'Guardando...' : 'Completar transacción',
+    tone: 'primary' as const,
+    icon: CheckCircleIcon,
+    disabled: !selectedTransaction.value || isSaving.value,
   },
 ]);
 
@@ -306,6 +321,18 @@ function closeDeleteTransactionModal(): void {
   clearDeleteError();
 }
 
+function openCompleteTransaction(transactionId: string): void {
+  clearSaveError();
+  selectedTransactionId.value = transactionId;
+  isCompleteTransactionModalOpen.value = true;
+}
+
+function closeCompleteTransactionModal(): void {
+  isCompleteTransactionModalOpen.value = false;
+  selectedTransactionId.value = null;
+  clearSaveError();
+}
+
 function openFilters(): void {
   isFiltersOpen.value = true;
 }
@@ -389,6 +416,31 @@ async function confirmDeleteTransaction(): Promise<void> {
   closeDeleteTransactionModal();
 }
 
+async function confirmCompleteTransaction(): Promise<void> {
+  if (!selectedTransaction.value || !canCompleteTransaction(selectedTransaction.value)) {
+    return;
+  }
+
+  const result = await updateTransaction(selectedTransaction.value.id, {
+    type: selectedTransaction.value.type,
+    status: 'completed',
+    concept: selectedTransaction.value.concept,
+    amount: selectedTransaction.value.amount,
+    accountId: selectedTransaction.value.accountId,
+    splitBetweenUsers: Object.keys(selectedTransaction.value.userPayments).length > 0,
+    date: selectedTransaction.value.date,
+    financialGoalId: selectedTransaction.value.financialGoalId,
+    userPayments: selectedTransaction.value.userPayments,
+  });
+
+  if (!result) {
+    return;
+  }
+
+  applyMutationBalance(result.meta);
+  closeCompleteTransactionModal();
+}
+
 function handleCreateFormStateChange(state: FormState): void {
   createFormState.value = state;
 }
@@ -403,6 +455,17 @@ function isTransactionStatus(value: string): value is TransactionStatus {
 
 function isTransactionType(value: string): value is TransactionType {
   return value === 'income' || value === 'expense';
+}
+
+function canCompleteTransaction(options: {
+  creatorId: string | null;
+  status: TransactionStatus | null;
+}): boolean {
+  return Boolean(
+    currentUserId.value &&
+      options.creatorId === currentUserId.value &&
+      options.status === 'pending',
+  );
 }
 
 function reloadTransactions(): void {
@@ -535,12 +598,14 @@ function infiniteStatusLabel(): string {
           v-for="transaction in transactions"
           :key="transaction.id"
           :amount="transaction.amount"
+          :can-complete="canCompleteTransaction(transaction)"
           :concept="transaction.concept"
           :creator-name="transaction.creatorName"
           :date-label="formatDateLabel(transaction.date)"
           :item-id="transaction.id"
           :status="transaction.status ?? 'completed'"
           :type="transaction.type"
+          @complete="openCompleteTransaction"
           @delete="openDeleteTransaction"
           @edit="openEditTransaction"
         />
@@ -683,6 +748,24 @@ function infiniteStatusLabel(): string {
           >.
         </AppText>
         <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isCompleteTransactionModalOpen"
+      :actions="completeTransactionActions"
+      title="Completar transacción"
+      variant="success"
+      @action="$event === 'confirm-complete-transaction' && confirmCompleteTransaction()"
+      @close="closeCompleteTransactionModal"
+    >
+      <div class="space-y-3">
+        <AppText v-if="selectedTransaction">
+          Vas a marcar
+          <strong>{{ selectedTransaction.concept }}</strong>
+          como completada.
+        </AppText>
+        <AppText v-if="saveError" class="text-(--app-color-danger)!">{{ saveError }}</AppText>
       </div>
     </AppModal>
   </section>

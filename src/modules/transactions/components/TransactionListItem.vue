@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import {
+  CheckCircleIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from '@heroicons/vue/24/outline';
+
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type TransactionItemType = 'income' | 'expense';
@@ -12,9 +19,11 @@ const props = defineProps<{
   status: TransactionItemStatus;
   dateLabel: string;
   creatorName: string | null;
+  canComplete?: boolean;
 }>();
 
 const emit = defineEmits<{
+  complete: [itemId: string];
   edit: [itemId: string];
   delete: [itemId: string];
 }>();
@@ -24,6 +33,36 @@ const currencyFormatter = new Intl.NumberFormat('es-MX', {
   currency: 'MXN',
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
+});
+
+const actionMenuItems = computed(() => {
+  const actions = [];
+
+  if (props.canComplete) {
+    actions.push({
+      key: 'complete',
+      label: 'Completar',
+      icon: CheckCircleIcon,
+      tone: 'success' as const,
+    });
+  }
+
+  actions.push(
+    {
+      key: 'edit',
+      label: 'Editar',
+      icon: PencilSquareIcon,
+      tone: 'default' as const,
+    },
+    {
+      key: 'delete',
+      label: 'Eliminar',
+      icon: TrashIcon,
+      tone: 'danger' as const,
+    },
+  );
+
+  return actions;
 });
 
 function formattedAmount(amount: number): string {
@@ -73,6 +112,14 @@ function handleEdit(): void {
 function handleDelete(): void {
   emit('delete', props.itemId);
 }
+
+function handleAction(actionKey: string): void {
+  if (actionKey !== 'complete') {
+    return;
+  }
+
+  emit('complete', props.itemId);
+}
 </script>
 
 <template>
@@ -108,7 +155,13 @@ function handleDelete(): void {
         </p>
       </div>
 
-      <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
+      <AppActionMenu
+        class="shrink-0"
+        :actions="actionMenuItems"
+        @action="handleAction"
+        @delete="handleDelete"
+        @edit="handleEdit"
+      />
 
       <div class="col-span-3 flex min-w-0 items-center justify-between gap-3">
         <p
