@@ -68,6 +68,8 @@ const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false }
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const isCompletingPendingByUser = ref(false);
 const completePendingByUserError = ref<string | null>(null);
+const completedPendingTransactionIds = new Set<string>();
+const completedPendingBalanceAdjustment = ref(0);
 
 const transactionStatusOptions = [
   { value: 'completed', label: 'Completado' },
@@ -221,7 +223,7 @@ watch(
       return;
     }
 
-    accountBalance.value = nextBalance;
+    syncAccountBalance(nextBalance);
   },
   { immediate: true },
 );
@@ -234,7 +236,7 @@ watch(
       return;
     }
 
-    pendingByUser.value = nextAccount.pendingByUser;
+    pendingByUser.value = normalizePendingByUser(nextAccount.pendingByUser);
   },
   { immediate: true, deep: true },
 );
@@ -310,13 +312,13 @@ function formatCurrency(value: number): string {
 
 function applyMutationMeta(meta: TransactionMutationMeta): void {
   if (typeof meta.accountBalance === 'number') {
-    accountBalance.value = meta.accountBalance;
+    syncAccountBalance(meta.accountBalance);
   } else if (typeof meta.previousAccountBalance === 'number') {
-    accountBalance.value = meta.previousAccountBalance;
+    syncAccountBalance(meta.previousAccountBalance);
   }
 
   if (Array.isArray(meta.pendingByUser)) {
-    pendingByUser.value = meta.pendingByUser;
+    pendingByUser.value = normalizePendingByUser(meta.pendingByUser);
   }
 }
 
@@ -513,27 +515,36 @@ async function confirmCompletePendingByUser(): Promise<void> {
     return;
   }
 
+  const pendingAmount = selectedUser.amount;
+  const pendingTransactionIds = [...selectedUser.transactionIds];
+
   isCompletingPendingByUser.value = true;
   completePendingByUserError.value = null;
 
   try {
     const result = await dashboardRepository.completePendingTransactions(
-      selectedUser.transactionIds,
+      pendingTransactionIds,
     );
     const completedIds =
-      result.transactionIds.length > 0 ? result.transactionIds : selectedUser.transactionIds;
+      result.transactionIds.length > 0 ? result.transactionIds : pendingTransactionIds;
     const failedIds = new Set(result.failed.map((item) => item.id));
     const removableIds = completedIds.filter((transactionId) => !failedIds.has(transactionId));
+    const completedAllUserPending = result.failed.length === 0;
 
     if (result.failed.length > 0) {
       completePendingByUserError.value = result.failed.map((item) => item.message).join(' ');
     }
 
+    if (completedAllUserPending) {
+      applyCompletedPendingBalance(pendingAmount);
+    }
+
+    rememberCompletedPendingTransactions(removableIds);
     markCompletedPendingByUser(selectedUser.userId, removableIds);
     markTransactionsCompleted(removableIds);
     await reloadTransactions();
 
-    if (result.failed.length === 0) {
+    if (completedAllUserPending) {
       closeCompletePendingByUserModal();
     }
   } catch (error) {
@@ -575,6 +586,52 @@ function canCompleteTransaction(options: {
 
 function canCompletePendingByUser(user: AccountPendingByUser): boolean {
   return currentUserId.value === user.userId && user.transactionIds.length > 0;
+}
+
+function rememberCompletedPendingTransactions(transactionIds: string[]): void {
+  for (const transactionId of transactionIds) {
+    completedPendingTransactionIds.add(transactionId);
+  }
+}
+
+function applyCompletedPendingBalance(amount: number): void {
+  completedPendingBalanceAdjustment.value += amount;
+  accountBalance.value += amount;
+}
+
+function syncAccountBalance(nextBalance: number): void {
+  if (completedPendingBalanceAdjustment.value === 0) {
+    accountBalance.value = nextBalance;
+    return;
+  }
+
+  if (nextBalance >= accountBalance.value) {
+    completedPendingBalanceAdjustment.value = 0;
+    accountBalance.value = nextBalance;
+    return;
+  }
+
+  accountBalance.value = nextBalance + completedPendingBalanceAdjustment.value;
+}
+
+function normalizePendingByUser(users: AccountPendingByUser[]): AccountPendingByUser[] {
+  if (completedPendingTransactionIds.size === 0) {
+    return users.filter((user) => user.amount > 0 && user.transactionIds.length > 0);
+  }
+
+  return users
+    .map((user) => {
+      const transactionIds = user.transactionIds.filter(
+        (transactionId) => !completedPendingTransactionIds.has(transactionId),
+      );
+
+      return {
+        ...user,
+        amount: transactionIds.length === 0 ? 0 : user.amount,
+        transactionIds,
+      };
+    })
+    .filter((user) => user.amount > 0 && user.transactionIds.length > 0);
 }
 
 function markCompletedPendingByUser(userId: string, transactionIds: string[]): void {
