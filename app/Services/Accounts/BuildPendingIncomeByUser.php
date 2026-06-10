@@ -16,15 +16,17 @@ class BuildPendingIncomeByUser
             ->where('account_id', $account->id)
             ->income()
             ->pending()
-            ->selectRaw('user_id, sum(amount) as amount')
-            ->groupBy('user_id')
-            ->pluck('amount', 'user_id');
+            ->selectRaw('user_id, sum(amount) as amount, GROUP_CONCAT(id) as transaction_ids')
+            ->groupBy('user_id')->get();
 
         return $users
             ->map(fn (User $user): array => [
                 'user_id' => $user->id,
                 'user_name' => $user->name,
-                'amount' => (float) ($amounts[$user->id] ?? 0.0),
+                'amount' => (float) ($amounts->firstWhere('user_id', $user->id)->amount ?? 0.0),
+                'transaction_ids' => ($amounts->firstWhere('user_id', $user->id)->transaction_ids ?? '')
+                    ? collect(explode(',', $amounts->firstWhere('user_id', $user->id)->transaction_ids))->map(fn ($id) => (int) $id)
+                    : [],
             ])
             ->values()
             ->all();
