@@ -6,6 +6,7 @@ export type AccountPendingByUser = {
   userId: string;
   userName: string;
   amount: number;
+  transactionIds: string[];
 };
 
 export type AccountMember = {

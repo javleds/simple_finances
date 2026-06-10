@@ -63,6 +63,7 @@ export type TransactionPendingByUser = {
   userId: string;
   userName: string;
   amount: number;
+  transactionIds: string[];
 };
 
 export type CreatedTransactionResult = {

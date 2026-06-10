@@ -92,11 +92,16 @@ const pendingByUserApiSchema = z
     user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
     user_name: z.string().catch('Usuario no disponible'),
     amount: z.unknown().transform((value) => parseNullableBalance(value) ?? 0),
+    transaction_ids: z
+      .array(z.union([z.string(), z.number()]).transform((value) => String(value)))
+      .optional()
+      .transform((value) => value ?? []),
   })
   .transform<TransactionPendingByUser>((payload) => ({
     userId: payload.user_id,
     userName: payload.user_name,
     amount: payload.amount,
+    transactionIds: payload.transaction_ids,
   }));
 
 const transactionMutationMetaPayloadSchema = z

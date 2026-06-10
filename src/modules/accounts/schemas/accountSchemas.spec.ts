@@ -23,11 +23,13 @@ describe('account schemas', () => {
           user_id: 7,
           user_name: 'Eliot',
           amount: '250.00',
+          transaction_ids: [1454, 1457],
         },
         {
           user_id: 8,
           user_name: 'Notradame',
           amount: '9,500.00',
+          transaction_ids: ['1455', 1458],
         },
       ],
       users: [],
@@ -40,11 +42,13 @@ describe('account schemas', () => {
           userId: '7',
           userName: 'Eliot',
           amount: 250,
+          transactionIds: ['1454', '1457'],
         },
         {
           userId: '8',
           userName: 'Notradame',
           amount: 9500,
+          transactionIds: ['1455', '1458'],
         },
       ],
     });

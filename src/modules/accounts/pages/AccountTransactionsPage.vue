@@ -13,6 +13,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import type { Account, AccountPendingByUser } from '@/modules/accounts/types';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
+import { createDashboardRepository } from '@/modules/admin/repositories/dashboardRepository';
 import {
   AppAvatarValueRow,
   AppButton,
@@ -49,18 +50,23 @@ const props = defineProps<{
 
 const route = useRoute();
 const router = useRouter();
+const dashboardRepository = createDashboardRepository();
 
 const isCreateTransactionModalOpen = ref(false);
 const isEditTransactionModalOpen = ref(false);
 const isDeleteTransactionModalOpen = ref(false);
 const isCompleteTransactionModalOpen = ref(false);
+const isCompletePendingByUserModalOpen = ref(false);
 const isFiltersOpen = ref(false);
 const searchTerm = ref('');
 const selectedStatuses = ref<TransactionStatus[]>([]);
 const selectedTypes = ref<TransactionType[]>([]);
 const selectedTransactionId = ref<string | null>(null);
+const selectedPendingByUserId = ref<string | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const isCompletingPendingByUser = ref(false);
+const completePendingByUserError = ref<string | null>(null);
 
 const transactionStatusOptions = [
   { value: 'completed', label: 'Completado' },
@@ -81,6 +87,9 @@ const accountId = computed(() =>
 const accountUsers = computed(() => props.account?.users ?? []);
 const isSharedAccount = computed(() => accountUsers.value.length > 1);
 const pendingByUser = ref<AccountPendingByUser[]>([]);
+const selectedPendingByUser = computed(
+  () => pendingByUser.value.find((user) => user.userId === selectedPendingByUserId.value) ?? null,
+);
 const usersWithPendingExpenses = computed(() =>
   pendingByUser.value.filter((user) => user.amount > 0),
 );
@@ -191,6 +200,17 @@ const completeTransactionActions = computed(() => [
   },
 ]);
 
+const completePendingByUserActions = computed(() => [
+  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+  {
+    key: 'confirm-complete-pending-by-user',
+    label: isCompletingPendingByUser.value ? 'Completando...' : 'Completar pendientes',
+    tone: 'primary' as const,
+    icon: CheckCircleIcon,
+    disabled: !selectedPendingByUser.value || isCompletingPendingByUser.value,
+  },
+]);
+
 watch(
   () => props.account?.balance,
   (nextBalance) => {
@@ -211,16 +231,7 @@ watch(
       return;
     }
 
-    if (nextAccount.pendingByUser.length > 0) {
-      pendingByUser.value = nextAccount.pendingByUser;
-      return;
-    }
-
-    pendingByUser.value = nextAccount.users.map((user) => ({
-      userId: user.id,
-      userName: user.name,
-      amount: user.pendingExpenses,
-    }));
+    pendingByUser.value = nextAccount.pendingByUser;
   },
   { immediate: true, deep: true },
 );
@@ -367,6 +378,18 @@ function closeCompleteTransactionModal(): void {
   clearSaveError();
 }
 
+function openCompletePendingByUser(userId: string): void {
+  completePendingByUserError.value = null;
+  selectedPendingByUserId.value = userId;
+  isCompletePendingByUserModalOpen.value = true;
+}
+
+function closeCompletePendingByUserModal(): void {
+  isCompletePendingByUserModalOpen.value = false;
+  selectedPendingByUserId.value = null;
+  completePendingByUserError.value = null;
+}
+
 function openFilters(): void {
   isFiltersOpen.value = true;
 }
@@ -407,6 +430,14 @@ function handleFiltersModalAction(actionKey: string): void {
   if (actionKey === 'close') {
     closeFilters();
   }
+}
+
+function resolveErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
 }
 
 async function handleTransactionSubmit(payload: TransactionWritePayload): Promise<void> {
@@ -475,6 +506,40 @@ async function confirmCompleteTransaction(): Promise<void> {
   closeCompleteTransactionModal();
 }
 
+async function confirmCompletePendingByUser(): Promise<void> {
+  const selectedUser = selectedPendingByUser.value;
+
+  if (!selectedUser || selectedUser.transactionIds.length === 0) {
+    return;
+  }
+
+  isCompletingPendingByUser.value = true;
+  completePendingByUserError.value = null;
+
+  try {
+    const result = await dashboardRepository.completePendingTransactions(selectedUser.transactionIds);
+
+    if (result.failed.length > 0) {
+      completePendingByUserError.value = result.failed
+        .map((item) => item.message)
+        .join(' ');
+    }
+
+    await reloadTransactions();
+
+    if (result.failed.length === 0) {
+      closeCompletePendingByUserModal();
+    }
+  } catch (error) {
+    completePendingByUserError.value = resolveErrorMessage(
+      error,
+      'No fue posible completar los pendientes del usuario.',
+    );
+  } finally {
+    isCompletingPendingByUser.value = false;
+  }
+}
+
 function handleCreateFormStateChange(state: FormState): void {
   createFormState.value = state;
 }
@@ -500,6 +565,10 @@ function canCompleteTransaction(options: {
   status: TransactionStatus | null;
 }): boolean {
   return canManageTransaction(options) && options.status === 'pending';
+}
+
+function canCompletePendingByUser(user: AccountPendingByUser): boolean {
+  return currentUserId.value === user.userId && user.transactionIds.length > 0;
 }
 
 function reloadTransactions(): void {
@@ -556,9 +625,18 @@ function infiniteStatusLabel(): string {
                 v-for="user in usersWithPendingExpenses"
                 :key="user.userId"
                 :name="user.userName"
-                :seed="user.userId"
                 :value="formatCurrency(user.amount)"
-              />
+              >
+                <template v-if="canCompletePendingByUser(user)" #action>
+                  <AppIconButton
+                    :ariaLabel="`Completar pendientes de ${user.userName}`"
+                    :disabled="isCompletingPendingByUser"
+                    @click="openCompletePendingByUser(user.userId)"
+                  >
+                    <CheckCircleIcon class="h-5 w-5" />
+                  </AppIconButton>
+                </template>
+              </AppAvatarValueRow>
             </div>
 
             <div v-else class="rounded-2xl bg-(--app-color-surface-muted) px-3 py-3">
@@ -801,6 +879,32 @@ function infiniteStatusLabel(): string {
           como completada.
         </AppText>
         <AppText v-if="saveError" class="text-(--app-color-danger)!">{{ saveError }}</AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="isCompletePendingByUserModalOpen"
+      :actions="completePendingByUserActions"
+      title="Completar pendientes del usuario"
+      variant="warning"
+      @action="
+        $event === 'confirm-complete-pending-by-user' && void confirmCompletePendingByUser()
+      "
+      @close="closeCompletePendingByUserModal"
+    >
+      <div class="space-y-3">
+        <AppText v-if="selectedPendingByUser">
+          Vas a completar
+          <strong>{{ selectedPendingByUser.transactionIds.length }} movimientos</strong>
+          pendientes de
+          <strong>{{ selectedPendingByUser.userName }}</strong>
+          por
+          <strong>{{ formatCurrency(selectedPendingByUser.amount) }}</strong
+          >.
+        </AppText>
+        <AppText v-if="completePendingByUserError" class="text-(--app-color-danger)!">
+          {{ completePendingByUserError }}
+        </AppText>
       </div>
     </AppModal>
   </section>
