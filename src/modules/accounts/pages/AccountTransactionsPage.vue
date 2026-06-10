@@ -69,6 +69,7 @@ const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const isCompletingPendingByUser = ref(false);
 const completePendingByUserError = ref<string | null>(null);
 const completedPendingTransactionIds = new Set<string>();
+const completedPendingUserIds = ref<string[]>([]);
 const completedPendingBalanceAdjustment = ref(0);
 
 const transactionStatusOptions = [
@@ -91,10 +92,17 @@ const accountUsers = computed(() => props.account?.users ?? []);
 const isSharedAccount = computed(() => accountUsers.value.length > 1);
 const pendingByUser = ref<AccountPendingByUser[]>([]);
 const selectedPendingByUser = computed(
-  () => pendingByUser.value.find((user) => user.userId === selectedPendingByUserId.value) ?? null,
+  () =>
+    usersWithPendingExpenses.value.find((user) => user.userId === selectedPendingByUserId.value) ??
+    null,
 );
 const usersWithPendingExpenses = computed(() =>
-  pendingByUser.value.filter((user) => user.amount > 0),
+  pendingByUser.value.filter(
+    (user) =>
+      user.amount > 0 &&
+      user.transactionIds.length > 0 &&
+      !completedPendingUserIds.value.includes(user.userId),
+  ),
 );
 const accountBalance = ref(props.account?.balance ?? 0);
 const {
@@ -537,6 +545,7 @@ async function confirmCompletePendingByUser(): Promise<void> {
 
     if (completedAllUserPending) {
       applyCompletedPendingBalance(pendingAmount);
+      rememberCompletedPendingUser(selectedUser.userId);
     }
 
     rememberCompletedPendingTransactions(removableIds);
@@ -594,6 +603,14 @@ function rememberCompletedPendingTransactions(transactionIds: string[]): void {
   }
 }
 
+function rememberCompletedPendingUser(userId: string): void {
+  if (completedPendingUserIds.value.includes(userId)) {
+    return;
+  }
+
+  completedPendingUserIds.value = [...completedPendingUserIds.value, userId];
+}
+
 function applyCompletedPendingBalance(amount: number): void {
   completedPendingBalanceAdjustment.value += amount;
   accountBalance.value += amount;
@@ -615,11 +632,14 @@ function syncAccountBalance(nextBalance: number): void {
 }
 
 function normalizePendingByUser(users: AccountPendingByUser[]): AccountPendingByUser[] {
+  const hiddenUserIds = new Set(completedPendingUserIds.value);
+  const visibleUsers = users.filter((user) => !hiddenUserIds.has(user.userId));
+
   if (completedPendingTransactionIds.size === 0) {
-    return users.filter((user) => user.amount > 0 && user.transactionIds.length > 0);
+    return visibleUsers.filter((user) => user.amount > 0 && user.transactionIds.length > 0);
   }
 
-  return users
+  return visibleUsers
     .map((user) => {
       const transactionIds = user.transactionIds.filter(
         (transactionId) => !completedPendingTransactionIds.has(transactionId),
