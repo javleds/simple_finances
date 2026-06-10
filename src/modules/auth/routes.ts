@@ -8,11 +8,13 @@ const routes: RouteRecordRaw[] = [
       {
         name: 'auth.login',
         path: '',
+        alias: '/login',
         component: () => import('./pages/LoginPage.vue'),
       },
       {
         name: 'auth.register',
         path: 'register',
+        alias: '/register',
         component: () => import('./pages/RegisterPage.vue'),
       },
       {

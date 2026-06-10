@@ -35,6 +35,7 @@ function buildLoginPayload(payload: LoginFormValues) {
   return {
     email: payload.email,
     password: payload.password,
+    post_auth_action: payload.postAuthAction,
   };
 }
 
@@ -47,6 +48,7 @@ function buildRegisterPayload(payload: RegisterFormValues) {
     phone_number: payload.phoneNumber.trim() || null,
     terms_accepted: payload.termsAccepted,
     privacy_policy_accepted: payload.privacyPolicyAccepted,
+    post_auth_action: payload.postAuthAction,
   };
 }
 

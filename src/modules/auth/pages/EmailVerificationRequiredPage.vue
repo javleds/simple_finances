@@ -12,6 +12,7 @@ import {
   setPendingVerificationEmail,
   setStoredAuthSession,
 } from '@/modules/auth/lib/authSession';
+import { resolvePostAuthRedirectRoute } from '@/modules/auth/lib/postAuthRedirect';
 import {
   AppButton,
   AppCard,
@@ -55,10 +56,11 @@ async function checkVerificationStatus(): Promise<void> {
       return;
     }
 
-    setStoredAuthSession({
+    const verifiedSession = {
       token: storedSession?.token ?? authToken,
       tokenType: storedSession?.tokenType ?? 'Bearer',
       expiresAt: storedSession?.expiresAt ?? '',
+      postAuthRedirect: storedSession?.postAuthRedirect ?? null,
       user: {
         id: storedSession?.user.id ?? profile.id,
         name: profile.name,
@@ -68,9 +70,16 @@ async function checkVerificationStatus(): Promise<void> {
         telegramChatId: profile.telegramChatId,
         isEmailVerified: profile.isEmailVerified,
       },
-    });
+    };
 
-    await router.push({ name: 'admin.dashboard' });
+    setStoredAuthSession(verifiedSession);
+
+    const postAuthRedirectRoute = resolvePostAuthRedirectRoute(
+      verifiedSession.postAuthRedirect,
+      router,
+    );
+
+    await router.push(postAuthRedirectRoute ?? { name: 'admin.dashboard' });
   } catch {
     // Keep the user on this screen when the profile check cannot be completed.
   } finally {

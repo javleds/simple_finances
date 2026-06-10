@@ -26,16 +26,25 @@ export type AuthUser = {
   telegramChatId: string | null;
 };
 
+export type AuthPostAuthAction = 'account-invites';
+
+export type AuthPostAuthRedirect = {
+  action: AuthPostAuthAction;
+  url: string;
+};
+
 export type AuthSession = {
   user: AuthUser;
   token: string;
   tokenType: string;
   expiresAt: string;
+  postAuthRedirect: AuthPostAuthRedirect | null;
 };
 
 export type LoginFormValues = {
   email: string;
   password: string;
+  postAuthAction?: AuthPostAuthAction;
 };
 
 export type RegisterFormValues = {
@@ -46,6 +55,7 @@ export type RegisterFormValues = {
   passwordConfirmation: string;
   termsAccepted: boolean;
   privacyPolicyAccepted: boolean;
+  postAuthAction?: AuthPostAuthAction;
 };
 
 export type PasswordRecoveryFormValues = {
@@ -62,6 +72,7 @@ export type PasswordResetFormValues = {
 export const loginFormSchema = z.object({
   email: z.string().trim().email('Ingresa un correo electrónico válido.'),
   password: z.string().trim().min(1, 'La contraseña es obligatoria.'),
+  postAuthAction: z.literal('account-invites').optional(),
 });
 
 export const registerFormSchema = z
@@ -75,6 +86,7 @@ export const registerFormSchema = z
     privacyPolicyAccepted: z
       .boolean()
       .refine((value) => value, 'Debes aceptar la política de privacidad.'),
+    postAuthAction: z.literal('account-invites').optional(),
   })
   .superRefine((values, context) => {
     if (values.password !== values.passwordConfirmation) {
@@ -128,6 +140,11 @@ export const authUserApiSchema = z.object({
     .transform((value) => parseNullableString(value)),
 });
 
+const postAuthRedirectApiSchema = z.object({
+  action: z.literal('account-invites'),
+  url: z.string().min(1),
+});
+
 export const authResponseApiSchema = z.object({
   message: z.string().optional(),
   data: authUserApiSchema,
@@ -137,6 +154,7 @@ export const authResponseApiSchema = z.object({
       expires_at: z.string(),
       token_type: z.string(),
     }),
+    post_auth_redirect: postAuthRedirectApiSchema.optional(),
   }),
 });
 
@@ -160,6 +178,12 @@ export function mapAuthResponseApiToSession(
     token: payload.meta.auth.token,
     tokenType: payload.meta.auth.token_type,
     expiresAt: payload.meta.auth.expires_at,
+    postAuthRedirect: payload.meta.post_auth_redirect
+      ? {
+          action: payload.meta.post_auth_redirect.action,
+          url: payload.meta.post_auth_redirect.url,
+        }
+      : null,
   };
 }
 

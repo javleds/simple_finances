@@ -5,6 +5,7 @@ import {
   getPendingVerificationEmail,
   getStoredAuthSession,
 } from '@/modules/auth/lib/authSession';
+import { resolvePostAuthAction } from '@/modules/auth/lib/postAuthRedirect';
 import authRoutes from '@/modules/auth/routes';
 import adminRoutes from '@/modules/admin/routes';
 
@@ -37,6 +38,7 @@ router.beforeEach((to) => {
   const storedSession = getStoredAuthSession();
   const isVerifiedUser = storedSession?.user.isEmailVerified === true;
   const hasPendingVerificationEmail = Boolean(getPendingVerificationEmail());
+  const postAuthAction = resolvePostAuthAction(to.query.post_auth_action);
 
   if (isAdminRoute && !hasToken) {
     return { name: 'auth.login' };
@@ -44,6 +46,10 @@ router.beforeEach((to) => {
 
   if (isAdminRoute && hasToken && !isVerifiedUser) {
     return { name: 'auth.email-verification-required' };
+  }
+
+  if (isEntryAuthRoute && hasToken && isVerifiedUser && postAuthAction === 'account-invites') {
+    return { name: 'admin.invitations' };
   }
 
   if (isAuthRoute && hasToken && isVerifiedUser && !isVerificationRoute) {

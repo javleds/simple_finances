@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 import PrivacyPolicyContent from '@/modules/auth/components/PrivacyPolicyContent.vue';
 import TermsAndConditionsContent from '@/modules/auth/components/TermsAndConditionsContent.vue';
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { useRegisterForm } from '@/modules/auth/composables/useRegisterForm';
+import {
+  resolvePostAuthAction,
+  resolvePostAuthRedirectRoute,
+} from '@/modules/auth/lib/postAuthRedirect';
+import type { AuthSession } from '@/modules/auth/schemas/authSchemas';
 import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
@@ -23,6 +28,7 @@ import {
 type LegalDocument = 'terms' | 'privacy' | null;
 
 const themeStore = useThemeStore();
+const route = useRoute();
 const router = useRouter();
 const authRepository = createAuthRepository();
 const activeDocument = ref<LegalDocument>(null);
@@ -53,6 +59,16 @@ const { error: termsAcceptedError, touch: touchTermsAccepted } =
 const { error: privacyPolicyAcceptedError, touch: touchPrivacyPolicyAccepted } =
   useFormFieldInteraction('privacyPolicyAccepted');
 
+watch(
+  () => route.query.email,
+  (nextEmail) => {
+    if (typeof nextEmail === 'string') {
+      email.value = nextEmail;
+    }
+  },
+  { immediate: true },
+);
+
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
 }
@@ -65,6 +81,25 @@ function closeDocument(): void {
   activeDocument.value = null;
 }
 
+async function navigateAfterRegister(session: AuthSession): Promise<void> {
+  if (!session.user.isEmailVerified) {
+    await router.push({
+      name: 'auth.email-verification-required',
+      query: { email: session.user.email },
+    });
+    return;
+  }
+
+  const postAuthRedirectRoute = resolvePostAuthRedirectRoute(session.postAuthRedirect, router);
+
+  if (postAuthRedirectRoute) {
+    await router.push(postAuthRedirectRoute);
+    return;
+  }
+
+  await router.push({ name: 'admin.dashboard' });
+}
+
 async function handleSubmit(): Promise<void> {
   const payload = await submitForm();
 
@@ -72,17 +107,11 @@ async function handleSubmit(): Promise<void> {
     return;
   }
 
-  const session = await authRepository.register(payload);
-
-  if (session.user.isEmailVerified) {
-    await router.push({ name: 'admin.dashboard' });
-    return;
-  }
-
-  await router.push({
-    name: 'auth.email-verification-required',
-    query: { email: session.user.email },
+  const session = await authRepository.register({
+    ...payload,
+    postAuthAction: resolvePostAuthAction(route.query.post_auth_action),
   });
+  await navigateAfterRegister(session);
 }
 </script>
 
@@ -234,7 +263,11 @@ async function handleSubmit(): Promise<void> {
             <AppText>
               ¿Ya tienes una cuenta?
               {{ ' ' }}
-              <AppLink :to="{ name: 'auth.login' }" variant="primary" class="font-semibold">
+              <AppLink
+                :to="{ name: 'auth.login', query: route.query }"
+                variant="primary"
+                class="font-semibold"
+              >
                 Volver al login
               </AppLink>
             </AppText>
