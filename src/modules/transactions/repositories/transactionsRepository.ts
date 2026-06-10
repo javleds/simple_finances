@@ -104,6 +104,7 @@ const transactionMutationMetaPayloadSchema = z
     account: z
       .object({
         balance: z.unknown().transform(parseNullableBalance),
+        pending_by_user: z.array(pendingByUserApiSchema).optional(),
       })
       .optional(),
     previous_account: z
@@ -117,7 +118,7 @@ const transactionMutationMetaPayloadSchema = z
   .transform<TransactionMutationMeta>((payload) => ({
     accountBalance: payload?.account?.balance ?? null,
     previousAccountBalance: payload?.previous_account?.balance ?? null,
-    pendingByUser: payload?.pending_by_user ?? null,
+    pendingByUser: payload?.pending_by_user ?? payload?.account?.pending_by_user ?? null,
   }));
 
 const mutationMetaSchema = z
@@ -129,6 +130,7 @@ const mutationMetaSchema = z
 export const transactionListMetaSchema = z
   .object({
     meta: transactionMutationMetaPayloadSchema,
+    pending_by_user: z.array(pendingByUserApiSchema).optional(),
   })
   .catch({
     meta: {
@@ -137,7 +139,10 @@ export const transactionListMetaSchema = z
       pendingByUser: null,
     },
   })
-  .transform<TransactionMutationMeta>((payload) => payload.meta);
+  .transform<TransactionMutationMeta>((payload) => ({
+    ...payload.meta,
+    pendingByUser: payload.meta.pendingByUser ?? payload.pending_by_user ?? null,
+  }));
 
 function getCreatedAtTime(transaction: Transaction): number | null {
   if (!transaction.createdAt) {

@@ -6,6 +6,7 @@ import type {
   AccountWritePayload,
   AccountStatus,
   AccountMember,
+  AccountPendingByUser,
 } from '../types';
 
 const colorPattern = /^#([0-9a-fA-F]{6})$/;
@@ -79,6 +80,18 @@ function resolveAccountUserId(value: {
   return value.user_id ?? value.user?.id ?? value.pivot?.user_id ?? value.id ?? '';
 }
 
+const accountPendingByUserApiSchema = z
+  .object({
+    user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    user_name: z.string().catch('Usuario no disponible'),
+    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  })
+  .transform<AccountPendingByUser>((payload) => ({
+    userId: payload.user_id,
+    userName: payload.user_name,
+    amount: payload.amount,
+  }));
+
 export const accountFormSchema = z
   .object({
     name: z.string().trim().min(1, 'El nombre es obligatorio.'),
@@ -145,6 +158,7 @@ export const accountApiSchema = z.object({
     .union([z.string(), z.number(), z.null(), z.undefined()])
     .transform((value) => (value === null || value === undefined ? null : String(value))),
   deleted_at: z.string().nullable().optional().transform((value) => value ?? null),
+  pending_by_user: z.array(accountPendingByUserApiSchema).optional().transform((value) => value ?? []),
   users: z
     .array(
       z
@@ -324,6 +338,7 @@ export function mapAccountApiToDomain(
       allocationPercentage: user.percentage,
       pendingExpenses: user.pending_expenses,
     })),
+    pendingByUser: payload.pending_by_user,
   };
 }
 

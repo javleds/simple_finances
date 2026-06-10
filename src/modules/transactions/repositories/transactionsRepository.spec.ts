@@ -65,6 +65,61 @@ describe('transactions repository schemas', () => {
     });
   });
 
+  it('parses pending totals nested inside the account meta', () => {
+    expect(
+      transactionListMetaSchema.parse({
+        data: [],
+        meta: {
+          account: {
+            balance: '10,000.00',
+            pending_by_user: [
+              {
+                user_id: 7,
+                user_name: 'Eliot',
+                amount: '250.00',
+              },
+            ],
+          },
+        },
+      }),
+    ).toEqual({
+      accountBalance: 10000,
+      previousAccountBalance: null,
+      pendingByUser: [
+        {
+          userId: '7',
+          userName: 'Eliot',
+          amount: 250,
+        },
+      ],
+    });
+  });
+
+  it('parses pending totals from a top-level list response field', () => {
+    expect(
+      transactionListMetaSchema.parse({
+        data: [],
+        pending_by_user: [
+          {
+            user_id: 8,
+            user_name: 'Notradame',
+            amount: '9,500.00',
+          },
+        ],
+      }),
+    ).toEqual({
+      accountBalance: null,
+      previousAccountBalance: null,
+      pendingByUser: [
+        {
+          userId: '8',
+          userName: 'Notradame',
+          amount: 9500,
+        },
+      ],
+    });
+  });
+
   it('parses a shared-account create response with transaction array data', () => {
     const result = createdTransactionResponseSchema.parse({
       data: [

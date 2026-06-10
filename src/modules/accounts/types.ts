@@ -2,6 +2,12 @@ export type AccountStatus = 'Activo' | 'Inactivo';
 export type AccountKindFilter = 'credit' | 'debit';
 export type AccountSurfaceFilter = 'virtual' | 'physical';
 
+export type AccountPendingByUser = {
+  userId: string;
+  userName: string;
+  amount: number;
+};
+
 export type AccountMember = {
   id: string;
   name: string;
@@ -25,6 +31,7 @@ export type Account = {
   closingDay: number | null;
   fundingAccountId: string | null;
   users: AccountMember[];
+  pendingByUser: AccountPendingByUser[];
 };
 
 export type AccountFormValues = {

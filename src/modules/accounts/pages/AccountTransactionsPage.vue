@@ -11,7 +11,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
-import type { Account } from '@/modules/accounts/types';
+import type { Account, AccountPendingByUser } from '@/modules/accounts/types';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import {
   AppAvatarValueRow,
@@ -33,7 +33,6 @@ import TransactionListItem from '@/modules/transactions/components/TransactionLi
 import type {
   TransactionListFilters,
   TransactionMutationMeta,
-  TransactionPendingByUser,
   TransactionStatus,
   TransactionType,
   TransactionWritePayload,
@@ -42,12 +41,6 @@ import type {
 type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;
-};
-
-type PendingByUserSummary = {
-  userId: string;
-  userName: string;
-  amount: number;
 };
 
 const props = defineProps<{
@@ -87,7 +80,7 @@ const accountId = computed(() =>
 
 const accountUsers = computed(() => props.account?.users ?? []);
 const isSharedAccount = computed(() => accountUsers.value.length > 1);
-const pendingByUser = ref<PendingByUserSummary[]>([]);
+const pendingByUser = ref<AccountPendingByUser[]>([]);
 const usersWithPendingExpenses = computed(() =>
   pendingByUser.value.filter((user) => user.amount > 0),
 );
@@ -211,15 +204,25 @@ watch(
 );
 
 watch(
-  accountUsers,
-  (nextUsers) => {
-    pendingByUser.value = nextUsers.map((user) => ({
+  () => props.account,
+  (nextAccount) => {
+    if (!nextAccount) {
+      pendingByUser.value = [];
+      return;
+    }
+
+    if (nextAccount.pendingByUser.length > 0) {
+      pendingByUser.value = nextAccount.pendingByUser;
+      return;
+    }
+
+    pendingByUser.value = nextAccount.users.map((user) => ({
       userId: user.id,
       userName: user.name,
       amount: user.pendingExpenses,
     }));
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 );
 
 watch(
@@ -294,14 +297,6 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function mapPendingByUserSummary(items: TransactionPendingByUser[]): PendingByUserSummary[] {
-  return items.map((item) => ({
-    userId: item.userId,
-    userName: item.userName,
-    amount: item.amount,
-  }));
-}
-
 function applyMutationMeta(meta: TransactionMutationMeta): void {
   if (typeof meta.accountBalance === 'number') {
     accountBalance.value = meta.accountBalance;
@@ -310,7 +305,7 @@ function applyMutationMeta(meta: TransactionMutationMeta): void {
   }
 
   if (Array.isArray(meta.pendingByUser)) {
-    pendingByUser.value = mapPendingByUserSummary(meta.pendingByUser);
+    pendingByUser.value = meta.pendingByUser;
   }
 }
 
