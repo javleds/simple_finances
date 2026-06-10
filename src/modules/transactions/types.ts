@@ -51,6 +51,7 @@ export type TransactionMutationMeta = {
 
 export type CreatedTransactionResult = {
   transaction: Transaction;
+  transactions: Transaction[];
   meta: TransactionMutationMeta;
 };
 

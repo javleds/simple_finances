@@ -35,14 +35,33 @@ const transactionResponseDataSchema = z.union([
     .transform((payload) => payload.transaction),
 ]);
 
-const singleTransactionSchema = z
-  .union([
-    transactionResponseDataSchema,
-    z.object({
-      data: transactionResponseDataSchema,
+const transactionMutationDataSchema = z.union([
+  transactionResponseDataSchema,
+  z
+    .array(transactionResponseDataSchema)
+    .transform<z.infer<typeof transactionApiSchema>>((transactions, context) => {
+      const transaction = transactions[0];
+
+      if (!transaction) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'La respuesta no incluyó una transacción creada.',
+        });
+        return z.NEVER;
+      }
+
+      return transaction;
     }),
-  ])
-  .transform((payload) => ('data' in payload ? payload.data : payload));
+]);
+
+const singleTransactionSchema = z.union([
+  transactionMutationDataSchema,
+  z
+    .object({
+      data: transactionMutationDataSchema,
+    })
+    .transform((payload) => payload.data),
+]);
 
 function parseNullableBalance(value: unknown): number | null {
   if (value === null || value === undefined || value === '') {
@@ -83,10 +102,10 @@ const mutationMetaSchema = z
     previousAccountBalance: payload.meta?.previous_account?.balance ?? null,
   }));
 
-const createdTransactionResponseSchema = z
+export const createdTransactionResponseSchema = z
   .union([
     z.object({
-      data: transactionResponseDataSchema,
+      data: transactionMutationDataSchema,
       meta: z
         .object({
           account: z
