@@ -16,6 +16,7 @@ export type Transaction = {
   status: TransactionStatus | null;
   date: string;
   createdAt: string | null;
+  creatorName: string | null;
   financialGoalId: string | null;
   financialGoalName: string | null;
   userPayments: Record<string, number>;

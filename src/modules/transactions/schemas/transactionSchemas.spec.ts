@@ -12,6 +12,9 @@ const baseTransactionPayload = {
     id: 20,
     name: 'Cuenta principal',
   },
+  user: {
+    name: 'María López',
+  },
   concept: 'Compra mensual',
   amount: '1200.50',
   type: 'outcome',
@@ -36,6 +39,7 @@ describe('transaction schemas', () => {
       status: null,
       date: '2026-06-09',
       createdAt: '2026-06-09T12:00:00.000000Z',
+      creatorName: 'María López',
       financialGoalId: null,
       financialGoalName: null,
       userPayments: {},

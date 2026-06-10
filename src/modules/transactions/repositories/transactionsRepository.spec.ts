@@ -9,6 +9,9 @@ const baseTransactionPayload = {
     id: 20,
     name: 'Cuenta compartida',
   },
+  user: {
+    name: 'María López',
+  },
   concept: 'Compra mensual',
   amount: '1200.50',
   type: 'outcome',
@@ -64,6 +67,7 @@ describe('transactions repository schemas', () => {
         status: 'pending',
         date: '2026-06-09',
         createdAt: '2026-06-09T12:01:00.000000Z',
+        creatorName: 'María López',
         financialGoalId: null,
         financialGoalName: null,
         userPayments: {},
@@ -79,6 +83,7 @@ describe('transactions repository schemas', () => {
           status: 'pending',
           date: '2026-06-09',
           createdAt: '2026-06-09T12:01:00.000000Z',
+          creatorName: 'María López',
           financialGoalId: null,
           financialGoalName: null,
           userPayments: {},
@@ -93,6 +98,7 @@ describe('transactions repository schemas', () => {
           status: null,
           date: '2026-06-09',
           createdAt: '2026-06-09T12:00:00.000000Z',
+          creatorName: 'María López',
           financialGoalId: null,
           financialGoalName: null,
           userPayments: {

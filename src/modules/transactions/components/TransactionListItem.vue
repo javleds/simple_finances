@@ -11,6 +11,7 @@ const props = defineProps<{
   type: TransactionItemType;
   status: TransactionItemStatus;
   dateLabel: string;
+  creatorName: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -61,6 +62,10 @@ function statusLabel(status: TransactionItemStatus): string {
   return 'Pendiente';
 }
 
+function creatorLabel(): string {
+  return props.creatorName?.trim() || 'Usuario no disponible';
+}
+
 function handleEdit(): void {
   emit('edit', props.itemId);
 }
@@ -105,19 +110,27 @@ function handleDelete(): void {
 
       <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
 
-      <div class="col-span-2 flex min-w-0 items-center gap-2">
+      <div class="col-span-3 flex min-w-0 items-center justify-between gap-3">
         <p
-          class="truncate text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
+          class="min-w-0 truncate text-[11px] font-medium text-(--app-color-text-subtle)"
         >
-          {{ props.dateLabel }}
+          {{ creatorLabel() }}
         </p>
 
-        <span
-          class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
-          :class="statusClasses(props.status)"
-        >
-          {{ statusLabel(props.status) }}
-        </span>
+        <div class="flex shrink-0 items-center gap-2">
+          <p
+            class="text-[11px] font-medium tracking-[0.04em] whitespace-nowrap text-(--app-color-text-subtle) uppercase"
+          >
+            {{ props.dateLabel }}
+          </p>
+
+          <span
+            class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
+            :class="statusClasses(props.status)"
+          >
+            {{ statusLabel(props.status) }}
+          </span>
+        </div>
       </div>
     </div>
   </AppCard>

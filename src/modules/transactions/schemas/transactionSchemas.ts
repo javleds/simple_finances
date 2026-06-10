@@ -141,6 +141,27 @@ export const transactionApiSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => value ?? null),
+  user: z
+    .object({
+      name: z.string().nullable().optional().transform((value) => value ?? null),
+    })
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
+  created_by: z
+    .object({
+      name: z.string().nullable().optional().transform((value) => value ?? null),
+    })
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
+  creator: z
+    .object({
+      name: z.string().nullable().optional().transform((value) => value ?? null),
+    })
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   concept: z.string(),
   amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   type: z.unknown().transform(parseType),
@@ -222,6 +243,7 @@ export function mapTransactionApiToDomain(
     status: payload.type === 'income' ? payload.status : null,
     date: payload.scheduled_at.slice(0, 10),
     createdAt: payload.created_at,
+    creatorName: payload.user?.name ?? payload.created_by?.name ?? payload.creator?.name ?? null,
     financialGoalId: payload.financial_goal_id,
     financialGoalName: payload.financial_goal?.name ?? null,
     userPayments: payload.user_payments.reduce<Record<string, number>>((accumulator, payment) => {
