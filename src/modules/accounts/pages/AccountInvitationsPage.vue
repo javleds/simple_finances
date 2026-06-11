@@ -5,8 +5,9 @@ import {
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import AccountInvitationForm from '@/modules/accounts/components/AccountInvitationForm.vue';
+import AccountInvitationDeleteModal from '@/modules/accounts/components/AccountInvitationDeleteModal.vue';
 import AccountInvitationFiltersModal from '@/modules/accounts/components/AccountInvitationFiltersModal.vue';
+import AccountInvitationFormModal from '@/modules/accounts/components/AccountInvitationFormModal.vue';
 import AccountInvitationsList from '@/modules/accounts/components/AccountInvitationsList.vue';
 import AccountInvitationsToolbar from '@/modules/accounts/components/AccountInvitationsToolbar.vue';
 import { useAccountInvitesCrud } from '@/modules/accounts/composables/useAccountInvitesCrud';
@@ -20,7 +21,6 @@ import {
   AppButton,
   AppListState,
   AppLoadMoreFooter,
-  AppModal,
   AppText,
 } from '@/modules/shared/components';
 
@@ -352,57 +352,38 @@ function infiniteStatusLabel(): string {
       @toggle-status="toggleStatus($event as AccountInviteStatus)"
     />
 
-    <AppModal
+    <AccountInvitationFormModal
       :open="isCreateInvitationOpen"
+      :account-id="accountId"
       :actions="createInviteActions"
+      form-id="account-invitation-form"
+      :server-error="saveError"
       title="Nueva invitación"
-      variant="default"
       @close="closeCreateInvitation"
-    >
-      <AccountInvitationForm
-        v-if="accountId"
-        form-id="account-invitation-form"
-        :account-id="accountId"
-        :server-error="saveError"
-        @state-change="handleCreateFormStateChange"
-        @submit="handleCreateInvitationSubmit"
-      />
-    </AppModal>
+      @state-change="handleCreateFormStateChange"
+      @submit="handleCreateInvitationSubmit"
+    />
 
-    <AppModal
+    <AccountInvitationFormModal
       :open="isEditInvitationOpen"
+      :account-id="accountId"
       :actions="editInviteActions"
+      form-id="edit-account-invitation-form"
+      :initial-values="selectedInvitation"
+      :server-error="saveError"
       title="Editar invitación"
-      variant="default"
       @close="closeEditInvitation"
-    >
-      <AccountInvitationForm
-        v-if="accountId && selectedInvitation"
-        form-id="edit-account-invitation-form"
-        :account-id="accountId"
-        :initial-values="selectedInvitation"
-        :server-error="saveError"
-        @state-change="handleEditFormStateChange"
-        @submit="handleEditInvitationSubmit"
-      />
-    </AppModal>
+      @state-change="handleEditFormStateChange"
+      @submit="handleEditInvitationSubmit"
+    />
 
-    <AppModal
+    <AccountInvitationDeleteModal
       :open="isDeleteInvitationOpen"
       :actions="deleteInviteActions"
-      title="Eliminar invitación"
-      variant="danger"
-      @action="$event === 'confirm-delete-invitation' && confirmDeleteInvitation()"
+      :delete-error="deleteError"
+      :invitation="selectedInvitation"
       @close="closeDeleteInvitation"
-    >
-      <div class="space-y-3">
-        <AppText v-if="selectedInvitation">
-          Vas a eliminar la invitación de
-          <strong>{{ selectedInvitation.email }}</strong
-          >.
-        </AppText>
-        <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmDeleteInvitation"
+    />
   </section>
 </template>
