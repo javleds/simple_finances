@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import {
-  AdjustmentsHorizontalIcon,
   ArrowPathIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
@@ -11,6 +8,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import AccountInvitationForm from '@/modules/accounts/components/AccountInvitationForm.vue';
 import AccountInvitationListItem from '@/modules/accounts/components/AccountInvitationListItem.vue';
+import AccountInvitationsToolbar from '@/modules/accounts/components/AccountInvitationsToolbar.vue';
 import { useAccountInvitesCrud } from '@/modules/accounts/composables/useAccountInvitesCrud';
 import type {
   AccountInviteStatus,
@@ -21,12 +19,9 @@ import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryPar
 import {
   AppButton,
   AppEmptyState,
-  AppIconButton,
-  AppInput,
   AppListState,
   AppLoadMoreFooter,
   AppModal,
-  AppSectionBar,
   AppText,
   AppTitle,
 } from '@/modules/shared/components';
@@ -340,37 +335,11 @@ function infiniteStatusLabel(): string {
 
 <template>
   <section class="space-y-4">
-    <AppSectionBar
-      title="Invitaciones"
-      description="Invita usuarios a colaborar dentro de esta cuenta."
-    >
-      <template #actions>
-        <AppButton variant="primary" @click="openCreateInvitation">
-          <PlusIcon class="h-4 w-4" />
-        </AppButton>
-      </template>
-    </AppSectionBar>
-
-    <div class="flex items-center gap-3">
-      <div class="relative flex-1">
-        <div
-          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
-        >
-          <MagnifyingGlassIcon class="h-5 w-5" />
-        </div>
-        <AppInput
-          id="invitation-search"
-          v-model="searchTerm"
-          type="search"
-          placeholder="Buscar invitación por correo"
-          class="pl-11"
-        />
-      </div>
-
-      <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
-        <AdjustmentsHorizontalIcon class="h-5 w-5" />
-      </AppIconButton>
-    </div>
+    <AccountInvitationsToolbar
+      v-model:search-term="searchTerm"
+      @create="openCreateInvitation"
+      @open-filters="openFilters"
+    />
 
     <section
       v-if="loadError && hasInvites"
