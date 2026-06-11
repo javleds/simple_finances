@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -12,6 +11,7 @@ import {
   useAccountGoalFilters,
   type AccountGoalStatusFilter,
 } from '@/modules/accounts/composables/useAccountGoalFilters';
+import { useAccountGoalModalActions } from '@/modules/accounts/composables/useAccountGoalModalActions';
 import { useAccountGoalModals } from '@/modules/accounts/composables/useAccountGoalModals';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import type { AccountGoalWritePayload } from '@/modules/accounts/schemas/accountGoalSchemas';
@@ -112,39 +112,13 @@ const filteredGoalItems = computed(() => {
   });
 });
 
-const createGoalActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-goal',
-    label: isSaving.value ? 'Guardando...' : 'Crear meta',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'account-goal-form',
-    disabled: !createFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const editGoalActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-edit-goal',
-    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'edit-account-goal-form',
-    disabled: !editFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const deleteGoalActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'confirm-delete-goal',
-    label: isDeleting.value ? 'Eliminando...' : 'Eliminar meta',
-    tone: 'primary' as const,
-    disabled: !selectedGoal.value || isDeleting.value,
-  },
-]);
+const { createGoalActions, deleteGoalActions, editGoalActions } = useAccountGoalModalActions({
+  createFormState,
+  editFormState,
+  isDeleting,
+  isSaving,
+  selectedGoal,
+});
 
 watch(
   [accountId, activeFilters, goalsPerPage],
