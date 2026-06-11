@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import {
-  ArrowPathIcon,
-  XMarkIcon,
-} from '@heroicons/vue/24/outline';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import AccountGoalForm from '@/modules/accounts/components/AccountGoalForm.vue';
+import AccountGoalFiltersModal from '@/modules/accounts/components/AccountGoalFiltersModal.vue';
 import AccountGoalListItem from '@/modules/accounts/components/AccountGoalListItem.vue';
 import AccountGoalsToolbar from '@/modules/accounts/components/AccountGoalsToolbar.vue';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
@@ -20,7 +18,6 @@ import {
   AppLoadMoreFooter,
   AppModal,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 type GoalStatus = 'on-track' | 'at-risk' | 'completed';
@@ -243,17 +240,6 @@ function toggleStatus(status: GoalStatus): void {
   selectedStatuses.value = [...selectedStatuses.value, status];
 }
 
-function handleFiltersModalAction(actionKey: string): void {
-  if (actionKey === 'clear') {
-    clearFilters();
-    return;
-  }
-
-  if (actionKey === 'close') {
-    closeFilters();
-  }
-}
-
 function openCreateGoal(): void {
   clearSaveError();
   createFormState.value = { canSubmit: false, isSubmitting: false };
@@ -423,42 +409,14 @@ function infiniteStatusLabel(): string {
       </section>
     </AppListState>
 
-    <AppModal
+    <AccountGoalFiltersModal
       :open="isFiltersOpen"
-      :actions="[
-        { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Filtros avanzados"
-      variant="default"
-      @action="handleFiltersModalAction"
+      :options="goalStatusOptions"
+      :selected-statuses="selectedStatuses"
+      @clear="clearFilters"
       @close="closeFilters"
-    >
-      <div class="space-y-5">
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Estatus</AppTitle>
-          <AppText>Filtra metas según su nivel de avance.</AppText>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="status in goalStatusOptions"
-            :key="status.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedStatuses.includes(status.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleStatus(status.value)"
-          >
-            {{ status.label }}
-          </button>
-        </div>
-      </div>
-    </AppModal>
+      @toggle-status="toggleStatus($event as GoalStatus)"
+    />
 
     <AppModal
       :open="isCreateGoalOpen"
