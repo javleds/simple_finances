@@ -243,3 +243,49 @@ Evitar tests fragiles de markup salvo componentes shared criticos.
 - Shared components registrados en `AGENTS.md`.
 - `npm run build` pasando en cada fase.
 - Tests agregados donde haya reglas o side effects, no solo snapshots.
+
+## Progreso
+
+### 2026-06-11
+
+Commits aplicados:
+
+- `2b4326b refactor(shared): add reusable list state components`
+- `fc2b46e refactor(goals): use shared list state components`
+- `961df21 refactor(goals): extract goals toolbar`
+- `c79444f refactor(goals): extract filters modal`
+- `53f4364 refactor(goals): extract goals list`
+- `d3ad98f refactor(goals): extract goal modals`
+- `de9e7f7 refactor(goals): extract query synced filters`
+- `a781fdf refactor(goals): extract modal state`
+- `3bc3b41 refactor(goals): extract modal actions`
+
+Estado actual:
+
+- `AccountGoalsPage.vue` bajo de ~555 lineas a 292 lineas.
+- Se agregaron shared components:
+  - `AppListState.vue`
+  - `AppEmptyState.vue`
+  - `AppLoadMoreFooter.vue`
+- `AGENTS.md` y el barrel `src/modules/shared/components/index.ts` ya incluyen los shared components nuevos.
+- La UI de metas quedo separada en:
+  - `AccountGoalsToolbar.vue`
+  - `AccountGoalFiltersModal.vue`
+  - `AccountGoalsList.vue`
+  - `AccountGoalFormModal.vue`
+  - `AccountGoalDeleteModal.vue`
+- La logica de metas quedo parcialmente separada en:
+  - `useAccountGoalFilters.ts`
+  - `useAccountGoalModals.ts`
+  - `useAccountGoalModalActions.ts`
+
+Verificacion:
+
+- `npm run build` paso despues de cada commit funcional.
+
+Siguiente paso recomendado:
+
+1. Extraer acciones CRUD de `AccountGoalsPage.vue` a un composable pequeno, por ejemplo `useAccountGoalPageActions`.
+2. Revisar si `reloadGoals`, `infiniteStatusLabel` y `goalsPerPage` deben quedarse en pagina o moverse a un composable de carga/lista.
+3. Con ese corte, `AccountGoalsPage.vue` deberia quedar cerca o debajo de 250 lineas.
+4. Despues repetir el patron en `AccountInvitationsPage.vue` o `AccountUsersPage.vue`.
