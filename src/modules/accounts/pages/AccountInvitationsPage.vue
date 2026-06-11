@@ -2,7 +2,7 @@
 import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { computed, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import AccountInvitationDeleteModal from '@/modules/accounts/components/AccountInvitationDeleteModal.vue';
@@ -11,6 +11,7 @@ import AccountInvitationFormModal from '@/modules/accounts/components/AccountInv
 import AccountInvitationsList from '@/modules/accounts/components/AccountInvitationsList.vue';
 import AccountInvitationsToolbar from '@/modules/accounts/components/AccountInvitationsToolbar.vue';
 import { useAccountInvitationFilters } from '@/modules/accounts/composables/useAccountInvitationFilters';
+import { useAccountInvitationModals } from '@/modules/accounts/composables/useAccountInvitationModals';
 import { useAccountInvitesCrud } from '@/modules/accounts/composables/useAccountInvitesCrud';
 import type {
   AccountInviteStatus,
@@ -24,19 +25,7 @@ import {
   AppText,
 } from '@/modules/shared/components';
 
-type FormState = {
-  canSubmit: boolean;
-  isSubmitting: boolean;
-};
-
 const route = useRoute();
-const isFiltersOpen = ref(false);
-const isCreateInvitationOpen = ref(false);
-const isEditInvitationOpen = ref(false);
-const isDeleteInvitationOpen = ref(false);
-const selectedInvitationId = ref<string | null>(null);
-const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
-const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const {
   activeFilters,
   clearFilters,
@@ -77,6 +66,30 @@ const {
   deleteInvite,
 } = useAccountInvitesCrud();
 
+const {
+  closeCreateInvitation,
+  closeDeleteInvitation,
+  closeEditInvitation,
+  closeFilters,
+  createFormState,
+  editFormState,
+  handleCreateFormStateChange,
+  handleEditFormStateChange,
+  isCreateInvitationOpen,
+  isDeleteInvitationOpen,
+  isEditInvitationOpen,
+  isFiltersOpen,
+  openCreateInvitation,
+  openDeleteInvitation,
+  openEditInvitation,
+  openFilters,
+  selectedInvitation,
+} = useAccountInvitationModals({
+  clearDeleteError,
+  clearSaveError,
+  invitations: invites,
+});
+
 const invitationsPerPage = computed(() => {
   const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
@@ -92,14 +105,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   onIntersect: () => {
     void loadMoreInvites();
   },
-});
-
-const selectedInvitation = computed(() => {
-  if (!selectedInvitationId.value) {
-    return null;
-  }
-
-  return invites.value.find((invitation) => invitation.id === selectedInvitationId.value) ?? null;
 });
 
 const createInviteActions = computed(() => [
@@ -151,50 +156,6 @@ watch(
   { immediate: true },
 );
 
-function openFilters(): void {
-  isFiltersOpen.value = true;
-}
-
-function closeFilters(): void {
-  isFiltersOpen.value = false;
-}
-
-function openCreateInvitation(): void {
-  clearSaveError();
-  createFormState.value = { canSubmit: false, isSubmitting: false };
-  isCreateInvitationOpen.value = true;
-}
-
-function closeCreateInvitation(): void {
-  isCreateInvitationOpen.value = false;
-  clearSaveError();
-}
-
-function openEditInvitation(invitationId: string): void {
-  clearSaveError();
-  selectedInvitationId.value = invitationId;
-  editFormState.value = { canSubmit: false, isSubmitting: false };
-  isEditInvitationOpen.value = true;
-}
-
-function closeEditInvitation(): void {
-  isEditInvitationOpen.value = false;
-  selectedInvitationId.value = null;
-  clearSaveError();
-}
-
-function openDeleteInvitation(invitationId: string): void {
-  clearDeleteError();
-  selectedInvitationId.value = invitationId;
-  isDeleteInvitationOpen.value = true;
-}
-
-function closeDeleteInvitation(): void {
-  isDeleteInvitationOpen.value = false;
-  selectedInvitationId.value = null;
-  clearDeleteError();
-}
-
 async function handleCreateInvitationSubmit(payload: AccountInviteWritePayload): Promise<void> {
   const wasCreated = await createInvite(payload);
 
@@ -225,14 +186,6 @@ async function confirmDeleteInvitation(): Promise<void> {
   if (wasDeleted) {
     closeDeleteInvitation();
   }
-}
-
-function handleCreateFormStateChange(state: FormState): void {
-  createFormState.value = state;
-}
-
-function handleEditFormStateChange(state: FormState): void {
-  editFormState.value = state;
 }
 
 function reloadInvitations(): void {
