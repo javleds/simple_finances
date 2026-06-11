@@ -259,6 +259,15 @@ Commits aplicados:
 - `de9e7f7 refactor(goals): extract query synced filters`
 - `a781fdf refactor(goals): extract modal state`
 - `3bc3b41 refactor(goals): extract modal actions`
+- `0aaae37 refactor(invitations): use shared list state components`
+- `cb7b2d4 refactor(invitations): extract invitations toolbar`
+- `7f6b913 refactor(invitations): extract filters modal`
+- `2654516 refactor(invitations): extract invitations list`
+- `c22402a refactor(invitations): extract invitation modals`
+- `e196ac7 refactor(invitations): extract query synced filters`
+- `1adecc4 refactor(invitations): extract modal state`
+- `fb9ea82 refactor(invitations): extract modal actions`
+- `a5b861a refactor(invitations): extract page actions`
 
 Estado actual:
 
@@ -278,6 +287,18 @@ Estado actual:
   - `useAccountGoalFilters.ts`
   - `useAccountGoalModals.ts`
   - `useAccountGoalModalActions.ts`
+- `AccountInvitationsPage.vue` bajo de ~526 lineas a 237 lineas.
+- La UI de invitaciones quedo separada en:
+  - `AccountInvitationsToolbar.vue`
+  - `AccountInvitationFiltersModal.vue`
+  - `AccountInvitationsList.vue`
+  - `AccountInvitationFormModal.vue`
+  - `AccountInvitationDeleteModal.vue`
+- La logica de invitaciones quedo separada en:
+  - `useAccountInvitationFilters.ts`
+  - `useAccountInvitationModals.ts`
+  - `useAccountInvitationModalActions.ts`
+  - `useAccountInvitationActions.ts`
 
 Verificacion:
 
@@ -286,6 +307,6 @@ Verificacion:
 Siguiente paso recomendado:
 
 1. Extraer acciones CRUD de `AccountGoalsPage.vue` a un composable pequeno, por ejemplo `useAccountGoalPageActions`.
-2. Revisar si `reloadGoals`, `infiniteStatusLabel` y `goalsPerPage` deben quedarse en pagina o moverse a un composable de carga/lista.
-3. Con ese corte, `AccountGoalsPage.vue` deberia quedar cerca o debajo de 250 lineas.
-4. Despues repetir el patron en `AccountInvitationsPage.vue` o `AccountUsersPage.vue`.
+2. Refactorizar `AccountUsersPage.vue` con el mismo patron ya probado en metas e invitaciones.
+3. Revisar si `reloadGoals`, `infiniteStatusLabel` y `goalsPerPage` deben quedarse en pagina o moverse a un composable de carga/lista.
+4. Despues continuar con `DashboardPage.vue` o `AccountTransactionsPage.vue`, segun prioridad de riesgo.
