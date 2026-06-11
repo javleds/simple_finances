@@ -1,0 +1,245 @@
+# Refactor Spec
+
+## Diagnostico Inicial
+
+La aplicacion tiene varias paginas actuando como "todo en uno": orquestan API, estado local, permisos, filtros, modales, formularios y presentacion.
+
+Tamano actual mas relevante:
+
+- `AccountTransactionsPage.vue`: 1025 lineas
+- `AccountsPage.vue`: 657 lineas
+- `SubscriptionsPage.vue`: 649 lineas
+- `AccountUsersPage.vue`: 567 lineas
+- `AccountGoalsPage.vue`: 555 lineas
+- `AccountInvitationsPage.vue`: 526 lineas
+- `DistributionPage.vue`: 490 lineas
+- `DashboardPage.vue`: 426 lineas
+- Shared complejos: `AppPercentageSplitEditor`, `AppDatePicker`, `AppInput`, `AppModal`, `AppSearchSelect`, `AppActionMenu`
+
+## Objetivo
+
+Dejar las paginas como capas de composicion delgadas. La logica debe vivir en composables, la UI repetible en componentes especializados, y los contratos API en schemas/repositorios. La funcionalidad actual se preserva con refactors pequenos, verificables y por modulo.
+
+## Plan Paso A Paso
+
+### 1. Crear reglas base de arquitectura
+
+Definir una convencion clara por modulo:
+
+- `pages`: composicion de la vista, sin logica compleja.
+- `components`: presentacion y eventos.
+- `composables`: estado, filtros, modales, acciones y orquestacion.
+- `repositories`: API.
+- `schemas`: parseo/mapeo.
+- `types`: contratos de dominio/frontend.
+
+Criterio: una pagina idealmente debe quedar entre 120 y 220 lineas. Si supera eso, debe tener una justificacion clara.
+
+### 2. Auditar patrones duplicados antes de tocar codigo
+
+Buscar duplicados en:
+
+- filtros por `search/status/type`
+- modales CRUD
+- listas con loading/error/empty/infinite scroll
+- confirmaciones de delete/complete
+- form state `{ canSubmit, isSubmitting }`
+- formato de moneda/fecha
+- paginacion y reload
+- acciones por permisos del usuario activo
+
+Output esperado: una lista corta de candidatos a shared/composables.
+
+### 3. Refactor piloto: `AccountGoalsPage.vue`
+
+Es buen primer objetivo porque tiene tamano alto, pero menor riesgo que `AccountTransactionsPage`.
+
+Extraer:
+
+- `useAccountGoalsPageState`
+- `useAccountGoalFilters`
+- `useAccountGoalModals`
+- `AccountGoalsToolbar.vue`
+- `AccountGoalsList.vue`
+- `AccountGoalDeleteModal.vue`
+
+Meta: bajar `AccountGoalsPage.vue` de ~555 lineas a ~180-220.
+
+### 4. Crear componentes shared para estados de lista
+
+Repetido en muchas paginas:
+
+- loading inicial
+- error inicial con retry
+- error parcial
+- empty state
+- infinite scroll footer
+
+Propuesta:
+
+- `AppListState.vue`
+- `AppEmptyState.vue`
+- `AppLoadMoreFooter.vue`
+
+Despues actualizar `AGENTS.md` con estos shared components, como pide la regla del repo.
+
+### 5. Crear composables shared de filtros
+
+Paginas como transactions, goals, invitations, accounts repiten:
+
+- sincronizar query params
+- parsear arrays desde query
+- limpiar filtros
+- toggles de chips
+
+Propuesta:
+
+- `useQuerySyncedFilters`
+- `useToggleFilterGroup`
+
+Criterio: no meter reglas de negocio aqui. Solo mecanica reusable.
+
+### 6. Crear composables shared de modales CRUD
+
+Muchas paginas tienen:
+
+- `selectedId`
+- `isCreateOpen`
+- `isEditOpen`
+- `isDeleteOpen`
+- open/close/clear errors
+
+Propuesta:
+
+- `useSelectionModalState`
+- `useCrudModalState`
+
+Mantener nombres explicitos en cada pagina para no perder legibilidad.
+
+### 7. Refactor `AccountInvitationsPage` y `AccountUsersPage`
+
+Despues del piloto, aplicar el mismo patron a paginas vecinas del mismo modulo.
+
+Extraer componentes:
+
+- toolbar/filtros
+- list section
+- item modals
+- page-specific action composables
+
+Meta: paginas bajo 220 lineas cada una.
+
+### 8. Refactor mayor: `AccountTransactionsPage.vue`
+
+Esta debe ser fase separada por riesgo. Tiene balance, pending por usuario, infinite scroll, CRUD, complete individual, complete batch, filtros, formularios y side effects.
+
+Extraer:
+
+- `useAccountTransactionsHeader`
+- `useAccountTransactionFilters`
+- `useAccountTransactionActions`
+- `useAccountTransactionModals`
+- `AccountTransactionsHeader.vue`
+- `AccountTransactionsToolbar.vue`
+- `AccountTransactionsList.vue`
+- `CompletePendingByUserModal.vue`
+- `CompleteTransactionModal.vue`
+
+Regla importante: conservar la logica reciente de balance/pending visible con tests antes de moverla.
+
+### 9. Refactor formularios grandes
+
+Candidatos:
+
+- `TransactionsForm.vue`: 296 lineas
+- `AccountsForm.vue`: 266 lineas
+- `SubscriptionsForm.vue`: 219 lineas
+
+Extraer secciones internas cuando tengan responsabilidad clara:
+
+- account selector
+- status/type toggles
+- payment split section
+- recurrence section
+- date/cancellation section
+
+No crear microcomponentes para 10 lineas. Solo secciones con estado o reglas propias.
+
+### 10. Revisar shared components complejos
+
+`AppPercentageSplitEditor`, `AppDatePicker`, `AppInput`, `AppModal`, `AppSearchSelect`, `AppActionMenu` ya son shared, pero algunos son grandes.
+
+No partirlos primero. Antes conviene:
+
+- mejorar nombres internos
+- extraer helpers puros a `.ts`
+- agregar tests a reglas complejas
+- mantener API publica estable
+
+### 11. Layouts
+
+`AdminLayout.vue` tiene ~286 lineas. Conviene separar:
+
+- `AdminSidebar.vue`
+- `AdminTopBar.vue`
+- `AdminMobileNav.vue`
+- `AdminUserMenu.vue`
+- composable `useAdminNavigation`
+
+Meta: layout solo decide estructura y slots/router-view.
+
+### 12. Dashboard
+
+Ya empezo a mejorar con `DashboardBalanceChart.vue`.
+
+Siguiente:
+
+- `DashboardSummaryCards.vue`
+- `DashboardPendingActions.vue`
+- `DashboardSubscriptionsPlanning.vue`
+- `useDashboardPendingActions`
+- `useDashboardChartFilters`
+
+### 13. Repositorios y schemas
+
+No mover por mover. Pero si separar archivos muy grandes cuando mezclen dominios:
+
+- `accountSchemas.ts` puede dividirse en account, members, pending, write payloads.
+- `transactionsRepository.ts` puede separar schemas internos si crece mas.
+
+Criterio: el repo debe leer como transporte; los schemas como contrato; la pagina nunca debe conocer payload API crudo.
+
+### 14. Testing por fases
+
+Prioridad de tests:
+
+- reglas de pending/balance en transactions
+- filtros query params
+- permisos de acciones
+- batch complete parcial/fallido
+- mappers de schemas criticos
+
+Evitar tests fragiles de markup salvo componentes shared criticos.
+
+### 15. Orden recomendado de ejecucion
+
+1. Crear shared list states.
+2. Refactor `AccountGoalsPage`.
+3. Refactor `AccountInvitationsPage`.
+4. Refactor `AccountUsersPage`.
+5. Refactor `DashboardPage`.
+6. Refactor `AccountTransactionsPage`.
+7. Refactor `AccountsPage`.
+8. Refactor `SubscriptionsPage`.
+9. Refactor `DistributionPage`.
+10. Revisar shared complejos y schemas grandes.
+
+## Criterios De Aceptacion
+
+- Ninguna pagina principal sobre 250 lineas salvo excepcion justificada.
+- Componentes de presentacion sin llamadas API directas.
+- Composables con nombres de caso de uso, no genericos artificiales.
+- Repositorios sin logica visual.
+- Shared components registrados en `AGENTS.md`.
+- `npm run build` pasando en cada fase.
+- Tests agregados donde haya reglas o side effects, no solo snapshots.
