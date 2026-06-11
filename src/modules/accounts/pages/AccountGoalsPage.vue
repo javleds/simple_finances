@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { XMarkIcon } from '@heroicons/vue/24/outline';
-import { computed, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import AccountGoalDeleteModal from '@/modules/accounts/components/AccountGoalDeleteModal.vue';
@@ -12,6 +12,7 @@ import {
   useAccountGoalFilters,
   type AccountGoalStatusFilter,
 } from '@/modules/accounts/composables/useAccountGoalFilters';
+import { useAccountGoalModals } from '@/modules/accounts/composables/useAccountGoalModals';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import type { AccountGoalWritePayload } from '@/modules/accounts/schemas/accountGoalSchemas';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
@@ -22,19 +23,7 @@ import {
   AppText,
 } from '@/modules/shared/components';
 
-type FormState = {
-  canSubmit: boolean;
-  isSubmitting: boolean;
-};
-
 const route = useRoute();
-const isFiltersOpen = ref(false);
-const isCreateGoalOpen = ref(false);
-const isEditGoalOpen = ref(false);
-const isDeleteGoalOpen = ref(false);
-const selectedGoalId = ref<string | null>(null);
-const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
-const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const { activeFilters, clearFilters, searchTerm, selectedStatuses, toggleStatus } =
   useAccountGoalFilters();
 
@@ -70,6 +59,30 @@ const {
   deleteGoal,
 } = useAccountGoalsCrud();
 
+const {
+  closeCreateGoal,
+  closeDeleteGoal,
+  closeEditGoal,
+  closeFilters,
+  createFormState,
+  editFormState,
+  handleCreateFormStateChange,
+  handleEditFormStateChange,
+  isCreateGoalOpen,
+  isDeleteGoalOpen,
+  isEditGoalOpen,
+  isFiltersOpen,
+  openCreateGoal,
+  openDeleteGoal,
+  openEditGoal,
+  openFilters,
+  selectedGoal,
+} = useAccountGoalModals({
+  goals,
+  clearDeleteError,
+  clearSaveError,
+});
+
 const goalsPerPage = computed(() => {
   const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
@@ -97,14 +110,6 @@ const filteredGoalItems = computed(() => {
 
     return true;
   });
-});
-
-const selectedGoal = computed(() => {
-  if (!selectedGoalId.value) {
-    return null;
-  }
-
-  return goals.value.find((goal) => goal.id === selectedGoalId.value) ?? null;
 });
 
 const createGoalActions = computed(() => [
@@ -168,50 +173,6 @@ function resolveGoalStatus(progress: number): AccountGoalStatusFilter {
   return 'on-track';
 }
 
-function openFilters(): void {
-  isFiltersOpen.value = true;
-}
-
-function closeFilters(): void {
-  isFiltersOpen.value = false;
-}
-
-function openCreateGoal(): void {
-  clearSaveError();
-  createFormState.value = { canSubmit: false, isSubmitting: false };
-  isCreateGoalOpen.value = true;
-}
-
-function closeCreateGoal(): void {
-  isCreateGoalOpen.value = false;
-  clearSaveError();
-}
-
-function openEditGoal(goalId: string): void {
-  clearSaveError();
-  selectedGoalId.value = goalId;
-  editFormState.value = { canSubmit: false, isSubmitting: false };
-  isEditGoalOpen.value = true;
-}
-
-function closeEditGoal(): void {
-  isEditGoalOpen.value = false;
-  selectedGoalId.value = null;
-  clearSaveError();
-}
-
-function openDeleteGoal(goalId: string): void {
-  clearDeleteError();
-  selectedGoalId.value = goalId;
-  isDeleteGoalOpen.value = true;
-}
-
-function closeDeleteGoal(): void {
-  isDeleteGoalOpen.value = false;
-  selectedGoalId.value = null;
-  clearDeleteError();
-}
-
 async function handleCreateGoalSubmit(payload: AccountGoalWritePayload): Promise<void> {
   const wasCreated = await createGoal(payload);
 
@@ -242,14 +203,6 @@ async function confirmDeleteGoal(): Promise<void> {
   if (wasDeleted) {
     closeDeleteGoal();
   }
-}
-
-function handleCreateFormStateChange(state: FormState): void {
-  createFormState.value = state;
-}
-
-function handleEditFormStateChange(state: FormState): void {
-  editFormState.value = state;
 }
 
 function reloadGoals(): void {
