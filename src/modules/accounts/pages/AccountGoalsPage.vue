@@ -3,8 +3,9 @@ import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import AccountGoalForm from '@/modules/accounts/components/AccountGoalForm.vue';
+import AccountGoalDeleteModal from '@/modules/accounts/components/AccountGoalDeleteModal.vue';
 import AccountGoalFiltersModal from '@/modules/accounts/components/AccountGoalFiltersModal.vue';
+import AccountGoalFormModal from '@/modules/accounts/components/AccountGoalFormModal.vue';
 import AccountGoalsList from '@/modules/accounts/components/AccountGoalsList.vue';
 import AccountGoalsToolbar from '@/modules/accounts/components/AccountGoalsToolbar.vue';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
@@ -15,7 +16,6 @@ import {
   AppButton,
   AppListState,
   AppLoadMoreFooter,
-  AppModal,
   AppText,
 } from '@/modules/shared/components';
 
@@ -376,57 +376,38 @@ function infiniteStatusLabel(): string {
       @toggle-status="toggleStatus($event as GoalStatus)"
     />
 
-    <AppModal
+    <AccountGoalFormModal
       :open="isCreateGoalOpen"
+      :account-id="accountId"
       :actions="createGoalActions"
+      form-id="account-goal-form"
+      :server-error="saveError"
       title="Crear meta"
-      variant="default"
       @close="closeCreateGoal"
-    >
-      <AccountGoalForm
-        v-if="accountId"
-        form-id="account-goal-form"
-        :account-id="accountId"
-        :server-error="saveError"
-        @state-change="handleCreateFormStateChange"
-        @submit="handleCreateGoalSubmit"
-      />
-    </AppModal>
+      @state-change="handleCreateFormStateChange"
+      @submit="handleCreateGoalSubmit"
+    />
 
-    <AppModal
+    <AccountGoalFormModal
       :open="isEditGoalOpen"
+      :account-id="accountId"
       :actions="editGoalActions"
+      form-id="edit-account-goal-form"
+      :initial-values="selectedGoal"
+      :server-error="saveError"
       title="Editar meta"
-      variant="default"
       @close="closeEditGoal"
-    >
-      <AccountGoalForm
-        v-if="accountId && selectedGoal"
-        form-id="edit-account-goal-form"
-        :account-id="accountId"
-        :initial-values="selectedGoal"
-        :server-error="saveError"
-        @state-change="handleEditFormStateChange"
-        @submit="handleEditGoalSubmit"
-      />
-    </AppModal>
+      @state-change="handleEditFormStateChange"
+      @submit="handleEditGoalSubmit"
+    />
 
-    <AppModal
+    <AccountGoalDeleteModal
       :open="isDeleteGoalOpen"
       :actions="deleteGoalActions"
-      title="Eliminar meta"
-      variant="danger"
-      @action="$event === 'confirm-delete-goal' && confirmDeleteGoal()"
+      :delete-error="deleteError"
+      :goal="selectedGoal"
       @close="closeDeleteGoal"
-    >
-      <div class="space-y-3">
-        <AppText v-if="selectedGoal">
-          Vas a eliminar
-          <strong>{{ selectedGoal.name }}</strong
-          >.
-        </AppText>
-        <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmDeleteGoal"
+    />
   </section>
 </template>
