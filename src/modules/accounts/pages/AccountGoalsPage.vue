@@ -17,8 +17,11 @@ import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScrol
 import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
+  AppEmptyState,
   AppIconButton,
   AppInput,
+  AppListState,
+  AppLoadMoreFooter,
   AppModal,
   AppSectionBar,
   AppText,
@@ -402,65 +405,51 @@ function infiniteStatusLabel(): string {
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
-    <section v-if="isLoading && !hasGoals" class="rounded-2xl border px-4 py-10 text-center">
-      <AppText>Cargando metas...</AppText>
-    </section>
-
-    <section
-      v-else-if="loadError && !hasGoals"
-      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    <AppListState
+      :error="loadError"
+      :has-items="hasGoals"
+      :is-loading="isLoading"
+      loading-label="Cargando metas..."
+      @retry="reloadGoals"
     >
-      <AppText>{{ loadError }}</AppText>
-      <div class="flex justify-center">
-        <AppButton variant="secondary" @click="reloadGoals">Reintentar</AppButton>
-      </div>
-    </section>
-
-    <section v-else class="space-y-3">
-      <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">{{ filteredGoalItems.length }} metas visibles</AppText>
-        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
-      </div>
-
-      <div class="space-y-4">
-        <AccountGoalListItem
-          v-for="goal in filteredGoalItems"
-          :key="goal.id"
-          :current-amount="goal.amount * (goal.progress / 100)"
-          :deadline-label="formatDateLabel(goal.deadline)"
-          :item-id="goal.id"
-          :owner-label="goal.status === 'completed' ? 'Meta completada' : 'Meta en progreso'"
-          :progress="goal.progress"
-          :remaining-amount="Math.max(goal.amount - goal.amount * (goal.progress / 100), 0)"
-          :status="goal.status === 'completed' ? 'completed' : resolveGoalStatus(goal.progress)"
-          :target-amount="goal.amount"
-          :title="goal.name"
-          @delete="openDeleteGoal"
-          @edit="openEditGoal"
-        />
-
-        <div
-          v-if="filteredGoalItems.length === 0"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm"
-            >No hay metas que coincidan con la búsqueda o los filtros actuales.</AppText
-          >
+      <section class="space-y-3">
+        <div class="flex items-center justify-between gap-3">
+          <AppText size="sm" tone="subtle">{{ filteredGoalItems.length }} metas visibles</AppText>
+          <AppText size="sm" tone="subtle">Scroll continuo</AppText>
         </div>
 
-        <div
-          ref="loadMoreSentinel"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
-          <div v-if="loadError && hasGoals" class="mt-3 flex justify-center">
-            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+        <div class="space-y-4">
+          <AccountGoalListItem
+            v-for="goal in filteredGoalItems"
+            :key="goal.id"
+            :current-amount="goal.amount * (goal.progress / 100)"
+            :deadline-label="formatDateLabel(goal.deadline)"
+            :item-id="goal.id"
+            :owner-label="goal.status === 'completed' ? 'Meta completada' : 'Meta en progreso'"
+            :progress="goal.progress"
+            :remaining-amount="Math.max(goal.amount - goal.amount * (goal.progress / 100), 0)"
+            :status="goal.status === 'completed' ? 'completed' : resolveGoalStatus(goal.progress)"
+            :target-amount="goal.amount"
+            :title="goal.name"
+            @delete="openDeleteGoal"
+            @edit="openEditGoal"
+          />
+
+          <AppEmptyState
+            v-if="filteredGoalItems.length === 0"
+            message="No hay metas que coincidan con la búsqueda o los filtros actuales."
+          />
+
+          <div ref="loadMoreSentinel">
+            <AppLoadMoreFooter
+              :label="infiniteStatusLabel()"
+              :show-retry="Boolean(loadError && hasGoals)"
+              @retry="handleLoadMoreRetry"
+            />
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </AppListState>
 
     <AppModal
       :open="isFiltersOpen"
