@@ -7,7 +7,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import AccountInvitationForm from '@/modules/accounts/components/AccountInvitationForm.vue';
 import AccountInvitationFiltersModal from '@/modules/accounts/components/AccountInvitationFiltersModal.vue';
-import AccountInvitationListItem from '@/modules/accounts/components/AccountInvitationListItem.vue';
+import AccountInvitationsList from '@/modules/accounts/components/AccountInvitationsList.vue';
 import AccountInvitationsToolbar from '@/modules/accounts/components/AccountInvitationsToolbar.vue';
 import { useAccountInvitesCrud } from '@/modules/accounts/composables/useAccountInvitesCrud';
 import type {
@@ -18,7 +18,6 @@ import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScrol
 import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
-  AppEmptyState,
   AppListState,
   AppLoadMoreFooter,
   AppModal,
@@ -180,18 +179,6 @@ watch(
   { immediate: true },
 );
 
-function formatDateLabel(date: string | null): string {
-  if (!date) {
-    return 'Sin fecha';
-  }
-
-  return new Intl.DateTimeFormat('es-MX', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(date));
-}
-
 function openFilters(): void {
   isFiltersOpen.value = true;
 }
@@ -343,31 +330,8 @@ function infiniteStatusLabel(): string {
       loading-label="Cargando invitaciones..."
       @retry="reloadInvitations"
     >
-      <section class="space-y-3">
-        <div class="flex items-center justify-between gap-3">
-          <AppText size="sm" tone="subtle">
-            {{ invites.length }} invitaciones visibles
-          </AppText>
-          <AppText size="sm" tone="subtle">Scroll continuo</AppText>
-        </div>
-
-        <div class="space-y-4">
-          <AccountInvitationListItem
-            v-for="invitation in invites"
-            :key="invitation.id"
-            :email="invitation.email"
-            :item-id="invitation.id"
-            :meta-label="formatDateLabel(invitation.invitedAt)"
-            :percentage-label="`${invitation.percentage}%`"
-            :status="invitation.status"
-            @delete="openDeleteInvitation"
-          />
-
-          <AppEmptyState
-            v-if="invites.length === 0"
-            message="No hay invitaciones que coincidan con la búsqueda o los filtros actuales."
-          />
-
+      <AccountInvitationsList :invitations="invites" @delete="openDeleteInvitation">
+        <template #footer>
           <div ref="loadMoreSentinel">
             <AppLoadMoreFooter
               :label="infiniteStatusLabel()"
@@ -375,8 +339,8 @@ function infiniteStatusLabel(): string {
               @retry="handleLoadMoreRetry"
             />
           </div>
-        </div>
-      </section>
+        </template>
+      </AccountInvitationsList>
     </AppListState>
 
     <AccountInvitationFiltersModal
