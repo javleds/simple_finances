@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import {
-  XMarkIcon,
-} from '@heroicons/vue/24/outline';
 import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -11,6 +8,7 @@ import AccountInvitationFormModal from '@/modules/accounts/components/AccountInv
 import AccountInvitationsList from '@/modules/accounts/components/AccountInvitationsList.vue';
 import AccountInvitationsToolbar from '@/modules/accounts/components/AccountInvitationsToolbar.vue';
 import { useAccountInvitationFilters } from '@/modules/accounts/composables/useAccountInvitationFilters';
+import { useAccountInvitationModalActions } from '@/modules/accounts/composables/useAccountInvitationModalActions';
 import { useAccountInvitationModals } from '@/modules/accounts/composables/useAccountInvitationModals';
 import { useAccountInvitesCrud } from '@/modules/accounts/composables/useAccountInvitesCrud';
 import type {
@@ -90,6 +88,18 @@ const {
   invitations: invites,
 });
 
+const {
+  createInviteActions,
+  deleteInviteActions,
+  editInviteActions,
+} = useAccountInvitationModalActions({
+  createFormState,
+  editFormState,
+  isDeleting,
+  isSaving,
+  selectedInvitation,
+});
+
 const invitationsPerPage = computed(() => {
   const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
@@ -106,40 +116,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
     void loadMoreInvites();
   },
 });
-
-const createInviteActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-invitation',
-    label: isSaving.value ? 'Guardando...' : 'Crear invitación',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'account-invitation-form',
-    disabled: !createFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const editInviteActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-edit-invitation',
-    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'edit-account-invitation-form',
-    disabled: !editFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const deleteInviteActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'confirm-delete-invitation',
-    label: isDeleting.value ? 'Eliminando...' : 'Eliminar invitación',
-    tone: 'primary' as const,
-    disabled: !selectedInvitation.value || isDeleting.value,
-  },
-]);
 
 watch(
   [accountId, activeFilters, invitationsPerPage],
