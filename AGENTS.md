@@ -20,6 +20,8 @@ Current shared components:
   Path: `src/modules/shared/components/AppContextTabs.vue`
 - `AppDatePicker`: app-styled wrapper around `@vuepic/vue-datepicker` for date fields that need to work well inside forms and modals.
   Path: `src/modules/shared/components/AppDatePicker.vue`
+- `AppEmptyState`: dashed empty-state surface for list sections with optional action slot.
+  Path: `src/modules/shared/components/AppEmptyState.vue`
 - `AppHeroMetric`: hero-style metric block with small label, large value and optional adornment slot.
   Path: `src/modules/shared/components/AppHeroMetric.vue`
 - `AppIconButton`: compact circular button for icon-only actions.
@@ -28,6 +30,10 @@ Current shared components:
   Path: `src/modules/shared/components/AppInput.vue`
 - `AppLink`: shared link component compatible with `href` and Vue Router `to`, with variants `primary`, `secondary`, `subtle`.
   Path: `src/modules/shared/components/AppLink.vue`
+- `AppListState`: wrapper for initial loading and initial error states before rendering list content.
+  Path: `src/modules/shared/components/AppListState.vue`
+- `AppLoadMoreFooter`: dashed infinite-scroll footer with status label and optional retry action.
+  Path: `src/modules/shared/components/AppLoadMoreFooter.vue`
 - `AppModal`: base modal mobile-first with header, content area and footer actions.
   Path: `src/modules/shared/components/AppModal.vue`
 - `AppPasswordInput`: password input with show/hide action.
