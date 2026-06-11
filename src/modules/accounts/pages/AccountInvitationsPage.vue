@@ -3,20 +3,20 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 import AccountInvitationDeleteModal from '@/modules/accounts/components/AccountInvitationDeleteModal.vue';
 import AccountInvitationFiltersModal from '@/modules/accounts/components/AccountInvitationFiltersModal.vue';
 import AccountInvitationFormModal from '@/modules/accounts/components/AccountInvitationFormModal.vue';
 import AccountInvitationsList from '@/modules/accounts/components/AccountInvitationsList.vue';
 import AccountInvitationsToolbar from '@/modules/accounts/components/AccountInvitationsToolbar.vue';
+import { useAccountInvitationFilters } from '@/modules/accounts/composables/useAccountInvitationFilters';
 import { useAccountInvitesCrud } from '@/modules/accounts/composables/useAccountInvitesCrud';
 import type {
   AccountInviteStatus,
   AccountInviteWritePayload,
 } from '@/modules/accounts/schemas/accountInviteSchemas';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
   AppListState,
@@ -30,16 +30,20 @@ type FormState = {
 };
 
 const route = useRoute();
-const router = useRouter();
-const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateInvitationOpen = ref(false);
 const isEditInvitationOpen = ref(false);
 const isDeleteInvitationOpen = ref(false);
-const selectedStatuses = ref<AccountInviteStatus[]>([]);
 const selectedInvitationId = ref<string | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const {
+  activeFilters,
+  clearFilters,
+  searchTerm,
+  selectedStatuses,
+  toggleStatus,
+} = useAccountInvitationFilters();
 
 const invitationStatusOptions = [
   { value: 'pending', label: 'Pendiente' },
@@ -90,11 +94,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   },
 });
 
-const activeFilters = computed(() => ({
-  search: searchTerm.value.trim() || undefined,
-  status: selectedStatuses.value.length > 0 ? [...selectedStatuses.value] : undefined,
-}));
-
 const selectedInvitation = computed(() => {
   if (!selectedInvitationId.value) {
     return null;
@@ -138,33 +137,6 @@ const deleteInviteActions = computed(() => [
 ]);
 
 watch(
-  () => route.query,
-  (nextQuery) => {
-    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
-    selectedStatuses.value = parseQueryValues(nextQuery.status, isInvitationStatus);
-  },
-  { immediate: true },
-);
-
-watch(
-  [searchTerm, selectedStatuses],
-  () => {
-    const nextQuery = {
-      ...route.query,
-      search: searchTerm.value.trim() || undefined,
-      status: selectedStatuses.value.length > 0 ? selectedStatuses.value.join(',') : undefined,
-    };
-
-    if (areQueriesEqual(route.query, nextQuery)) {
-      return;
-    }
-
-    void router.replace({ query: nextQuery });
-  },
-  { deep: true },
-);
-
-watch(
   [accountId, activeFilters, invitationsPerPage],
   ([nextAccountId, nextFilters, nextPerPage]) => {
     if (!nextAccountId) {
@@ -185,19 +157,6 @@ function openFilters(): void {
 
 function closeFilters(): void {
   isFiltersOpen.value = false;
-}
-
-function clearFilters(): void {
-  selectedStatuses.value = [];
-}
-
-function toggleStatus(status: AccountInviteStatus): void {
-  if (selectedStatuses.value.includes(status)) {
-    selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
-    return;
-  }
-
-  selectedStatuses.value = [...selectedStatuses.value, status];
 }
 
 function openCreateInvitation(): void {
@@ -285,10 +244,6 @@ function reloadInvitations(): void {
     reset: true,
     perPage: invitationsPerPage.value,
   });
-}
-
-function isInvitationStatus(value: string): value is AccountInviteStatus {
-  return value === 'pending' || value === 'accepted' || value === 'declined';
 }
 
 function handleLoadMoreRetry(): void {
