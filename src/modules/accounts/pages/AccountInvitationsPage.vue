@@ -7,14 +7,12 @@ import AccountInvitationFiltersModal from '@/modules/accounts/components/Account
 import AccountInvitationFormModal from '@/modules/accounts/components/AccountInvitationFormModal.vue';
 import AccountInvitationsList from '@/modules/accounts/components/AccountInvitationsList.vue';
 import AccountInvitationsToolbar from '@/modules/accounts/components/AccountInvitationsToolbar.vue';
+import { useAccountInvitationActions } from '@/modules/accounts/composables/useAccountInvitationActions';
 import { useAccountInvitationFilters } from '@/modules/accounts/composables/useAccountInvitationFilters';
 import { useAccountInvitationModalActions } from '@/modules/accounts/composables/useAccountInvitationModalActions';
 import { useAccountInvitationModals } from '@/modules/accounts/composables/useAccountInvitationModals';
 import { useAccountInvitesCrud } from '@/modules/accounts/composables/useAccountInvitesCrud';
-import type {
-  AccountInviteStatus,
-  AccountInviteWritePayload,
-} from '@/modules/accounts/schemas/accountInviteSchemas';
+import type { AccountInviteStatus } from '@/modules/accounts/schemas/accountInviteSchemas';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
   AppButton,
@@ -117,6 +115,30 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   },
 });
 
+const {
+  confirmDeleteInvitation,
+  handleCreateInvitationSubmit,
+  handleEditInvitationSubmit,
+  handleLoadMoreRetry,
+  infiniteStatusLabel,
+  reloadInvitations,
+} = useAccountInvitationActions({
+  accountId,
+  activeFilters,
+  closeCreateInvitation,
+  closeDeleteInvitation,
+  closeEditInvitation,
+  createInvite,
+  deleteInvite,
+  hasReachedEnd,
+  invitationsPerPage,
+  isLoadingMore,
+  loadInvites,
+  loadMoreInvites,
+  selectedInvitation,
+  updateInvite,
+});
+
 watch(
   [accountId, activeFilters, invitationsPerPage],
   ([nextAccountId, nextFilters, nextPerPage]) => {
@@ -132,64 +154,6 @@ watch(
   { immediate: true },
 );
 
-async function handleCreateInvitationSubmit(payload: AccountInviteWritePayload): Promise<void> {
-  const wasCreated = await createInvite(payload);
-
-  if (wasCreated) {
-    closeCreateInvitation();
-  }
-}
-
-async function handleEditInvitationSubmit(payload: AccountInviteWritePayload): Promise<void> {
-  if (!selectedInvitation.value) {
-    return;
-  }
-
-  const wasUpdated = await updateInvite(selectedInvitation.value.id, payload);
-
-  if (wasUpdated) {
-    closeEditInvitation();
-  }
-}
-
-async function confirmDeleteInvitation(): Promise<void> {
-  if (!selectedInvitation.value) {
-    return;
-  }
-
-  const wasDeleted = await deleteInvite(selectedInvitation.value.id, accountId.value);
-
-  if (wasDeleted) {
-    closeDeleteInvitation();
-  }
-}
-
-function reloadInvitations(): void {
-  if (!accountId.value) {
-    return;
-  }
-
-  void loadInvites(accountId.value, activeFilters.value, {
-    reset: true,
-    perPage: invitationsPerPage.value,
-  });
-}
-
-function handleLoadMoreRetry(): void {
-  void loadMoreInvites();
-}
-
-function infiniteStatusLabel(): string {
-  if (isLoadingMore.value) {
-    return 'Cargando más invitaciones...';
-  }
-
-  if (hasReachedEnd.value) {
-    return 'Has llegado al final.';
-  }
-
-  return 'Sigue desplazándote para revisar más invitaciones conforme se amplíe la colaboración.';
-}
 </script>
 
 <template>
