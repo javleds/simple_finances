@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import AccountGoalForm from '@/modules/accounts/components/AccountGoalForm.vue';
 import AccountGoalFiltersModal from '@/modules/accounts/components/AccountGoalFiltersModal.vue';
-import AccountGoalListItem from '@/modules/accounts/components/AccountGoalListItem.vue';
+import AccountGoalsList from '@/modules/accounts/components/AccountGoalsList.vue';
 import AccountGoalsToolbar from '@/modules/accounts/components/AccountGoalsToolbar.vue';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import type { AccountGoalWritePayload } from '@/modules/accounts/schemas/accountGoalSchemas';
@@ -13,7 +13,6 @@ import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScrol
 import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
-  AppEmptyState,
   AppListState,
   AppLoadMoreFooter,
   AppModal,
@@ -200,25 +199,6 @@ function resolveGoalStatus(progress: number): GoalStatus {
   return 'on-track';
 }
 
-function formatDateLabel(date: string | null): string {
-  if (!date) {
-    return 'Sin fecha límite';
-  }
-
-  const normalizedDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : date;
-  const parsedDate = new Date(normalizedDate);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return 'Sin fecha límite';
-  }
-
-  return new Intl.DateTimeFormat('es-MX', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsedDate);
-}
-
 function openFilters(): void {
   isFiltersOpen.value = true;
 }
@@ -370,34 +350,12 @@ function infiniteStatusLabel(): string {
       loading-label="Cargando metas..."
       @retry="reloadGoals"
     >
-      <section class="space-y-3">
-        <div class="flex items-center justify-between gap-3">
-          <AppText size="sm" tone="subtle">{{ filteredGoalItems.length }} metas visibles</AppText>
-          <AppText size="sm" tone="subtle">Scroll continuo</AppText>
-        </div>
-
-        <div class="space-y-4">
-          <AccountGoalListItem
-            v-for="goal in filteredGoalItems"
-            :key="goal.id"
-            :current-amount="goal.amount * (goal.progress / 100)"
-            :deadline-label="formatDateLabel(goal.deadline)"
-            :item-id="goal.id"
-            :owner-label="goal.status === 'completed' ? 'Meta completada' : 'Meta en progreso'"
-            :progress="goal.progress"
-            :remaining-amount="Math.max(goal.amount - goal.amount * (goal.progress / 100), 0)"
-            :status="goal.status === 'completed' ? 'completed' : resolveGoalStatus(goal.progress)"
-            :target-amount="goal.amount"
-            :title="goal.name"
-            @delete="openDeleteGoal"
-            @edit="openEditGoal"
-          />
-
-          <AppEmptyState
-            v-if="filteredGoalItems.length === 0"
-            message="No hay metas que coincidan con la búsqueda o los filtros actuales."
-          />
-
+      <AccountGoalsList
+        :goals="filteredGoalItems"
+        @delete="openDeleteGoal"
+        @edit="openEditGoal"
+      >
+        <template #footer>
           <div ref="loadMoreSentinel">
             <AppLoadMoreFooter
               :label="infiniteStatusLabel()"
@@ -405,8 +363,8 @@ function infiniteStatusLabel(): string {
               @retry="handleLoadMoreRetry"
             />
           </div>
-        </div>
-      </section>
+        </template>
+      </AccountGoalsList>
     </AppListState>
 
     <AccountGoalFiltersModal
