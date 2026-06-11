@@ -20,8 +20,11 @@ import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScrol
 import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
+  AppEmptyState,
   AppIconButton,
   AppInput,
+  AppListState,
+  AppLoadMoreFooter,
   AppModal,
   AppSectionBar,
   AppText,
@@ -376,62 +379,48 @@ function infiniteStatusLabel(): string {
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
-    <section v-if="isLoading && !hasInvites" class="rounded-2xl border px-4 py-10 text-center">
-      <AppText>Cargando invitaciones...</AppText>
-    </section>
-
-    <section
-      v-else-if="loadError && !hasInvites"
-      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    <AppListState
+      :error="loadError"
+      :has-items="hasInvites"
+      :is-loading="isLoading"
+      loading-label="Cargando invitaciones..."
+      @retry="reloadInvitations"
     >
-      <AppText>{{ loadError }}</AppText>
-      <div class="flex justify-center">
-        <AppButton variant="secondary" @click="reloadInvitations">Reintentar</AppButton>
-      </div>
-    </section>
-
-    <section v-else class="space-y-3">
-      <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle"
-          >{{ invites.length }} invitaciones visibles</AppText
-        >
-        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
-      </div>
-
-      <div class="space-y-4">
-        <AccountInvitationListItem
-          v-for="invitation in invites"
-          :key="invitation.id"
-          :email="invitation.email"
-          :item-id="invitation.id"
-          :meta-label="formatDateLabel(invitation.invitedAt)"
-          :percentage-label="`${invitation.percentage}%`"
-          :status="invitation.status"
-          @delete="openDeleteInvitation"
-        />
-
-        <div
-          v-if="invites.length === 0"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm"
-            >No hay invitaciones que coincidan con la búsqueda o los filtros actuales.</AppText
-          >
+      <section class="space-y-3">
+        <div class="flex items-center justify-between gap-3">
+          <AppText size="sm" tone="subtle">
+            {{ invites.length }} invitaciones visibles
+          </AppText>
+          <AppText size="sm" tone="subtle">Scroll continuo</AppText>
         </div>
 
-        <div
-          ref="loadMoreSentinel"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
-          <div v-if="loadError && hasInvites" class="mt-3 flex justify-center">
-            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+        <div class="space-y-4">
+          <AccountInvitationListItem
+            v-for="invitation in invites"
+            :key="invitation.id"
+            :email="invitation.email"
+            :item-id="invitation.id"
+            :meta-label="formatDateLabel(invitation.invitedAt)"
+            :percentage-label="`${invitation.percentage}%`"
+            :status="invitation.status"
+            @delete="openDeleteInvitation"
+          />
+
+          <AppEmptyState
+            v-if="invites.length === 0"
+            message="No hay invitaciones que coincidan con la búsqueda o los filtros actuales."
+          />
+
+          <div ref="loadMoreSentinel">
+            <AppLoadMoreFooter
+              :label="infiniteStatusLabel()"
+              :show-retry="Boolean(loadError && hasInvites)"
+              @retry="handleLoadMoreRetry"
+            />
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </AppListState>
 
     <AppModal
       :open="isFiltersOpen"
