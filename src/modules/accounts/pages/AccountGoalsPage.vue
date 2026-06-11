@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 import AccountGoalDeleteModal from '@/modules/accounts/components/AccountGoalDeleteModal.vue';
 import AccountGoalFiltersModal from '@/modules/accounts/components/AccountGoalFiltersModal.vue';
 import AccountGoalFormModal from '@/modules/accounts/components/AccountGoalFormModal.vue';
 import AccountGoalsList from '@/modules/accounts/components/AccountGoalsList.vue';
 import AccountGoalsToolbar from '@/modules/accounts/components/AccountGoalsToolbar.vue';
+import {
+  useAccountGoalFilters,
+  type AccountGoalStatusFilter,
+} from '@/modules/accounts/composables/useAccountGoalFilters';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import type { AccountGoalWritePayload } from '@/modules/accounts/schemas/accountGoalSchemas';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
   AppListState,
@@ -19,23 +22,21 @@ import {
   AppText,
 } from '@/modules/shared/components';
 
-type GoalStatus = 'on-track' | 'at-risk' | 'completed';
 type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;
 };
 
 const route = useRoute();
-const router = useRouter();
-const searchTerm = ref('');
 const isFiltersOpen = ref(false);
 const isCreateGoalOpen = ref(false);
 const isEditGoalOpen = ref(false);
 const isDeleteGoalOpen = ref(false);
-const selectedStatuses = ref<GoalStatus[]>([]);
 const selectedGoalId = ref<string | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const { activeFilters, clearFilters, searchTerm, selectedStatuses, toggleStatus } =
+  useAccountGoalFilters();
 
 const goalStatusOptions = [
   { value: 'on-track', label: 'En curso' },
@@ -106,11 +107,6 @@ const selectedGoal = computed(() => {
   return goals.value.find((goal) => goal.id === selectedGoalId.value) ?? null;
 });
 
-const activeFilters = computed(() => ({
-  search: searchTerm.value.trim() || undefined,
-  status: selectedStatuses.value.length > 0 ? [...selectedStatuses.value] : undefined,
-}));
-
 const createGoalActions = computed(() => [
   { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
   {
@@ -146,33 +142,6 @@ const deleteGoalActions = computed(() => [
 ]);
 
 watch(
-  () => route.query,
-  (nextQuery) => {
-    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
-    selectedStatuses.value = parseQueryValues(nextQuery.status, isGoalStatus);
-  },
-  { immediate: true },
-);
-
-watch(
-  [searchTerm, selectedStatuses],
-  () => {
-    const nextQuery = {
-      ...route.query,
-      search: searchTerm.value.trim() || undefined,
-      status: selectedStatuses.value.length > 0 ? selectedStatuses.value.join(',') : undefined,
-    };
-
-    if (areQueriesEqual(route.query, nextQuery)) {
-      return;
-    }
-
-    void router.replace({ query: nextQuery });
-  },
-  { deep: true },
-);
-
-watch(
   [accountId, activeFilters, goalsPerPage],
   ([nextAccountId, nextFilters, nextPerPage]) => {
     if (!nextAccountId) {
@@ -187,7 +156,7 @@ watch(
   { immediate: true },
 );
 
-function resolveGoalStatus(progress: number): GoalStatus {
+function resolveGoalStatus(progress: number): AccountGoalStatusFilter {
   if (progress >= 100) {
     return 'completed';
   }
@@ -205,19 +174,6 @@ function openFilters(): void {
 
 function closeFilters(): void {
   isFiltersOpen.value = false;
-}
-
-function clearFilters(): void {
-  selectedStatuses.value = [];
-}
-
-function toggleStatus(status: GoalStatus): void {
-  if (selectedStatuses.value.includes(status)) {
-    selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
-    return;
-  }
-
-  selectedStatuses.value = [...selectedStatuses.value, status];
 }
 
 function openCreateGoal(): void {
@@ -307,10 +263,6 @@ function reloadGoals(): void {
   });
 }
 
-function isGoalStatus(value: string): value is GoalStatus {
-  return value === 'on-track' || value === 'at-risk' || value === 'completed';
-}
-
 function handleLoadMoreRetry(): void {
   void loadMoreGoals();
 }
@@ -373,7 +325,7 @@ function infiniteStatusLabel(): string {
       :selected-statuses="selectedStatuses"
       @clear="clearFilters"
       @close="closeFilters"
-      @toggle-status="toggleStatus($event as GoalStatus)"
+      @toggle-status="toggleStatus($event as AccountGoalStatusFilter)"
     />
 
     <AccountGoalFormModal
