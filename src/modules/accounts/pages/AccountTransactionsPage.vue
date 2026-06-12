@@ -8,6 +8,9 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import type { Account, AccountPendingByUser } from '@/modules/accounts/types';
+import AccountCompletePendingByUserModal from '@/modules/accounts/components/AccountCompletePendingByUserModal.vue';
+import AccountTransactionCompleteModal from '@/modules/accounts/components/AccountTransactionCompleteModal.vue';
+import AccountTransactionDeleteModal from '@/modules/accounts/components/AccountTransactionDeleteModal.vue';
 import AccountTransactionFiltersModal from '@/modules/accounts/components/AccountTransactionFiltersModal.vue';
 import AccountTransactionFormModal from '@/modules/accounts/components/AccountTransactionFormModal.vue';
 import AccountTransactionsHeader from '@/modules/accounts/components/AccountTransactionsHeader.vue';
@@ -19,9 +22,7 @@ import {
   AppButton,
   AppListState,
   AppLoadMoreFooter,
-  AppModal,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
@@ -294,15 +295,6 @@ watch(listMeta, (nextMeta) => {
 
   applyMutationMeta(nextMeta);
 });
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 
 function applyMutationMeta(meta: TransactionMutationMeta): void {
   if (typeof meta.accountBalance === 'number') {
@@ -780,64 +772,31 @@ function infiniteStatusLabel(): string {
       @submit="handleEditTransactionSubmit"
     />
 
-    <AppModal
+    <AccountTransactionDeleteModal
       :open="isDeleteTransactionModalOpen"
       :actions="deleteTransactionActions"
-      title="Eliminar transacción"
-      variant="danger"
-      @action="$event === 'confirm-delete-transaction' && confirmDeleteTransaction()"
+      :delete-error="deleteError"
+      :transaction="selectedTransaction"
       @close="closeDeleteTransactionModal"
-    >
-      <div class="space-y-3">
-        <AppText v-if="selectedTransaction">
-          Vas a eliminar
-          <strong>{{ selectedTransaction.concept }}</strong
-          >.
-        </AppText>
-        <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmDeleteTransaction"
+    />
 
-    <AppModal
+    <AccountTransactionCompleteModal
       :open="isCompleteTransactionModalOpen"
       :actions="completeTransactionActions"
-      title="Completar transacción"
-      variant="success"
-      @action="$event === 'confirm-complete-transaction' && confirmCompleteTransaction()"
+      :save-error="saveError"
+      :transaction="selectedTransaction"
       @close="closeCompleteTransactionModal"
-    >
-      <div class="space-y-3">
-        <AppText v-if="selectedTransaction">
-          Vas a marcar
-          <strong>{{ selectedTransaction.concept }}</strong>
-          como completada.
-        </AppText>
-        <AppText v-if="saveError" class="text-(--app-color-danger)!">{{ saveError }}</AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmCompleteTransaction"
+    />
 
-    <AppModal
+    <AccountCompletePendingByUserModal
       :open="isCompletePendingByUserModalOpen"
       :actions="completePendingByUserActions"
-      title="Completar pendientes del usuario"
-      variant="warning"
-      @action="$event === 'confirm-complete-pending-by-user' && void confirmCompletePendingByUser()"
+      :complete-error="completePendingByUserError"
+      :pending-user="selectedPendingByUser"
       @close="closeCompletePendingByUserModal"
-    >
-      <div class="space-y-3">
-        <AppText v-if="selectedPendingByUser">
-          Vas a completar
-          <strong>{{ selectedPendingByUser.transactionIds.length }} movimientos</strong>
-          pendientes de
-          <strong>{{ selectedPendingByUser.userName }}</strong>
-          por
-          <strong>{{ formatCurrency(selectedPendingByUser.amount) }}</strong
-          >.
-        </AppText>
-        <AppText v-if="completePendingByUserError" class="text-(--app-color-danger)!">
-          {{ completePendingByUserError }}
-        </AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmCompletePendingByUser"
+    />
   </section>
 </template>
