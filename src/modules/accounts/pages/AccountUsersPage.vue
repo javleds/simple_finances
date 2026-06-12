@@ -3,7 +3,7 @@ import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/vue/24/outl
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import AccountUserListItem from '@/modules/accounts/components/AccountUserListItem.vue';
+import AccountUsersList from '@/modules/accounts/components/AccountUsersList.vue';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import type { AccountMember } from '@/modules/accounts/types';
 import { ApiError } from '@/lib/api/apiClient';
@@ -14,6 +14,8 @@ import {
   AppButton,
   AppCard,
   AppInput,
+  AppListState,
+  AppLoadMoreFooter,
   AppModal,
   AppPercentageSplitEditor,
   AppSectionBar,
@@ -430,68 +432,29 @@ function resetSplitDraft(): void {
       <AppText class="text-(--app-color-danger)!">{{ usersState.loadError.value }}</AppText>
     </section>
 
-    <section
-      v-if="usersState.isLoading.value && usersState.items.value.length === 0"
-      class="rounded-2xl border px-4 py-10 text-center"
+    <AppListState
+      :error="usersState.loadError.value"
+      :has-items="usersState.items.value.length > 0"
+      :is-loading="usersState.isLoading.value"
+      loading-label="Cargando usuarios..."
+      @retry="reloadUsers"
     >
-      <AppText>Cargando usuarios...</AppText>
-    </section>
-
-    <section
-      v-else-if="usersState.loadError.value && usersState.items.value.length === 0"
-      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
-    >
-      <AppText>{{ usersState.loadError.value }}</AppText>
-      <div class="flex justify-center">
-        <AppButton variant="secondary" @click="reloadUsers">Reintentar</AppButton>
-      </div>
-    </section>
-
-    <section v-else class="space-y-3">
-      <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">{{ usersState.items.value.length }} usuarios visibles</AppText>
-        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
-      </div>
-
-      <div class="space-y-4">
-        <AccountUserListItem
-          v-for="user in usersState.items.value"
-          :key="user.id"
-          access-label="Cuenta compartida"
-          :allocation-percentage="user.allocationPercentage"
-          :email="user.email"
-          :item-id="user.id"
-          :name="user.name"
-          pending-expenses="Usuario vinculado"
-          role-label="Miembro"
-          status="active"
-          @delete="openDeleteUser"
-          @edit="openEditUser"
-        />
-
-        <div
-          v-if="usersState.items.value.length === 0"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">No hay usuarios que coincidan con la búsqueda actual.</AppText>
-        </div>
-
-        <div
-          ref="loadMoreSentinel"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
-          <div
-            v-if="usersState.loadError.value && usersState.items.value.length > 0"
-            class="mt-3 flex justify-center"
-          >
-            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+      <AccountUsersList
+        :users="usersState.items.value"
+        @delete="openDeleteUser"
+        @edit="openEditUser"
+      >
+        <template #footer>
+          <div ref="loadMoreSentinel">
+            <AppLoadMoreFooter
+              :label="infiniteStatusLabel()"
+              :show-retry="Boolean(usersState.loadError.value && usersState.items.value.length > 0)"
+              @retry="handleLoadMoreRetry"
+            />
           </div>
-        </div>
-      </div>
-    </section>
+        </template>
+      </AccountUsersList>
+    </AppListState>
 
     <AppModal
       :open="isCreateUserOpen"
