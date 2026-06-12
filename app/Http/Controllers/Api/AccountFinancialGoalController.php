@@ -21,6 +21,12 @@ class AccountFinancialGoalController extends ApiController
             ->latest()
             ->getQuery();
 
+        $search = $request->string('search')->trim()->toString();
+
+        if ($search !== '') {
+            $query->where('name', 'like', '%'.$search.'%');
+        }
+
         return $this->respondPaginated(
             $query,
             $request,

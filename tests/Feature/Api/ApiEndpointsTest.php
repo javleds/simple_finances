@@ -666,6 +666,31 @@ it('searches nested account transactions by concept', function () {
     expect(collect($response->json('data'))->pluck('id')->all())->toBe([$matchingTransaction->id]);
 });
 
+it('searches nested account financial goals by name', function () {
+    $owner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->attach($owner->id);
+
+    $matchingGoal = FinancialGoal::factory()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'name' => 'Vacation fund',
+    ]);
+
+    FinancialGoal::factory()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'name' => 'Emergency fund',
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/financial-goals?search=vacation")
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    expect(collect($response->json('data'))->pluck('id')->all())->toBe([$matchingGoal->id]);
+});
+
 it('manages nested account users, invites, transactions and financial goals', function () {
     Notification::fake();
     seedNotificationTypes();
