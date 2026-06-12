@@ -4,7 +4,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import type { Account, AccountPendingByUser } from '@/modules/accounts/types';
@@ -16,6 +16,7 @@ import AccountTransactionFormModal from '@/modules/accounts/components/AccountTr
 import AccountTransactionsHeader from '@/modules/accounts/components/AccountTransactionsHeader.vue';
 import AccountTransactionsList from '@/modules/accounts/components/AccountTransactionsList.vue';
 import AccountTransactionsToolbar from '@/modules/accounts/components/AccountTransactionsToolbar.vue';
+import { useAccountTransactionFilters } from '@/modules/accounts/composables/useAccountTransactionFilters';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import { createDashboardRepository } from '@/modules/admin/repositories/dashboardRepository';
 import {
@@ -25,13 +26,10 @@ import {
   AppText,
 } from '@/modules/shared/components';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
 import type {
-  TransactionListFilters,
   TransactionMutationMeta,
   TransactionStatus,
-  TransactionType,
   TransactionWritePayload,
 } from '@/modules/transactions/types';
 
@@ -45,7 +43,6 @@ const props = defineProps<{
 }>();
 
 const route = useRoute();
-const router = useRouter();
 const dashboardRepository = createDashboardRepository();
 
 const isCreateTransactionModalOpen = ref(false);
@@ -54,9 +51,6 @@ const isDeleteTransactionModalOpen = ref(false);
 const isCompleteTransactionModalOpen = ref(false);
 const isCompletePendingByUserModalOpen = ref(false);
 const isFiltersOpen = ref(false);
-const searchTerm = ref('');
-const selectedStatuses = ref<TransactionStatus[]>([]);
-const selectedTypes = ref<TransactionType[]>([]);
 const selectedTransactionId = ref<string | null>(null);
 const selectedPendingByUserId = ref<string | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
@@ -78,6 +72,15 @@ const transactionTypeOptions = [
 ] as const;
 const defaultTransactionsPerPage = 20;
 const currentUserId = computed(() => getStoredAuthSession()?.user.id ?? null);
+const {
+  activeFilters,
+  clearFilters,
+  searchTerm,
+  selectedStatuses,
+  selectedTypes,
+  toggleStatus,
+  toggleType,
+} = useAccountTransactionFilters();
 
 const accountId = computed(() =>
   typeof route.params.accountId === 'string' ? route.params.accountId : '',
@@ -146,12 +149,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
     void loadMoreTransactions();
   },
 });
-
-const activeFilters = computed<TransactionListFilters>(() => ({
-  search: searchTerm.value.trim() || undefined,
-  status: selectedStatuses.value.length > 0 ? [...selectedStatuses.value] : undefined,
-  type: selectedTypes.value.length > 0 ? [...selectedTypes.value] : undefined,
-}));
 
 const selectedTransaction = computed(() => {
   if (!selectedTransactionId.value) {
@@ -242,35 +239,6 @@ watch(
     pendingByUser.value = normalizePendingByUser(nextAccount.pendingByUser);
   },
   { immediate: true, deep: true },
-);
-
-watch(
-  () => route.query,
-  (nextQuery) => {
-    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
-    selectedStatuses.value = parseQueryValues(nextQuery.status, isTransactionStatus);
-    selectedTypes.value = parseQueryValues(nextQuery.type, isTransactionType);
-  },
-  { immediate: true },
-);
-
-watch(
-  [searchTerm, selectedStatuses, selectedTypes],
-  () => {
-    const nextQuery = {
-      ...route.query,
-      search: searchTerm.value.trim() || undefined,
-      status: selectedStatuses.value.length > 0 ? selectedStatuses.value.join(',') : undefined,
-      type: selectedTypes.value.length > 0 ? selectedTypes.value.join(',') : undefined,
-    };
-
-    if (areQueriesEqual(route.query, nextQuery)) {
-      return;
-    }
-
-    void router.replace({ query: nextQuery });
-  },
-  { deep: true },
 );
 
 watch(
@@ -384,29 +352,6 @@ function openFilters(): void {
 
 function closeFilters(): void {
   isFiltersOpen.value = false;
-}
-
-function clearFilters(): void {
-  selectedStatuses.value = [];
-  selectedTypes.value = [];
-}
-
-function toggleStatus(status: TransactionStatus): void {
-  if (selectedStatuses.value.includes(status)) {
-    selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
-    return;
-  }
-
-  selectedStatuses.value = [...selectedStatuses.value, status];
-}
-
-function toggleType(type: TransactionType): void {
-  if (selectedTypes.value.includes(type)) {
-    selectedTypes.value = selectedTypes.value.filter((item) => item !== type);
-    return;
-  }
-
-  selectedTypes.value = [...selectedTypes.value, type];
 }
 
 function resolveErrorMessage(error: unknown, fallback: string): string {
@@ -539,14 +484,6 @@ function handleCreateFormStateChange(state: FormState): void {
 
 function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
-}
-
-function isTransactionStatus(value: string): value is TransactionStatus {
-  return value === 'completed' || value === 'pending';
-}
-
-function isTransactionType(value: string): value is TransactionType {
-  return value === 'income' || value === 'expense';
 }
 
 function canManageTransaction(options: { creatorId: string | null }): boolean {
