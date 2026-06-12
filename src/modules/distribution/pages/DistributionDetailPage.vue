@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { XMarkIcon } from '@heroicons/vue/24/outline';
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 
 import DistributionRelationDeleteModal from '@/modules/distribution/components/DistributionRelationDeleteModal.vue';
 import DistributionRelationFormModal from '@/modules/distribution/components/DistributionRelationFormModal.vue';
 import DistributionRelationsHeader from '@/modules/distribution/components/DistributionRelationsHeader.vue';
 import DistributionRelationsList from '@/modules/distribution/components/DistributionRelationsList.vue';
+import { useDistributionRelationListLoader } from '@/modules/distribution/composables/useDistributionRelationListLoader';
+import { useDistributionRelationModalActions } from '@/modules/distribution/composables/useDistributionRelationModalActions';
+import { useDistributionRelationModals } from '@/modules/distribution/composables/useDistributionRelationModals';
 import { useDistributionRelationsCrud } from '@/modules/distribution/composables/useDistributionRelationsCrud';
 import type { DistributionRelationWritePayload } from '@/modules/distribution/types';
-import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
-  AppButton,
   AppCard,
   AppListState,
   AppLoadMoreFooter,
@@ -19,22 +19,9 @@ import {
   AppTitle,
 } from '@/modules/shared/components';
 
-type FormState = {
-  canSubmit: boolean;
-  isSubmitting: boolean;
-};
-
 const route = useRoute();
-const defaultRelationsPerPage = 20;
 
 const ruleId = computed(() => (typeof route.params.ruleId === 'string' ? route.params.ruleId : ''));
-
-const isCreateRelationOpen = ref(false);
-const isEditRelationOpen = ref(false);
-const isDeleteRelationOpen = ref(false);
-const selectedRelationId = ref<string | null>(null);
-const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
-const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 
 const {
   rule,
@@ -58,115 +45,53 @@ const {
   deleteRelation,
 } = useDistributionRelationsCrud();
 
-const relationsPerPage = computed(() => {
-  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
-
-  if (!Number.isInteger(rawValue) || rawValue <= 0) {
-    return defaultRelationsPerPage;
-  }
-
-  return rawValue;
+const {
+  closeCreateRelation,
+  closeDeleteRelation,
+  closeEditRelation,
+  createFormState,
+  editFormState,
+  handleCreateFormStateChange,
+  handleEditFormStateChange,
+  isCreateRelationOpen,
+  isDeleteRelationOpen,
+  isEditRelationOpen,
+  openCreateRelation,
+  openDeleteRelation,
+  openEditRelation,
+  selectedRelation,
+} = useDistributionRelationModals({
+  clearDeleteError,
+  clearSaveError,
+  relations,
 });
 
-const { target: loadMoreSentinel } = useInfiniteScroll({
-  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreRelations.value),
-  onIntersect: () => {
-    void loadMoreRelations();
-  },
+const {
+  createRelationActions,
+  deleteRelationActions,
+  editRelationActions,
+} = useDistributionRelationModalActions({
+  createFormState,
+  editFormState,
+  isDeleting,
+  isSaving,
+  selectedRelation,
 });
 
-const selectedRelation = computed(() => {
-  if (!selectedRelationId.value) {
-    return null;
-  }
-
-  return relations.value.find((relation) => relation.id === selectedRelationId.value) ?? null;
+const {
+  handleLoadMoreRetry,
+  infiniteStatusLabel,
+  loadMoreSentinel,
+  reloadRelations,
+} = useDistributionRelationListLoader({
+  hasMoreRelations,
+  hasReachedEnd,
+  isLoading,
+  isLoadingMore,
+  loadMoreRelations,
+  loadRule,
+  ruleId,
 });
-
-const createRelationActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-relation',
-    label: isSaving.value ? 'Guardando...' : 'Crear relación',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'distribution-relation-form',
-    disabled: !createFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const editRelationActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-edit-relation',
-    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'edit-distribution-relation-form',
-    disabled: !editFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const deleteRelationActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'confirm-delete-relation',
-    label: isDeleting.value ? 'Eliminando...' : 'Eliminar relación',
-    tone: 'primary' as const,
-    disabled: !selectedRelation.value || isDeleting.value,
-  },
-]);
-
-watch(
-  [ruleId, relationsPerPage],
-  ([nextRuleId, nextPerPage]) => {
-    if (!nextRuleId) {
-      return;
-    }
-
-    void loadRule(nextRuleId, {
-      reset: true,
-      perPage: nextPerPage,
-    });
-  },
-  { immediate: true },
-);
-
-function openCreateRelation(): void {
-  clearSaveError();
-  createFormState.value = { canSubmit: false, isSubmitting: false };
-  isCreateRelationOpen.value = true;
-}
-
-function closeCreateRelation(): void {
-  isCreateRelationOpen.value = false;
-  clearSaveError();
-}
-
-function openEditRelation(relationId: string): void {
-  clearSaveError();
-  selectedRelationId.value = relationId;
-  editFormState.value = { canSubmit: false, isSubmitting: false };
-  isEditRelationOpen.value = true;
-}
-
-function closeEditRelation(): void {
-  isEditRelationOpen.value = false;
-  selectedRelationId.value = null;
-  clearSaveError();
-}
-
-function openDeleteRelation(relationId: string): void {
-  clearDeleteError();
-  selectedRelationId.value = relationId;
-  isDeleteRelationOpen.value = true;
-}
-
-function closeDeleteRelation(): void {
-  isDeleteRelationOpen.value = false;
-  selectedRelationId.value = null;
-  clearDeleteError();
-}
 
 async function handleCreateRelationSubmit(
   payload: DistributionRelationWritePayload,
@@ -202,40 +127,6 @@ async function confirmDeleteRelation(): Promise<void> {
   }
 }
 
-function handleCreateFormStateChange(state: FormState): void {
-  createFormState.value = state;
-}
-
-function handleEditFormStateChange(state: FormState): void {
-  editFormState.value = state;
-}
-
-function reloadRelations(): void {
-  if (!ruleId.value) {
-    return;
-  }
-
-  void loadRule(ruleId.value, {
-    reset: true,
-    perPage: relationsPerPage.value,
-  });
-}
-
-function handleLoadMoreRetry(): void {
-  void loadMoreRelations();
-}
-
-function infiniteStatusLabel(): string {
-  if (isLoadingMore.value) {
-    return 'Cargando más relaciones...';
-  }
-
-  if (hasReachedEnd.value) {
-    return 'Has llegado al final.';
-  }
-
-  return 'Sigue desplazándote para revisar más relaciones conforme crezca la regla.';
-}
 </script>
 
 <template>
