@@ -5,6 +5,7 @@ use App\Models\Account;
 use App\Models\AccountInvite;
 use App\Models\FixedIncome;
 use App\Models\FixedOutcome;
+use App\Models\FinancialGoal;
 use App\Models\NotificationType;
 use App\Models\PartialFixedIncome;
 use App\Models\Subscription;
