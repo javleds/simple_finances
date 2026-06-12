@@ -9,7 +9,9 @@ class AttachAccountToSignedInUser
     public function execute(Account $account): void
     {
         if (auth()->check()) {
-            $account->users()->attach(auth()->id());
+            $account->users()->syncWithoutDetaching([
+                auth()->id() => ['percentage' => 100.0],
+            ]);
         }
     }
 }

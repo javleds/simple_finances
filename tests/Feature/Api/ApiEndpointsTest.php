@@ -342,6 +342,8 @@ it('creates and updates accounts and transactions through the api', function () 
 
     $accountId = $accountResponse->json('data.id');
 
+    expect((float) Account::withoutGlobalScopes()->findOrFail($accountId)->users()->findOrFail($user->id)->pivot->percentage)->toBe(100.0);
+
     $this->withHeaders(apiHeaders($user))
         ->postJson('/api/transactions', [
             'type' => 'outcome',
@@ -713,13 +715,23 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ])
         ->assertCreated();
 
-    expect($account->fresh()->users()->where('users.id', $member->id)->first()?->pivot?->percentage)->toBe(40);
+    $users = $account->fresh()->users()->get();
+
+    expect((float) $users->firstWhere('id', $member->id)->pivot->percentage)->toBe(40.0)
+        ->and((float) $users->firstWhere('id', $owner->id)->pivot->percentage)->toBe(60.0)
+        ->and(round($users->sum(fn (User $user): float => (float) $user->pivot->percentage), 2))->toBe(100.0);
 
     $this->withHeaders(apiHeaders($owner))
         ->putJson("/api/accounts/{$account->id}/users/{$member->id}", [
             'percentage' => 55,
         ])
         ->assertOk();
+
+    $users = $account->fresh()->users()->get();
+
+    expect((float) $users->firstWhere('id', $owner->id)->pivot->percentage)->toBe(45.0)
+        ->and((float) $users->firstWhere('id', $member->id)->pivot->percentage)->toBe(55.0)
+        ->and(round($users->sum(fn (User $user): float => (float) $user->pivot->percentage), 2))->toBe(100.0);
 
     $this->withHeaders(apiHeaders($owner))
         ->getJson("/api/accounts/{$account->id}/users?percentage=55")

@@ -6,6 +6,7 @@ use App\Http\Requests\Api\BulkUpdateAccountUsersRequest;
 use App\Http\Requests\Api\AccountUserRequest;
 use App\Models\Account;
 use App\Models\User;
+use App\Services\Accounts\UpdateAccountUserPercentage;
 use App\Services\Accounts\UpdateAccountUsersPercentages;
 use App\Services\Api\AuthorizeAccountAccess;
 use Illuminate\Http\JsonResponse;
@@ -30,17 +31,21 @@ class AccountUserController extends ApiController
         return $this->respondPaginated($relation->getQuery(), $request);
     }
 
-    public function store(Account $account, AccountUserRequest $request): JsonResponse
-    {
+    public function store(
+        Account $account,
+        AccountUserRequest $request,
+        UpdateAccountUserPercentage $updateAccountUserPercentage,
+    ): JsonResponse {
         $this->ensureOwner($account);
 
         $user = User::withoutGlobalScopes()->findOrFail($request->integer('user_id'));
 
         $account->users()->syncWithoutDetaching([
             $user->id => [
-                'percentage' => $request->float('percentage'),
+                'percentage' => 0.0,
             ],
         ]);
+        $updateAccountUserPercentage->execute($account, $user->id, $request->float('percentage'));
 
         return $this->respondModel(
             $account->users()->withPivot('percentage')->findOrFail($user->id),
@@ -58,14 +63,16 @@ class AccountUserController extends ApiController
         );
     }
 
-    public function update(Account $account, User $user, AccountUserRequest $request): JsonResponse
-    {
+    public function update(
+        Account $account,
+        User $user,
+        AccountUserRequest $request,
+        UpdateAccountUserPercentage $updateAccountUserPercentage,
+    ): JsonResponse {
         $this->ensureOwner($account);
         $this->ensureAttached($account, $user);
 
-        $account->users()->updateExistingPivot($user->id, [
-            'percentage' => $request->float('percentage'),
-        ]);
+        $updateAccountUserPercentage->execute($account, $user->id, $request->float('percentage'));
 
         return $this->respondModel(
             $account->users()->withPivot('percentage')->findOrFail($user->id)
