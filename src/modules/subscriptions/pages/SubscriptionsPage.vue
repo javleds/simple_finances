@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { onMounted, ref } from 'vue';
 
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import SubscriptionDeleteModal from '@/modules/subscriptions/components/SubscriptionDeleteModal.vue';
@@ -9,6 +8,7 @@ import SubscriptionFormModal from '@/modules/subscriptions/components/Subscripti
 import SubscriptionsList from '@/modules/subscriptions/components/SubscriptionsList.vue';
 import SubscriptionsToolbar from '@/modules/subscriptions/components/SubscriptionsToolbar.vue';
 import { useSubscriptionFilters } from '@/modules/subscriptions/composables/useSubscriptionFilters';
+import { useSubscriptionListLoader } from '@/modules/subscriptions/composables/useSubscriptionListLoader';
 import { useSubscriptionModalActions } from '@/modules/subscriptions/composables/useSubscriptionModalActions';
 import { useSubscriptionModals } from '@/modules/subscriptions/composables/useSubscriptionModals';
 import { useSubscriptionsCrud } from '@/modules/subscriptions/composables/useSubscriptionsCrud';
@@ -17,7 +17,6 @@ import type {
   SubscriptionStatusFilter,
   SubscriptionWritePayload,
 } from '@/modules/subscriptions/types';
-import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
   AppListState,
   AppLoadMoreFooter,
@@ -30,7 +29,6 @@ type FormState = {
 };
 
 const accountsRepository = createAccountsRepository();
-const route = useRoute();
 
 const fundingAccountOptions = ref<Array<{ value: string; label: string; description?: string }>>(
   [],
@@ -46,7 +44,6 @@ const subscriptionUnitOptions = [
   { value: 'months', label: 'Meses' },
   { value: 'years', label: 'Años' },
 ] as const;
-const defaultSubscriptionsPerPage = 20;
 const {
   activeFilters,
   clearFilters,
@@ -114,38 +111,24 @@ const {
   selectedSubscription,
 });
 
-const subscriptionsPerPage = computed(() => {
-  const rawValue =
-    typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
-
-  if (!Number.isInteger(rawValue) || rawValue <= 0) {
-    return defaultSubscriptionsPerPage;
-  }
-
-  return rawValue;
-});
-
-const { target: loadMoreSentinel } = useInfiniteScroll({
-  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreSubscriptions.value),
-  onIntersect: () => {
-    void loadMoreSubscriptions();
-  },
+const {
+  handleLoadMoreRetry,
+  infiniteStatusLabel,
+  loadMoreSentinel,
+  reloadSubscriptions,
+} = useSubscriptionListLoader({
+  activeFilters,
+  hasMoreSubscriptions,
+  hasReachedEnd,
+  isLoading,
+  isLoadingMore,
+  loadMoreSubscriptions,
+  loadSubscriptions,
 });
 
 onMounted(() => {
   void loadFundingAccounts();
 });
-
-watch(
-  [activeFilters, subscriptionsPerPage],
-  ([nextFilters, nextPerPage]) => {
-    void loadSubscriptions(nextFilters, {
-      reset: true,
-      perPage: nextPerPage,
-    });
-  },
-  { immediate: true },
-);
 
 async function loadFundingAccounts(): Promise<void> {
   try {
@@ -192,28 +175,6 @@ async function confirmDeleteSubscription(): Promise<void> {
   }
 }
 
-function reloadSubscriptions(): void {
-  void loadSubscriptions(activeFilters.value, {
-    reset: true,
-    perPage: subscriptionsPerPage.value,
-  });
-}
-
-function handleLoadMoreRetry(): void {
-  void loadMoreSubscriptions();
-}
-
-function infiniteStatusLabel(): string {
-  if (isLoadingMore.value) {
-    return 'Cargando más suscripciones...';
-  }
-
-  if (hasReachedEnd.value) {
-    return 'Has llegado al final.';
-  }
-
-  return 'Sigue desplazándote para revisar más planes y complementos conforme crezca la cobertura contratada.';
-}
 </script>
 
 <template>
