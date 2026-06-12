@@ -422,6 +422,11 @@ it('filters and paginates index endpoints through query criteria', function () {
         ->assertOk()
         ->assertJsonPath('meta.per_page', 20)
         ->assertJsonPath('meta.total', 1);
+
+    $this->withHeaders(apiHeaders($user))
+        ->getJson("/api/transactions?account_id={$account->id}&per_page=500")
+        ->assertOk()
+        ->assertJsonPath('meta.per_page', 100);
 });
 
 it('returns pending income totals by account user', function () {

@@ -42,11 +42,16 @@ abstract class ApiController extends Controller
         ]);
     }
 
-    protected function respondPaginated(Builder $query, Request $request, array $nullableBooleanFilters = []): JsonResponse
+    protected function respondPaginated(
+        Builder $query,
+        Request $request,
+        array $nullableBooleanFilters = [],
+        array $searchColumns = [],
+    ): JsonResponse
     {
-        $perPage = max(1, (int) $request->integer('per_page', 20));
+        $perPage = min(100, max(1, (int) $request->integer('per_page', 20)));
         $paginator = app(ModelIndexCriteria::class)
-            ->apply($query, $request, $nullableBooleanFilters)
+            ->apply($query, $request, $nullableBooleanFilters, $searchColumns)
             ->paginate($perPage)
             ->withQueryString();
 

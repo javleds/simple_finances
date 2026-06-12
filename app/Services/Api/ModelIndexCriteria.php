@@ -10,10 +10,17 @@ use Illuminate\Support\Facades\Schema;
 
 class ModelIndexCriteria
 {
-    public function apply(Builder $query, Request $request, array $nullableBooleanFilters = []): Builder
+    public function apply(
+        Builder $query,
+        Request $request,
+        array $nullableBooleanFilters = [],
+        array $searchColumns = [],
+    ): Builder
     {
         $model = $query->getModel();
         $columns = Schema::getColumnListing($model->getTable());
+
+        $this->applySearch($query, $request, $searchColumns);
 
         foreach ($request->query() as $key => $value) {
             if ($this->applyNullableBooleanFilter($query, $key, $value, $nullableBooleanFilters)) {
@@ -36,6 +43,21 @@ class ModelIndexCriteria
         }
 
         return $query;
+    }
+
+    private function applySearch(Builder $query, Request $request, array $searchColumns): void
+    {
+        $search = $request->string('search')->trim()->toString();
+
+        if ($search === '' || $searchColumns === []) {
+            return;
+        }
+
+        $query->where(function (Builder $query) use ($search, $searchColumns): void {
+            foreach ($searchColumns as $column) {
+                $query->orWhere($column, 'like', '%'.$search.'%');
+            }
+        });
     }
 
     private function applyNullableBooleanFilter(
@@ -69,7 +91,7 @@ class ModelIndexCriteria
 
     private function shouldSkip(string $key, mixed $value, array $columns): bool
     {
-        if (in_array($key, ['page', 'per_page'], true)) {
+        if (in_array($key, ['page', 'per_page', 'search'], true)) {
             return true;
         }
 
