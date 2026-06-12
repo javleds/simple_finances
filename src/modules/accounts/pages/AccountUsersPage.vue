@@ -10,6 +10,7 @@ import AccountUsersList from '@/modules/accounts/components/AccountUsersList.vue
 import AccountUsersSplitEditor from '@/modules/accounts/components/AccountUsersSplitEditor.vue';
 import AccountUsersToolbar from '@/modules/accounts/components/AccountUsersToolbar.vue';
 import { useAccountUserFilters } from '@/modules/accounts/composables/useAccountUserFilters';
+import { useAccountUserModals } from '@/modules/accounts/composables/useAccountUserModals';
 import { useAccountUsersCrud } from '@/modules/accounts/composables/useAccountUsersCrud';
 import type { AccountMember } from '@/modules/accounts/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
@@ -27,11 +28,6 @@ const emit = defineEmits<{
   accountUsersChange: [users: AccountMember[]];
 }>();
 
-const isCreateUserOpen = ref(false);
-const isEditUserOpen = ref(false);
-const isDeleteUserOpen = ref(false);
-const selectedUserId = ref<string | null>(null);
-const editPercentage = ref('');
 const splitDraft = ref<Record<string, number>>({});
 
 const accountId = computed(() =>
@@ -79,19 +75,29 @@ const {
   users,
 } = useAccountUsersCrud(activeFilters);
 
+const {
+  closeCreateUser,
+  closeDeleteUser,
+  closeEditUser,
+  editPercentage,
+  isCreateUserOpen,
+  isDeleteUserOpen,
+  isEditUserOpen,
+  openCreateUser,
+  openDeleteUser,
+  openEditUser,
+  selectedUser,
+} = useAccountUserModals({
+  clearDeleteError,
+  clearSaveError,
+  users,
+});
+
 const { target: loadMoreSentinel } = useInfiniteScroll({
   enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreUsers.value),
   onIntersect: () => {
     void loadMoreUsers();
   },
-});
-
-const selectedUser = computed(() => {
-  if (!selectedUserId.value) {
-    return null;
-  }
-
-  return users.value.find((user) => user.id === selectedUserId.value) ?? null;
 });
 
 const splitUsers = computed(() =>
@@ -189,40 +195,6 @@ watch(
   },
   { immediate: true, deep: true },
 );
-
-function openCreateUser(): void {
-  isCreateUserOpen.value = true;
-}
-
-function closeCreateUser(): void {
-  isCreateUserOpen.value = false;
-}
-
-function openEditUser(userId: string): void {
-  clearSaveError();
-  selectedUserId.value = userId;
-  editPercentage.value = selectedUser.value ? String(selectedUser.value.allocationPercentage) : '';
-  isEditUserOpen.value = true;
-}
-
-function closeEditUser(): void {
-  isEditUserOpen.value = false;
-  selectedUserId.value = null;
-  editPercentage.value = '';
-  clearSaveError();
-}
-
-function openDeleteUser(userId: string): void {
-  clearDeleteError();
-  selectedUserId.value = userId;
-  isDeleteUserOpen.value = true;
-}
-
-function closeDeleteUser(): void {
-  isDeleteUserOpen.value = false;
-  selectedUserId.value = null;
-  clearDeleteError();
-}
 
 async function saveUserPercentage(): Promise<void> {
   if (!accountId.value || !selectedUser.value) {
