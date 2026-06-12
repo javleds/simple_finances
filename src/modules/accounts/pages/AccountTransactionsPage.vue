@@ -14,6 +14,7 @@ import AccountTransactionsList from '@/modules/accounts/components/AccountTransa
 import AccountTransactionsToolbar from '@/modules/accounts/components/AccountTransactionsToolbar.vue';
 import { useAccountTransactionFilters } from '@/modules/accounts/composables/useAccountTransactionFilters';
 import { useAccountTransactionModalActions } from '@/modules/accounts/composables/useAccountTransactionModalActions';
+import { useAccountTransactionModals } from '@/modules/accounts/composables/useAccountTransactionModals';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import { createDashboardRepository } from '@/modules/admin/repositories/dashboardRepository';
 import {
@@ -30,11 +31,6 @@ import type {
   TransactionWritePayload,
 } from '@/modules/transactions/types';
 
-type FormState = {
-  canSubmit: boolean;
-  isSubmitting: boolean;
-};
-
 const props = defineProps<{
   account?: Account;
 }>();
@@ -42,16 +38,8 @@ const props = defineProps<{
 const route = useRoute();
 const dashboardRepository = createDashboardRepository();
 
-const isCreateTransactionModalOpen = ref(false);
-const isEditTransactionModalOpen = ref(false);
-const isDeleteTransactionModalOpen = ref(false);
-const isCompleteTransactionModalOpen = ref(false);
 const isCompletePendingByUserModalOpen = ref(false);
-const isFiltersOpen = ref(false);
-const selectedTransactionId = ref<string | null>(null);
 const selectedPendingByUserId = ref<string | null>(null);
-const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
-const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const isCompletingPendingByUser = ref(false);
 const completePendingByUserError = ref<string | null>(null);
 const completedPendingTransactionIds = new Set<string>();
@@ -147,14 +135,36 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   },
 });
 
-const selectedTransaction = computed(() => {
-  if (!selectedTransactionId.value) {
-    return null;
-  }
-
-  return (
-    transactions.value.find((transaction) => transaction.id === selectedTransactionId.value) ?? null
-  );
+const {
+  closeCompleteTransactionModal,
+  closeCreateTransactionModal,
+  closeDeleteTransactionModal,
+  closeEditTransactionModal,
+  closeFilters,
+  createFormState,
+  editFormState,
+  handleCreateFormStateChange,
+  handleEditFormStateChange,
+  isCompleteTransactionModalOpen,
+  isCreateTransactionModalOpen,
+  isDeleteTransactionModalOpen,
+  isEditTransactionModalOpen,
+  isFiltersOpen,
+  openCompleteTransaction,
+  openCreateTransactionModal,
+  openDeleteTransaction,
+  openEditTransaction,
+  openFilters,
+  selectedTransaction,
+} = useAccountTransactionModals({
+  clearDeleteError,
+  clearSaveError,
+  loadGoals: () => {
+    if (accountId.value) {
+      void loadGoals(accountId.value);
+    }
+  },
+  transactions,
 });
 
 const {
@@ -233,64 +243,6 @@ function applyMutationMeta(meta: TransactionMutationMeta): void {
   }
 }
 
-function openCreateTransactionModal(): void {
-  clearSaveError();
-  createFormState.value = { canSubmit: false, isSubmitting: false };
-
-  if (accountId.value) {
-    void loadGoals(accountId.value);
-  }
-
-  isCreateTransactionModalOpen.value = true;
-}
-
-function closeCreateTransactionModal(): void {
-  isCreateTransactionModalOpen.value = false;
-  clearSaveError();
-}
-
-function openEditTransaction(transactionId: string): void {
-  clearSaveError();
-  selectedTransactionId.value = transactionId;
-  editFormState.value = { canSubmit: false, isSubmitting: false };
-
-  if (accountId.value) {
-    void loadGoals(accountId.value);
-  }
-
-  isEditTransactionModalOpen.value = true;
-}
-
-function closeEditTransactionModal(): void {
-  isEditTransactionModalOpen.value = false;
-  selectedTransactionId.value = null;
-  clearSaveError();
-}
-
-function openDeleteTransaction(transactionId: string): void {
-  clearDeleteError();
-  selectedTransactionId.value = transactionId;
-  isDeleteTransactionModalOpen.value = true;
-}
-
-function closeDeleteTransactionModal(): void {
-  isDeleteTransactionModalOpen.value = false;
-  selectedTransactionId.value = null;
-  clearDeleteError();
-}
-
-function openCompleteTransaction(transactionId: string): void {
-  clearSaveError();
-  selectedTransactionId.value = transactionId;
-  isCompleteTransactionModalOpen.value = true;
-}
-
-function closeCompleteTransactionModal(): void {
-  isCompleteTransactionModalOpen.value = false;
-  selectedTransactionId.value = null;
-  clearSaveError();
-}
-
 function openCompletePendingByUser(userId: string): void {
   completePendingByUserError.value = null;
   selectedPendingByUserId.value = userId;
@@ -301,14 +253,6 @@ function closeCompletePendingByUserModal(): void {
   isCompletePendingByUserModalOpen.value = false;
   selectedPendingByUserId.value = null;
   completePendingByUserError.value = null;
-}
-
-function openFilters(): void {
-  isFiltersOpen.value = true;
-}
-
-function closeFilters(): void {
-  isFiltersOpen.value = false;
 }
 
 function resolveErrorMessage(error: unknown, fallback: string): string {
@@ -433,14 +377,6 @@ async function confirmCompletePendingByUser(): Promise<void> {
   } finally {
     isCompletingPendingByUser.value = false;
   }
-}
-
-function handleCreateFormStateChange(state: FormState): void {
-  createFormState.value = state;
-}
-
-function handleEditFormStateChange(state: FormState): void {
-  editFormState.value = state;
 }
 
 function canManageTransaction(options: { creatorId: string | null }): boolean {
