@@ -1,16 +1,10 @@
-import type { ComputedRef, Ref } from 'vue';
+import type { ComputedRef } from 'vue';
 
 import type {
   Transaction,
-  TransactionListFilters,
   TransactionMutationMeta,
   TransactionWritePayload,
 } from '@/modules/transactions/types';
-
-type LoadTransactionsOptions = {
-  reset?: boolean;
-  perPage?: number;
-};
 
 type TransactionMutationResult = {
   meta: TransactionMutationMeta;
@@ -18,7 +12,6 @@ type TransactionMutationResult = {
 
 type UseAccountTransactionActionsOptions = {
   accountId: ComputedRef<string>;
-  activeFilters: ComputedRef<TransactionListFilters>;
   canCompleteTransaction: (transaction: Transaction) => boolean;
   closeCompleteTransactionModal: () => void;
   closeCreateTransactionModal: () => void;
@@ -26,17 +19,8 @@ type UseAccountTransactionActionsOptions = {
   closeEditTransactionModal: () => void;
   createTransaction: (payload: TransactionWritePayload) => Promise<TransactionMutationResult | null>;
   deleteTransaction: (transactionId: string, accountId?: string) => Promise<TransactionMutationResult | null>;
-  hasReachedEnd: ComputedRef<boolean>;
-  isLoadingMore: Ref<boolean>;
-  loadMoreTransactions: () => Promise<void>;
-  loadTransactions: (
-    accountId: string,
-    filters?: TransactionListFilters,
-    options?: LoadTransactionsOptions,
-  ) => Promise<void>;
   onMutationMeta: (meta: TransactionMutationMeta) => void;
   selectedTransaction: ComputedRef<Transaction | null>;
-  transactionsPerPage: ComputedRef<number>;
   updateTransaction: (
     transactionId: string,
     payload: TransactionWritePayload,
@@ -115,40 +99,10 @@ export function useAccountTransactionActions(options: UseAccountTransactionActio
     options.closeCompleteTransactionModal();
   }
 
-  async function reloadTransactions(): Promise<void> {
-    if (!options.accountId.value) {
-      return;
-    }
-
-    await options.loadTransactions(options.accountId.value, options.activeFilters.value, {
-      reset: true,
-      perPage: options.transactionsPerPage.value,
-    });
-  }
-
-  function handleLoadMoreRetry(): void {
-    void options.loadMoreTransactions();
-  }
-
-  function infiniteStatusLabel(): string {
-    if (options.isLoadingMore.value) {
-      return 'Cargando más transacciones...';
-    }
-
-    if (options.hasReachedEnd.value) {
-      return 'Has llegado al final.';
-    }
-
-    return 'Sigue desplazándote para revisar más actividad conforme la cuenta acumule movimientos.';
-  }
-
   return {
     confirmCompleteTransaction,
     confirmDeleteTransaction,
     handleEditTransactionSubmit,
-    handleLoadMoreRetry,
     handleTransactionSubmit,
-    infiniteStatusLabel,
-    reloadTransactions,
   };
 }

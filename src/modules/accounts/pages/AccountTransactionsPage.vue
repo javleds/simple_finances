@@ -14,6 +14,7 @@ import AccountTransactionsList from '@/modules/accounts/components/AccountTransa
 import AccountTransactionsToolbar from '@/modules/accounts/components/AccountTransactionsToolbar.vue';
 import { useAccountTransactionActions } from '@/modules/accounts/composables/useAccountTransactionActions';
 import { useAccountTransactionFilters } from '@/modules/accounts/composables/useAccountTransactionFilters';
+import { useAccountTransactionListLoader } from '@/modules/accounts/composables/useAccountTransactionListLoader';
 import { useAccountTransactionModalActions } from '@/modules/accounts/composables/useAccountTransactionModalActions';
 import { useAccountTransactionModals } from '@/modules/accounts/composables/useAccountTransactionModals';
 import { useAccountTransactionsPendingState } from '@/modules/accounts/composables/useAccountTransactionsPendingState';
@@ -24,7 +25,6 @@ import {
   AppLoadMoreFooter,
   AppText,
 } from '@/modules/shared/components';
-import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
 import type { TransactionStatus } from '@/modules/transactions/types';
 
@@ -43,7 +43,6 @@ const transactionTypeOptions = [
   { value: 'income', label: 'Ingreso' },
   { value: 'expense', label: 'Egreso' },
 ] as const;
-const defaultTransactionsPerPage = 20;
 const currentUserId = computed(() => getStoredAuthSession()?.user.id ?? null);
 const {
   activeFilters,
@@ -91,22 +90,20 @@ const {
   markTransactionsCompleted,
 } = useTransactionsCrud();
 
-const transactionsPerPage = computed(() => {
-  const rawValue =
-    typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
-
-  if (!Number.isInteger(rawValue) || rawValue <= 0) {
-    return defaultTransactionsPerPage;
-  }
-
-  return rawValue;
-});
-
-const { target: loadMoreSentinel } = useInfiniteScroll({
-  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreTransactions.value),
-  onIntersect: () => {
-    void loadMoreTransactions();
-  },
+const {
+  handleLoadMoreRetry,
+  infiniteStatusLabel,
+  loadMoreSentinel,
+  reloadTransactions,
+} = useAccountTransactionListLoader({
+  accountId,
+  activeFilters,
+  hasMoreTransactions,
+  hasReachedEnd,
+  isLoading,
+  isLoadingMore,
+  loadMoreTransactions,
+  loadTransactions,
 });
 
 const {
@@ -178,12 +175,9 @@ const {
   confirmCompleteTransaction,
   confirmDeleteTransaction,
   handleEditTransactionSubmit,
-  handleLoadMoreRetry,
   handleTransactionSubmit,
-  infiniteStatusLabel,
 } = useAccountTransactionActions({
   accountId,
-  activeFilters,
   canCompleteTransaction,
   closeCompleteTransactionModal,
   closeCreateTransactionModal,
@@ -191,30 +185,10 @@ const {
   closeEditTransactionModal,
   createTransaction,
   deleteTransaction,
-  hasReachedEnd,
-  isLoadingMore,
-  loadMoreTransactions,
-  loadTransactions,
   onMutationMeta: applyMutationMeta,
   selectedTransaction,
-  transactionsPerPage,
   updateTransaction,
 });
-
-watch(
-  [accountId, activeFilters, transactionsPerPage],
-  ([nextAccountId, nextFilters, nextPerPage]) => {
-    if (!nextAccountId) {
-      return;
-    }
-
-    void loadTransactions(nextAccountId, nextFilters, {
-      reset: true,
-      perPage: nextPerPage,
-    });
-  },
-  { immediate: true },
-);
 
 watch(listMeta, (nextMeta) => {
   if (!nextMeta) {
@@ -233,17 +207,6 @@ function canCompleteTransaction(options: {
   status: TransactionStatus | null;
 }): boolean {
   return canManageTransaction(options) && options.status === 'pending';
-}
-
-async function reloadTransactions(): Promise<void> {
-  if (!accountId.value) {
-    return;
-  }
-
-  await loadTransactions(accountId.value, activeFilters.value, {
-    reset: true,
-    perPage: transactionsPerPage.value,
-  });
 }
 
 </script>
