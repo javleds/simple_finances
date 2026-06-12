@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
+import DashboardBalanceSection from '@/modules/admin/components/DashboardBalanceSection.vue';
 import DashboardSummaryCards from '@/modules/admin/components/DashboardSummaryCards.vue';
 import { useDashboard } from '@/modules/admin/composables/useDashboard';
 import type {
@@ -19,10 +20,6 @@ import {
 
 type SavingsCadence = 'monthly' | 'biweekly';
 type AccountGraphMode = 'physical' | 'virtual';
-
-const DashboardBalanceChart = defineAsyncComponent(
-  () => import('@/modules/admin/components/DashboardBalanceChart.vue'),
-);
 
 const savingsCadence = ref<SavingsCadence>('monthly');
 const accountGraphMode = ref<AccountGraphMode>('physical');
@@ -44,11 +41,6 @@ const {
 const cadenceOptions = [
   { value: 'monthly', label: 'Mensual' },
   { value: 'biweekly', label: 'Quincenal' },
-] as const;
-
-const accountGraphModeOptions = [
-  { value: 'physical', label: 'Físicas' },
-  { value: 'virtual', label: 'Virtuales' },
 ] as const;
 
 const pendingActions = computed<DashboardPendingAction[]>(() =>
@@ -196,25 +188,10 @@ async function confirmCompletePendingAction(): Promise<void> {
       </AppText>
     </section>
 
-    <AppCard class="rounded-3xl">
-      <div class="space-y-4">
-        <div class="space-y-1">
-          <AppTitle as="h2" size="sm">Balance por cuenta</AppTitle>
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <AppText> Vista comparativa para leer el balance actual de cada cuenta. </AppText>
-
-            <AppToggleButton
-              class="self-center"
-              :model-value="accountGraphMode"
-              :options="accountGraphModeOptions"
-              @update:model-value="accountGraphMode = $event as AccountGraphMode"
-            />
-          </div>
-        </div>
-
-        <DashboardBalanceChart :accounts="filteredGraphAccounts" />
-      </div>
-    </AppCard>
+    <DashboardBalanceSection
+      v-model:graph-mode="accountGraphMode"
+      :accounts="filteredGraphAccounts"
+    />
 
     <DashboardSummaryCards :summary="dashboard.accountsSummary" />
 
