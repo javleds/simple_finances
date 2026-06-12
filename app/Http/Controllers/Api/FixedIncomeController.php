@@ -42,8 +42,6 @@ class FixedIncomeController extends ApiController
     {
         $fixedIncome->delete();
 
-        return $this->respond([
-            'message' => 'Fixed income deleted successfully.',
-        ]);
+        return $this->respondDeleted('Fixed income deleted successfully.');
     }
 }

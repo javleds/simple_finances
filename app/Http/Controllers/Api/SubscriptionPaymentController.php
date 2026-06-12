@@ -75,9 +75,7 @@ class SubscriptionPaymentController extends ApiController
         $subscriptionPayment->delete();
         $this->refreshSubscriptionDates($subscription);
 
-        return $this->respond([
-            'message' => 'Subscription payment deleted successfully.',
-        ]);
+        return $this->respondDeleted('Subscription payment deleted successfully.');
     }
 
     private function registerPaymentTransaction(SubscriptionPayment $payment, ?int $accountId): void

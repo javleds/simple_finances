@@ -54,8 +54,6 @@ class SharedTransactionNotificationBatchController extends ApiController
 
         $batch->delete();
 
-        return $this->respond([
-            'message' => 'Shared transaction notification batch deleted successfully.',
-        ]);
+        return $this->respondDeleted('Shared transaction notification batch deleted successfully.');
     }
 }

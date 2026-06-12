@@ -53,8 +53,6 @@ class AccountUserNotificationController extends ApiController
 
         $accountUserNotification->delete();
 
-        return $this->respond([
-            'message' => 'Account notification deleted successfully.',
-        ]);
+        return $this->respondDeleted('Account notification deleted successfully.');
     }
 }

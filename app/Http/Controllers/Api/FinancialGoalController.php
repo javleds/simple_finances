@@ -47,8 +47,6 @@ class FinancialGoalController extends ApiController
 
         $financialGoal->delete();
 
-        return $this->respond([
-            'message' => 'Financial goal deleted successfully.',
-        ]);
+        return $this->respondDeleted('Financial goal deleted successfully.');
     }
 }

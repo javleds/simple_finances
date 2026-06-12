@@ -42,6 +42,19 @@ abstract class ApiController extends Controller
         ]);
     }
 
+    protected function respondDeleted(string $message, array $meta = []): JsonResponse
+    {
+        $payload = [
+            'message' => $message,
+        ];
+
+        if ($meta !== []) {
+            $payload['meta'] = $meta;
+        }
+
+        return $this->respond($payload);
+    }
+
     protected function respondPaginated(
         Builder $query,
         Request $request,

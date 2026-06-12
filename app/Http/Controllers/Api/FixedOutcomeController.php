@@ -45,8 +45,6 @@ class FixedOutcomeController extends ApiController
     {
         $fixedOutcome->delete();
 
-        return $this->respond([
-            'message' => 'Fixed outcome deleted successfully.',
-        ]);
+        return $this->respondDeleted('Fixed outcome deleted successfully.');
     }
 }

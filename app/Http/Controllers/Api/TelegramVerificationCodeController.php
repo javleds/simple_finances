@@ -70,8 +70,6 @@ class TelegramVerificationCodeController extends ApiController
 
         $telegramVerificationCode->delete();
 
-        return $this->respond([
-            'message' => 'Telegram verification code deleted successfully.',
-        ]);
+        return $this->respondDeleted('Telegram verification code deleted successfully.');
     }
 }

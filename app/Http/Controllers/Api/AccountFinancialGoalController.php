@@ -73,9 +73,7 @@ class AccountFinancialGoalController extends ApiController
 
         $financialGoal->delete();
 
-        return $this->respond([
-            'message' => 'Account financial goal deleted successfully.',
-        ]);
+        return $this->respondDeleted('Account financial goal deleted successfully.');
     }
 
     private function ensureAccountMember(Account $account): void

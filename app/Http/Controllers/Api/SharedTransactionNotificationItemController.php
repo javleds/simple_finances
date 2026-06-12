@@ -55,8 +55,6 @@ class SharedTransactionNotificationItemController extends ApiController
 
         $item->delete();
 
-        return $this->respond([
-            'message' => 'Shared transaction notification item deleted successfully.',
-        ]);
+        return $this->respondDeleted('Shared transaction notification item deleted successfully.');
     }
 }

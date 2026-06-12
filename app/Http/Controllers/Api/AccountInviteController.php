@@ -103,9 +103,7 @@ class AccountInviteController extends ApiController
 
         $accountInvite->delete();
 
-        return $this->respond([
-            'message' => 'Account invite deleted successfully.',
-        ]);
+        return $this->respondDeleted('Account invite deleted successfully.');
     }
 
     private function authorizeInviteAccess(AccountInvite $accountInvite): void

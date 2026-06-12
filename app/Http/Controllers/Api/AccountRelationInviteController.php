@@ -95,9 +95,7 @@ class AccountRelationInviteController extends ApiController
 
         $invite->delete();
 
-        return $this->respond([
-            'message' => 'Account invite relation deleted successfully.',
-        ]);
+        return $this->respondDeleted('Account invite relation deleted successfully.');
     }
 
     private function ensureOwner(Account $account): void

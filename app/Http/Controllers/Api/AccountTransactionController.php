@@ -112,10 +112,10 @@ class AccountTransactionController extends ApiController
         $accountId = $transaction->account_id;
         $transactionRemover->execute($transaction);
 
-        return $this->respond([
-            'message' => 'Account transaction deleted successfully.',
-            'meta' => $this->transactionAccountMeta($accountId),
-        ]);
+        return $this->respondDeleted(
+            'Account transaction deleted successfully.',
+            $this->transactionAccountMeta($accountId),
+        );
     }
 
     private function ensureAccountMember(Account $account): void

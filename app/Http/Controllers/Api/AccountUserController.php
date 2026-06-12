@@ -103,9 +103,7 @@ class AccountUserController extends ApiController
 
         $account->users()->detach($user->id);
 
-        return $this->respond([
-            'message' => 'Account user deleted successfully.',
-        ]);
+        return $this->respondDeleted('Account user deleted successfully.');
     }
 
     private function ensureOwner(Account $account): void

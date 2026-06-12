@@ -45,8 +45,6 @@ class PartialFixedIncomeController extends ApiController
     {
         $partialFixedIncome->delete();
 
-        return $this->respond([
-            'message' => 'Partial fixed income deleted successfully.',
-        ]);
+        return $this->respondDeleted('Partial fixed income deleted successfully.');
     }
 }

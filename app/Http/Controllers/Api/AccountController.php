@@ -67,9 +67,7 @@ class AccountController extends ApiController
 
         $account->delete();
 
-        return $this->respond([
-            'message' => 'Account deleted successfully.',
-        ]);
+        return $this->respondDeleted('Account deleted successfully.');
     }
 
     private function syncCreditCardDate(Account $account, AccountRequest $request): void

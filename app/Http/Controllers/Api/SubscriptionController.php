@@ -43,8 +43,6 @@ class SubscriptionController extends ApiController
     {
         $subscription->delete();
 
-        return $this->respond([
-            'message' => 'Subscription deleted successfully.',
-        ]);
+        return $this->respondDeleted('Subscription deleted successfully.');
     }
 }

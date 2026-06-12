@@ -74,10 +74,10 @@ class TransactionController extends ApiController
         $accountId = $transaction->account_id;
         $transactionRemover->execute($transaction);
 
-        return $this->respond([
-            'message' => 'Transaction deleted successfully.',
-            'meta' => $this->transactionAccountMeta($accountId),
-        ]);
+        return $this->respondDeleted(
+            'Transaction deleted successfully.',
+            $this->transactionAccountMeta($accountId),
+        );
     }
 
     private function transactionAccountMeta(int $accountId, ?int $previousAccountId = null): array

@@ -40,8 +40,6 @@ class NotificationTypeController extends ApiController
     {
         $notificationType->delete();
 
-        return $this->respond([
-            'message' => 'Notification type deleted successfully.',
-        ]);
+        return $this->respondDeleted('Notification type deleted successfully.');
     }
 }
