@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import {
-  XMarkIcon,
-} from '@heroicons/vue/24/outline';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -12,6 +9,8 @@ import SubscriptionFormModal from '@/modules/subscriptions/components/Subscripti
 import SubscriptionsList from '@/modules/subscriptions/components/SubscriptionsList.vue';
 import SubscriptionsToolbar from '@/modules/subscriptions/components/SubscriptionsToolbar.vue';
 import { useSubscriptionFilters } from '@/modules/subscriptions/composables/useSubscriptionFilters';
+import { useSubscriptionModalActions } from '@/modules/subscriptions/composables/useSubscriptionModalActions';
+import { useSubscriptionModals } from '@/modules/subscriptions/composables/useSubscriptionModals';
 import { useSubscriptionsCrud } from '@/modules/subscriptions/composables/useSubscriptionsCrud';
 import type {
   SubscriptionFrequencyType,
@@ -33,13 +32,6 @@ type FormState = {
 const accountsRepository = createAccountsRepository();
 const route = useRoute();
 
-const isFiltersOpen = ref(false);
-const isCreateSubscriptionOpen = ref(false);
-const isEditSubscriptionOpen = ref(false);
-const isDeleteSubscriptionOpen = ref(false);
-const selectedSubscriptionId = ref<string | null>(null);
-const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
-const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const fundingAccountOptions = ref<Array<{ value: string; label: string; description?: string }>>(
   [],
 );
@@ -86,6 +78,42 @@ const {
   deleteSubscription,
 } = useSubscriptionsCrud();
 
+const {
+  closeCreateSubscription,
+  closeDeleteSubscription,
+  closeEditSubscription,
+  closeFilters,
+  createFormState,
+  editFormState,
+  handleCreateFormStateChange,
+  handleEditFormStateChange,
+  isCreateSubscriptionOpen,
+  isDeleteSubscriptionOpen,
+  isEditSubscriptionOpen,
+  isFiltersOpen,
+  openCreateSubscription,
+  openDeleteSubscription,
+  openEditSubscription,
+  openFilters,
+  selectedSubscription,
+} = useSubscriptionModals({
+  clearDeleteError,
+  clearSaveError,
+  subscriptions,
+});
+
+const {
+  createSubscriptionActions,
+  deleteSubscriptionActions,
+  editSubscriptionActions,
+} = useSubscriptionModalActions({
+  createFormState,
+  editFormState,
+  isDeleting,
+  isSaving,
+  selectedSubscription,
+});
+
 const subscriptionsPerPage = computed(() => {
   const rawValue =
     typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
@@ -103,51 +131,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
     void loadMoreSubscriptions();
   },
 });
-
-const selectedSubscription = computed(() => {
-  if (!selectedSubscriptionId.value) {
-    return null;
-  }
-
-  return (
-    subscriptions.value.find((subscription) => subscription.id === selectedSubscriptionId.value) ??
-    null
-  );
-});
-
-const createSubscriptionActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-subscription',
-    label: isSaving.value ? 'Guardando...' : 'Crear suscripción',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'subscription-form',
-    disabled: !createFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const editSubscriptionActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-edit-subscription',
-    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'edit-subscription-form',
-    disabled: !editFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const deleteSubscriptionActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'confirm-delete-subscription',
-    label: isDeleting.value ? 'Eliminando...' : 'Eliminar suscripción',
-    tone: 'primary' as const,
-    disabled: !selectedSubscription.value || isDeleting.value,
-  },
-]);
 
 onMounted(() => {
   void loadFundingAccounts();
@@ -175,50 +158,6 @@ async function loadFundingAccounts(): Promise<void> {
   } catch {
     fundingAccountOptions.value = [];
   }
-}
-
-function openFilters(): void {
-  isFiltersOpen.value = true;
-}
-
-function closeFilters(): void {
-  isFiltersOpen.value = false;
-}
-
-function openCreateSubscription(): void {
-  clearSaveError();
-  createFormState.value = { canSubmit: false, isSubmitting: false };
-  isCreateSubscriptionOpen.value = true;
-}
-
-function closeCreateSubscription(): void {
-  isCreateSubscriptionOpen.value = false;
-  clearSaveError();
-}
-
-function openEditSubscription(subscriptionId: string): void {
-  clearSaveError();
-  selectedSubscriptionId.value = subscriptionId;
-  editFormState.value = { canSubmit: false, isSubmitting: false };
-  isEditSubscriptionOpen.value = true;
-}
-
-function closeEditSubscription(): void {
-  isEditSubscriptionOpen.value = false;
-  selectedSubscriptionId.value = null;
-  clearSaveError();
-}
-
-function openDeleteSubscription(subscriptionId: string): void {
-  clearDeleteError();
-  selectedSubscriptionId.value = subscriptionId;
-  isDeleteSubscriptionOpen.value = true;
-}
-
-function closeDeleteSubscription(): void {
-  isDeleteSubscriptionOpen.value = false;
-  selectedSubscriptionId.value = null;
-  clearDeleteError();
 }
 
 async function handleCreateSubscriptionSubmit(payload: SubscriptionWritePayload): Promise<void> {
@@ -251,14 +190,6 @@ async function confirmDeleteSubscription(): Promise<void> {
   if (wasDeleted) {
     closeDeleteSubscription();
   }
-}
-
-function handleCreateFormStateChange(state: FormState): void {
-  createFormState.value = state;
-}
-
-function handleEditFormStateChange(state: FormState): void {
-  editFormState.value = state;
 }
 
 function reloadSubscriptions(): void {
