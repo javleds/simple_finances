@@ -756,6 +756,17 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ->assertJsonPath('data.0.achieved_amount', 4500.0)
         ->assertJsonPath('data.0.progress', 90.0);
 
+    $this->withHeaders(apiHeaders($owner))
+        ->putJson("/api/accounts/{$account->id}/financial-goals/{$goalId}", [
+            'name' => 'Emergency Fund',
+            'amount' => 9000,
+            'must_completed_at' => now()->addMonth()->toDateString(),
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.amount', 9000.0)
+        ->assertJsonPath('data.achieved_amount', 4500.0)
+        ->assertJsonPath('data.progress', 50.0);
+
     $inviteResponse = $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/invites", [
             'email' => 'invitee@example.com',

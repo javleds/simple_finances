@@ -6,6 +6,7 @@ use App\Http\Requests\Api\AccountFinancialGoalRequest;
 use App\Models\Account;
 use App\Models\FinancialGoal;
 use App\Models\Transaction;
+use App\Services\FinancialGoals\RecalculateFinancialGoalProgress;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -46,12 +47,14 @@ class AccountFinancialGoalController extends ApiController
         Account $account,
         FinancialGoal $financialGoal,
         AccountFinancialGoalRequest $request,
+        RecalculateFinancialGoalProgress $recalculateFinancialGoalProgress,
     ): JsonResponse {
         $this->ensureAccountGoal($account, $financialGoal);
 
         $financialGoal->update($request->validated());
+        $financialGoal = $recalculateFinancialGoalProgress->execute($financialGoal->fresh());
 
-        return $this->respondModel($financialGoal->fresh(), ['account']);
+        return $this->respondModel($financialGoal, ['account']);
     }
 
     public function delete(Account $account, FinancialGoal $financialGoal): JsonResponse
