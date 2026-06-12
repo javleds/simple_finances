@@ -12,8 +12,8 @@ import AccountsList from '@/modules/accounts/components/AccountsList.vue';
 import AccountsToolbar from '@/modules/accounts/components/AccountsToolbar.vue';
 import { useAccountsCrud } from '@/modules/accounts/composables/useAccountsCrud';
 import { useAccountFilters } from '@/modules/accounts/composables/useAccountFilters';
+import { useAccountModals } from '@/modules/accounts/composables/useAccountModals';
 import type {
-  Account,
   AccountKindFilter,
   AccountSurfaceFilter,
   AccountStatus,
@@ -25,11 +25,6 @@ import {
   AppLoadMoreFooter,
   AppText,
 } from '@/modules/shared/components';
-
-type FormState = {
-  canSubmit: boolean;
-  isSubmitting: boolean;
-};
 
 const route = useRoute();
 
@@ -43,14 +38,6 @@ const surfaceOptions = [
   { value: 'virtual', label: 'Virtual' },
   { value: 'physical', label: 'Física' },
 ] as const;
-const isCreateAccountOpen = ref(false);
-const isDeleteAccountOpen = ref(false);
-const isEditAccountOpen = ref(false);
-const isFiltersOpen = ref(false);
-const selectedAccountId = ref<string | null>(null);
-const editAccountInitialValues = ref<Partial<Account> | null>(null);
-const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
-const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const {
   activeFilters,
   clearFilters,
@@ -84,6 +71,32 @@ const {
   deleteAccount,
 } = useAccountsCrud();
 
+const {
+  closeCreateAccount,
+  closeDeleteAccount,
+  closeEditAccount,
+  closeFilters,
+  createFormState,
+  editAccountInitialValues,
+  editFormState,
+  handleCreateFormStateChange,
+  handleEditFormStateChange,
+  isCreateAccountOpen,
+  isDeleteAccountOpen,
+  isEditAccountOpen,
+  isFiltersOpen,
+  openCreateAccount,
+  openDeleteAccount,
+  openEditAccount,
+  openFilters,
+  selectedAccount,
+  selectedAccountId,
+} = useAccountModals({
+  accounts,
+  clearDeleteError,
+  clearSaveError,
+});
+
 const accountsPerPage = computed(() => {
   const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
@@ -99,14 +112,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   onIntersect: () => {
     void loadMoreAccounts();
   },
-});
-
-const selectedAccount = computed(() => {
-  if (!selectedAccountId.value) {
-    return null;
-  }
-
-  return accounts.value.find((account) => account.id === selectedAccountId.value) ?? null;
 });
 
 const createAccountActions = computed(() => [
@@ -153,61 +158,6 @@ watch(
   },
   { immediate: true },
 );
-
-function openFilters(): void {
-  isFiltersOpen.value = true;
-}
-
-function openCreateAccount(): void {
-  clearSaveError();
-  createFormState.value = { canSubmit: false, isSubmitting: false };
-  isCreateAccountOpen.value = true;
-}
-
-function closeCreateAccount(): void {
-  isCreateAccountOpen.value = false;
-  clearSaveError();
-}
-
-function openEditAccount(accountId: string): void {
-  const account = accounts.value.find((item) => item.id === accountId);
-
-  if (!account) {
-    return;
-  }
-
-  clearSaveError();
-  selectedAccountId.value = accountId;
-  editAccountInitialValues.value = {
-    ...account,
-    users: [...account.users],
-  };
-  editFormState.value = { canSubmit: false, isSubmitting: false };
-  isEditAccountOpen.value = true;
-}
-
-function closeEditAccount(): void {
-  isEditAccountOpen.value = false;
-  selectedAccountId.value = null;
-  editAccountInitialValues.value = null;
-  clearSaveError();
-}
-
-function openDeleteAccount(accountId: string): void {
-  clearDeleteError();
-  selectedAccountId.value = accountId;
-  isDeleteAccountOpen.value = true;
-}
-
-function closeDeleteAccount(): void {
-  isDeleteAccountOpen.value = false;
-  selectedAccountId.value = null;
-  clearDeleteError();
-}
-
-function closeFilters(): void {
-  isFiltersOpen.value = false;
-}
 
 function reloadAccounts(): void {
   void loadAccounts(activeFilters.value, {
@@ -262,14 +212,6 @@ async function confirmDeleteAccount(): Promise<void> {
   if (wasDeleted) {
     closeDeleteAccount();
   }
-}
-
-function handleCreateFormStateChange(state: FormState): void {
-  createFormState.value = state;
-}
-
-function handleEditFormStateChange(state: FormState): void {
-  editFormState.value = state;
 }
 
 </script>
