@@ -8,6 +8,7 @@ import AccountUserEditModal from '@/modules/accounts/components/AccountUserEditM
 import AccountUsersList from '@/modules/accounts/components/AccountUsersList.vue';
 import AccountUsersSplitEditor from '@/modules/accounts/components/AccountUsersSplitEditor.vue';
 import AccountUsersToolbar from '@/modules/accounts/components/AccountUsersToolbar.vue';
+import { useAccountUserActions } from '@/modules/accounts/composables/useAccountUserActions';
 import { useAccountUserFilters } from '@/modules/accounts/composables/useAccountUserFilters';
 import { useAccountUserModalActions } from '@/modules/accounts/composables/useAccountUserModalActions';
 import { useAccountUserModals } from '@/modules/accounts/composables/useAccountUserModals';
@@ -16,7 +17,6 @@ import { useAccountUsersSplitDraft } from '@/modules/accounts/composables/useAcc
 import type { AccountMember } from '@/modules/accounts/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
-  AppButton,
   AppListState,
   AppLoadMoreFooter,
   AppText,
@@ -115,6 +115,26 @@ const {
 });
 
 const {
+  canSubmitPercentage,
+  confirmDeleteUser,
+  handleLoadMoreRetry,
+  infiniteStatusLabel,
+  saveUserPercentage,
+} = useAccountUserActions({
+  accountId,
+  closeDeleteUser,
+  closeEditUser,
+  editPercentage,
+  hasReachedEnd,
+  isLoadingMore,
+  loadMoreUsers,
+  removeUser,
+  saveError,
+  selectedUser,
+  updateUserPercentage,
+});
+
+const {
   createUserActions,
   deleteUserActions,
   editUserActions,
@@ -124,27 +144,6 @@ const {
   isSaving,
   selectedUser,
 });
-
-function parsePercentage(value: string): number | null {
-  const normalizedValue = value.trim();
-
-  if (!normalizedValue) {
-    return null;
-  }
-
-  const parsedValue = Number(normalizedValue);
-
-  if (!Number.isFinite(parsedValue)) {
-    return null;
-  }
-
-  return parsedValue;
-}
-
-function canSubmitPercentage(): boolean {
-  const percentage = parsePercentage(editPercentage.value);
-  return percentage !== null && percentage >= 0 && percentage <= 100;
-}
 
 async function loadUsers(): Promise<void> {
   if (!accountId.value) {
@@ -165,57 +164,9 @@ watch(
   { immediate: true },
 );
 
-async function saveUserPercentage(): Promise<void> {
-  if (!accountId.value || !selectedUser.value) {
-    return;
-  }
-
-  const percentage = parsePercentage(editPercentage.value);
-
-  if (percentage === null) {
-    saveError.value = 'El porcentaje debe ser un número válido.';
-    return;
-  }
-
-  const wasUpdated = await updateUserPercentage(accountId.value, selectedUser.value.id, percentage);
-
-  if (wasUpdated) {
-    closeEditUser();
-  }
-}
-
-async function confirmDeleteUser(): Promise<void> {
-  if (!accountId.value || !selectedUser.value) {
-    return;
-  }
-
-  const wasDeleted = await removeUser(accountId.value, selectedUser.value.id);
-
-  if (wasDeleted) {
-    closeDeleteUser();
-  }
-}
-
 function reloadUsers(): void {
   void loadUsers();
 }
-
-function handleLoadMoreRetry(): void {
-  void loadMoreUsers();
-}
-
-function infiniteStatusLabel(): string {
-  if (isLoadingMore.value) {
-    return 'Cargando más usuarios...';
-  }
-
-  if (hasReachedEnd.value) {
-    return 'Has llegado al final.';
-  }
-
-  return 'Sigue desplazándote para revisar más miembros conforme crezca la colaboración de la cuenta.';
-}
-
 </script>
 
 <template>
