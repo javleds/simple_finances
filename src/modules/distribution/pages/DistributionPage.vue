@@ -1,21 +1,20 @@
 <script setup lang="ts">
 import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 import DistributionRuleDeleteModal from '@/modules/distribution/components/DistributionRuleDeleteModal.vue';
 import DistributionRuleFiltersModal from '@/modules/distribution/components/DistributionRuleFiltersModal.vue';
 import DistributionRuleFormModal from '@/modules/distribution/components/DistributionRuleFormModal.vue';
 import DistributionRulesList from '@/modules/distribution/components/DistributionRulesList.vue';
 import DistributionRulesToolbar from '@/modules/distribution/components/DistributionRulesToolbar.vue';
+import { useDistributionRuleFilters } from '@/modules/distribution/composables/useDistributionRuleFilters';
 import { useDistributionRulesCrud } from '@/modules/distribution/composables/useDistributionRulesCrud';
 import type {
   DistributionFrequency,
-  DistributionRuleListFilters,
   DistributionRuleWritePayload,
 } from '@/modules/distribution/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppListState,
   AppLoadMoreFooter,
@@ -27,10 +26,7 @@ type FormState = {
   isSubmitting: boolean;
 };
 
-const searchTerm = ref('');
 const route = useRoute();
-const router = useRouter();
-const selectedFrequencies = ref<DistributionFrequency[]>([]);
 const isCreateRuleOpen = ref(false);
 const isEditRuleOpen = ref(false);
 const isDeleteRuleOpen = ref(false);
@@ -44,6 +40,13 @@ const frequencyOptions = [
   { value: 'semi_monthly', label: 'Quincenal' },
 ] as const;
 const defaultRulesPerPage = 20;
+const {
+  activeFilters,
+  clearFilters,
+  searchTerm,
+  selectedFrequencies,
+  toggleFrequency,
+} = useDistributionRuleFilters();
 
 const {
   rules,
@@ -82,11 +85,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
     void loadMoreRules();
   },
 });
-
-const activeFilters = computed<DistributionRuleListFilters>(() => ({
-  search: searchTerm.value.trim() || undefined,
-  frequency: selectedFrequencies.value.length > 0 ? [...selectedFrequencies.value] : undefined,
-}));
 
 const selectedRule = computed(() => {
   if (!selectedRuleId.value) {
@@ -131,34 +129,6 @@ const deleteRuleActions = computed(() => [
 ]);
 
 watch(
-  () => route.query,
-  (nextQuery) => {
-    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
-    selectedFrequencies.value = parseQueryValues(nextQuery.frequency, isDistributionFrequency);
-  },
-  { immediate: true },
-);
-
-watch(
-  [searchTerm, selectedFrequencies],
-  () => {
-    const nextQuery = {
-      ...route.query,
-      search: searchTerm.value.trim() || undefined,
-      frequency:
-        selectedFrequencies.value.length > 0 ? selectedFrequencies.value.join(',') : undefined,
-    };
-
-    if (areQueriesEqual(route.query, nextQuery)) {
-      return;
-    }
-
-    void router.replace({ query: nextQuery });
-  },
-  { deep: true },
-);
-
-watch(
   [activeFilters, rulesPerPage],
   ([nextFilters, nextPerPage]) => {
     void loadRules(nextFilters, {
@@ -175,19 +145,6 @@ function openFilters(): void {
 
 function closeFilters(): void {
   isFiltersOpen.value = false;
-}
-
-function clearFilters(): void {
-  selectedFrequencies.value = [];
-}
-
-function toggleFrequency(frequency: DistributionFrequency): void {
-  if (selectedFrequencies.value.includes(frequency)) {
-    selectedFrequencies.value = selectedFrequencies.value.filter((item) => item !== frequency);
-    return;
-  }
-
-  selectedFrequencies.value = [...selectedFrequencies.value, frequency];
 }
 
 function openCreateRule(): void {
@@ -271,10 +228,6 @@ function reloadRules(): void {
     reset: true,
     perPage: rulesPerPage.value,
   });
-}
-
-function isDistributionFrequency(value: string): value is DistributionFrequency {
-  return value === 'monthly' || value === 'semi_monthly';
 }
 
 function handleLoadMoreRetry(): void {
