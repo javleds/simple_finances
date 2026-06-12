@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { Component } from 'vue';
+import { ArrowPathIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
@@ -16,9 +18,32 @@ const props = defineProps<{
 const emit = defineEmits<{
   delete: [itemId: string];
   edit: [itemId: string];
+  resend: [itemId: string];
 }>();
 
 const canManageInvitation = computed(() => props.status !== 'accepted');
+const declinedActions: ReadonlyArray<ActionMenuItem> = [
+  {
+    key: 'resend',
+    label: 'Reenviar',
+    icon: ArrowPathIcon,
+    tone: 'success',
+  },
+  {
+    key: 'delete',
+    label: 'Eliminar',
+    icon: TrashIcon,
+    tone: 'danger',
+  },
+] as const;
+const menuActions = computed(() => (props.status === 'declined' ? declinedActions : []));
+
+type ActionMenuItem = {
+  key: string;
+  label: string;
+  icon: Component;
+  tone?: 'default' | 'danger' | 'success';
+};
 
 function statusLabel(status: InvitationStatus): string {
   if (status === 'accepted') {
@@ -62,6 +87,12 @@ function handleDelete(): void {
 
 function handleEdit(): void {
   emit('edit', props.itemId);
+}
+
+function handleAction(actionKey: string): void {
+  if (actionKey === 'resend') {
+    emit('resend', props.itemId);
+  }
 }
 </script>
 
@@ -107,7 +138,9 @@ function handleEdit(): void {
 
         <AppActionMenu
           v-if="canManageInvitation"
+          :actions="menuActions"
           class="shrink-0"
+          @action="handleAction"
           @delete="handleDelete"
           @edit="handleEdit"
         />

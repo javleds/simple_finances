@@ -10,6 +10,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   delete: [invitationId: string];
   edit: [invitationId: string];
+  resend: [invitationId: string];
 }>();
 
 function formatDateLabel(date: string | null): string {
@@ -45,6 +46,7 @@ function formatDateLabel(date: string | null): string {
         :status="invitation.status"
         @delete="emit('delete', $event)"
         @edit="emit('edit', $event)"
+        @resend="emit('resend', $event)"
       />
 
       <AppEmptyState

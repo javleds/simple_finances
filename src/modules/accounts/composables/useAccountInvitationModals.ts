@@ -61,7 +61,7 @@ export function useAccountInvitationModals(options: UseAccountInvitationModalsOp
   function openEditInvitation(invitationId: string): void {
     const invitation = findInvitation(invitationId);
 
-    if (invitation?.status === 'accepted') {
+    if (invitation?.status !== 'pending') {
       return;
     }
 
@@ -80,7 +80,7 @@ export function useAccountInvitationModals(options: UseAccountInvitationModalsOp
   function openDeleteInvitation(invitationId: string): void {
     const invitation = findInvitation(invitationId);
 
-    if (invitation?.status === 'accepted') {
+    if (!invitation || invitation.status === 'accepted') {
       return;
     }
 

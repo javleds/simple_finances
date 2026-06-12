@@ -49,6 +49,7 @@ const {
   loadMoreInvites,
   createInvite,
   updateInvite,
+  resendInvite,
   deleteInvite,
 } = useAccountInvitesCrud();
 
@@ -108,6 +109,7 @@ const {
   handleCreateInvitationSubmit,
   handleEditInvitationSubmit,
   handleLoadMoreRetry,
+  handleResendInvitation,
   infiniteStatusLabel,
   reloadInvitations,
 } = useAccountInvitationActions({
@@ -119,10 +121,12 @@ const {
   createInvite,
   deleteInvite,
   hasReachedEnd,
+  invitations: invites,
   invitationsPerPage,
   isLoadingMore,
   loadInvites,
   loadMoreInvites,
+  resendInvite,
   selectedInvitation,
   updateInvite,
 });
@@ -158,6 +162,13 @@ watch(
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
+    <section
+      v-if="saveError && hasInvites && !isCreateInvitationOpen && !isEditInvitationOpen"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
+      <AppText class="text-(--app-color-danger)!">{{ saveError }}</AppText>
+    </section>
+
     <AppListState
       :error="loadError"
       :has-items="hasInvites"
@@ -169,6 +180,7 @@ watch(
         :invitations="invites"
         @delete="openDeleteInvitation"
         @edit="openEditInvitation"
+        @resend="handleResendInvitation"
       >
         <template #footer>
           <div ref="loadMoreSentinel">

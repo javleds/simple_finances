@@ -110,6 +110,13 @@ export function createAccountInvitesRepository() {
       );
       return mapAccountInviteApiToDomain(singleInviteSchema.parse(response));
     },
+    async resend(inviteId: string, payload: AccountInviteWritePayload): Promise<AccountInvite> {
+      const response = await apiClient.put<unknown>(
+        `${accountsPath}/${payload.accountId}/invites/${inviteId}`,
+        buildWritePayload({ ...payload, status: 'pending' }),
+      );
+      return mapAccountInviteApiToDomain(singleInviteSchema.parse(response));
+    },
     async respond(inviteId: string, payload: AccountInviteWritePayload): Promise<AccountInvite> {
       const response = await apiClient.put<unknown>(
         `${invitesPath}/${inviteId}`,

@@ -92,6 +92,25 @@ export function useAccountInvitesCrud() {
     }
   }
 
+  async function resendInvite(
+    inviteId: string,
+    payload: AccountInviteWritePayload,
+  ): Promise<boolean> {
+    isSaving.value = true;
+    saveError.value = null;
+
+    try {
+      const updatedInvite = await accountInvitesRepository.resend(inviteId, payload);
+      invitesState.replaceItem((invite) => invite.id === inviteId, updatedInvite);
+      return true;
+    } catch (error) {
+      saveError.value = resolveErrorMessage(error, 'No fue posible reenviar la invitación.');
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
   async function deleteInvite(inviteId: string, accountId?: string): Promise<boolean> {
     isDeleting.value = true;
     deleteError.value = null;
@@ -134,6 +153,7 @@ export function useAccountInvitesCrud() {
     loadMoreInvites,
     createInvite,
     updateInvite,
+    resendInvite,
     deleteInvite,
     perPage: invitesState.perPage,
   };

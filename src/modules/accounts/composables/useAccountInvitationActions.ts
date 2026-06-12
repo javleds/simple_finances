@@ -20,6 +20,7 @@ type UseAccountInvitationActionsOptions = {
   createInvite: (payload: AccountInviteWritePayload) => Promise<boolean>;
   deleteInvite: (invitationId: string, accountId?: string) => Promise<boolean>;
   hasReachedEnd: ComputedRef<boolean>;
+  invitations: Ref<AccountInvite[]>;
   invitationsPerPage: ComputedRef<number>;
   isLoadingMore: Ref<boolean>;
   loadInvites: (
@@ -28,6 +29,7 @@ type UseAccountInvitationActionsOptions = {
     options?: LoadInvitesOptions,
   ) => Promise<void>;
   loadMoreInvites: () => Promise<void>;
+  resendInvite: (invitationId: string, payload: AccountInviteWritePayload) => Promise<boolean>;
   selectedInvitation: ComputedRef<AccountInvite | null>;
   updateInvite: (invitationId: string, payload: AccountInviteWritePayload) => Promise<boolean>;
 };
@@ -68,6 +70,25 @@ export function useAccountInvitationActions(options: UseAccountInvitationActions
     }
   }
 
+  async function handleResendInvitation(invitationId: string): Promise<void> {
+    const invitation = options.invitations.value.find((item) => item.id === invitationId);
+
+    if (!invitation || invitation.status !== 'declined') {
+      return;
+    }
+
+    const wasResent = await options.resendInvite(invitation.id, {
+      accountId: invitation.accountId,
+      email: invitation.email,
+      percentage: invitation.percentage,
+      status: 'pending',
+    });
+
+    if (wasResent) {
+      reloadInvitations();
+    }
+  }
+
   function reloadInvitations(): void {
     if (!options.accountId.value) {
       return;
@@ -100,6 +121,7 @@ export function useAccountInvitationActions(options: UseAccountInvitationActions
     handleCreateInvitationSubmit,
     handleEditInvitationSubmit,
     handleLoadMoreRetry,
+    handleResendInvitation,
     infiniteStatusLabel,
     reloadInvitations,
   };
