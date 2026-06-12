@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import {
-  AdjustmentsHorizontalIcon,
   ArrowPathIcon,
   CheckCircleIcon,
   CheckIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
@@ -14,6 +11,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import type { Account, AccountPendingByUser } from '@/modules/accounts/types';
 import AccountTransactionsList from '@/modules/accounts/components/AccountTransactionsList.vue';
+import AccountTransactionsToolbar from '@/modules/accounts/components/AccountTransactionsToolbar.vue';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import { createDashboardRepository } from '@/modules/admin/repositories/dashboardRepository';
 import {
@@ -22,11 +20,9 @@ import {
   AppCard,
   AppHeroMetric,
   AppIconButton,
-  AppInput,
   AppListState,
   AppLoadMoreFooter,
   AppModal,
-  AppSectionBar,
   AppText,
   AppTitle,
 } from '@/modules/shared/components';
@@ -757,34 +753,11 @@ function infiniteStatusLabel(): string {
       </div>
     </AppCard>
 
-    <AppSectionBar title="Transacciones">
-      <template #actions>
-        <AppButton variant="primary" @click="openCreateTransactionModal">
-          <PlusIcon class="h-4 w-4" />
-        </AppButton>
-      </template>
-    </AppSectionBar>
-
-    <div class="flex items-center gap-3">
-      <div class="relative flex-1">
-        <div
-          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
-        >
-          <MagnifyingGlassIcon class="h-5 w-5" />
-        </div>
-        <AppInput
-          id="transaction-search"
-          v-model="searchTerm"
-          type="search"
-          placeholder="Buscar transacción por concepto"
-          class="pl-11"
-        />
-      </div>
-
-      <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
-        <AdjustmentsHorizontalIcon class="h-5 w-5" />
-      </AppIconButton>
-    </div>
+    <AccountTransactionsToolbar
+      v-model:search-term="searchTerm"
+      @create="openCreateTransactionModal"
+      @open-filters="openFilters"
+    />
 
     <section
       v-if="loadError && hasTransactions"
