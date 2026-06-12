@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -10,6 +9,7 @@ import AccountUsersList from '@/modules/accounts/components/AccountUsersList.vue
 import AccountUsersSplitEditor from '@/modules/accounts/components/AccountUsersSplitEditor.vue';
 import AccountUsersToolbar from '@/modules/accounts/components/AccountUsersToolbar.vue';
 import { useAccountUserFilters } from '@/modules/accounts/composables/useAccountUserFilters';
+import { useAccountUserModalActions } from '@/modules/accounts/composables/useAccountUserModalActions';
 import { useAccountUserModals } from '@/modules/accounts/composables/useAccountUserModals';
 import { useAccountUsersCrud } from '@/modules/accounts/composables/useAccountUsersCrud';
 import type { AccountMember } from '@/modules/accounts/types';
@@ -115,30 +115,16 @@ const hasSplitChanges = computed(
     !areAllocationRecordsEqual(splitDraft.value, createAllocationRecord(users.value)),
 );
 
-const editUserActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-edit-user',
-    label: isSaving.value ? 'Guardando...' : 'Guardar porcentaje',
-    tone: 'primary' as const,
-    type: 'button' as const,
-    disabled: !canSubmitPercentage() || isSaving.value,
-  },
-]);
-
-const deleteUserActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'confirm-delete-user',
-    label: isDeleting.value ? 'Eliminando...' : 'Quitar usuario',
-    tone: 'primary' as const,
-    disabled: !selectedUser.value || isDeleting.value,
-  },
-]);
-
-const createUserActions = [
-  { key: 'close', label: 'Cerrar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-];
+const {
+  createUserActions,
+  deleteUserActions,
+  editUserActions,
+} = useAccountUserModalActions({
+  canSubmitPercentage,
+  isDeleting,
+  isSaving,
+  selectedUser,
+});
 
 function parsePercentage(value: string): number | null {
   const normalizedValue = value.trim();
