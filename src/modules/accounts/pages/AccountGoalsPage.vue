@@ -13,8 +13,9 @@ import {
 } from '@/modules/accounts/composables/useAccountGoalFilters';
 import { useAccountGoalModalActions } from '@/modules/accounts/composables/useAccountGoalModalActions';
 import { useAccountGoalModals } from '@/modules/accounts/composables/useAccountGoalModals';
+import { useAccountGoalPageActions } from '@/modules/accounts/composables/useAccountGoalPageActions';
+import { useAccountGoalPresentation } from '@/modules/accounts/composables/useAccountGoalPresentation';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
-import type { AccountGoalWritePayload } from '@/modules/accounts/schemas/accountGoalSchemas';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
   AppButton,
@@ -99,17 +100,11 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
     void loadMoreGoals();
   },
 });
-
-const filteredGoalItems = computed(() => {
-  return goals.value.filter((goal) => {
-    const status = goal.status === 'completed' ? 'completed' : resolveGoalStatus(goal.progress);
-
-    if (selectedStatuses.value.length > 0 && !selectedStatuses.value.includes(status)) {
-      return false;
-    }
-
-    return true;
-  });
+const { filteredGoalItems, infiniteStatusLabel } = useAccountGoalPresentation({
+  goals,
+  hasReachedEnd,
+  isLoadingMore,
+  selectedStatuses,
 });
 
 const { createGoalActions, deleteGoalActions, editGoalActions } = useAccountGoalModalActions({
@@ -118,6 +113,26 @@ const { createGoalActions, deleteGoalActions, editGoalActions } = useAccountGoal
   isDeleting,
   isSaving,
   selectedGoal,
+});
+const {
+  confirmDeleteGoal,
+  handleCreateGoalSubmit,
+  handleEditGoalSubmit,
+  handleLoadMoreRetry,
+  reloadGoals,
+} = useAccountGoalPageActions({
+  accountId,
+  activeFilters,
+  closeCreateGoal,
+  closeDeleteGoal,
+  closeEditGoal,
+  createGoal,
+  deleteGoal,
+  goalsPerPage,
+  loadGoals,
+  loadMoreGoals,
+  selectedGoal,
+  updateGoal,
 });
 
 watch(
@@ -135,76 +150,6 @@ watch(
   { immediate: true },
 );
 
-function resolveGoalStatus(progress: number): AccountGoalStatusFilter {
-  if (progress >= 100) {
-    return 'completed';
-  }
-
-  if (progress < 50) {
-    return 'at-risk';
-  }
-
-  return 'on-track';
-}
-
-async function handleCreateGoalSubmit(payload: AccountGoalWritePayload): Promise<void> {
-  const wasCreated = await createGoal(payload);
-
-  if (wasCreated) {
-    closeCreateGoal();
-  }
-}
-
-async function handleEditGoalSubmit(payload: AccountGoalWritePayload): Promise<void> {
-  if (!selectedGoal.value) {
-    return;
-  }
-
-  const wasUpdated = await updateGoal(selectedGoal.value.id, payload);
-
-  if (wasUpdated) {
-    closeEditGoal();
-  }
-}
-
-async function confirmDeleteGoal(): Promise<void> {
-  if (!selectedGoal.value) {
-    return;
-  }
-
-  const wasDeleted = await deleteGoal(selectedGoal.value.id, accountId.value);
-
-  if (wasDeleted) {
-    closeDeleteGoal();
-  }
-}
-
-function reloadGoals(): void {
-  if (!accountId.value) {
-    return;
-  }
-
-  void loadGoals(accountId.value, activeFilters.value, {
-    reset: true,
-    perPage: goalsPerPage.value,
-  });
-}
-
-function handleLoadMoreRetry(): void {
-  void loadMoreGoals();
-}
-
-function infiniteStatusLabel(): string {
-  if (isLoadingMore.value) {
-    return 'Cargando más metas...';
-  }
-
-  if (hasReachedEnd.value) {
-    return 'Has llegado al final.';
-  }
-
-  return 'Sigue desplazándote para revisar más metas conforme la cuenta acumule objetivos.';
-}
 </script>
 
 <template>
