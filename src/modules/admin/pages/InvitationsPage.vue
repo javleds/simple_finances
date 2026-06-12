@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import FacilityInvitationListItem from '@/modules/admin/components/FacilityInvitationListItem.vue';
+import FacilityInvitationActionModal from '@/modules/admin/components/FacilityInvitationActionModal.vue';
+import FacilityInvitationsList from '@/modules/admin/components/FacilityInvitationsList.vue';
+import FacilityInvitationsToolbar from '@/modules/admin/components/FacilityInvitationsToolbar.vue';
 import { createAccountInvitesRepository } from '@/modules/accounts/repositories/accountInvitesRepository';
 import type { AccountInvite } from '@/modules/accounts/schemas/accountInviteSchemas';
 import { ApiError } from '@/lib/api/apiClient';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 import { areQueriesEqual } from '@/modules/shared/lib/queryParams';
-import { AppButton, AppInput, AppModal, AppSectionBar, AppText } from '@/modules/shared/components';
+import {
+  AppListState,
+  AppLoadMoreFooter,
+  AppText,
+} from '@/modules/shared/components';
 
 type PendingInvitationAction = 'accepted' | 'declined';
 
@@ -69,22 +75,6 @@ const selectedInvitation = computed(() => {
 
 const visibleInvitations = computed(() => invitationsState.items.value);
 
-const actionModalTitle = computed(() => {
-  if (pendingAction.value === 'accepted') {
-    return 'Aceptar invitación';
-  }
-
-  if (pendingAction.value === 'declined') {
-    return 'Rechazar invitación';
-  }
-
-  return 'Invitación';
-});
-
-const actionModalVariant = computed(() => {
-  return pendingAction.value === 'accepted' ? 'success' : 'danger';
-});
-
 const actionModalActions = computed(() => [
   { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
   {
@@ -109,40 +99,6 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
   }
 
   return fallback;
-}
-
-function resolveAccountName(invitation: AccountInvite): string {
-  return invitation.accountName ?? `Cuenta #${invitation.accountId}`;
-}
-
-function resolveInvitedBy(invitation: AccountInvite): string {
-  if (invitation.invitedByName) {
-    return invitation.invitedByName;
-  }
-
-  if (invitation.userId) {
-    return `Usuario #${invitation.userId}`;
-  }
-
-  return 'Invitador no disponible';
-}
-
-function resolveMetaLabel(invitation: AccountInvite): string {
-  if (!invitation.invitedAt) {
-    return 'Invitación pendiente';
-  }
-
-  const invitedAt = new Date(invitation.invitedAt);
-
-  if (Number.isNaN(invitedAt.getTime())) {
-    return 'Invitación pendiente';
-  }
-
-  return `Recibida ${new Intl.DateTimeFormat('es-MX', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(invitedAt)}`;
 }
 
 async function loadInvitations(): Promise<void> {
@@ -246,25 +202,7 @@ function infiniteStatusLabel(): string {
 
 <template>
   <section class="space-y-4">
-    <AppSectionBar
-      title="Invitaciones"
-      description="Revisa las cuentas a las que aún no te has unido y responde desde aquí."
-    />
-
-    <div class="relative flex-1">
-      <div
-        class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
-      >
-        <MagnifyingGlassIcon class="h-5 w-5" />
-      </div>
-      <AppInput
-        id="facility-invitation-search"
-        v-model="searchTerm"
-        type="search"
-        placeholder="Buscar invitación por cuenta o invitador"
-        class="pl-11"
-      />
-    </div>
+    <FacilityInvitationsToolbar v-model:search-term="searchTerm" />
 
     <section
       v-if="invitationsState.loadError.value && invitationsState.items.value.length > 0"
@@ -273,88 +211,37 @@ function infiniteStatusLabel(): string {
       <AppText class="text-(--app-color-danger)!">{{ invitationsState.loadError.value }}</AppText>
     </section>
 
-    <section
-      v-if="invitationsState.isLoading.value && invitationsState.items.value.length === 0"
-      class="rounded-2xl border px-4 py-10 text-center"
+    <AppListState
+      :error="invitationsState.loadError.value"
+      :has-items="invitationsState.items.value.length > 0"
+      :is-loading="invitationsState.isLoading.value"
+      loading-label="Cargando invitaciones..."
+      @retry="reloadInvitations"
     >
-      <AppText>Cargando invitaciones...</AppText>
-    </section>
-
-    <section
-      v-else-if="invitationsState.loadError.value && invitationsState.items.value.length === 0"
-      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
-    >
-      <AppText>{{ invitationsState.loadError.value }}</AppText>
-      <div class="flex justify-center">
-        <AppButton variant="secondary" @click="reloadInvitations">Reintentar</AppButton>
-      </div>
-    </section>
-
-    <section v-else class="space-y-3">
-      <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">
-          {{ visibleInvitations.length }} invitaciones visibles
-        </AppText>
-        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
-      </div>
-
-      <div class="space-y-4">
-        <FacilityInvitationListItem
-          v-for="invitation in visibleInvitations"
-          :key="invitation.id"
-          :account-name="resolveAccountName(invitation)"
-          :invited-by="resolveInvitedBy(invitation)"
-          :item-id="invitation.id"
-          :meta-label="resolveMetaLabel(invitation)"
-          status="pending"
-          @accept="openInvitationAction($event, 'accepted')"
-          @reject="openInvitationAction($event, 'declined')"
-        />
-
-        <div
-          v-if="visibleInvitations.length === 0"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">No hay invitaciones pendientes que coincidan con la búsqueda.</AppText>
-        </div>
-
-        <div
-          ref="loadMoreSentinel"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
-          <div
-            v-if="invitationsState.loadError.value && invitationsState.items.value.length > 0"
-            class="mt-3 flex justify-center"
-          >
-            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+      <FacilityInvitationsList
+        :invitations="visibleInvitations"
+        @accept="openInvitationAction($event, 'accepted')"
+        @reject="openInvitationAction($event, 'declined')"
+      >
+        <template #footer>
+          <div ref="loadMoreSentinel">
+            <AppLoadMoreFooter
+              :label="infiniteStatusLabel()"
+              :show-retry="Boolean(invitationsState.loadError.value && invitationsState.items.value.length > 0)"
+              @retry="handleLoadMoreRetry"
+            />
           </div>
-        </div>
-      </div>
-    </section>
+        </template>
+      </FacilityInvitationsList>
+    </AppListState>
 
-    <AppModal
-      :open="Boolean(selectedInvitation && pendingAction)"
+    <FacilityInvitationActionModal
       :actions="actionModalActions"
-      :title="actionModalTitle"
-      :variant="actionModalVariant"
-      @action="$event === 'confirm-invitation-action' && confirmInvitationAction()"
+      :invitation="selectedInvitation"
+      :pending-action="pendingAction"
+      :save-error="saveError"
       @close="closeInvitationAction"
-    >
-      <div class="space-y-3">
-        <AppText v-if="selectedInvitation">
-          {{
-            pendingAction === 'accepted'
-              ? 'Vas a aceptar la invitación a'
-              : 'Vas a rechazar la invitación a'
-          }}
-          <strong>{{ resolveAccountName(selectedInvitation) }}</strong
-          >.
-        </AppText>
-        <AppText v-if="saveError" class="text-(--app-color-danger)!">{{ saveError }}</AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmInvitationAction"
+    />
   </section>
 </template>
