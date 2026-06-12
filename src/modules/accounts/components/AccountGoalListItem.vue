@@ -9,7 +9,6 @@ const props = defineProps<{
   ownerLabel: string;
   achievedAmount: number;
   targetAmount: number;
-  remainingAmount: number;
   progress: number;
   status: GoalStatus;
   deadlineLabel: string;
@@ -121,34 +120,16 @@ function handleDelete(): void {
         </p>
       </div>
 
-      <div class="grid grid-cols-2 gap-3 text-xs">
-        <div class="space-y-1">
-          <p class="font-semibold text-(--app-color-text) tabular-nums">
-            {{ formattedAmount(props.achievedAmount) }}
-          </p>
-          <p
-            class="font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
-          >
-            acumulado
-          </p>
-        </div>
-        <div class="space-y-1 text-right">
-          <p class="font-semibold text-(--app-color-text) tabular-nums">
-            {{ formattedAmount(props.remainingAmount) }}
-          </p>
-          <p
-            class="font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
-          >
-            restante
-          </p>
-        </div>
-      </div>
-
-      <div class="h-2 rounded-full bg-(--app-color-surface-muted)">
+      <div class="relative h-7 overflow-hidden rounded-full bg-(--app-color-surface-muted)">
         <div
-          class="h-2 rounded-full"
+          class="h-full rounded-full"
           :style="{ width: progressWidth(props.progress), backgroundColor: progressBarStyle(props.status) }"
         />
+        <p
+          class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-(--app-color-text) tabular-nums"
+        >
+          {{ formattedAmount(props.achievedAmount) }}
+        </p>
       </div>
     </div>
   </AppCard>

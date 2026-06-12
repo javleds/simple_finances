@@ -62,7 +62,6 @@ function formatDateLabel(date: string | null): string {
         :item-id="goal.id"
         :owner-label="goal.status === 'completed' ? 'Meta completada' : 'Meta en progreso'"
         :progress="goal.progress"
-        :remaining-amount="Math.max(goal.amount - goal.achievedAmount, 0)"
         :status="goal.status === 'completed' ? 'completed' : resolveGoalStatus(goal.progress)"
         :target-amount="goal.amount"
         :title="goal.name"
