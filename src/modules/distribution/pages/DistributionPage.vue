@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ArrowPathIcon, MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import DistributionRuleForm from '@/modules/distribution/components/DistributionRuleForm.vue';
-import DistributionRuleListItem from '@/modules/distribution/components/DistributionRuleListItem.vue';
+import DistributionRuleDeleteModal from '@/modules/distribution/components/DistributionRuleDeleteModal.vue';
+import DistributionRuleFiltersModal from '@/modules/distribution/components/DistributionRuleFiltersModal.vue';
+import DistributionRuleFormModal from '@/modules/distribution/components/DistributionRuleFormModal.vue';
+import DistributionRulesList from '@/modules/distribution/components/DistributionRulesList.vue';
+import DistributionRulesToolbar from '@/modules/distribution/components/DistributionRulesToolbar.vue';
 import { useDistributionRulesCrud } from '@/modules/distribution/composables/useDistributionRulesCrud';
-import { formatDistributionFrequency } from '@/modules/distribution/schemas/distributionSchemas';
 import type {
   DistributionFrequency,
   DistributionRuleListFilters,
@@ -15,12 +17,9 @@ import type {
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
-  AppButton,
-  AppInput,
-  AppModal,
-  AppSectionBar,
+  AppListState,
+  AppLoadMoreFooter,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 type FormState = {
@@ -191,17 +190,6 @@ function toggleFrequency(frequency: DistributionFrequency): void {
   selectedFrequencies.value = [...selectedFrequencies.value, frequency];
 }
 
-function handleFiltersModalAction(actionKey: string): void {
-  if (actionKey === 'clear') {
-    clearFilters();
-    return;
-  }
-
-  if (actionKey === 'close') {
-    closeFilters();
-  }
-}
-
 function openCreateRule(): void {
   clearSaveError();
   createFormState.value = { canSubmit: false, isSubmitting: false };
@@ -308,35 +296,11 @@ function infiniteStatusLabel(): string {
 
 <template>
   <div class="space-y-5">
-    <AppSectionBar
-      title="Ingresos fijos"
-      description="Cada regla define un ingreso fijo y agrupa sus distribuciones asociadas."
-    >
-      <template #actions>
-        <AppButton variant="primary" @click="openCreateRule">
-          <PlusIcon class="h-4 w-4" />
-        </AppButton>
-      </template>
-    </AppSectionBar>
-
-    <div class="flex items-center gap-3">
-      <div class="relative flex-1">
-        <div
-          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
-        >
-          <MagnifyingGlassIcon class="h-5 w-5" />
-        </div>
-        <AppInput
-          id="distribution-search"
-          v-model="searchTerm"
-          type="search"
-          placeholder="Buscar regla por nombre"
-          class="pl-11"
-        />
-      </div>
-
-      <AppButton variant="secondary" @click="openFilters">Filtros</AppButton>
-    </div>
+    <DistributionRulesToolbar
+      v-model:search-term="searchTerm"
+      @create="openCreateRule"
+      @open-filters="openFilters"
+    />
 
     <section
       v-if="loadError && hasRules"
@@ -345,146 +309,66 @@ function infiniteStatusLabel(): string {
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
-    <section v-if="isLoading && !hasRules" class="rounded-2xl border px-4 py-10 text-center">
-      <AppText>Cargando reglas...</AppText>
-    </section>
-
-    <section
-      v-else-if="loadError && !hasRules"
-      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    <AppListState
+      :error="loadError"
+      :has-items="hasRules"
+      :is-loading="isLoading"
+      loading-label="Cargando reglas..."
+      @retry="reloadRules"
     >
-      <AppText>{{ loadError }}</AppText>
-      <div class="flex justify-center">
-        <AppButton variant="secondary" @click="reloadRules">Reintentar</AppButton>
-      </div>
-    </section>
-
-    <section v-else class="space-y-3">
-      <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">{{ rules.length }} reglas visibles</AppText>
-        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
-      </div>
-
-      <div class="space-y-4">
-        <DistributionRuleListItem
-          v-for="rule in rules"
-          :key="rule.id"
-          :frequency="rule.frequency"
-          :item-id="rule.id"
-          :name="rule.name"
-          :outcomes-count="rule.outcomesCount"
-          :total-amount="rule.totalAmount"
-          @delete="openDeleteRule"
-          @edit="openEditRule"
-        />
-
-        <div
-          v-if="rules.length === 0"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm"
-            >No hay reglas que coincidan con la búsqueda o filtros actuales.</AppText
-          >
-        </div>
-
-        <div
-          ref="loadMoreSentinel"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
-          <div v-if="loadError && hasRules" class="mt-3 flex justify-center">
-            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+      <DistributionRulesList :rules="rules" @delete="openDeleteRule" @edit="openEditRule">
+        <template #footer>
+          <div ref="loadMoreSentinel">
+            <AppLoadMoreFooter
+              :label="infiniteStatusLabel()"
+              :show-retry="Boolean(loadError && hasRules)"
+              @retry="handleLoadMoreRetry"
+            />
           </div>
-        </div>
-      </div>
-    </section>
+        </template>
+      </DistributionRulesList>
+    </AppListState>
 
-    <AppModal
+    <DistributionRuleFiltersModal
       :open="isFiltersOpen"
-      :actions="[
-        { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Filtros"
-      variant="default"
-      @action="handleFiltersModalAction"
+      :frequency-options="frequencyOptions"
+      :selected-frequencies="selectedFrequencies"
+      @clear="clearFilters"
       @close="closeFilters"
-    >
-      <div class="space-y-5">
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Frecuencia</AppTitle>
-          <AppText>Filtra las reglas según su recurrencia.</AppText>
-        </div>
+      @toggle-frequency="toggleFrequency"
+    />
 
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="option in frequencyOptions"
-            :key="option.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedFrequencies.includes(option.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleFrequency(option.value)"
-          >
-            {{ formatDistributionFrequency(option.value) }}
-          </button>
-        </div>
-      </div>
-    </AppModal>
-
-    <AppModal
+    <DistributionRuleFormModal
       :open="isCreateRuleOpen"
       :actions="createRuleActions"
+      form-id="distribution-rule-form"
+      :server-error="saveError"
       title="Nueva regla"
-      variant="default"
       @close="closeCreateRule"
-    >
-      <DistributionRuleForm
-        form-id="distribution-rule-form"
-        :server-error="saveError"
-        @state-change="handleCreateFormStateChange"
-        @submit="handleCreateRuleSubmit"
-      />
-    </AppModal>
+      @state-change="handleCreateFormStateChange"
+      @submit="handleCreateRuleSubmit"
+    />
 
-    <AppModal
+    <DistributionRuleFormModal
       :open="isEditRuleOpen"
       :actions="editRuleActions"
+      form-id="edit-distribution-rule-form"
+      :initial-values="selectedRule"
+      requires-initial-values
+      :server-error="saveError"
       title="Editar regla"
-      variant="default"
       @close="closeEditRule"
-    >
-      <DistributionRuleForm
-        v-if="selectedRule"
-        form-id="edit-distribution-rule-form"
-        :initial-values="selectedRule"
-        :server-error="saveError"
-        @state-change="handleEditFormStateChange"
-        @submit="handleEditRuleSubmit"
-      />
-    </AppModal>
+      @state-change="handleEditFormStateChange"
+      @submit="handleEditRuleSubmit"
+    />
 
-    <AppModal
+    <DistributionRuleDeleteModal
       :open="isDeleteRuleOpen"
       :actions="deleteRuleActions"
-      title="Eliminar regla"
-      variant="danger"
-      @action="$event === 'confirm-delete-rule' && confirmDeleteRule()"
+      :delete-error="deleteError"
+      :rule="selectedRule"
       @close="closeDeleteRule"
-    >
-      <div class="space-y-3">
-        <AppText v-if="selectedRule">
-          Vas a eliminar <strong>{{ selectedRule.name }}</strong
-          >.
-        </AppText>
-        <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmDeleteRule"
+    />
   </div>
 </template>
