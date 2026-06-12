@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import {
-  CheckCircleIcon,
-  XMarkIcon,
-} from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -17,6 +13,7 @@ import AccountTransactionsHeader from '@/modules/accounts/components/AccountTran
 import AccountTransactionsList from '@/modules/accounts/components/AccountTransactionsList.vue';
 import AccountTransactionsToolbar from '@/modules/accounts/components/AccountTransactionsToolbar.vue';
 import { useAccountTransactionFilters } from '@/modules/accounts/composables/useAccountTransactionFilters';
+import { useAccountTransactionModalActions } from '@/modules/accounts/composables/useAccountTransactionModalActions';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import { createDashboardRepository } from '@/modules/admin/repositories/dashboardRepository';
 import {
@@ -160,61 +157,21 @@ const selectedTransaction = computed(() => {
   );
 });
 
-const createTransactionActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-transaction',
-    label: isSaving.value ? 'Guardando...' : 'Crear transacción',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'transaction-form',
-    disabled: !createFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const editTransactionActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-edit-transaction',
-    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'edit-transaction-form',
-    disabled: !editFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const deleteTransactionActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'confirm-delete-transaction',
-    label: isDeleting.value ? 'Eliminando...' : 'Eliminar transacción',
-    tone: 'primary' as const,
-    disabled: !selectedTransaction.value || isDeleting.value,
-  },
-]);
-
-const completeTransactionActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'confirm-complete-transaction',
-    label: isSaving.value ? 'Guardando...' : 'Completar transacción',
-    tone: 'primary' as const,
-    icon: CheckCircleIcon,
-    disabled: !selectedTransaction.value || isSaving.value,
-  },
-]);
-
-const completePendingByUserActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'confirm-complete-pending-by-user',
-    label: isCompletingPendingByUser.value ? 'Completando...' : 'Completar pendientes',
-    tone: 'primary' as const,
-    icon: CheckCircleIcon,
-    disabled: !selectedPendingByUser.value || isCompletingPendingByUser.value,
-  },
-]);
+const {
+  completePendingByUserActions,
+  completeTransactionActions,
+  createTransactionActions,
+  deleteTransactionActions,
+  editTransactionActions,
+} = useAccountTransactionModalActions({
+  createFormState,
+  editFormState,
+  isCompletingPendingByUser,
+  isDeleting,
+  isSaving,
+  selectedPendingByUser,
+  selectedTransaction,
+});
 
 watch(
   () => props.account?.balance,
