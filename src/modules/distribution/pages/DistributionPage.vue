@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -9,6 +8,8 @@ import DistributionRuleFormModal from '@/modules/distribution/components/Distrib
 import DistributionRulesList from '@/modules/distribution/components/DistributionRulesList.vue';
 import DistributionRulesToolbar from '@/modules/distribution/components/DistributionRulesToolbar.vue';
 import { useDistributionRuleFilters } from '@/modules/distribution/composables/useDistributionRuleFilters';
+import { useDistributionRuleModalActions } from '@/modules/distribution/composables/useDistributionRuleModalActions';
+import { useDistributionRuleModals } from '@/modules/distribution/composables/useDistributionRuleModals';
 import { useDistributionRulesCrud } from '@/modules/distribution/composables/useDistributionRulesCrud';
 import type {
   DistributionFrequency,
@@ -27,13 +28,6 @@ type FormState = {
 };
 
 const route = useRoute();
-const isCreateRuleOpen = ref(false);
-const isEditRuleOpen = ref(false);
-const isDeleteRuleOpen = ref(false);
-const isFiltersOpen = ref(false);
-const selectedRuleId = ref<string | null>(null);
-const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
-const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 
 const frequencyOptions = [
   { value: 'monthly', label: 'Mensual' },
@@ -69,6 +63,39 @@ const {
   deleteRule,
 } = useDistributionRulesCrud();
 
+const {
+  closeCreateRule,
+  closeDeleteRule,
+  closeEditRule,
+  closeFilters,
+  createFormState,
+  editFormState,
+  handleCreateFormStateChange,
+  handleEditFormStateChange,
+  isCreateRuleOpen,
+  isDeleteRuleOpen,
+  isEditRuleOpen,
+  isFiltersOpen,
+  openCreateRule,
+  openDeleteRule,
+  openEditRule,
+  openFilters,
+  selectedRule,
+} = useDistributionRuleModals({
+  clearDeleteError,
+  clearSaveError,
+  rules,
+});
+
+const { createRuleActions, deleteRuleActions, editRuleActions } =
+  useDistributionRuleModalActions({
+    createFormState,
+    editFormState,
+    isDeleting,
+    isSaving,
+    selectedRule,
+  });
+
 const rulesPerPage = computed(() => {
   const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
@@ -86,48 +113,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   },
 });
 
-const selectedRule = computed(() => {
-  if (!selectedRuleId.value) {
-    return null;
-  }
-
-  return rules.value.find((rule) => rule.id === selectedRuleId.value) ?? null;
-});
-
-const createRuleActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-rule',
-    label: isSaving.value ? 'Guardando...' : 'Crear regla',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'distribution-rule-form',
-    disabled: !createFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const editRuleActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-edit-rule',
-    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'edit-distribution-rule-form',
-    disabled: !editFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const deleteRuleActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'confirm-delete-rule',
-    label: isDeleting.value ? 'Eliminando...' : 'Eliminar regla',
-    tone: 'primary' as const,
-    disabled: !selectedRule.value || isDeleting.value,
-  },
-]);
-
 watch(
   [activeFilters, rulesPerPage],
   ([nextFilters, nextPerPage]) => {
@@ -138,50 +123,6 @@ watch(
   },
   { immediate: true },
 );
-
-function openFilters(): void {
-  isFiltersOpen.value = true;
-}
-
-function closeFilters(): void {
-  isFiltersOpen.value = false;
-}
-
-function openCreateRule(): void {
-  clearSaveError();
-  createFormState.value = { canSubmit: false, isSubmitting: false };
-  isCreateRuleOpen.value = true;
-}
-
-function closeCreateRule(): void {
-  isCreateRuleOpen.value = false;
-  clearSaveError();
-}
-
-function openEditRule(ruleId: string): void {
-  clearSaveError();
-  selectedRuleId.value = ruleId;
-  editFormState.value = { canSubmit: false, isSubmitting: false };
-  isEditRuleOpen.value = true;
-}
-
-function closeEditRule(): void {
-  isEditRuleOpen.value = false;
-  selectedRuleId.value = null;
-  clearSaveError();
-}
-
-function openDeleteRule(ruleId: string): void {
-  clearDeleteError();
-  selectedRuleId.value = ruleId;
-  isDeleteRuleOpen.value = true;
-}
-
-function closeDeleteRule(): void {
-  isDeleteRuleOpen.value = false;
-  selectedRuleId.value = null;
-  clearDeleteError();
-}
 
 async function handleCreateRuleSubmit(payload: DistributionRuleWritePayload): Promise<void> {
   const wasCreated = await createRule(payload);
@@ -213,14 +154,6 @@ async function confirmDeleteRule(): Promise<void> {
   if (wasDeleted) {
     closeDeleteRule();
   }
-}
-
-function handleCreateFormStateChange(state: FormState): void {
-  createFormState.value = state;
-}
-
-function handleEditFormStateChange(state: FormState): void {
-  editFormState.value = state;
 }
 
 function reloadRules(): void {
