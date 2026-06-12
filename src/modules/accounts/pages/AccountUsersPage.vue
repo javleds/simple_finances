@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import AccountUsersList from '@/modules/accounts/components/AccountUsersList.vue';
+import AccountUsersSplitEditor from '@/modules/accounts/components/AccountUsersSplitEditor.vue';
 import AccountUsersToolbar from '@/modules/accounts/components/AccountUsersToolbar.vue';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import type { AccountMember } from '@/modules/accounts/types';
@@ -13,11 +14,9 @@ import { usePaginatedCollection } from '@/modules/shared/composables/usePaginate
 import { areQueriesEqual } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
-  AppCard,
   AppListState,
   AppLoadMoreFooter,
   AppModal,
-  AppPercentageSplitEditor,
   AppText,
   AppTitle,
 } from '@/modules/shared/components';
@@ -370,35 +369,15 @@ function resetSplitDraft(): void {
   <section class="space-y-4">
     <AccountUsersToolbar v-model:search-term="searchTerm" @create="openCreateUser" />
 
-    <AppCard v-if="canShowSplitEditor" class="space-y-4 rounded-2xl p-4!">
-      <AppPercentageSplitEditor v-model="splitDraft" :users="splitUsers" />
-
-      <div
-        class="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
-        :style="{ borderColor: 'var(--app-color-border)' }"
-      >
-        <div class="space-y-1">
-          <AppText size="sm" tone="subtle">
-            Esta barra ajusta los porcentajes de los usuarios cargados en pantalla.
-          </AppText>
-          <AppText v-if="!hasLoadedEveryUserForSplit" size="sm" tone="subtle">
-            Carga el resto de usuarios para repartir el 100% sobre toda la cuenta antes de guardar.
-          </AppText>
-          <AppText v-else size="sm" tone="subtle">
-            La persistencia final requiere un endpoint masivo para enviar toda la distribución.
-          </AppText>
-        </div>
-
-        <div class="flex gap-2 self-end sm:self-auto">
-          <AppButton variant="secondary" :disabled="!hasSplitChanges" @click="resetSplitDraft">
-            Restablecer
-          </AppButton>
-          <AppButton variant="primary" :disabled="!hasSplitChanges" @click="applySplitDraft">
-            Aplicar
-          </AppButton>
-        </div>
-      </div>
-    </AppCard>
+    <AccountUsersSplitEditor
+      v-model="splitDraft"
+      :can-show="canShowSplitEditor"
+      :has-changes="hasSplitChanges"
+      :has-loaded-every-user="hasLoadedEveryUserForSplit"
+      :users="splitUsers"
+      @apply="applySplitDraft"
+      @reset="resetSplitDraft"
+    />
 
     <section
       v-if="usersState.loadError.value && usersState.items.value.length > 0"
