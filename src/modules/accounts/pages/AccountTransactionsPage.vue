@@ -12,6 +12,7 @@ import AccountTransactionFormModal from '@/modules/accounts/components/AccountTr
 import AccountTransactionsHeader from '@/modules/accounts/components/AccountTransactionsHeader.vue';
 import AccountTransactionsList from '@/modules/accounts/components/AccountTransactionsList.vue';
 import AccountTransactionsToolbar from '@/modules/accounts/components/AccountTransactionsToolbar.vue';
+import { useAccountTransactionActions } from '@/modules/accounts/composables/useAccountTransactionActions';
 import { useAccountTransactionFilters } from '@/modules/accounts/composables/useAccountTransactionFilters';
 import { useAccountTransactionModalActions } from '@/modules/accounts/composables/useAccountTransactionModalActions';
 import { useAccountTransactionModals } from '@/modules/accounts/composables/useAccountTransactionModals';
@@ -183,6 +184,34 @@ const {
   selectedTransaction,
 });
 
+const {
+  confirmCompleteTransaction,
+  confirmDeleteTransaction,
+  handleEditTransactionSubmit,
+  handleLoadMoreRetry,
+  handleTransactionSubmit,
+  infiniteStatusLabel,
+  reloadTransactions,
+} = useAccountTransactionActions({
+  accountId,
+  activeFilters,
+  canCompleteTransaction,
+  closeCompleteTransactionModal,
+  closeCreateTransactionModal,
+  closeDeleteTransactionModal,
+  closeEditTransactionModal,
+  createTransaction,
+  deleteTransaction,
+  hasReachedEnd,
+  isLoadingMore,
+  loadMoreTransactions,
+  loadTransactions,
+  onMutationMeta: applyMutationMeta,
+  selectedTransaction,
+  transactionsPerPage,
+  updateTransaction,
+});
+
 watch(
   () => props.account?.balance,
   (nextBalance) => {
@@ -261,72 +290,6 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
   }
 
   return fallback;
-}
-
-async function handleTransactionSubmit(payload: TransactionWritePayload): Promise<void> {
-  const result = await createTransaction(payload);
-
-  if (!result) {
-    return;
-  }
-
-  applyMutationMeta(result.meta);
-  closeCreateTransactionModal();
-}
-
-async function handleEditTransactionSubmit(payload: TransactionWritePayload): Promise<void> {
-  if (!selectedTransaction.value) {
-    return;
-  }
-
-  const result = await updateTransaction(selectedTransaction.value.id, payload);
-
-  if (!result) {
-    return;
-  }
-
-  applyMutationMeta(result.meta);
-  closeEditTransactionModal();
-}
-
-async function confirmDeleteTransaction(): Promise<void> {
-  if (!selectedTransaction.value) {
-    return;
-  }
-
-  const result = await deleteTransaction(selectedTransaction.value.id, accountId.value);
-
-  if (!result) {
-    return;
-  }
-
-  applyMutationMeta(result.meta);
-  closeDeleteTransactionModal();
-}
-
-async function confirmCompleteTransaction(): Promise<void> {
-  if (!selectedTransaction.value || !canCompleteTransaction(selectedTransaction.value)) {
-    return;
-  }
-
-  const result = await updateTransaction(selectedTransaction.value.id, {
-    type: selectedTransaction.value.type,
-    status: 'completed',
-    concept: selectedTransaction.value.concept,
-    amount: selectedTransaction.value.amount,
-    accountId: selectedTransaction.value.accountId,
-    splitBetweenUsers: Object.keys(selectedTransaction.value.userPayments).length > 0,
-    date: selectedTransaction.value.date,
-    financialGoalId: selectedTransaction.value.financialGoalId,
-    userPayments: selectedTransaction.value.userPayments,
-  });
-
-  if (!result) {
-    return;
-  }
-
-  applyMutationMeta(result.meta);
-  closeCompleteTransactionModal();
 }
 
 async function confirmCompletePendingByUser(): Promise<void> {
@@ -480,32 +443,6 @@ function markCompletedPendingByUser(userId: string, transactionIds: string[]): v
     .filter((user) => user.amount > 0 && user.transactionIds.length > 0);
 }
 
-async function reloadTransactions(): Promise<void> {
-  if (!accountId.value) {
-    return;
-  }
-
-  await loadTransactions(accountId.value, activeFilters.value, {
-    reset: true,
-    perPage: transactionsPerPage.value,
-  });
-}
-
-function handleLoadMoreRetry(): void {
-  void loadMoreTransactions();
-}
-
-function infiniteStatusLabel(): string {
-  if (isLoadingMore.value) {
-    return 'Cargando más transacciones...';
-  }
-
-  if (hasReachedEnd.value) {
-    return 'Has llegado al final.';
-  }
-
-  return 'Sigue desplazándote para revisar más actividad conforme la cuenta acumule movimientos.';
-}
 </script>
 
 <template>
