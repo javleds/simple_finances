@@ -3,7 +3,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 import AccountDeleteModal from '@/modules/accounts/components/AccountDeleteModal.vue';
 import AccountFiltersModal from '@/modules/accounts/components/AccountFiltersModal.vue';
@@ -11,16 +11,15 @@ import AccountFormModal from '@/modules/accounts/components/AccountFormModal.vue
 import AccountsList from '@/modules/accounts/components/AccountsList.vue';
 import AccountsToolbar from '@/modules/accounts/components/AccountsToolbar.vue';
 import { useAccountsCrud } from '@/modules/accounts/composables/useAccountsCrud';
+import { useAccountFilters } from '@/modules/accounts/composables/useAccountFilters';
 import type {
   Account,
   AccountKindFilter,
-  AccountListFilters,
   AccountSurfaceFilter,
   AccountStatus,
   AccountWritePayload,
 } from '@/modules/accounts/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppListState,
   AppLoadMoreFooter,
@@ -33,12 +32,9 @@ type FormState = {
 };
 
 const route = useRoute();
-const router = useRouter();
 
 const statusOptions = ['Activo', 'Inactivo'] as const;
 const defaultAccountsPerPage = 20;
-const defaultAccountStatuses: AccountStatus[] = ['Activo'];
-const defaultAccountSurfaces: AccountSurfaceFilter[] = ['physical'];
 const kindOptions = [
   { value: 'credit', label: 'Crédito' },
   { value: 'debit', label: 'Débito' },
@@ -47,26 +43,25 @@ const surfaceOptions = [
   { value: 'virtual', label: 'Virtual' },
   { value: 'physical', label: 'Física' },
 ] as const;
-const availableStatuses = [...statusOptions];
-const availableKinds = kindOptions.map((option) => option.value);
-const availableSurfaces = surfaceOptions.map((option) => option.value);
-
-const searchTerm = ref(typeof route.query.search === 'string' ? route.query.search : '');
 const isCreateAccountOpen = ref(false);
 const isDeleteAccountOpen = ref(false);
 const isEditAccountOpen = ref(false);
 const isFiltersOpen = ref(false);
-const selectedStatuses = ref<AccountStatus[]>(
-  parseQueryValuesOrDefault(route.query.status, isAccountStatus, defaultAccountStatuses),
-);
-const selectedKinds = ref<AccountKindFilter[]>(parseQueryValues(route.query.kind, isAccountKindFilter));
-const selectedSurfaces = ref<AccountSurfaceFilter[]>(
-  parseQueryValuesOrDefault(route.query.surface, isAccountSurfaceFilter, defaultAccountSurfaces),
-);
 const selectedAccountId = ref<string | null>(null);
 const editAccountInitialValues = ref<Partial<Account> | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
+const {
+  activeFilters,
+  clearFilters,
+  searchTerm,
+  selectedKinds,
+  selectedStatuses,
+  selectedSurfaces,
+  toggleKind,
+  toggleStatus,
+  toggleSurface,
+} = useAccountFilters();
 
 const {
   accounts,
@@ -105,13 +100,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
     void loadMoreAccounts();
   },
 });
-
-const activeFilters = computed<AccountListFilters>(() => ({
-  search: searchTerm.value.trim() || undefined,
-  status: selectedStatuses.value.length > 0 ? [...selectedStatuses.value] : undefined,
-  kind: selectedKinds.value.length > 0 ? [...selectedKinds.value] : undefined,
-  surface: selectedSurfaces.value.length > 0 ? [...selectedSurfaces.value] : undefined,
-}));
 
 const selectedAccount = computed(() => {
   if (!selectedAccountId.value) {
@@ -156,39 +144,6 @@ const deleteAccountActions = computed(() => [
 ]);
 
 watch(
-  () => route.query,
-  (nextQuery) => {
-    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
-    setArrayValueIfChanged(selectedStatuses, parseQueryValues(nextQuery.status, isAccountStatus));
-    setArrayValueIfChanged(selectedKinds, parseQueryValues(nextQuery.kind, isAccountKindFilter));
-    setArrayValueIfChanged(
-      selectedSurfaces,
-      parseQueryValues(nextQuery.surface, isAccountSurfaceFilter),
-    );
-  },
-);
-
-watch(
-  [searchTerm, selectedStatuses, selectedKinds, selectedSurfaces],
-  () => {
-    const nextQuery = {
-      ...route.query,
-      search: searchTerm.value.trim() ? searchTerm.value.trim() : undefined,
-      status: selectedStatuses.value.length > 0 ? selectedStatuses.value.join(',') : undefined,
-      kind: selectedKinds.value.length > 0 ? selectedKinds.value.join(',') : undefined,
-      surface: selectedSurfaces.value.length > 0 ? selectedSurfaces.value.join(',') : undefined,
-    };
-
-    if (areQueriesEqual(route.query, nextQuery)) {
-      return;
-    }
-
-    void router.replace({ query: nextQuery });
-  },
-  { deep: true, immediate: true },
-);
-
-watch(
   [activeFilters, accountsPerPage],
   ([nextFilters, nextPerPage]) => {
     void loadAccounts(nextFilters, {
@@ -198,33 +153,6 @@ watch(
   },
   { immediate: true },
 );
-
-function toggleStatus(status: AccountStatus): void {
-  if (selectedStatuses.value.includes(status)) {
-    selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
-    return;
-  }
-
-  selectedStatuses.value = [...selectedStatuses.value, status];
-}
-
-function toggleKind(kind: AccountKindFilter): void {
-  if (selectedKinds.value.includes(kind)) {
-    selectedKinds.value = selectedKinds.value.filter((item) => item !== kind);
-    return;
-  }
-
-  selectedKinds.value = [...selectedKinds.value, kind];
-}
-
-function toggleSurface(surface: AccountSurfaceFilter): void {
-  if (selectedSurfaces.value.includes(surface)) {
-    selectedSurfaces.value = selectedSurfaces.value.filter((item) => item !== surface);
-    return;
-  }
-
-  selectedSurfaces.value = [...selectedSurfaces.value, surface];
-}
 
 function openFilters(): void {
   isFiltersOpen.value = true;
@@ -279,13 +207,6 @@ function closeDeleteAccount(): void {
 
 function closeFilters(): void {
   isFiltersOpen.value = false;
-}
-
-function clearFilters(): void {
-  searchTerm.value = '';
-  selectedStatuses.value = [];
-  selectedKinds.value = [];
-  selectedSurfaces.value = [];
 }
 
 function reloadAccounts(): void {
@@ -351,48 +272,6 @@ function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
 }
 
-function parseQueryValuesOrDefault<TValue extends string>(
-  value: unknown,
-  isAllowedValue: (value: string) => value is TValue,
-  defaultValues: TValue[],
-): TValue[] {
-  if (typeof value !== 'string') {
-    return [...defaultValues];
-  }
-
-  return parseQueryValues(value, isAllowedValue);
-}
-
-function setArrayValueIfChanged<TValue>(
-  target: { value: TValue[] },
-  nextValue: TValue[],
-): void {
-  if (areArraysEqual(target.value, nextValue)) {
-    return;
-  }
-
-  target.value = nextValue;
-}
-
-function areArraysEqual<TValue>(currentValue: TValue[], nextValue: TValue[]): boolean {
-  if (currentValue.length !== nextValue.length) {
-    return false;
-  }
-
-  return currentValue.every((item, index) => item === nextValue[index]);
-}
-
-function isAccountStatus(value: string): value is AccountStatus {
-  return availableStatuses.includes(value as AccountStatus);
-}
-
-function isAccountKindFilter(value: string): value is AccountKindFilter {
-  return availableKinds.includes(value as AccountKindFilter);
-}
-
-function isAccountSurfaceFilter(value: string): value is AccountSurfaceFilter {
-  return availableSurfaces.includes(value as AccountSurfaceFilter);
-}
 </script>
 
 <template>
