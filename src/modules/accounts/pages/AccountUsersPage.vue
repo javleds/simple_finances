@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 import AccountUserCreateModal from '@/modules/accounts/components/AccountUserCreateModal.vue';
 import AccountUserDeleteModal from '@/modules/accounts/components/AccountUserDeleteModal.vue';
@@ -9,10 +9,10 @@ import AccountUserEditModal from '@/modules/accounts/components/AccountUserEditM
 import AccountUsersList from '@/modules/accounts/components/AccountUsersList.vue';
 import AccountUsersSplitEditor from '@/modules/accounts/components/AccountUsersSplitEditor.vue';
 import AccountUsersToolbar from '@/modules/accounts/components/AccountUsersToolbar.vue';
+import { useAccountUserFilters } from '@/modules/accounts/composables/useAccountUserFilters';
 import { useAccountUsersCrud } from '@/modules/accounts/composables/useAccountUsersCrud';
 import type { AccountMember } from '@/modules/accounts/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { areQueriesEqual } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
   AppListState,
@@ -21,14 +21,12 @@ import {
 } from '@/modules/shared/components';
 
 const route = useRoute();
-const router = useRouter();
 const defaultUsersPerPage = 20;
 
 const emit = defineEmits<{
   accountUsersChange: [users: AccountMember[]];
 }>();
 
-const searchTerm = ref('');
 const isCreateUserOpen = ref(false);
 const isEditUserOpen = ref(false);
 const isDeleteUserOpen = ref(false);
@@ -51,9 +49,14 @@ const usersPerPage = computed(() => {
   return rawValue;
 });
 
-const activeFilters = computed(() => ({
-  search: searchTerm.value.trim() || undefined,
-}));
+const {
+  activeFilters,
+  searchTerm,
+} = useAccountUserFilters({
+  onChange: () => {
+    void loadUsers();
+  },
+});
 
 const {
   clearDeleteError,
@@ -170,28 +173,6 @@ watch(
   },
   { immediate: true },
 );
-
-watch(
-  () => route.query.search,
-  (nextSearch) => {
-    searchTerm.value = typeof nextSearch === 'string' ? nextSearch : '';
-  },
-  { immediate: true },
-);
-
-watch(searchTerm, () => {
-  const nextQuery = {
-    ...route.query,
-    search: searchTerm.value.trim() || undefined,
-  };
-
-  if (areQueriesEqual(route.query, nextQuery)) {
-    return;
-  }
-
-  void router.replace({ query: nextQuery });
-  void loadUsers();
-});
 
 watch(
   () => users.value,
