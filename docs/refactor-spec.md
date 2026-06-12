@@ -304,10 +304,24 @@ Commits aplicados:
 - `1b53ee0 refactor(accounts): extract modal state`
 - `275a2a5 refactor(accounts): extract modal actions`
 - `f85cf26 refactor(accounts): extract list loader`
+- `db46915 refactor(subscriptions): extract query filters`
+- `b23459b refactor(subscriptions): extract modal state`
+- `087812c refactor(subscriptions): extract list loader`
+- `16b5bb7 refactor(subscriptions): extract funding accounts`
+- `e069b16 refactor(distribution): extract rule views`
+- `f45e083 refactor(distribution): extract rule filters`
+- `9e1b129 refactor(distribution): extract rule modal state`
+- `082ce37 refactor(distribution): extract rule list loader`
+- `db14b55 refactor(distribution): extract relation views`
+- `3f395db refactor(distribution): extract relation state`
+- `9c2196d refactor(admin): extract invitations views`
+- `0d8dedf refactor(transactions): extract page sections`
+- `ae5e596 refactor(auth): extract register sections`
+- `f382689 refactor(goals): extract page orchestration`
 
 Estado actual:
 
-- `AccountGoalsPage.vue` bajo de ~555 lineas a 292 lineas.
+- `AccountGoalsPage.vue` bajo de ~555 lineas a 237 lineas.
 - Se agregaron shared components:
   - `AppListState.vue`
   - `AppEmptyState.vue`
@@ -323,6 +337,8 @@ Estado actual:
   - `useAccountGoalFilters.ts`
   - `useAccountGoalModals.ts`
   - `useAccountGoalModalActions.ts`
+  - `useAccountGoalPageActions.ts`
+  - `useAccountGoalPresentation.ts`
 - `AccountInvitationsPage.vue` bajo de ~526 lineas a 237 lineas.
 - La UI de invitaciones quedo separada en:
   - `AccountInvitationsToolbar.vue`
@@ -359,11 +375,14 @@ Estado actual:
   - `DashboardCompletePendingModal.vue`
 - La logica de pendientes del dashboard quedo separada en:
   - `useDashboardPendingActions.ts`
-- `AccountTransactionsPage.vue` bajo de ~1025 lineas a 325 lineas en la fase actual.
+- `AccountTransactionsPage.vue` bajo de ~1025 lineas a 250 lineas.
 - La UI de transacciones quedo parcialmente separada en:
   - `AccountTransactionsHeader.vue`
   - `AccountTransactionsToolbar.vue`
   - `AccountTransactionsList.vue`
+  - `AccountTransactionsActivity.vue`
+  - `AccountTransactionsFilters.vue`
+  - `AccountTransactionsModals.vue`
   - `AccountTransactionFiltersModal.vue`
   - `AccountTransactionFormModal.vue`
   - `AccountTransactionDeleteModal.vue`
@@ -376,6 +395,7 @@ Estado actual:
   - `useAccountTransactionActions.ts`
   - `useAccountTransactionsPendingState.ts`
   - `useAccountTransactionListLoader.ts`
+  - `useAccountTransactionsContext.ts`
 - Las reglas puras de permisos de transacciones quedaron centralizadas en:
   - `src/modules/transactions/lib/transactionPermissions.ts`
 - Se agregaron pruebas para `useAccountTransactionsPendingState.ts` cubriendo:
@@ -394,14 +414,72 @@ Estado actual:
   - `useAccountModals.ts`
   - `useAccountModalActions.ts`
   - `useAccountListLoader.ts`
+- `SubscriptionsPage.vue` bajo de ~649 lineas a 239 lineas.
+- La UI de suscripciones quedo separada en:
+  - `SubscriptionFiltersModal.vue`
+  - `SubscriptionFormModal.vue`
+  - `SubscriptionDeleteModal.vue`
+  - `SubscriptionsFundingAccountsModal.vue`
+  - `SubscriptionsList.vue`
+  - `SubscriptionsToolbar.vue`
+- La logica de suscripciones quedo separada en:
+  - `useSubscriptionFilters.ts`
+  - `useSubscriptionModals.ts`
+  - `useSubscriptionModalActions.ts`
+  - `useSubscriptionListLoader.ts`
+  - `useSubscriptionFundingAccounts.ts`
+- `DistributionPage.vue` bajo de ~490 lineas a 214 lineas.
+- `DistributionDetailPage.vue` bajo de ~368 lineas a 214 lineas.
+- La UI de distribucion quedo separada en:
+  - `DistributionRuleFiltersModal.vue`
+  - `DistributionRuleFormModal.vue`
+  - `DistributionRuleDeleteModal.vue`
+  - `DistributionRulesList.vue`
+  - `DistributionRulesToolbar.vue`
+  - `DistributionRelationFormModal.vue`
+  - `DistributionRelationDeleteModal.vue`
+  - `DistributionRelationsList.vue`
+  - `DistributionRelationsToolbar.vue`
+- La logica de distribucion quedo separada en:
+  - `useDistributionRuleFilters.ts`
+  - `useDistributionRuleModals.ts`
+  - `useDistributionRuleModalActions.ts`
+  - `useDistributionRuleListLoader.ts`
+  - `useDistributionRelationState.ts`
+- `InvitationsPage.vue` bajo de ~360 lineas a 247 lineas.
+- La UI de admin invitations quedo separada en:
+  - `AdminInvitationFiltersModal.vue`
+  - `AdminInvitationFormModal.vue`
+  - `AdminInvitationDeleteModal.vue`
+  - `AdminInvitationsList.vue`
+  - `AdminInvitationsToolbar.vue`
+- `RegisterPage.vue` bajo de 297 lineas a 215 lineas.
+- La UI de registro quedo separada en:
+  - `AuthThemeSelector.vue`
+  - `RegisterLegalFields.vue`
+  - `RegisterLegalModals.vue`
+
+Inventario final de paginas en `src/modules/*/pages`:
+
+- `AccountTransactionsPage.vue`: 250 lineas
+- `InvitationsPage.vue`: 247 lineas
+- `AccountUsersPage.vue`: 243 lineas
+- `SubscriptionsPage.vue`: 239 lineas
+- `AccountInvitationsPage.vue`: 237 lineas
+- `AccountGoalsPage.vue`: 237 lineas
+- `AccountsPage.vue`: 236 lineas
+- `RegisterPage.vue`: 215 lineas
+- `DistributionPage.vue`: 214 lineas
+- `DistributionDetailPage.vue`: 214 lineas
+- Resto de paginas: 209 lineas o menos
 
 Verificacion:
 
 - `npm run build` paso despues de cada commit funcional.
 - `npm run test:unit -- src/modules/accounts/composables/useAccountTransactionsPendingState.spec.ts` paso para las reglas de pending/balance.
+- El alcance solicitado para paginas quedo cubierto: no hay archivos bajo `src/modules/*/pages` por encima de 250 lineas.
 
 Siguiente paso recomendado:
 
-1. Evaluar si `AccountTransactionsPage.vue` requiere una ultima extraccion pequena o si ya puede considerarse aceptable temporalmente.
-2. Continuar con `SubscriptionsPage.vue` y `DistributionPage.vue`.
-3. Revisar despues si `AccountGoalsPage.vue` debe bajar de 292 lineas a menos de 250.
+1. Revisar layouts y formularios grandes fuera de `src/modules/*/pages`, especialmente `AdminLayout.vue`, `TransactionsForm.vue`, `AccountsForm.vue` y shared components complejos.
+2. Agregar pruebas adicionales a filtros query-sync y acciones CRUD donde haya reglas de permisos o efectos de balance.
