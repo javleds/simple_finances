@@ -268,6 +268,16 @@ Commits aplicados:
 - `1adecc4 refactor(invitations): extract modal state`
 - `fb9ea82 refactor(invitations): extract modal actions`
 - `a5b861a refactor(invitations): extract page actions`
+- `dddcb2c refactor(users): use shared list state components`
+- `2cab660 refactor(users): extract users toolbar`
+- `aef3222 refactor(users): extract split editor`
+- `2de3c2f refactor(users): extract user modals`
+- `ae0b47f refactor(users): extract users crud`
+- `11e5ad7 refactor(users): extract query synced filters`
+- `49d6931 refactor(users): extract modal state`
+- `0253755 refactor(users): extract modal actions`
+- `a79408a refactor(users): extract split draft state`
+- `1b1b79c refactor(users): extract page actions`
 
 Estado actual:
 
@@ -299,6 +309,21 @@ Estado actual:
   - `useAccountInvitationModals.ts`
   - `useAccountInvitationModalActions.ts`
   - `useAccountInvitationActions.ts`
+- `AccountUsersPage.vue` bajo de ~567 lineas a 243 lineas.
+- La UI de usuarios quedo separada en:
+  - `AccountUsersToolbar.vue`
+  - `AccountUsersSplitEditor.vue`
+  - `AccountUsersList.vue`
+  - `AccountUserCreateModal.vue`
+  - `AccountUserEditModal.vue`
+  - `AccountUserDeleteModal.vue`
+- La logica de usuarios quedo separada en:
+  - `useAccountUserFilters.ts`
+  - `useAccountUsersCrud.ts`
+  - `useAccountUserModals.ts`
+  - `useAccountUserModalActions.ts`
+  - `useAccountUsersSplitDraft.ts`
+  - `useAccountUserActions.ts`
 
 Verificacion:
 
@@ -307,6 +332,6 @@ Verificacion:
 Siguiente paso recomendado:
 
 1. Extraer acciones CRUD de `AccountGoalsPage.vue` a un composable pequeno, por ejemplo `useAccountGoalPageActions`.
-2. Refactorizar `AccountUsersPage.vue` con el mismo patron ya probado en metas e invitaciones.
+2. Continuar con `DashboardPage.vue`, que es el siguiente punto del orden recomendado y ya tiene una primera separacion de grafica.
 3. Revisar si `reloadGoals`, `infiniteStatusLabel` y `goalsPerPage` deben quedarse en pagina o moverse a un composable de carga/lista.
-4. Despues continuar con `DashboardPage.vue` o `AccountTransactionsPage.vue`, segun prioridad de riesgo.
+4. Despues abordar `AccountTransactionsPage.vue` como fase separada por mayor riesgo.
