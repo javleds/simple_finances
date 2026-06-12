@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 import DashboardBalanceSection from '@/modules/admin/components/DashboardBalanceSection.vue';
+import DashboardCompletePendingModal from '@/modules/admin/components/DashboardCompletePendingModal.vue';
 import DashboardPendingActions from '@/modules/admin/components/DashboardPendingActions.vue';
 import DashboardSubscriptionsPlanning from '@/modules/admin/components/DashboardSubscriptionsPlanning.vue';
 import DashboardSummaryCards from '@/modules/admin/components/DashboardSummaryCards.vue';
@@ -13,8 +13,6 @@ import type {
 } from '@/modules/admin/types/dashboard';
 import {
   AppButton,
-  AppCard,
-  AppModal,
   AppText,
 } from '@/modules/shared/components';
 
@@ -111,15 +109,6 @@ function parseDate(value?: string): number {
   return Date.parse(value);
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
 function openCompletePendingAction(actionId: string): void {
   clearCompleteError();
   selectedPendingActionId.value = actionId;
@@ -202,53 +191,14 @@ async function confirmCompletePendingAction(): Promise<void> {
       :recommended-savings="recommendedSavings"
     />
 
-    <AppModal
+    <DashboardCompletePendingModal
       :open="isCompletePendingActionOpen"
-      :actions="[
-        { key: 'close', label: 'Cancelar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        {
-          key: 'confirm-complete',
-          label: isCompletingPendingActions ? 'Completando...' : 'Completar movimiento',
-          tone: 'primary',
-          icon: CheckIcon,
-          disabled: isCompletingPendingActions,
-        },
-      ]"
-      title="Completar movimiento"
-      variant="warning"
-      @action="$event === 'confirm-complete' && void confirmCompletePendingAction()"
+      :complete-error="completeError"
+      :is-completing="isCompletingPendingActions"
+      :selected-account-actions="selectedPendingAccountActions"
+      :selected-action="selectedPendingAction"
       @close="closeCompletePendingAction"
-    >
-      <div class="space-y-3">
-        <AppText v-if="completeError" class="text-(--app-color-danger)!">
-          {{ completeError }}
-        </AppText>
-
-        <AppText v-if="selectedPendingAction">
-          Vas a marcar como completado el pendiente de
-          <strong>{{ selectedPendingAction.accountName }}</strong>
-          por
-          <strong>{{ formatCurrency(selectedPendingAction.amount) }}</strong
-          >.
-        </AppText>
-
-        <AppText v-else-if="selectedPendingAccountActions.length > 0">
-          Vas a marcar como completados los
-          <strong>{{ selectedPendingAccountActions.length }} pendientes de esta cuenta</strong>
-          por un total de
-          <strong>
-            {{
-              formatCurrency(
-                selectedPendingAccountActions.reduce((sum, item) => sum + item.amount, 0),
-              )
-            }} </strong
-          >.
-        </AppText>
-
-        <AppText v-else>
-          Confirma si quieres marcar este movimiento pendiente como completado.
-        </AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmCompletePendingAction"
+    />
   </div>
 </template>
