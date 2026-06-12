@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
-
 import DistributionRuleDeleteModal from '@/modules/distribution/components/DistributionRuleDeleteModal.vue';
 import DistributionRuleFiltersModal from '@/modules/distribution/components/DistributionRuleFiltersModal.vue';
 import DistributionRuleFormModal from '@/modules/distribution/components/DistributionRuleFormModal.vue';
 import DistributionRulesList from '@/modules/distribution/components/DistributionRulesList.vue';
 import DistributionRulesToolbar from '@/modules/distribution/components/DistributionRulesToolbar.vue';
 import { useDistributionRuleFilters } from '@/modules/distribution/composables/useDistributionRuleFilters';
+import { useDistributionRuleListLoader } from '@/modules/distribution/composables/useDistributionRuleListLoader';
 import { useDistributionRuleModalActions } from '@/modules/distribution/composables/useDistributionRuleModalActions';
 import { useDistributionRuleModals } from '@/modules/distribution/composables/useDistributionRuleModals';
 import { useDistributionRulesCrud } from '@/modules/distribution/composables/useDistributionRulesCrud';
@@ -15,25 +13,16 @@ import type {
   DistributionFrequency,
   DistributionRuleWritePayload,
 } from '@/modules/distribution/types';
-import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
   AppListState,
   AppLoadMoreFooter,
   AppText,
 } from '@/modules/shared/components';
 
-type FormState = {
-  canSubmit: boolean;
-  isSubmitting: boolean;
-};
-
-const route = useRoute();
-
 const frequencyOptions = [
   { value: 'monthly', label: 'Mensual' },
   { value: 'semi_monthly', label: 'Quincenal' },
 ] as const;
-const defaultRulesPerPage = 20;
 const {
   activeFilters,
   clearFilters,
@@ -96,33 +85,20 @@ const { createRuleActions, deleteRuleActions, editRuleActions } =
     selectedRule,
   });
 
-const rulesPerPage = computed(() => {
-  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
-
-  if (!Number.isInteger(rawValue) || rawValue <= 0) {
-    return defaultRulesPerPage;
-  }
-
-  return rawValue;
+const {
+  handleLoadMoreRetry,
+  infiniteStatusLabel,
+  loadMoreSentinel,
+  reloadRules,
+} = useDistributionRuleListLoader({
+  activeFilters,
+  hasMoreRules,
+  hasReachedEnd,
+  isLoading,
+  isLoadingMore,
+  loadMoreRules,
+  loadRules,
 });
-
-const { target: loadMoreSentinel } = useInfiniteScroll({
-  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreRules.value),
-  onIntersect: () => {
-    void loadMoreRules();
-  },
-});
-
-watch(
-  [activeFilters, rulesPerPage],
-  ([nextFilters, nextPerPage]) => {
-    void loadRules(nextFilters, {
-      reset: true,
-      perPage: nextPerPage,
-    });
-  },
-  { immediate: true },
-);
 
 async function handleCreateRuleSubmit(payload: DistributionRuleWritePayload): Promise<void> {
   const wasCreated = await createRule(payload);
@@ -156,28 +132,6 @@ async function confirmDeleteRule(): Promise<void> {
   }
 }
 
-function reloadRules(): void {
-  void loadRules(activeFilters.value, {
-    reset: true,
-    perPage: rulesPerPage.value,
-  });
-}
-
-function handleLoadMoreRetry(): void {
-  void loadMoreRules();
-}
-
-function infiniteStatusLabel(): string {
-  if (isLoadingMore.value) {
-    return 'Cargando más reglas...';
-  }
-
-  if (hasReachedEnd.value) {
-    return 'Has llegado al final.';
-  }
-
-  return 'Sigue desplazándote para revisar más reglas conforme crezca la facility.';
-}
 </script>
 
 <template>
