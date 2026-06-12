@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type InvitationStatus = 'pending' | 'accepted' | 'declined';
@@ -13,7 +15,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   delete: [itemId: string];
+  edit: [itemId: string];
 }>();
+
+const canManageInvitation = computed(() => props.status !== 'accepted');
 
 function statusLabel(status: InvitationStatus): string {
   if (status === 'accepted') {
@@ -54,6 +59,10 @@ function accentStyle(status: InvitationStatus): string {
 function handleDelete(): void {
   emit('delete', props.itemId);
 }
+
+function handleEdit(): void {
+  emit('edit', props.itemId);
+}
 </script>
 
 <template>
@@ -66,7 +75,14 @@ function handleDelete(): void {
     />
 
     <div class="relative space-y-3">
-      <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3">
+      <div
+        class="grid items-start gap-3"
+        :class="
+          canManageInvitation
+            ? 'grid-cols-[minmax(0,1fr)_auto_auto]'
+            : 'grid-cols-[minmax(0,1fr)_auto]'
+        "
+      >
         <div class="min-w-0 space-y-1">
           <p
             class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
@@ -89,7 +105,12 @@ function handleDelete(): void {
           </p>
         </div>
 
-        <AppActionMenu class="shrink-0" @delete="handleDelete" />
+        <AppActionMenu
+          v-if="canManageInvitation"
+          class="shrink-0"
+          @delete="handleDelete"
+          @edit="handleEdit"
+        />
       </div>
 
       <div class="flex items-center justify-between gap-3">

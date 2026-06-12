@@ -32,12 +32,12 @@ export function useAccountInvitationModals(options: UseAccountInvitationModalsOp
       return null;
     }
 
-    return (
-      options.invitations.value.find(
-        (invitation) => invitation.id === selectedInvitationId.value,
-      ) ?? null
-    );
+    return findInvitation(selectedInvitationId.value);
   });
+
+  function findInvitation(invitationId: string): AccountInvite | null {
+    return options.invitations.value.find((invitation) => invitation.id === invitationId) ?? null;
+  }
 
   function openFilters(): void {
     isFiltersOpen.value = true;
@@ -59,6 +59,12 @@ export function useAccountInvitationModals(options: UseAccountInvitationModalsOp
   }
 
   function openEditInvitation(invitationId: string): void {
+    const invitation = findInvitation(invitationId);
+
+    if (invitation?.status === 'accepted') {
+      return;
+    }
+
     options.clearSaveError();
     selectedInvitationId.value = invitationId;
     editFormState.value = { ...initialFormState };
@@ -72,6 +78,12 @@ export function useAccountInvitationModals(options: UseAccountInvitationModalsOp
   }
 
   function openDeleteInvitation(invitationId: string): void {
+    const invitation = findInvitation(invitationId);
+
+    if (invitation?.status === 'accepted') {
+      return;
+    }
+
     options.clearDeleteError();
     selectedInvitationId.value = invitationId;
     isDeleteInvitationOpen.value = true;

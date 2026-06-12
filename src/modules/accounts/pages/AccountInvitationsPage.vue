@@ -67,6 +67,7 @@ const {
   isFiltersOpen,
   openCreateInvitation,
   openDeleteInvitation,
+  openEditInvitation,
   openFilters,
   selectedInvitation,
 } = useAccountInvitationModals({
@@ -164,7 +165,11 @@ watch(
       loading-label="Cargando invitaciones..."
       @retry="reloadInvitations"
     >
-      <AccountInvitationsList :invitations="invites" @delete="openDeleteInvitation">
+      <AccountInvitationsList
+        :invitations="invites"
+        @delete="openDeleteInvitation"
+        @edit="openEditInvitation"
+      >
         <template #footer>
           <div ref="loadMoreSentinel">
             <AppLoadMoreFooter

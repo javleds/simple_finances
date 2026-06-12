@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   delete: [invitationId: string];
+  edit: [invitationId: string];
 }>();
 
 function formatDateLabel(date: string | null): string {
@@ -43,6 +44,7 @@ function formatDateLabel(date: string | null): string {
         :percentage-label="`${invitation.percentage}%`"
         :status="invitation.status"
         @delete="emit('delete', $event)"
+        @edit="emit('edit', $event)"
       />
 
       <AppEmptyState
