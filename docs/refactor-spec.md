@@ -297,6 +297,13 @@ Commits aplicados:
 - `aab786d refactor(transactions): extract pending state`
 - `9622770 refactor(transactions): extract list loader`
 - `4a0f55a refactor(transactions): share permission rules`
+- `718af46 test(transactions): cover pending state rules`
+- `f1a367e refactor(accounts): extract list filters toolbar`
+- `9a1db54 refactor(accounts): extract account modals`
+- `c403bea refactor(accounts): extract query filters`
+- `1b53ee0 refactor(accounts): extract modal state`
+- `275a2a5 refactor(accounts): extract modal actions`
+- `f85cf26 refactor(accounts): extract list loader`
 
 Estado actual:
 
@@ -371,13 +378,30 @@ Estado actual:
   - `useAccountTransactionListLoader.ts`
 - Las reglas puras de permisos de transacciones quedaron centralizadas en:
   - `src/modules/transactions/lib/transactionPermissions.ts`
+- Se agregaron pruebas para `useAccountTransactionsPendingState.ts` cubriendo:
+  - completado total con ajuste de balance y ocultamiento del usuario
+  - completado parcial con error visible y pendiente restante
+  - datos frescos de cuenta que no deben reintroducir usuarios completados
+- `AccountsPage.vue` bajo de ~657 lineas a 236 lineas.
+- La UI de cuentas quedo separada en:
+  - `AccountsToolbar.vue`
+  - `AccountsList.vue`
+  - `AccountFiltersModal.vue`
+  - `AccountFormModal.vue`
+  - `AccountDeleteModal.vue`
+- La logica de cuentas quedo separada en:
+  - `useAccountFilters.ts`
+  - `useAccountModals.ts`
+  - `useAccountModalActions.ts`
+  - `useAccountListLoader.ts`
 
 Verificacion:
 
 - `npm run build` paso despues de cada commit funcional.
+- `npm run test:unit -- src/modules/accounts/composables/useAccountTransactionsPendingState.spec.ts` paso para las reglas de pending/balance.
 
 Siguiente paso recomendado:
 
-1. Agregar pruebas enfocadas para `useAccountTransactionsPendingState.ts`, especialmente balance, ocultamiento del usuario completado y completado parcial/fallido.
-2. Evaluar si `AccountTransactionsPage.vue` requiere una ultima extraccion pequena o si ya puede considerarse aceptable temporalmente.
-3. Continuar con `AccountsPage.vue`, `SubscriptionsPage.vue` y `DistributionPage.vue`.
+1. Evaluar si `AccountTransactionsPage.vue` requiere una ultima extraccion pequena o si ya puede considerarse aceptable temporalmente.
+2. Continuar con `SubscriptionsPage.vue` y `DistributionPage.vue`.
+3. Revisar despues si `AccountGoalsPage.vue` debe bajar de 292 lineas a menos de 250.
