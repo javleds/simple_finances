@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import AccountUsersList from '@/modules/accounts/components/AccountUsersList.vue';
+import AccountUsersToolbar from '@/modules/accounts/components/AccountUsersToolbar.vue';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import type { AccountMember } from '@/modules/accounts/types';
 import { ApiError } from '@/lib/api/apiClient';
@@ -13,12 +14,10 @@ import { areQueriesEqual } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
   AppCard,
-  AppInput,
   AppListState,
   AppLoadMoreFooter,
   AppModal,
   AppPercentageSplitEditor,
-  AppSectionBar,
   AppText,
   AppTitle,
 } from '@/modules/shared/components';
@@ -369,16 +368,7 @@ function resetSplitDraft(): void {
 
 <template>
   <section class="space-y-4">
-    <AppSectionBar
-      title="Usuarios"
-      description="Miembros reales compartidos en la cuenta y su porcentaje asignado."
-    >
-      <template #actions>
-        <AppButton variant="primary" @click="openCreateUser">
-          <PlusIcon class="h-4 w-4" />
-        </AppButton>
-      </template>
-    </AppSectionBar>
+    <AccountUsersToolbar v-model:search-term="searchTerm" @create="openCreateUser" />
 
     <AppCard v-if="canShowSplitEditor" class="space-y-4 rounded-2xl p-4!">
       <AppPercentageSplitEditor v-model="splitDraft" :users="splitUsers" />
@@ -409,21 +399,6 @@ function resetSplitDraft(): void {
         </div>
       </div>
     </AppCard>
-
-    <div class="relative flex-1">
-      <div
-        class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
-      >
-        <MagnifyingGlassIcon class="h-5 w-5" />
-      </div>
-      <AppInput
-        id="user-search"
-        v-model="searchTerm"
-        type="search"
-        placeholder="Buscar usuario por nombre o correo"
-        class="pl-11"
-      />
-    </div>
 
     <section
       v-if="usersState.loadError.value && usersState.items.value.length > 0"
