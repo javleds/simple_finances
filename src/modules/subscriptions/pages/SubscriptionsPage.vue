@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-
-import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import SubscriptionDeleteModal from '@/modules/subscriptions/components/SubscriptionDeleteModal.vue';
 import SubscriptionFiltersModal from '@/modules/subscriptions/components/SubscriptionFiltersModal.vue';
 import SubscriptionFormModal from '@/modules/subscriptions/components/SubscriptionFormModal.vue';
 import SubscriptionsList from '@/modules/subscriptions/components/SubscriptionsList.vue';
 import SubscriptionsToolbar from '@/modules/subscriptions/components/SubscriptionsToolbar.vue';
 import { useSubscriptionFilters } from '@/modules/subscriptions/composables/useSubscriptionFilters';
+import { useSubscriptionFundingAccounts } from '@/modules/subscriptions/composables/useSubscriptionFundingAccounts';
 import { useSubscriptionListLoader } from '@/modules/subscriptions/composables/useSubscriptionListLoader';
 import { useSubscriptionModalActions } from '@/modules/subscriptions/composables/useSubscriptionModalActions';
 import { useSubscriptionModals } from '@/modules/subscriptions/composables/useSubscriptionModals';
@@ -23,17 +21,6 @@ import {
   AppText,
 } from '@/modules/shared/components';
 
-type FormState = {
-  canSubmit: boolean;
-  isSubmitting: boolean;
-};
-
-const accountsRepository = createAccountsRepository();
-
-const fundingAccountOptions = ref<Array<{ value: string; label: string; description?: string }>>(
-  [],
-);
-
 const subscriptionStatusOptions = [
   { value: 'active', label: 'Activa' },
   { value: 'cancelled', label: 'Cancelada' },
@@ -44,6 +31,7 @@ const subscriptionUnitOptions = [
   { value: 'months', label: 'Meses' },
   { value: 'years', label: 'Años' },
 ] as const;
+const { fundingAccountOptions } = useSubscriptionFundingAccounts();
 const {
   activeFilters,
   clearFilters,
@@ -125,23 +113,6 @@ const {
   loadMoreSubscriptions,
   loadSubscriptions,
 });
-
-onMounted(() => {
-  void loadFundingAccounts();
-});
-
-async function loadFundingAccounts(): Promise<void> {
-  try {
-    const response = await accountsRepository.list();
-    fundingAccountOptions.value = response.items.map((account) => ({
-      value: account.id,
-      label: account.name,
-      description: account.description,
-    }));
-  } catch {
-    fundingAccountOptions.value = [];
-  }
-}
 
 async function handleCreateSubscriptionSubmit(payload: SubscriptionWritePayload): Promise<void> {
   const wasCreated = await createSubscription(payload);
