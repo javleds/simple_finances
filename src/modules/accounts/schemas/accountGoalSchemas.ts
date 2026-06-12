@@ -40,6 +40,7 @@ export type AccountGoal = {
   accountId: string;
   name: string;
   amount: number;
+  achievedAmount: number;
   progress: number;
   deadline: string | null;
   status: 'in progress' | 'completed';
@@ -96,6 +97,7 @@ export const accountGoalApiSchema = z.object({
     .nullable(),
   name: z.string(),
   amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  achieved_amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   progress: z
     .unknown()
     .optional()
@@ -127,6 +129,7 @@ export function mapAccountGoalApiToDomain(
     accountId: payload.account_id ?? payload.account?.id ?? '',
     name: payload.name,
     amount: payload.amount,
+    achievedAmount: payload.achieved_amount,
     progress: payload.progress,
     deadline: payload.must_completed_at,
     status: payload.status,

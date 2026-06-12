@@ -7,7 +7,7 @@ const props = defineProps<{
   itemId: string;
   title: string;
   ownerLabel: string;
-  currentAmount: number;
+  achievedAmount: number;
   targetAmount: number;
   remainingAmount: number;
   progress: number;
@@ -55,6 +55,14 @@ function formattedAmount(amount: number): string {
   return currencyFormatter.format(amount);
 }
 
+function formattedProgress(progress: number): string {
+  return `${progress.toFixed(2)}%`;
+}
+
+function progressWidth(progress: number): string {
+  return `${Math.min(Math.max(progress, 0), 100)}%`;
+}
+
 function handleEdit(): void {
   emit('edit', props.itemId);
 }
@@ -85,7 +93,12 @@ function handleDelete(): void {
 
         <div class="space-y-1 text-right">
           <p class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums">
-            {{ formattedAmount(props.currentAmount) }}
+            {{ formattedAmount(props.targetAmount) }}
+          </p>
+          <p
+            class="text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
+          >
+            cantidad
           </p>
         </div>
 
@@ -104,14 +117,37 @@ function handleDelete(): void {
         <p
           class="shrink-0 text-[11px] font-semibold tracking-[0.04em] text-(--app-color-text) uppercase"
         >
-          {{ props.progress }}%
+          {{ formattedProgress(props.progress) }}
         </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="space-y-1">
+          <p class="font-semibold text-(--app-color-text) tabular-nums">
+            {{ formattedAmount(props.achievedAmount) }}
+          </p>
+          <p
+            class="font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
+          >
+            acumulado
+          </p>
+        </div>
+        <div class="space-y-1 text-right">
+          <p class="font-semibold text-(--app-color-text) tabular-nums">
+            {{ formattedAmount(props.remainingAmount) }}
+          </p>
+          <p
+            class="font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
+          >
+            restante
+          </p>
+        </div>
       </div>
 
       <div class="h-2 rounded-full bg-(--app-color-surface-muted)">
         <div
           class="h-2 rounded-full"
-          :style="{ width: `${props.progress}%`, backgroundColor: progressBarStyle(props.status) }"
+          :style="{ width: progressWidth(props.progress), backgroundColor: progressBarStyle(props.status) }"
         />
       </div>
     </div>
