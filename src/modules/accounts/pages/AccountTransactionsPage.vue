@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import {
-  ArrowPathIcon,
   CheckCircleIcon,
-  CheckIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
@@ -11,16 +9,13 @@ import { useRoute, useRouter } from 'vue-router';
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import type { Account, AccountPendingByUser } from '@/modules/accounts/types';
 import AccountTransactionFiltersModal from '@/modules/accounts/components/AccountTransactionFiltersModal.vue';
+import AccountTransactionsHeader from '@/modules/accounts/components/AccountTransactionsHeader.vue';
 import AccountTransactionsList from '@/modules/accounts/components/AccountTransactionsList.vue';
 import AccountTransactionsToolbar from '@/modules/accounts/components/AccountTransactionsToolbar.vue';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import { createDashboardRepository } from '@/modules/admin/repositories/dashboardRepository';
 import {
-  AppAvatarValueRow,
   AppButton,
-  AppCard,
-  AppHeroMetric,
-  AppIconButton,
   AppListState,
   AppLoadMoreFooter,
   AppModal,
@@ -573,10 +568,6 @@ function canCompleteTransaction(options: {
   return canManageTransaction(options) && options.status === 'pending';
 }
 
-function canCompletePendingByUser(user: AccountPendingByUser): boolean {
-  return currentUserId.value === user.userId && user.transactionIds.length > 0;
-}
-
 function rememberCompletedPendingTransactions(transactionIds: string[]): void {
   for (const transactionId of transactionIds) {
     completedPendingTransactionIds.add(transactionId);
@@ -697,51 +688,14 @@ function infiniteStatusLabel(): string {
 
 <template>
   <section class="space-y-4">
-    <AppCard class="rounded-3xl">
-      <div class="space-y-5">
-        <AppHeroMetric label="Balance" :value="formatCurrency(accountBalance)">
-          <template #adornment>
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-full border bg-(--app-color-surface-muted)"
-              :style="{ borderColor: 'var(--app-color-border)' }"
-            >
-              <ArrowPathIcon class="h-5 w-5 text-(--app-color-text-subtle)" />
-            </div>
-          </template>
-        </AppHeroMetric>
-
-        <template v-if="isSharedAccount">
-          <div class="border-t" :style="{ borderColor: 'var(--app-color-border)' }"></div>
-
-          <div class="space-y-3">
-            <AppText size="sm" tone="subtle">Pendientes por usuario</AppText>
-
-            <div v-if="usersWithPendingExpenses.length > 0" class="space-y-2">
-              <AppAvatarValueRow
-                v-for="user in usersWithPendingExpenses"
-                :key="user.userId"
-                :name="user.userName"
-                :value="formatCurrency(user.amount)"
-              >
-                <template v-if="canCompletePendingByUser(user)" #action>
-                  <AppIconButton
-                    :ariaLabel="`Completar pendientes de ${user.userName}`"
-                    :disabled="isCompletingPendingByUser"
-                    @click="openCompletePendingByUser(user.userId)"
-                  >
-                    <CheckIcon class="h-4 w-4" />
-                  </AppIconButton>
-                </template>
-              </AppAvatarValueRow>
-            </div>
-
-            <div v-else class="rounded-2xl bg-(--app-color-surface-muted) px-3 py-3">
-              <AppText size="sm" tone="subtle">No hay montos pendientes por usuario.</AppText>
-            </div>
-          </div>
-        </template>
-      </div>
-    </AppCard>
+    <AccountTransactionsHeader
+      :balance="accountBalance"
+      :current-user-id="currentUserId"
+      :is-completing-pending-by-user="isCompletingPendingByUser"
+      :is-shared-account="isSharedAccount"
+      :pending-users="usersWithPendingExpenses"
+      @complete-pending-user="openCompletePendingByUser"
+    />
 
     <AccountTransactionsToolbar
       v-model:search-term="searchTerm"
