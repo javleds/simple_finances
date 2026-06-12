@@ -355,7 +355,7 @@ it('creates and updates accounts and transactions through the api', function () 
         ->assertCreated()
         ->assertJsonPath('data.concept', 'Groceries')
         ->assertJsonPath('meta.account.id', $accountId)
-        ->assertJsonPath('meta.account.balance', -250);
+        ->assertJsonPath('meta.account.balance', -250.0);
 
     expect(Account::findOrFail($accountId)->fresh()->balance)->toBe(-250.0);
 
@@ -375,13 +375,13 @@ it('creates and updates accounts and transactions through the api', function () 
         ->assertOk()
         ->assertJsonPath('data.concept', 'Groceries and fuel')
         ->assertJsonPath('meta.account.id', $accountId)
-        ->assertJsonPath('meta.account.balance', -300);
+        ->assertJsonPath('meta.account.balance', -300.0);
 
     $this->withHeaders(apiHeaders($user))
         ->deleteJson("/api/transactions/{$transaction->id}")
         ->assertOk()
         ->assertJsonPath('meta.account.id', $accountId)
-        ->assertJsonPath('meta.account.balance', 0);
+        ->assertJsonPath('meta.account.balance', 0.0);
 
     expect(Account::findOrFail($accountId)->fresh()->balance)->toBe(0.0);
 });
@@ -469,7 +469,7 @@ it('returns pending income totals by account user', function () {
         ->assertOk()
         ->assertJsonPath('data.pending_by_user.0.user_id', $owner->id)
         ->assertJsonPath('data.pending_by_user.0.user_name', 'Account Owner')
-        ->assertJsonPath('data.pending_by_user.0.amount', 150)
+        ->assertJsonPath('data.pending_by_user.0.amount', 150.0)
         ->assertJsonPath('data.pending_by_user.1.user_id', $sharedUser->id)
         ->assertJsonPath('data.pending_by_user.1.user_name', 'Shared User')
         ->assertJsonPath('data.pending_by_user.1.amount', 75.5)
@@ -718,7 +718,7 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ->assertCreated()
         ->assertJsonPath('data.financial_goal_id', $goalId)
         ->assertJsonPath('meta.account.id', $account->id)
-        ->assertJsonPath('meta.account.balance', 5000);
+        ->assertJsonPath('meta.account.balance', 5000.0);
 
     $transactionId = $transactionResponse->json('data.id');
 
@@ -726,6 +726,16 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ->getJson("/api/accounts/{$account->id}/transactions?type=income&financial_goal_id={$goalId}")
         ->assertOk()
         ->assertJsonPath('meta.total', 1);
+
+    $goalsResponse = $this->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/financial-goals")
+        ->assertOk()
+        ->assertJsonPath('data.0.achieved_amount', 5000.0)
+        ->assertJsonPath('data.0.progress', 100.0);
+
+    expect($goalsResponse->json('data.0.amount'))->toBeFloat()
+        ->and($goalsResponse->json('data.0.achieved_amount'))->toBeFloat()
+        ->and($goalsResponse->json('data.0.progress'))->toBeFloat();
 
     $this->withHeaders(apiHeaders($owner))
         ->putJson("/api/accounts/{$account->id}/transactions/{$transactionId}", [
@@ -739,6 +749,12 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ])
         ->assertOk()
         ->assertJsonPath('data.financial_goal_id', $goalId);
+
+    $this->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/financial-goals")
+        ->assertOk()
+        ->assertJsonPath('data.0.achieved_amount', 4500.0)
+        ->assertJsonPath('data.0.progress', 90.0);
 
     $inviteResponse = $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/invites", [
@@ -762,7 +778,13 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ->deleteJson("/api/accounts/{$account->id}/transactions/{$transactionId}")
         ->assertOk()
         ->assertJsonPath('meta.account.id', $account->id)
-        ->assertJsonPath('meta.account.balance', 0);
+        ->assertJsonPath('meta.account.balance', 0.0);
+
+    $this->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/financial-goals")
+        ->assertOk()
+        ->assertJsonPath('data.0.achieved_amount', 0.0)
+        ->assertJsonPath('data.0.progress', 0.0);
 
     $this->withHeaders(apiHeaders($owner))
         ->deleteJson("/api/accounts/{$account->id}/financial-goals/{$goalId}")
@@ -908,9 +930,9 @@ it('returns every created transaction when storing a split account transaction',
         ->assertJsonPath('data.1.status', 'pending')
         ->assertJsonPath('meta.account.id', $account->id)
         ->assertJsonPath('meta.pending_by_user.0.user_id', $owner->id)
-        ->assertJsonPath('meta.pending_by_user.0.amount', 0)
+        ->assertJsonPath('meta.pending_by_user.0.amount', 0.0)
         ->assertJsonPath('meta.pending_by_user.1.user_id', $memberOne->id)
-        ->assertJsonPath('meta.pending_by_user.1.amount', 99)
+        ->assertJsonPath('meta.pending_by_user.1.amount', 99.0)
         ->assertJsonPath('meta.pending_by_user.2.user_id', $memberTwo->id)
         ->assertJsonPath('meta.pending_by_user.2.amount', 99.99)
         ->assertJsonPath('meta.pending_by_user.3.user_id', $memberThree->id)
@@ -932,10 +954,10 @@ it('returns every created transaction when storing a split account transaction',
         ->deleteJson("/api/accounts/{$account->id}/transactions/{$transactionIds[0]}")
         ->assertOk()
         ->assertJsonPath('meta.account.id', $account->id)
-        ->assertJsonPath('meta.pending_by_user.0.amount', 0)
-        ->assertJsonPath('meta.pending_by_user.1.amount', 0)
-        ->assertJsonPath('meta.pending_by_user.2.amount', 0)
-        ->assertJsonPath('meta.pending_by_user.3.amount', 0);
+        ->assertJsonPath('meta.pending_by_user.0.amount', 0.0)
+        ->assertJsonPath('meta.pending_by_user.1.amount', 0.0)
+        ->assertJsonPath('meta.pending_by_user.2.amount', 0.0)
+        ->assertJsonPath('meta.pending_by_user.3.amount', 0.0);
 });
 
 it('lists split transactions with pending incomes before the origin outcome', function () {
@@ -1053,12 +1075,12 @@ it('updates split child transactions when editing a parent transaction through t
         ->assertJsonPath('data.sub_transactions.0.concept', 'Updated dinner - Parte de '.$owner->name)
         ->assertJsonPath('data.sub_transactions.1.concept', 'Updated dinner - Parte de '.$member->name)
         ->assertJsonPath('meta.pending_by_user.0.user_id', $owner->id)
-        ->assertJsonPath('meta.pending_by_user.0.amount', 50)
+        ->assertJsonPath('meta.pending_by_user.0.amount', 50.0)
         ->assertJsonPath('meta.pending_by_user.1.user_id', $member->id)
-        ->assertJsonPath('meta.pending_by_user.1.amount', 150);
+        ->assertJsonPath('meta.pending_by_user.1.amount', 150.0);
 
-    expect(collect($updateResponse->json('data.sub_transactions'))->pluck('amount')->all())->toBe([50, 150])
-        ->and(collect($updateResponse->json('data.sub_transactions'))->pluck('percentage')->all())->toBe([25, 75])
+    expect(collect($updateResponse->json('data.sub_transactions'))->pluck('amount')->all())->toBe([50.0, 150.0])
+        ->and(collect($updateResponse->json('data.sub_transactions'))->pluck('percentage')->all())->toBe([25.0, 75.0])
         ->and(
             collect($updateResponse->json('data.sub_transactions'))
                 ->pluck('scheduled_at')

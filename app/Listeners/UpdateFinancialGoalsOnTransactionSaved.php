@@ -3,33 +3,24 @@
 namespace App\Listeners;
 
 use App\Events\TransactionSaved;
-use App\Models\Transaction;
+use App\Services\FinancialGoals\RecalculateFinancialGoalProgress;
 
 class UpdateFinancialGoalsOnTransactionSaved
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(
+        private readonly RecalculateFinancialGoalProgress $recalculateFinancialGoalProgress,
+    ) {}
 
-    /**
-     * Handle the event.
-     */
     public function handle(TransactionSaved $event): void
     {
-        $goals = $event->transaction->account->financialGoals()->where('user_id', auth()->id())->get();
+        $account = $event->transaction->account()->withoutGlobalScopes()->first();
 
-        foreach ($goals as $goal) {
-            $savedAmount = Transaction::completed()->income()
-                ->where('financial_goal_id', $goal->id)
-                ->where('user_id', auth()->id())
-                ->sum('amount');
+        if ($account === null) {
+            return;
+        }
 
-            $goal->progress = min(intval(($savedAmount * 100) / $goal->amount), 100);
-            $goal->save();
+        foreach ($account->financialGoals()->withoutGlobalScopes()->get() as $goal) {
+            $this->recalculateFinancialGoalProgress->execute($goal);
         }
     }
 }

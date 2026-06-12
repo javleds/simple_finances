@@ -18,6 +18,9 @@ class FinancialGoal extends Model
         return [
             'user_id' => 'int',
             'account_id' => 'int',
+            'amount' => 'float',
+            'achieved_amount' => 'float',
+            'progress' => 'float',
             'must_completed_at' => 'date',
             'status' => FinancialGoalStatus::class,
         ];
@@ -35,10 +38,7 @@ class FinancialGoal extends Model
 
     public function getAchievedAmount(): float
     {
-        return $this->account->transactions()
-            ->completed()
-            ->where('financial_goal_id', $this->id)
-            ->sum('amount');
+        return $this->achieved_amount;
     }
 
     public function getRemainingAmount(): float

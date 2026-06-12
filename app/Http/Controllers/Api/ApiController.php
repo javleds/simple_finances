@@ -15,7 +15,7 @@ abstract class ApiController extends Controller
 {
     protected function respond(array $payload = [], int $status = 200): JsonResponse
     {
-        return response()->json($payload, $status);
+        return response()->json($payload, $status, options: JSON_PRESERVE_ZERO_FRACTION);
     }
 
     protected function respondModel(Model $model, array $relations = [], int $status = 200, array $meta = []): JsonResponse
