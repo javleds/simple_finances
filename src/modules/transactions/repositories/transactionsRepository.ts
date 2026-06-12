@@ -7,10 +7,7 @@ import {
 } from '@/modules/shared/lib/pagination';
 import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
-import {
-  mapTransactionApiToDomain,
-  transactionApiSchema,
-} from '../schemas/transactionSchemas';
+import { mapTransactionApiToDomain, transactionApiSchema } from '../schemas/transactionSchemas';
 import type {
   CreatedTransactionResult,
   DeletedTransactionResult,

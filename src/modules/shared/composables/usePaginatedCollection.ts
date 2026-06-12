@@ -34,7 +34,10 @@ export function usePaginatedCollection<TItem, TArgs extends unknown[]>(
     () => hasItems.value && !hasMoreItems.value && !isLoadingMore.value,
   );
 
-  async function load(args: TArgs, loadOptions?: { reset?: boolean; perPage?: number }): Promise<void> {
+  async function load(
+    args: TArgs,
+    loadOptions?: { reset?: boolean; perPage?: number },
+  ): Promise<void> {
     const shouldReset = loadOptions?.reset ?? true;
     const nextPerPage = loadOptions?.perPage ?? perPage.value;
 

@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-  AppCard,
-  AppText,
-  AppToggleButton,
-  AppTitle,
-} from '@/modules/shared/components';
+import { AppCard, AppText, AppToggleButton, AppTitle } from '@/modules/shared/components';
 
 type SavingsCadence = 'monthly' | 'biweekly';
 

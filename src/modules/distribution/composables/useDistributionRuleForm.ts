@@ -7,10 +7,17 @@ import {
   distributionRuleFormSchema,
   mapDistributionRuleFormToWritePayload,
 } from '../schemas/distributionSchemas';
-import type { DistributionRule, DistributionRuleFormValues, DistributionRuleWritePayload } from '../types';
+import type {
+  DistributionRule,
+  DistributionRuleFormValues,
+  DistributionRuleWritePayload,
+} from '../types';
 
 type UseDistributionRuleFormOptions = {
-  initialValues?: Partial<DistributionRule> | null | (() => Partial<DistributionRule> | null | undefined);
+  initialValues?:
+    | Partial<DistributionRule>
+    | null
+    | (() => Partial<DistributionRule> | null | undefined);
 };
 
 export function useDistributionRuleForm(options: UseDistributionRuleFormOptions = {}) {
@@ -42,13 +49,15 @@ export function useDistributionRuleForm(options: UseDistributionRuleFormOptions 
 
   const frequency = computed({
     get: () => values.frequency,
-    set: (value: DistributionRuleFormValues['frequency']) => setFieldValue('frequency', value, true),
+    set: (value: DistributionRuleFormValues['frequency']) =>
+      setFieldValue('frequency', value, true),
   });
 
   const isSubmitDisabled = computed(() => isSubmitting.value || !meta.value.valid);
 
-  const submitForm = handleSubmit((submittedValues): DistributionRuleWritePayload =>
-    mapDistributionRuleFormToWritePayload(submittedValues),
+  const submitForm = handleSubmit(
+    (submittedValues): DistributionRuleWritePayload =>
+      mapDistributionRuleFormToWritePayload(submittedValues),
   );
 
   return {

@@ -19,7 +19,9 @@ type UseAccountTransactionModalActionsOptions = {
   selectedTransaction: ComputedRef<Transaction | null>;
 };
 
-export function useAccountTransactionModalActions(options: UseAccountTransactionModalActionsOptions) {
+export function useAccountTransactionModalActions(
+  options: UseAccountTransactionModalActionsOptions,
+) {
   const createTransactionActions = computed(() => [
     { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
     {
@@ -72,8 +74,7 @@ export function useAccountTransactionModalActions(options: UseAccountTransaction
       label: options.isCompletingPendingByUser.value ? 'Completando...' : 'Completar pendientes',
       tone: 'primary' as const,
       icon: CheckCircleIcon,
-      disabled:
-        !options.selectedPendingByUser.value || options.isCompletingPendingByUser.value,
+      disabled: !options.selectedPendingByUser.value || options.isCompletingPendingByUser.value,
     },
   ]);
 

@@ -26,9 +26,7 @@ type UseAccountTransactionListLoaderOptions = {
 
 const defaultTransactionsPerPage = 20;
 
-export function useAccountTransactionListLoader(
-  options: UseAccountTransactionListLoaderOptions,
-) {
+export function useAccountTransactionListLoader(options: UseAccountTransactionListLoaderOptions) {
   const route = useRoute();
   const transactionsPerPage = computed(() => {
     const rawValue =

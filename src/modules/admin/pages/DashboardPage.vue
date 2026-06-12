@@ -8,10 +8,7 @@ import DashboardSubscriptionsPlanning from '@/modules/admin/components/Dashboard
 import DashboardSummaryCards from '@/modules/admin/components/DashboardSummaryCards.vue';
 import { useDashboard } from '@/modules/admin/composables/useDashboard';
 import { useDashboardPendingActions } from '@/modules/admin/composables/useDashboardPendingActions';
-import {
-  AppButton,
-  AppText,
-} from '@/modules/shared/components';
+import { AppButton, AppText } from '@/modules/shared/components';
 
 type SavingsCadence = 'monthly' | 'biweekly';
 type AccountGraphMode = 'physical' | 'virtual';
@@ -61,7 +58,6 @@ const filteredGraphAccounts = computed(() =>
 onMounted(() => {
   void loadDashboard();
 });
-
 </script>
 
 <template>

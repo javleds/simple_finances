@@ -13,13 +13,7 @@ import {
   setStoredAuthSession,
 } from '@/modules/auth/lib/authSession';
 import { resolvePostAuthRedirectRoute } from '@/modules/auth/lib/postAuthRedirect';
-import {
-  AppButton,
-  AppCard,
-  AppLink,
-  AppText,
-  AppTitle,
-} from '@/modules/shared/components';
+import { AppButton, AppCard, AppLink, AppText, AppTitle } from '@/modules/shared/components';
 
 const route = useRoute();
 const router = useRouter();
@@ -134,9 +128,7 @@ onMounted(() => {
         <div class="space-y-6">
           <div class="space-y-2">
             <AppTitle as="h1" size="md">Verificación de email requerida</AppTitle>
-            <AppText>
-              Antes de entrar a la app necesitas verificar tu correo electrónico.
-            </AppText>
+            <AppText> Antes de entrar a la app necesitas verificar tu correo electrónico. </AppText>
           </div>
 
           <div
@@ -145,11 +137,12 @@ onMounted(() => {
           >
             <AppText v-if="email">
               Enviamos la verificación a
-              <span class="font-semibold text-(--app-color-text)">{{ email }}</span>.
+              <span class="font-semibold text-(--app-color-text)">{{ email }}</span
+              >.
             </AppText>
             <AppText v-else>
-              No encontramos el correo de esta sesión. Vuelve a iniciar sesión o regístrate otra
-              vez para solicitar un nuevo correo de verificación.
+              No encontramos el correo de esta sesión. Vuelve a iniciar sesión o regístrate otra vez
+              para solicitar un nuevo correo de verificación.
             </AppText>
           </div>
 

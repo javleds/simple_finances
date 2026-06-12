@@ -28,9 +28,7 @@ const draggingHandleIndex = ref<number | null>(null);
 const activePointerId = ref<number | null>(null);
 const activeHandleElement = ref<HTMLElement | null>(null);
 
-const normalizedPercentages = computed(() =>
-  normalizePercentages(props.users, props.modelValue),
-);
+const normalizedPercentages = computed(() => normalizePercentages(props.users, props.modelValue));
 
 const userItems = computed(() =>
   props.users.map((user, index) => ({
@@ -87,7 +85,12 @@ function normalizePercentages(
   }
 
   if (total <= 0) {
-    return basisPointsToRecord(distributeEvenly(users.map((user) => user.id), TOTAL_BASIS_POINTS));
+    return basisPointsToRecord(
+      distributeEvenly(
+        users.map((user) => user.id),
+        TOTAL_BASIS_POINTS,
+      ),
+    );
   }
 
   return basisPointsToRecord(
@@ -204,16 +207,17 @@ function clampBasisPoints(value: number): number {
   return Math.min(TOTAL_BASIS_POINTS, Math.max(0, value));
 }
 
-function arePercentagesEqual(
-  left: Record<string, number>,
-  right: Record<string, number>,
-): boolean {
+function arePercentagesEqual(left: Record<string, number>, right: Record<string, number>): boolean {
   const allKeys = new Set([...Object.keys(left), ...Object.keys(right)]);
 
-  return [...allKeys].every((key) => toBasisPoints(left[key] ?? 0) === toBasisPoints(right[key] ?? 0));
+  return [...allKeys].every(
+    (key) => toBasisPoints(left[key] ?? 0) === toBasisPoints(right[key] ?? 0),
+  );
 }
 
-function emitBasisPointValues(values: ReadonlyArray<{ userId: string; basisPoints: number }>): void {
+function emitBasisPointValues(
+  values: ReadonlyArray<{ userId: string; basisPoints: number }>,
+): void {
   emit('update:modelValue', basisPointsToRecord(values));
 }
 
@@ -225,7 +229,9 @@ function updateUserPercentage(userId: string, nextValue: string): void {
   }
 
   const requestedValue = Number.parseFloat(nextValue);
-  const nextBasisPoints = clampBasisPoints(Number.isFinite(requestedValue) ? toBasisPoints(requestedValue) : 0);
+  const nextBasisPoints = clampBasisPoints(
+    Number.isFinite(requestedValue) ? toBasisPoints(requestedValue) : 0,
+  );
   const remainingBasisPoints = TOTAL_BASIS_POINTS - nextBasisPoints;
   const otherUsers = userItems.value.filter((user) => user.id !== userId);
 
@@ -302,8 +308,10 @@ function handlePointerMove(event: PointerEvent): void {
     return;
   }
 
-  const prefixBasisPoints = handleIndex === 0 ? 0 : toBasisPoints(cumulativeBoundaries.value[handleIndex - 1] ?? 0);
-  const pairTotalBasisPoints = toBasisPoints(leftUser.percentage) + toBasisPoints(rightUser.percentage);
+  const prefixBasisPoints =
+    handleIndex === 0 ? 0 : toBasisPoints(cumulativeBoundaries.value[handleIndex - 1] ?? 0);
+  const pairTotalBasisPoints =
+    toBasisPoints(leftUser.percentage) + toBasisPoints(rightUser.percentage);
   const pointerOffset = clampNumber(event.clientX - trackBounds.left, 0, trackWidth);
   const pointerBasisPoints = Math.round((pointerOffset / trackWidth) * TOTAL_BASIS_POINTS);
   const nextLeftBasisPoints = clampNumber(
@@ -374,14 +382,14 @@ onBeforeUnmount(() => {
     <div class="space-y-3">
       <div
         ref="trackRef"
-        class="relative h-4 overflow-visible rounded-full bg-(--app-color-surface-muted) select-none touch-none"
+        class="relative h-4 touch-none overflow-visible rounded-full bg-(--app-color-surface-muted) select-none"
       >
         <div
           v-for="(user, index) in userItems"
           :key="user.id"
           class="absolute inset-y-0"
           :style="{
-            left: `${index === 0 ? 0 : cumulativeBoundaries[index - 1] ?? 0}%`,
+            left: `${index === 0 ? 0 : (cumulativeBoundaries[index - 1] ?? 0)}%`,
             width: `${user.percentage}%`,
             backgroundColor: user.color,
           }"
@@ -391,7 +399,7 @@ onBeforeUnmount(() => {
           v-for="(user, index) in userItems.slice(0, -1)"
           :key="`${user.id}-handle`"
           type="button"
-          class="absolute top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border bg-(--app-color-surface) shadow-sm transition focus:outline-none focus:ring-4 focus:ring-(--app-color-focus-ring) select-none touch-none"
+          class="absolute top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 touch-none items-center justify-center rounded-full border bg-(--app-color-surface) shadow-sm transition select-none focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
           :style="{
             left: `calc(${cumulativeBoundaries[index] ?? 0}% - ${HANDLE_WIDTH_PX / 2}px)`,
             borderColor: 'var(--app-color-border-strong)',

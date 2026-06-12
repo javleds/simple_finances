@@ -34,7 +34,11 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
       return null;
     }
 
-    return options.transactions.value.find((transaction) => transaction.id === selectedTransactionId.value) ?? null;
+    return (
+      options.transactions.value.find(
+        (transaction) => transaction.id === selectedTransactionId.value,
+      ) ?? null
+    );
   });
 
   function openCreateTransactionModal(): void {

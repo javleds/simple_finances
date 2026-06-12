@@ -32,7 +32,11 @@ export function useAccountInvitationModals(options: UseAccountInvitationModalsOp
       return null;
     }
 
-    return options.invitations.value.find((invitation) => invitation.id === selectedInvitationId.value) ?? null;
+    return (
+      options.invitations.value.find(
+        (invitation) => invitation.id === selectedInvitationId.value,
+      ) ?? null
+    );
   });
 
   function openFilters(): void {

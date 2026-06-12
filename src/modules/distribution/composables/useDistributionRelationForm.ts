@@ -15,7 +15,10 @@ import type {
 
 type UseDistributionRelationFormOptions = {
   fixedIncomeId: string;
-  initialValues?: Partial<DistributionRelation> | null | (() => Partial<DistributionRelation> | null | undefined);
+  initialValues?:
+    | Partial<DistributionRelation>
+    | null
+    | (() => Partial<DistributionRelation> | null | undefined);
 };
 
 export function useDistributionRelationForm(options: UseDistributionRelationFormOptions) {
@@ -57,8 +60,9 @@ export function useDistributionRelationForm(options: UseDistributionRelationForm
 
   const isSubmitDisabled = computed(() => isSubmitting.value || !meta.value.valid);
 
-  const submitForm = handleSubmit((submittedValues): DistributionRelationWritePayload =>
-    mapDistributionRelationFormToWritePayload(options.fixedIncomeId, submittedValues),
+  const submitForm = handleSubmit(
+    (submittedValues): DistributionRelationWritePayload =>
+      mapDistributionRelationFormToWritePayload(options.fixedIncomeId, submittedValues),
   );
 
   return {

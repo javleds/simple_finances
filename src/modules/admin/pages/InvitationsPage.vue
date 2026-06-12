@@ -12,11 +12,7 @@ import { ApiError } from '@/lib/api/apiClient';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 import { areQueriesEqual } from '@/modules/shared/lib/queryParams';
-import {
-  AppListState,
-  AppLoadMoreFooter,
-  AppText,
-} from '@/modules/shared/components';
+import { AppListState, AppLoadMoreFooter, AppText } from '@/modules/shared/components';
 
 type PendingInvitationAction = 'accepted' | 'declined';
 
@@ -32,7 +28,8 @@ const selectedInvitationId = ref<string | null>(null);
 const pendingAction = ref<PendingInvitationAction | null>(null);
 
 const invitationsPerPage = computed(() => {
-  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+  const rawValue =
+    typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
   if (!Number.isInteger(rawValue) || rawValue <= 0) {
     return defaultInvitationsPerPage;
@@ -57,7 +54,12 @@ const invitationsState = usePaginatedCollection<AccountInvite, []>({
 });
 
 const { target: loadMoreSentinel } = useInfiniteScroll({
-  enabled: computed(() => !invitationsState.isLoading.value && !invitationsState.isLoadingMore.value && invitationsState.hasMoreItems.value),
+  enabled: computed(
+    () =>
+      !invitationsState.isLoading.value &&
+      !invitationsState.isLoadingMore.value &&
+      invitationsState.hasMoreItems.value,
+  ),
   onIntersect: () => {
     void invitationsState.loadMore();
   },
@@ -69,7 +71,9 @@ const selectedInvitation = computed(() => {
   }
 
   return (
-    invitationsState.items.value.find((invitation) => invitation.id === selectedInvitationId.value) ?? null
+    invitationsState.items.value.find(
+      (invitation) => invitation.id === selectedInvitationId.value,
+    ) ?? null
   );
 });
 
@@ -227,7 +231,9 @@ function infiniteStatusLabel(): string {
           <div ref="loadMoreSentinel">
             <AppLoadMoreFooter
               :label="infiniteStatusLabel()"
-              :show-retry="Boolean(invitationsState.loadError.value && invitationsState.items.value.length > 0)"
+              :show-retry="
+                Boolean(invitationsState.loadError.value && invitationsState.items.value.length > 0)
+              "
               @retry="handleLoadMoreRetry"
             />
           </div>

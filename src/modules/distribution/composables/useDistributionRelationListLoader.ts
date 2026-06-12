@@ -38,9 +38,7 @@ export function useDistributionRelationListLoader(
   const { target: loadMoreSentinel } = useInfiniteScroll({
     enabled: computed(
       () =>
-        !options.isLoading.value &&
-        !options.isLoadingMore.value &&
-        options.hasMoreRelations.value,
+        !options.isLoading.value && !options.isLoadingMore.value && options.hasMoreRelations.value,
     ),
     onIntersect: () => {
       void options.loadMoreRelations();

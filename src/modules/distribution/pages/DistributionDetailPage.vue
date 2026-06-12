@@ -66,32 +66,25 @@ const {
   relations,
 });
 
-const {
-  createRelationActions,
-  deleteRelationActions,
-  editRelationActions,
-} = useDistributionRelationModalActions({
-  createFormState,
-  editFormState,
-  isDeleting,
-  isSaving,
-  selectedRelation,
-});
+const { createRelationActions, deleteRelationActions, editRelationActions } =
+  useDistributionRelationModalActions({
+    createFormState,
+    editFormState,
+    isDeleting,
+    isSaving,
+    selectedRelation,
+  });
 
-const {
-  handleLoadMoreRetry,
-  infiniteStatusLabel,
-  loadMoreSentinel,
-  reloadRelations,
-} = useDistributionRelationListLoader({
-  hasMoreRelations,
-  hasReachedEnd,
-  isLoading,
-  isLoadingMore,
-  loadMoreRelations,
-  loadRule,
-  ruleId,
-});
+const { handleLoadMoreRetry, infiniteStatusLabel, loadMoreSentinel, reloadRelations } =
+  useDistributionRelationListLoader({
+    hasMoreRelations,
+    hasReachedEnd,
+    isLoading,
+    isLoadingMore,
+    loadMoreRelations,
+    loadRule,
+    ruleId,
+  });
 
 async function handleCreateRelationSubmit(
   payload: DistributionRelationWritePayload,
@@ -126,7 +119,6 @@ async function confirmDeleteRelation(): Promise<void> {
     closeDeleteRelation();
   }
 }
-
 </script>
 
 <template>

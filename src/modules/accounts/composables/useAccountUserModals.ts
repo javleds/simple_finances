@@ -34,7 +34,9 @@ export function useAccountUserModals(options: UseAccountUserModalsOptions) {
   function openEditUser(userId: string): void {
     options.clearSaveError();
     selectedUserId.value = userId;
-    editPercentage.value = selectedUser.value ? String(selectedUser.value.allocationPercentage) : '';
+    editPercentage.value = selectedUser.value
+      ? String(selectedUser.value.allocationPercentage)
+      : '';
     isEditUserOpen.value = true;
   }
 

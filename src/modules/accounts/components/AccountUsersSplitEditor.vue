@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-  AppButton,
-  AppCard,
-  AppPercentageSplitEditor,
-  AppText,
-} from '@/modules/shared/components';
+import { AppButton, AppCard, AppPercentageSplitEditor, AppText } from '@/modules/shared/components';
 
 type SplitUser = {
   id: string;

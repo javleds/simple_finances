@@ -4,10 +4,7 @@ import type { Component } from 'vue';
 import type { AccountMember } from '@/modules/accounts/types';
 import type { AccountGoal } from '@/modules/accounts/schemas/accountGoalSchemas';
 import TransactionsForm from '@/modules/transactions/components/TransactionsForm.vue';
-import type {
-  Transaction,
-  TransactionWritePayload,
-} from '@/modules/transactions/types';
+import type { Transaction, TransactionWritePayload } from '@/modules/transactions/types';
 import { AppModal } from '@/modules/shared/components';
 
 type FormState = {

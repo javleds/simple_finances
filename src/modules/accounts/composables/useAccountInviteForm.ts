@@ -23,19 +23,12 @@ export function useAccountInviteForm(options: UseAccountInviteFormOptions) {
     createDefaultAccountInviteFormValues(toValue(options.initialValues)),
   );
 
-  const {
-    errors,
-    handleSubmit,
-    isSubmitting,
-    meta,
-    resetForm,
-    setFieldValue,
-    values,
-  } = useForm<AccountInviteFormValues>({
-    validationSchema: toTypedSchema(accountInviteFormSchema),
-    initialValues: resolvedInitialValues.value,
-    validateOnMount: true,
-  });
+  const { errors, handleSubmit, isSubmitting, meta, resetForm, setFieldValue, values } =
+    useForm<AccountInviteFormValues>({
+      validationSchema: toTypedSchema(accountInviteFormSchema),
+      initialValues: resolvedInitialValues.value,
+      validateOnMount: true,
+    });
 
   watch(
     resolvedInitialValues,
@@ -59,8 +52,9 @@ export function useAccountInviteForm(options: UseAccountInviteFormOptions) {
 
   const isSubmitDisabled = computed(() => isSubmitting.value || !meta.value.valid);
 
-  const submitForm = handleSubmit((submittedValues): AccountInviteWritePayload =>
-    mapAccountInviteFormToWritePayload(options.accountId, submittedValues),
+  const submitForm = handleSubmit(
+    (submittedValues): AccountInviteWritePayload =>
+      mapAccountInviteFormToWritePayload(options.accountId, submittedValues),
   );
 
   return {

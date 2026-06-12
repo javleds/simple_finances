@@ -17,8 +17,13 @@ type UseAccountTransactionActionsOptions = {
   closeCreateTransactionModal: () => void;
   closeDeleteTransactionModal: () => void;
   closeEditTransactionModal: () => void;
-  createTransaction: (payload: TransactionWritePayload) => Promise<TransactionMutationResult | null>;
-  deleteTransaction: (transactionId: string, accountId?: string) => Promise<TransactionMutationResult | null>;
+  createTransaction: (
+    payload: TransactionWritePayload,
+  ) => Promise<TransactionMutationResult | null>;
+  deleteTransaction: (
+    transactionId: string,
+    accountId?: string,
+  ) => Promise<TransactionMutationResult | null>;
   onMutationMeta: (meta: TransactionMutationMeta) => void;
   selectedTransaction: ComputedRef<Transaction | null>;
   updateTransaction: (

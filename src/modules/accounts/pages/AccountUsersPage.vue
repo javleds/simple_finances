@@ -16,11 +16,7 @@ import { useAccountUsersCrud } from '@/modules/accounts/composables/useAccountUs
 import { useAccountUsersSplitDraft } from '@/modules/accounts/composables/useAccountUsersSplitDraft';
 import type { AccountMember } from '@/modules/accounts/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import {
-  AppListState,
-  AppLoadMoreFooter,
-  AppText,
-} from '@/modules/shared/components';
+import { AppListState, AppLoadMoreFooter, AppText } from '@/modules/shared/components';
 
 const route = useRoute();
 const defaultUsersPerPage = 20;
@@ -44,10 +40,7 @@ const usersPerPage = computed(() => {
   return rawValue;
 });
 
-const {
-  activeFilters,
-  searchTerm,
-} = useAccountUserFilters({
+const { activeFilters, searchTerm } = useAccountUserFilters({
   onChange: () => {
     void loadUsers();
   },
@@ -134,11 +127,7 @@ const {
   updateUserPercentage,
 });
 
-const {
-  createUserActions,
-  deleteUserActions,
-  editUserActions,
-} = useAccountUserModalActions({
+const { createUserActions, deleteUserActions, editUserActions } = useAccountUserModalActions({
   canSubmitPercentage,
   isDeleting,
   isSaving,
@@ -197,11 +186,7 @@ function reloadUsers(): void {
       loading-label="Cargando usuarios..."
       @retry="reloadUsers"
     >
-      <AccountUsersList
-        :users="users"
-        @delete="openDeleteUser"
-        @edit="openEditUser"
-      >
+      <AccountUsersList :users="users" @delete="openDeleteUser" @edit="openEditUser">
         <template #footer>
           <div ref="loadMoreSentinel">
             <AppLoadMoreFooter

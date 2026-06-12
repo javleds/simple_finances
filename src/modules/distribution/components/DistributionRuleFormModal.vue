@@ -2,10 +2,7 @@
 import type { Component } from 'vue';
 
 import DistributionRuleForm from '@/modules/distribution/components/DistributionRuleForm.vue';
-import type {
-  DistributionRule,
-  DistributionRuleWritePayload,
-} from '@/modules/distribution/types';
+import type { DistributionRule, DistributionRuleWritePayload } from '@/modules/distribution/types';
 import { AppModal } from '@/modules/shared/components';
 
 type FormState = {

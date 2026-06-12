@@ -18,19 +18,12 @@ export function useAccountForm(options: UseAccountFormOptions = {}) {
     createDefaultAccountFormValues(toValue(options.initialValues)),
   );
 
-  const {
-    errors,
-    handleSubmit,
-    isSubmitting,
-    meta,
-    resetForm,
-    setFieldValue,
-    values,
-  } = useForm<AccountFormValues>({
-    validationSchema: toTypedSchema(accountFormSchema),
-    initialValues: resolvedInitialValues.value,
-    validateOnMount: true,
-  });
+  const { errors, handleSubmit, isSubmitting, meta, resetForm, setFieldValue, values } =
+    useForm<AccountFormValues>({
+      validationSchema: toTypedSchema(accountFormSchema),
+      initialValues: resolvedInitialValues.value,
+      validateOnMount: true,
+    });
 
   watch(
     resolvedInitialValues,
@@ -90,8 +83,8 @@ export function useAccountForm(options: UseAccountFormOptions = {}) {
 
   const isSubmitDisabled = computed(() => isSubmitting.value || !meta.value.valid);
 
-  const submitForm = handleSubmit((submittedValues): AccountWritePayload =>
-    mapAccountFormToWritePayload(submittedValues),
+  const submitForm = handleSubmit(
+    (submittedValues): AccountWritePayload => mapAccountFormToWritePayload(submittedValues),
   );
 
   return {

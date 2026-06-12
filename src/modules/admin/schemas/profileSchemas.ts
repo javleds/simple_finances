@@ -69,13 +69,19 @@ export const profileApiSchema = z.object({
   name: z.string(),
   email: z.string().email(),
   is_email_verified: z.boolean(),
-  phone_number: z.string().nullable().optional().transform((value) => value ?? ''),
+  phone_number: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? ''),
   telegram_chat_id: z
     .union([z.string(), z.number(), z.null(), z.undefined()])
     .transform((value) => (value === null || value === undefined ? null : String(value))),
 });
 
-export function createDefaultProfileFormValues(profile?: Partial<Profile> | null): ProfileFormValues {
+export function createDefaultProfileFormValues(
+  profile?: Partial<Profile> | null,
+): ProfileFormValues {
   return {
     name: profile?.name ?? '',
     email: profile?.email ?? '',

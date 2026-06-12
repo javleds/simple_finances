@@ -1,15 +1,8 @@
 <script setup lang="ts">
 import { ArrowPathIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
-import type {
-  TransactionStatus,
-  TransactionType,
-} from '@/modules/transactions/types';
-import {
-  AppModal,
-  AppText,
-  AppTitle,
-} from '@/modules/shared/components';
+import type { TransactionStatus, TransactionType } from '@/modules/transactions/types';
+import { AppModal, AppText, AppTitle } from '@/modules/shared/components';
 
 type FilterOption<TValue extends string> = {
   value: TValue;

@@ -114,7 +114,9 @@ export function createAccountsRepository() {
       });
       const query = searchParams.toString();
       const response = await apiClient.get<unknown>(
-        query ? `${accountsPath}/${accountId}/users?${query}` : `${accountsPath}/${accountId}/users`,
+        query
+          ? `${accountsPath}/${accountId}/users?${query}`
+          : `${accountsPath}/${accountId}/users`,
       );
       const parsedResponse = accountUserCollectionSchema.parse(response);
 
@@ -123,10 +125,17 @@ export function createAccountsRepository() {
         items: parsedResponse.items.map(mapAccountUserApiToDomain),
       };
     },
-    async updateUserPercentage(accountId: string, userId: string, percentage: number): Promise<AccountMember> {
-      const response = await apiClient.put<unknown>(`${accountsPath}/${accountId}/users/${userId}`, {
-        percentage,
-      });
+    async updateUserPercentage(
+      accountId: string,
+      userId: string,
+      percentage: number,
+    ): Promise<AccountMember> {
+      const response = await apiClient.put<unknown>(
+        `${accountsPath}/${accountId}/users/${userId}`,
+        {
+          percentage,
+        },
+      );
       return mapAccountUserApiToDomain(singleAccountUserSchema.parse(response));
     },
     async removeUser(accountId: string, userId: string): Promise<void> {

@@ -1,10 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
 import { getStoredAuthToken } from '@/lib/api/apiClient';
-import {
-  getPendingVerificationEmail,
-  getStoredAuthSession,
-} from '@/modules/auth/lib/authSession';
+import { getPendingVerificationEmail, getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import { resolvePostAuthAction } from '@/modules/auth/lib/postAuthRedirect';
 import authRoutes from '@/modules/auth/routes';
 import adminRoutes from '@/modules/admin/routes';

@@ -7,10 +7,7 @@ import {
 } from '@/modules/shared/lib/pagination';
 import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
-import {
-  mapSubscriptionApiToDomain,
-  subscriptionApiSchema,
-} from '../schemas/subscriptionSchemas';
+import { mapSubscriptionApiToDomain, subscriptionApiSchema } from '../schemas/subscriptionSchemas';
 import type { Subscription, SubscriptionListFilters, SubscriptionWritePayload } from '../types';
 
 const apiClient = createApiClient();

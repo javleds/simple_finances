@@ -23,9 +23,9 @@ const themeOptions = [
 const globalNotificationSettings = ref<
   Array<{ id: string; title: string; description: string; enabled: boolean }>
 >([]);
-const accountNotificationSettings = ref<Array<{ id: string; accountName: string; enabled: boolean }>>(
-  [],
-);
+const accountNotificationSettings = ref<
+  Array<{ id: string; accountName: string; enabled: boolean }>
+>([]);
 const isLoading = ref(false);
 const saveError = ref<string | null>(null);
 

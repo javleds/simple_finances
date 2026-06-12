@@ -1,23 +1,12 @@
 <script setup lang="ts">
-import {
-  ArrowsRightLeftIcon,
-  EnvelopeIcon,
-  FlagIcon,
-  UsersIcon,
-} from '@heroicons/vue/24/outline';
+import { ArrowsRightLeftIcon, EnvelopeIcon, FlagIcon, UsersIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { ApiError } from '@/lib/api/apiClient';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import type { Account, AccountMember } from '@/modules/accounts/types';
-import {
-  AppCard,
-  AppContextTabs,
-  AppLink,
-  AppText,
-  AppTitle,
-} from '@/modules/shared/components';
+import { AppCard, AppContextTabs, AppLink, AppText, AppTitle } from '@/modules/shared/components';
 
 type AccountRelationSection = 'transactions' | 'invitations' | 'goals' | 'users';
 
@@ -149,9 +138,7 @@ function handleAccountUsersChange(nextUsers: AccountMember[]): void {
         :is-loading-account="isLoadingAccount"
         :account-load-error="loadError"
         v-bind="
-          activeSection === 'users'
-            ? { onAccountUsersChange: handleAccountUsersChange }
-            : undefined
+          activeSection === 'users' ? { onAccountUsersChange: handleAccountUsersChange } : undefined
         "
       />
     </RouterView>
@@ -172,7 +159,9 @@ function handleAccountUsersChange(nextUsers: AccountMember[]): void {
     <div class="space-y-3">
       <AppTitle as="h2" size="sm">Cuenta no encontrada</AppTitle>
       <AppText>
-        {{ loadError ?? 'La cuenta solicitada no existe o ya no está disponible en esta facility.' }}
+        {{
+          loadError ?? 'La cuenta solicitada no existe o ya no está disponible en esta facility.'
+        }}
       </AppText>
       <AppLink :to="{ name: 'admin.accounts' }" variant="primary">Volver a la lista</AppLink>
     </div>

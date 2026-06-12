@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  mapTransactionApiToDomain,
-  transactionApiSchema,
-} from './transactionSchemas';
+import { mapTransactionApiToDomain, transactionApiSchema } from './transactionSchemas';
 
 const baseTransactionPayload = {
   id: 10,

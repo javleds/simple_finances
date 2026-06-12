@@ -25,7 +25,10 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useAccountInvitesCrud() {
-  const invitesState = usePaginatedCollection<AccountInvite, [string, AccountInviteListFilters | undefined]>({
+  const invitesState = usePaginatedCollection<
+    AccountInvite,
+    [string, AccountInviteListFilters | undefined]
+  >({
     defaultPerPage: 20,
     loadPage: (options, accountId, filters) =>
       accountInvitesRepository.list(accountId, { ...options, filters }),
@@ -70,7 +73,10 @@ export function useAccountInvitesCrud() {
     }
   }
 
-  async function updateInvite(inviteId: string, payload: AccountInviteWritePayload): Promise<boolean> {
+  async function updateInvite(
+    inviteId: string,
+    payload: AccountInviteWritePayload,
+  ): Promise<boolean> {
     isSaving.value = true;
     saveError.value = null;
 

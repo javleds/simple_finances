@@ -13,11 +13,7 @@ type UseAccountUserActionsOptions = {
   removeUser: (accountId: string, userId: string) => Promise<boolean>;
   saveError: Ref<string | null>;
   selectedUser: ComputedRef<AccountMember | null>;
-  updateUserPercentage: (
-    accountId: string,
-    userId: string,
-    percentage: number,
-  ) => Promise<boolean>;
+  updateUserPercentage: (accountId: string, userId: string, percentage: number) => Promise<boolean>;
 };
 
 export function useAccountUserActions(options: UseAccountUserActionsOptions) {

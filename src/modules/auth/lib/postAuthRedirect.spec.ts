@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Router } from 'vue-router';
 
-import {
-  resolvePostAuthAction,
-  resolvePostAuthRedirectRoute,
-} from './postAuthRedirect';
+import { resolvePostAuthAction, resolvePostAuthRedirectRoute } from './postAuthRedirect';
 
 const router = {
   resolve: () => ({

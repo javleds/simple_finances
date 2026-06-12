@@ -88,7 +88,9 @@ export function createDistributionRepository() {
       ]);
 
       const rule = mapFixedIncomeApiToDomain(fixedIncomeItemSchema.parse(fixedIncomeResponse));
-      const relations = fixedOutcomeCollectionSchema.parse(fixedOutcomesResponse).items.map(mapFixedOutcomeApiToDomain);
+      const relations = fixedOutcomeCollectionSchema
+        .parse(fixedOutcomesResponse)
+        .items.map(mapFixedOutcomeApiToDomain);
 
       return {
         ...rule,
@@ -100,7 +102,10 @@ export function createDistributionRepository() {
       const response = await apiClient.post<unknown>('/fixed-incomes', payload);
       return mapFixedIncomeApiToDomain(fixedIncomeItemSchema.parse(response));
     },
-    async updateRule(ruleId: string, payload: DistributionRuleWritePayload): Promise<DistributionRule> {
+    async updateRule(
+      ruleId: string,
+      payload: DistributionRuleWritePayload,
+    ): Promise<DistributionRule> {
       const response = await apiClient.put<unknown>(`/fixed-incomes/${ruleId}`, payload);
       return mapFixedIncomeApiToDomain(fixedIncomeItemSchema.parse(response));
     },

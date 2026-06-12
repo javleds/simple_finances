@@ -25,7 +25,10 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useAccountGoalsCrud() {
-  const goalsState = usePaginatedCollection<AccountGoal, [string, AccountGoalListFilters | undefined]>({
+  const goalsState = usePaginatedCollection<
+    AccountGoal,
+    [string, AccountGoalListFilters | undefined]
+  >({
     defaultPerPage: 20,
     loadPage: (options, accountId, filters) =>
       accountGoalsRepository.list(accountId, { ...options, filters }),

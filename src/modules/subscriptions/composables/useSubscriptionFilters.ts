@@ -111,10 +111,7 @@ function parseQueryValuesOrDefault<TValue extends string>(
   return parseQueryValues(value, isAllowedValue);
 }
 
-function setArrayValueIfChanged<TValue>(
-  target: { value: TValue[] },
-  nextValue: TValue[],
-): void {
+function setArrayValueIfChanged<TValue>(target: { value: TValue[] }, nextValue: TValue[]): void {
   if (areArraysEqual(target.value, nextValue)) {
     return;
   }

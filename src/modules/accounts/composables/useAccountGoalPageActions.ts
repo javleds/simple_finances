@@ -51,7 +51,10 @@ export function useAccountGoalPageActions(options: UseAccountGoalPageActionsOpti
       return;
     }
 
-    const wasDeleted = await options.deleteGoal(options.selectedGoal.value.id, options.accountId.value);
+    const wasDeleted = await options.deleteGoal(
+      options.selectedGoal.value.id,
+      options.accountId.value,
+    );
 
     if (wasDeleted) {
       options.closeDeleteGoal();

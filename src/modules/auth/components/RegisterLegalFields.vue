@@ -33,7 +33,10 @@ function updatePrivacyPolicyAccepted(event: Event): void {
 </script>
 
 <template>
-  <div class="space-y-3 rounded-xl border px-4 py-4" :style="{ borderColor: 'var(--app-color-border)' }">
+  <div
+    class="space-y-3 rounded-xl border px-4 py-4"
+    :style="{ borderColor: 'var(--app-color-border)' }"
+  >
     <label class="flex items-start gap-3">
       <input
         :checked="props.termsAccepted"
@@ -61,7 +64,12 @@ function updatePrivacyPolicyAccepted(event: Event): void {
       />
       <span class="text-sm text-(--app-color-text)">
         Acepto la
-        <AppLink href="" variant="primary" class="font-semibold" @click.prevent="emit('openPrivacy')">
+        <AppLink
+          href=""
+          variant="primary"
+          class="font-semibold"
+          @click.prevent="emit('openPrivacy')"
+        >
           política de privacidad
         </AppLink>
       </span>

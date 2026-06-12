@@ -23,10 +23,7 @@ const toneClasses = {
 </script>
 
 <template>
-  <section
-    class="rounded-xl border px-4 py-3"
-    :class="toneClasses[props.tone ?? 'danger'].border"
-  >
+  <section class="rounded-xl border px-4 py-3" :class="toneClasses[props.tone ?? 'danger'].border">
     <AppText size="sm" :class="toneClasses[props.tone ?? 'danger'].text">
       {{ props.message }}
     </AppText>

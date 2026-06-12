@@ -25,7 +25,10 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useDistributionRulesCrud() {
-  const rulesState = usePaginatedCollection<DistributionRule, [DistributionRuleListFilters | undefined]>({
+  const rulesState = usePaginatedCollection<
+    DistributionRule,
+    [DistributionRuleListFilters | undefined]
+  >({
     defaultPerPage: 20,
     loadPage: (options, filters) => distributionRepository.listRules({ ...options, filters }),
     resolveErrorMessage,
@@ -69,7 +72,10 @@ export function useDistributionRulesCrud() {
     }
   }
 
-  async function updateRule(ruleId: string, payload: DistributionRuleWritePayload): Promise<boolean> {
+  async function updateRule(
+    ruleId: string,
+    payload: DistributionRuleWritePayload,
+  ): Promise<boolean> {
     isSaving.value = true;
     saveError.value = null;
 

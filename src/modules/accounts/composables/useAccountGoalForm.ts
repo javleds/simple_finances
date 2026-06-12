@@ -23,19 +23,12 @@ export function useAccountGoalForm(options: UseAccountGoalFormOptions) {
     createDefaultAccountGoalFormValues(toValue(options.initialValues)),
   );
 
-  const {
-    errors,
-    handleSubmit,
-    isSubmitting,
-    meta,
-    resetForm,
-    setFieldValue,
-    values,
-  } = useForm<AccountGoalFormValues>({
-    validationSchema: toTypedSchema(accountGoalFormSchema),
-    initialValues: resolvedInitialValues.value,
-    validateOnMount: true,
-  });
+  const { errors, handleSubmit, isSubmitting, meta, resetForm, setFieldValue, values } =
+    useForm<AccountGoalFormValues>({
+      validationSchema: toTypedSchema(accountGoalFormSchema),
+      initialValues: resolvedInitialValues.value,
+      validateOnMount: true,
+    });
 
   watch(
     resolvedInitialValues,
@@ -64,8 +57,9 @@ export function useAccountGoalForm(options: UseAccountGoalFormOptions) {
 
   const isSubmitDisabled = computed(() => isSubmitting.value || !meta.value.valid);
 
-  const submitForm = handleSubmit((submittedValues): AccountGoalWritePayload =>
-    mapAccountGoalFormToWritePayload(options.accountId, submittedValues),
+  const submitForm = handleSubmit(
+    (submittedValues): AccountGoalWritePayload =>
+      mapAccountGoalFormToWritePayload(options.accountId, submittedValues),
   );
 
   return {

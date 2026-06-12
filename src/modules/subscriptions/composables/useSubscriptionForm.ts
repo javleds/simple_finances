@@ -18,19 +18,12 @@ export function useSubscriptionForm(options: UseSubscriptionFormOptions = {}) {
     createDefaultSubscriptionFormValues(toValue(options.initialValues)),
   );
 
-  const {
-    errors,
-    handleSubmit,
-    isSubmitting,
-    meta,
-    resetForm,
-    setFieldValue,
-    values,
-  } = useForm<SubscriptionFormValues>({
-    validationSchema: toTypedSchema(subscriptionFormSchema),
-    initialValues: resolvedInitialValues.value,
-    validateOnMount: true,
-  });
+  const { errors, handleSubmit, isSubmitting, meta, resetForm, setFieldValue, values } =
+    useForm<SubscriptionFormValues>({
+      validationSchema: toTypedSchema(subscriptionFormSchema),
+      initialValues: resolvedInitialValues.value,
+      validateOnMount: true,
+    });
 
   watch(
     resolvedInitialValues,
@@ -80,8 +73,9 @@ export function useSubscriptionForm(options: UseSubscriptionFormOptions = {}) {
 
   const isSubmitDisabled = computed(() => isSubmitting.value || !meta.value.valid);
 
-  const submitForm = handleSubmit((submittedValues): SubscriptionWritePayload =>
-    mapSubscriptionFormToWritePayload(submittedValues),
+  const submitForm = handleSubmit(
+    (submittedValues): SubscriptionWritePayload =>
+      mapSubscriptionFormToWritePayload(submittedValues),
   );
 
   return {

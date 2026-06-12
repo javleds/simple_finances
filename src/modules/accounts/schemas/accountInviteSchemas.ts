@@ -84,7 +84,11 @@ export const accountInviteApiSchema = z.object({
   email: z.string(),
   percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   status: z.unknown().transform(parseInviteStatus),
-  created_at: z.string().nullable().optional().transform((value) => value ?? null),
+  created_at: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   account: z
     .object({
       name: z.string(),

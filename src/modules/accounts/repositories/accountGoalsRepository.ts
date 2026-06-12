@@ -7,10 +7,7 @@ import {
 } from '@/modules/shared/lib/pagination';
 import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
-import {
-  accountGoalApiSchema,
-  mapAccountGoalApiToDomain,
-} from '../schemas/accountGoalSchemas';
+import { accountGoalApiSchema, mapAccountGoalApiToDomain } from '../schemas/accountGoalSchemas';
 import type {
   AccountGoal,
   AccountGoalListFilters,

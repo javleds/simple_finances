@@ -63,7 +63,9 @@ const emit = defineEmits<{
         placeholder="0.00"
         :error="
           props.saveError ??
-          (editPercentage && !props.canSubmit ? 'El porcentaje debe estar entre 0 y 100.' : undefined)
+          (editPercentage && !props.canSubmit
+            ? 'El porcentaje debe estar entre 0 y 100.'
+            : undefined)
         "
         required
       />

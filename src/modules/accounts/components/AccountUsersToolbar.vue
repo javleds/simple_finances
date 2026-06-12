@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
-import {
-  AppButton,
-  AppInput,
-  AppSectionBar,
-} from '@/modules/shared/components';
+import { AppButton, AppInput, AppSectionBar } from '@/modules/shared/components';
 
 const searchTerm = defineModel<string>('searchTerm', { required: true });
 

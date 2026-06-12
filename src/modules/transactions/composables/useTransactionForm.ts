@@ -7,11 +7,7 @@ import {
   mapTransactionFormToWritePayload,
   transactionFormSchema,
 } from '../schemas/transactionSchemas';
-import type {
-  Transaction,
-  TransactionFormValues,
-  TransactionWritePayload,
-} from '../types';
+import type { Transaction, TransactionFormValues, TransactionWritePayload } from '../types';
 
 type UseTransactionFormOptions = {
   initialValues?: Partial<Transaction> | null | (() => Partial<Transaction> | null | undefined);
@@ -23,19 +19,12 @@ export function useTransactionForm(options: UseTransactionFormOptions = {}) {
     createDefaultTransactionFormValues(toValue(options.initialValues), options.lockedAccountId),
   );
 
-  const {
-    errors,
-    handleSubmit,
-    isSubmitting,
-    meta,
-    resetForm,
-    setFieldValue,
-    values,
-  } = useForm<TransactionFormValues>({
-    validationSchema: toTypedSchema(transactionFormSchema),
-    initialValues: resolvedInitialValues.value,
-    validateOnMount: true,
-  });
+  const { errors, handleSubmit, isSubmitting, meta, resetForm, setFieldValue, values } =
+    useForm<TransactionFormValues>({
+      validationSchema: toTypedSchema(transactionFormSchema),
+      initialValues: resolvedInitialValues.value,
+      validateOnMount: true,
+    });
 
   watch(
     resolvedInitialValues,
@@ -103,8 +92,8 @@ export function useTransactionForm(options: UseTransactionFormOptions = {}) {
 
   const isSubmitDisabled = computed(() => isSubmitting.value || !meta.value.valid);
 
-  const submitForm = handleSubmit((submittedValues): TransactionWritePayload =>
-    mapTransactionFormToWritePayload(submittedValues),
+  const submitForm = handleSubmit(
+    (submittedValues): TransactionWritePayload => mapTransactionFormToWritePayload(submittedValues),
   );
 
   return {

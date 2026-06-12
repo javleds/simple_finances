@@ -53,9 +53,7 @@ function accountActionsTotal(): number {
       modalActions.map((action) => ({
         ...action,
         label:
-          action.key === 'confirm-complete' && props.isCompleting
-            ? 'Completando...'
-            : action.label,
+          action.key === 'confirm-complete' && props.isCompleting ? 'Completando...' : action.label,
         disabled: action.key === 'confirm-complete' ? props.isCompleting : undefined,
       }))
     "

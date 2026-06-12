@@ -81,7 +81,10 @@ function handleFormStateChange(state: FormState): void {
       </div>
     </AppCard>
 
-    <section v-if="loadError && hasProfile" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="loadError && hasProfile"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 

@@ -63,16 +63,17 @@ function parseEntityId(value: unknown): string | null {
   return null;
 }
 
-function normalizeUserPayments(
-  userPayments: Record<string, number>,
-): Record<string, number> {
-  return Object.entries(userPayments).reduce<Record<string, number>>((accumulator, [userId, value]) => {
-    if (Number.isFinite(value)) {
-      accumulator[userId] = Number(value.toFixed(2));
-    }
+function normalizeUserPayments(userPayments: Record<string, number>): Record<string, number> {
+  return Object.entries(userPayments).reduce<Record<string, number>>(
+    (accumulator, [userId, value]) => {
+      if (Number.isFinite(value)) {
+        accumulator[userId] = Number(value.toFixed(2));
+      }
 
-    return accumulator;
-  }, {});
+      return accumulator;
+    },
+    {},
+  );
 }
 
 export const transactionFormSchema = z
@@ -147,7 +148,11 @@ export const transactionApiSchema = z.object({
         .union([z.string(), z.number(), z.null(), z.undefined()])
         .optional()
         .transform(parseEntityId),
-      name: z.string().nullable().optional().transform((value) => value ?? null),
+      name: z
+        .string()
+        .nullable()
+        .optional()
+        .transform((value) => value ?? null),
     })
     .nullable()
     .optional()
@@ -162,7 +167,11 @@ export const transactionApiSchema = z.object({
         .union([z.string(), z.number(), z.null(), z.undefined()])
         .optional()
         .transform(parseEntityId),
-      name: z.string().nullable().optional().transform((value) => value ?? null),
+      name: z
+        .string()
+        .nullable()
+        .optional()
+        .transform((value) => value ?? null),
     })
     .nullable()
     .optional()
@@ -173,7 +182,11 @@ export const transactionApiSchema = z.object({
         .union([z.string(), z.number(), z.null(), z.undefined()])
         .optional()
         .transform(parseEntityId),
-      name: z.string().nullable().optional().transform((value) => value ?? null),
+      name: z
+        .string()
+        .nullable()
+        .optional()
+        .transform((value) => value ?? null),
     })
     .nullable()
     .optional()
@@ -259,7 +272,8 @@ export function mapTransactionApiToDomain(
     status: payload.type === 'income' ? payload.status : null,
     date: payload.scheduled_at.slice(0, 10),
     createdAt: payload.created_at,
-    creatorId: payload.user_id ?? payload.user?.id ?? payload.created_by?.id ?? payload.creator?.id ?? null,
+    creatorId:
+      payload.user_id ?? payload.user?.id ?? payload.created_by?.id ?? payload.creator?.id ?? null,
     creatorName: payload.user?.name ?? payload.created_by?.name ?? payload.creator?.name ?? null,
     financialGoalId: payload.financial_goal_id,
     financialGoalName: payload.financial_goal?.name ?? null,

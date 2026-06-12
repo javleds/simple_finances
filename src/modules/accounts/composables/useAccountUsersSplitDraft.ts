@@ -21,11 +21,7 @@ export function useAccountUsersSplitDraft(options: UseAccountUsersSplitDraftOpti
   const canShowSplitEditor = computed(() => splitUsers.value.length > 1);
   const hasLoadedEveryUserForSplit = computed(() => !options.hasMoreUsers.value);
   const hasSplitChanges = computed(
-    () =>
-      !areAllocationRecordsEqual(
-        splitDraft.value,
-        createAllocationRecord(options.users.value),
-      ),
+    () => !areAllocationRecordsEqual(splitDraft.value, createAllocationRecord(options.users.value)),
   );
 
   watch(

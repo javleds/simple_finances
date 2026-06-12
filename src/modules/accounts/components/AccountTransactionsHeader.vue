@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import {
-  ArrowPathIcon,
-  CheckIcon,
-} from '@heroicons/vue/24/outline';
+import { ArrowPathIcon, CheckIcon } from '@heroicons/vue/24/outline';
 
 import type { AccountPendingByUser } from '@/modules/accounts/types';
 import {

@@ -15,7 +15,10 @@ export function useAccountGoalPresentation(options: UseAccountGoalPresentationOp
     return options.goals.value.filter((goal) => {
       const status = goal.status === 'completed' ? 'completed' : resolveGoalStatus(goal.progress);
 
-      if (options.selectedStatuses.value.length > 0 && !options.selectedStatuses.value.includes(status)) {
+      if (
+        options.selectedStatuses.value.length > 0 &&
+        !options.selectedStatuses.value.includes(status)
+      ) {
         return false;
       }
 

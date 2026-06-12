@@ -21,7 +21,10 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useSubscriptionsCrud() {
-  const subscriptionsState = usePaginatedCollection<Subscription, [SubscriptionListFilters | undefined]>({
+  const subscriptionsState = usePaginatedCollection<
+    Subscription,
+    [SubscriptionListFilters | undefined]
+  >({
     defaultPerPage: 20,
     loadPage: (options, filters) => subscriptionsRepository.list({ ...options, filters }),
     resolveErrorMessage,

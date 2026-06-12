@@ -63,7 +63,8 @@ async function handleSubmit(): Promise<void> {
     clearPendingVerificationEmail();
     await router.push({ name: 'auth.login' });
   } catch (error) {
-    serverError.value = error instanceof Error ? error.message : 'No fue posible restablecer la contraseña.';
+    serverError.value =
+      error instanceof Error ? error.message : 'No fue posible restablecer la contraseña.';
   }
 }
 </script>

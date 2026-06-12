@@ -130,9 +130,7 @@ export function createNotificationSettingsRepository() {
         notification_type_ids: payload.notificationTypes
           .filter((item) => item.enabled)
           .map((item) => Number(item.id)),
-        account_ids: payload.accounts
-          .filter((item) => item.enabled)
-          .map((item) => Number(item.id)),
+        account_ids: payload.accounts.filter((item) => item.enabled).map((item) => Number(item.id)),
       });
     },
   };

@@ -5,12 +5,7 @@ import {
   PlusIcon,
 } from '@heroicons/vue/24/outline';
 
-import {
-  AppButton,
-  AppIconButton,
-  AppInput,
-  AppSectionBar,
-} from '@/modules/shared/components';
+import { AppButton, AppIconButton, AppInput, AppSectionBar } from '@/modules/shared/components';
 
 const searchTerm = defineModel<string>('searchTerm', { required: true });
 

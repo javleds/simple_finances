@@ -71,12 +71,24 @@ export const subscriptionApiSchema = z.object({
   started_at: z.string(),
   frequency_unit: z.unknown().transform((value) => parseNullableNumber(value) ?? 1),
   frequency_type: z.unknown().transform(parseFrequencyType),
-  finished_at: z.string().nullable().optional().transform((value) => value ?? null),
+  finished_at: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   feed_account_id: z
     .union([z.string(), z.number(), z.null(), z.undefined()])
     .transform((value) => (value === null || value === undefined ? null : String(value))),
-  next_payment_date: z.string().nullable().optional().transform((value) => value ?? null),
-  previous_payment_date: z.string().nullable().optional().transform((value) => value ?? null),
+  next_payment_date: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
+  previous_payment_date: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   feed_account: z
     .object({
       id: z.union([z.string(), z.number()]).transform((value) => String(value)),

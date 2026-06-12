@@ -269,7 +269,9 @@ async function handleSubmit(): Promise<void> {
         :options="financialGoalOptions"
         :disabled="isExpense || props.isLoadingFinancialGoals"
         open-direction="top"
-        :placeholder="props.isLoadingFinancialGoals ? 'Cargando metas financieras...' : 'Sin meta financiera'"
+        :placeholder="
+          props.isLoadingFinancialGoals ? 'Cargando metas financieras...' : 'Sin meta financiera'
+        "
         search-placeholder="Buscar meta financiera"
         :empty-message="
           props.isLoadingFinancialGoals

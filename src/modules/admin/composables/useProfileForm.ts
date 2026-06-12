@@ -62,8 +62,8 @@ export function useProfileForm(options: UseProfileFormOptions = {}) {
 
   const isSubmitDisabled = computed(() => isSubmitting.value || !meta.value.valid);
 
-  const submitForm = handleSubmit((submittedValues): ProfileWritePayload =>
-    mapProfileFormToWritePayload(submittedValues),
+  const submitForm = handleSubmit(
+    (submittedValues): ProfileWritePayload => mapProfileFormToWritePayload(submittedValues),
   );
 
   return {

@@ -30,7 +30,8 @@ const {
 } = useAccountTransactionFilters();
 
 const account = computed(() => props.account);
-const { accountId, accountUsers, currentUserId, isSharedAccount } = useAccountTransactionsContext(account);
+const { accountId, accountUsers, currentUserId, isSharedAccount } =
+  useAccountTransactionsContext(account);
 const {
   goals: financialGoals,
   isLoading: isLoadingFinancialGoals,
@@ -60,21 +61,17 @@ const {
   markTransactionsCompleted,
 } = useTransactionsCrud();
 
-const {
-  handleLoadMoreRetry,
-  infiniteStatusLabel,
-  loadMoreSentinel,
-  reloadTransactions,
-} = useAccountTransactionListLoader({
-  accountId,
-  activeFilters,
-  hasMoreTransactions,
-  hasReachedEnd,
-  isLoading,
-  isLoadingMore,
-  loadMoreTransactions,
-  loadTransactions,
-});
+const { handleLoadMoreRetry, infiniteStatusLabel, loadMoreSentinel, reloadTransactions } =
+  useAccountTransactionListLoader({
+    accountId,
+    activeFilters,
+    hasMoreTransactions,
+    hasReachedEnd,
+    isLoading,
+    isLoadingMore,
+    loadMoreTransactions,
+    loadTransactions,
+  });
 
 const {
   closeCompleteTransactionModal,
@@ -148,8 +145,7 @@ const {
   handleTransactionSubmit,
 } = useAccountTransactionActions({
   accountId,
-  canCompleteTransaction: (transaction) =>
-    canCompleteTransaction(transaction, currentUserId.value),
+  canCompleteTransaction: (transaction) => canCompleteTransaction(transaction, currentUserId.value),
   closeCompleteTransactionModal,
   closeCreateTransactionModal,
   closeDeleteTransactionModal,

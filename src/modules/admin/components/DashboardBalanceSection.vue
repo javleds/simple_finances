@@ -2,12 +2,7 @@
 import { defineAsyncComponent } from 'vue';
 
 import type { DashboardGraphAccount } from '@/modules/admin/types/dashboard';
-import {
-  AppCard,
-  AppText,
-  AppToggleButton,
-  AppTitle,
-} from '@/modules/shared/components';
+import { AppCard, AppText, AppToggleButton, AppTitle } from '@/modules/shared/components';
 
 type AccountGraphMode = 'physical' | 'virtual';
 

@@ -1,10 +1,6 @@
 import { z } from 'zod';
 
-import {
-  clearStoredAuthToken,
-  createApiClient,
-  setStoredAuthToken,
-} from '@/lib/api/apiClient';
+import { clearStoredAuthToken, createApiClient, setStoredAuthToken } from '@/lib/api/apiClient';
 import {
   clearPendingVerificationEmail,
   clearStoredAuthSession,
@@ -25,10 +21,7 @@ import {
 const apiClient = createApiClient();
 
 const messageResponseSchema = z
-  .union([
-    z.object({ message: z.string() }),
-    z.object({ data: z.object({ message: z.string() }) }),
-  ])
+  .union([z.object({ message: z.string() }), z.object({ data: z.object({ message: z.string() }) })])
   .transform((payload) => ('data' in payload ? payload.data : payload));
 
 function buildLoginPayload(payload: LoginFormValues) {
@@ -93,7 +86,10 @@ export function createAuthRepository() {
       return storeSession(mapAuthResponseApiToSession(authResponseApiSchema.parse(response)));
     },
     async register(payload: RegisterFormValues): Promise<AuthSession> {
-      const response = await apiClient.post<unknown>('/auth/register', buildRegisterPayload(payload));
+      const response = await apiClient.post<unknown>(
+        '/auth/register',
+        buildRegisterPayload(payload),
+      );
       return storeSession(mapAuthResponseApiToSession(authResponseApiSchema.parse(response)));
     },
     async logout(): Promise<void> {

@@ -9,7 +9,9 @@ const route = useRoute();
 
 const requestedPath = computed(() => route.fullPath);
 const hasSession = computed(() => Boolean(getStoredAuthToken()));
-const primaryRoute = computed(() => (hasSession.value ? { name: 'admin.dashboard' } : { name: 'auth.login' }));
+const primaryRoute = computed(() =>
+  hasSession.value ? { name: 'admin.dashboard' } : { name: 'auth.login' },
+);
 const primaryLabel = computed(() => (hasSession.value ? 'Ir al dashboard' : 'Ir al login'));
 </script>
 
@@ -37,7 +39,7 @@ const primaryLabel = computed(() => (hasSession.value ? 'Ir al dashboard' : 'Ir 
             :style="{ borderColor: 'var(--app-color-border)' }"
           >
             <AppText size="sm" tone="subtle">Ruta solicitada</AppText>
-            <p class="mt-1 break-all text-sm font-semibold text-(--app-color-text)">
+            <p class="mt-1 text-sm font-semibold break-all text-(--app-color-text)">
               {{ requestedPath }}
             </p>
           </div>

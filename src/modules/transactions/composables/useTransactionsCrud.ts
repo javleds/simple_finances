@@ -28,7 +28,10 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useTransactionsCrud() {
-  const transactionsState = usePaginatedCollection<Transaction, [string | undefined, TransactionListFilters | undefined]>({
+  const transactionsState = usePaginatedCollection<
+    Transaction,
+    [string | undefined, TransactionListFilters | undefined]
+  >({
     defaultPerPage: 20,
     loadPage: async (options, accountId, filters) => {
       const response = await transactionsRepository.list(accountId, { ...options, filters });
@@ -61,7 +64,9 @@ export function useTransactionsCrud() {
     await transactionsState.loadMore();
   }
 
-  async function createTransaction(payload: TransactionWritePayload): Promise<CreatedTransactionResult | null> {
+  async function createTransaction(
+    payload: TransactionWritePayload,
+  ): Promise<CreatedTransactionResult | null> {
     isSaving.value = true;
     saveError.value = null;
 

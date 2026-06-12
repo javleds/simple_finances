@@ -1,9 +1,6 @@
 import type { Router } from 'vue-router';
 
-import type {
-  AuthPostAuthAction,
-  AuthPostAuthRedirect,
-} from '@/modules/auth/schemas/authSchemas';
+import type { AuthPostAuthAction, AuthPostAuthRedirect } from '@/modules/auth/schemas/authSchemas';
 
 export const ACCOUNT_INVITES_POST_AUTH_ACTION: AuthPostAuthAction = 'account-invites';
 
@@ -38,7 +35,9 @@ function isAccountInvitationsUrl(url: string, router: Router): boolean {
     );
     const receivedUrl = new URL(url, window.location.origin);
 
-    return receivedUrl.origin === expectedUrl.origin && receivedUrl.pathname === expectedUrl.pathname;
+    return (
+      receivedUrl.origin === expectedUrl.origin && receivedUrl.pathname === expectedUrl.pathname
+    );
   } catch {
     return false;
   }

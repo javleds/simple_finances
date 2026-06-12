@@ -162,11 +162,7 @@ export function createApiClient() {
     put<T>(path: string, body?: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>) {
       return request<T>(path, { ...options, method: 'PUT', body });
     },
-    patch<T>(
-      path: string,
-      body?: unknown,
-      options?: Omit<ApiRequestOptions, 'method' | 'body'>,
-    ) {
+    patch<T>(path: string, body?: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>) {
       return request<T>(path, { ...options, method: 'PATCH', body });
     },
     delete<T>(path: string, options?: Omit<ApiRequestOptions, 'method' | 'body'>) {

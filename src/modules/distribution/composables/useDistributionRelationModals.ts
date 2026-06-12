@@ -31,7 +31,9 @@ export function useDistributionRelationModals(options: UseDistributionRelationMo
       return null;
     }
 
-    return options.relations.value.find((relation) => relation.id === selectedRelationId.value) ?? null;
+    return (
+      options.relations.value.find((relation) => relation.id === selectedRelationId.value) ?? null
+    );
   });
 
   function openCreateRelation(): void {

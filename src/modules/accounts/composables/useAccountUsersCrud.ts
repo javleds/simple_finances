@@ -2,10 +2,7 @@ import { computed, ref, type Ref } from 'vue';
 
 import { ApiError } from '@/lib/api/apiClient';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
-import type {
-  AccountMember,
-  AccountUsersListFilters,
-} from '@/modules/accounts/types';
+import type { AccountMember, AccountUsersListFilters } from '@/modules/accounts/types';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 const accountsRepository = createAccountsRepository();
@@ -64,7 +61,11 @@ export function useAccountUsersCrud(filters: Ref<AccountUsersListFilters>) {
     saveError.value = null;
 
     try {
-      const updatedUser = await accountsRepository.updateUserPercentage(accountId, userId, percentage);
+      const updatedUser = await accountsRepository.updateUserPercentage(
+        accountId,
+        userId,
+        percentage,
+      );
       usersState.replaceItem((user) => user.id === updatedUser.id, updatedUser);
       return true;
     } catch (error) {

@@ -4,7 +4,11 @@ import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 
 import { createDistributionRepository } from '../repositories/distributionRepository';
-import type { DistributionRelation, DistributionRelationWritePayload, DistributionRule } from '../types';
+import type {
+  DistributionRelation,
+  DistributionRelationWritePayload,
+  DistributionRule,
+} from '../types';
 
 const distributionRepository = createDistributionRepository();
 
@@ -24,7 +28,8 @@ export function useDistributionRelationsCrud() {
   const rule = ref<DistributionRule | null>(null);
   const relationsState = usePaginatedCollection<DistributionRelation, [string]>({
     defaultPerPage: 20,
-    loadPage: (options, fixedIncomeId) => distributionRepository.listRelations(fixedIncomeId, options),
+    loadPage: (options, fixedIncomeId) =>
+      distributionRepository.listRelations(fixedIncomeId, options),
     resolveErrorMessage,
     loadErrorMessage: 'No fue posible cargar la regla.',
     loadMoreErrorMessage: 'No fue posible cargar más relaciones.',
@@ -38,18 +43,22 @@ export function useDistributionRelationsCrud() {
   const hasMoreRelations = computed(() => relationsState.hasMoreItems.value);
   const hasReachedEnd = computed(() => relationsState.hasReachedEnd.value);
 
-  async function loadRule(ruleId: string, options?: { reset?: boolean; perPage?: number }): Promise<void> {
+  async function loadRule(
+    ruleId: string,
+    options?: { reset?: boolean; perPage?: number },
+  ): Promise<void> {
     relationsState.loadError.value = null;
 
     try {
       relationsState.isLoading.value = true;
 
-      const [loadedRule] = await Promise.all([
-        distributionRepository.getRule(ruleId),
-      ]);
+      const [loadedRule] = await Promise.all([distributionRepository.getRule(ruleId)]);
       rule.value = loadedRule;
     } catch (error) {
-      relationsState.loadError.value = resolveErrorMessage(error, 'No fue posible cargar la regla.');
+      relationsState.loadError.value = resolveErrorMessage(
+        error,
+        'No fue posible cargar la regla.',
+      );
     } finally {
       relationsState.isLoading.value = false;
     }

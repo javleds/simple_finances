@@ -63,7 +63,9 @@ export function createAccountInvitesRepository() {
         status: options?.filters?.status,
       });
       const query = searchParams.toString();
-      const response = await apiClient.get<unknown>(query ? `${invitesPath}?${query}` : invitesPath);
+      const response = await apiClient.get<unknown>(
+        query ? `${invitesPath}?${query}` : invitesPath,
+      );
       const parsedResponse = inviteCollectionSchema.parse(response);
 
       return {
@@ -83,7 +85,9 @@ export function createAccountInvitesRepository() {
       });
       const query = searchParams.toString();
       const response = await apiClient.get<unknown>(
-        query ? `${accountsPath}/${accountId}/invites?${query}` : `${accountsPath}/${accountId}/invites`,
+        query
+          ? `${accountsPath}/${accountId}/invites?${query}`
+          : `${accountsPath}/${accountId}/invites`,
       );
       const parsedResponse = inviteCollectionSchema.parse(response);
 
