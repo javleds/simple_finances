@@ -24,6 +24,12 @@ class AccountRelationInviteController extends ApiController
             ->latest()
             ->getQuery();
 
+        $search = $request->string('search')->trim()->toString();
+
+        if ($search !== '') {
+            $query->where('email', 'like', '%'.$search.'%');
+        }
+
         return $this->respondPaginated(
             $query,
             $request,

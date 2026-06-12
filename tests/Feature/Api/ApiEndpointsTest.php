@@ -616,6 +616,31 @@ it('filters nested account invites by multiple statuses', function () {
         ->toBe(['accepted', 'pending']);
 });
 
+it('searches nested account invites by email', function () {
+    $owner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->attach($owner->id);
+
+    $matchingInvite = AccountInvite::factory()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'email' => 'person@example.com',
+    ]);
+
+    AccountInvite::factory()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'email' => 'another@example.com',
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/invites?search=person")
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    expect(collect($response->json('data'))->pluck('id')->all())->toBe([$matchingInvite->id]);
+});
+
 it('manages nested account users, invites, transactions and financial goals', function () {
     Notification::fake();
     seedNotificationTypes();
