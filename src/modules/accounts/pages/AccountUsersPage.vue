@@ -3,6 +3,9 @@ import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import AccountUserCreateModal from '@/modules/accounts/components/AccountUserCreateModal.vue';
+import AccountUserDeleteModal from '@/modules/accounts/components/AccountUserDeleteModal.vue';
+import AccountUserEditModal from '@/modules/accounts/components/AccountUserEditModal.vue';
 import AccountUsersList from '@/modules/accounts/components/AccountUsersList.vue';
 import AccountUsersSplitEditor from '@/modules/accounts/components/AccountUsersSplitEditor.vue';
 import AccountUsersToolbar from '@/modules/accounts/components/AccountUsersToolbar.vue';
@@ -16,9 +19,7 @@ import {
   AppButton,
   AppListState,
   AppLoadMoreFooter,
-  AppModal,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 const accountsRepository = createAccountsRepository();
@@ -126,6 +127,10 @@ const deleteUserActions = computed(() => [
     disabled: !selectedUser.value || isDeleting.value,
   },
 ]);
+
+const createUserActions = [
+  { key: 'close', label: 'Cerrar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+];
 
 function resolveErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError) {
@@ -410,75 +415,30 @@ function resetSplitDraft(): void {
       </AccountUsersList>
     </AppListState>
 
-    <AppModal
+    <AccountUserCreateModal
       :open="isCreateUserOpen"
-      :actions="[
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Agregar usuario"
-      variant="default"
+      :actions="createUserActions"
       @close="closeCreateUser"
-    >
-      <div class="space-y-3">
-        <AppText>
-          La API permite adjuntar un usuario existente por `user_id`, pero este frontend todavía no
-          cuenta con un catálogo global de usuarios para seleccionarlo desde aquí.
-        </AppText>
-        <AppText size="sm" tone="subtle">
-          Por ahora, la incorporación de nuevos miembros sigue el flujo de invitaciones de la
-          cuenta.
-        </AppText>
-      </div>
-    </AppModal>
+    />
 
-    <AppModal
+    <AccountUserEditModal
+      v-model:edit-percentage="editPercentage"
       :open="isEditUserOpen"
       :actions="editUserActions"
-      title="Editar porcentaje"
-      variant="default"
-      @action="$event === 'submit-edit-user' && saveUserPercentage()"
+      :can-submit="canSubmitPercentage()"
+      :save-error="saveError"
+      :selected-user="selectedUser"
       @close="closeEditUser"
-    >
-      <div class="space-y-5">
-        <AppText v-if="selectedUser">
-          Ajusta la participación de <strong>{{ selectedUser.name }}</strong> dentro de esta cuenta.
-        </AppText>
+      @save="saveUserPercentage"
+    />
 
-        <AppInput
-          id="account-user-percentage"
-          v-model="editPercentage"
-          label="Porcentaje"
-          type="number"
-          inputmode="decimal"
-          min="0"
-          max="100"
-          step="0.01"
-          placeholder="0.00"
-          :error="
-            saveError ??
-            (editPercentage && !canSubmitPercentage()
-              ? 'El porcentaje debe estar entre 0 y 100.'
-              : undefined)
-          "
-          required
-        />
-      </div>
-    </AppModal>
-
-    <AppModal
+    <AccountUserDeleteModal
       :open="isDeleteUserOpen"
       :actions="deleteUserActions"
-      title="Quitar usuario"
-      variant="danger"
-      @action="$event === 'confirm-delete-user' && confirmDeleteUser()"
+      :delete-error="deleteError"
+      :selected-user="selectedUser"
       @close="closeDeleteUser"
-    >
-      <div class="space-y-3">
-        <AppText v-if="selectedUser">
-          Vas a quitar a <strong>{{ selectedUser.name }}</strong> de esta cuenta.
-        </AppText>
-        <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmDeleteUser"
+    />
   </section>
 </template>
