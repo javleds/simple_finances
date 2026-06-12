@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import AccountUserCreateModal from '@/modules/accounts/components/AccountUserCreateModal.vue';
@@ -12,6 +12,7 @@ import { useAccountUserFilters } from '@/modules/accounts/composables/useAccount
 import { useAccountUserModalActions } from '@/modules/accounts/composables/useAccountUserModalActions';
 import { useAccountUserModals } from '@/modules/accounts/composables/useAccountUserModals';
 import { useAccountUsersCrud } from '@/modules/accounts/composables/useAccountUsersCrud';
+import { useAccountUsersSplitDraft } from '@/modules/accounts/composables/useAccountUsersSplitDraft';
 import type { AccountMember } from '@/modules/accounts/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import {
@@ -27,8 +28,6 @@ const defaultUsersPerPage = 20;
 const emit = defineEmits<{
   accountUsersChange: [users: AccountMember[]];
 }>();
-
-const splitDraft = ref<Record<string, number>>({});
 
 const accountId = computed(() =>
   typeof route.params.accountId === 'string' ? route.params.accountId : '',
@@ -100,20 +99,20 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   },
 });
 
-const splitUsers = computed(() =>
-  users.value.map((user) => ({
-    id: user.id,
-    name: user.name,
-  })),
-);
-const canShowSplitEditor = computed(() => splitUsers.value.length > 1);
-
-const hasLoadedEveryUserForSplit = computed(() => !hasMoreUsers.value);
-
-const hasSplitChanges = computed(
-  () =>
-    !areAllocationRecordsEqual(splitDraft.value, createAllocationRecord(users.value)),
-);
+const {
+  applySplitDraft,
+  canShowSplitEditor,
+  hasLoadedEveryUserForSplit,
+  hasSplitChanges,
+  resetSplitDraft,
+  splitDraft,
+  splitUsers,
+} = useAccountUsersSplitDraft({
+  hasMoreUsers,
+  onUsersChange: (nextUsers) => emit('accountUsersChange', nextUsers),
+  setUsers,
+  users,
+});
 
 const {
   createUserActions,
@@ -164,22 +163,6 @@ watch(
     void loadUsers();
   },
   { immediate: true },
-);
-
-watch(
-  () => users.value,
-  (nextUsers) => {
-    const nextRecord = createAllocationRecord(nextUsers);
-
-    if (!hasSplitChanges.value) {
-      splitDraft.value = nextRecord;
-    } else {
-      splitDraft.value = mergeAllocationRecords(splitDraft.value, nextRecord);
-    }
-
-    emit('accountUsersChange', nextUsers);
-  },
-  { immediate: true, deep: true },
 );
 
 async function saveUserPercentage(): Promise<void> {
@@ -233,48 +216,6 @@ function infiniteStatusLabel(): string {
   return 'Sigue desplazándote para revisar más miembros conforme crezca la colaboración de la cuenta.';
 }
 
-function createAllocationRecord(users: ReadonlyArray<AccountMember>): Record<string, number> {
-  return users.reduce<Record<string, number>>((accumulator, user) => {
-    accumulator[user.id] = Number((user.allocationPercentage ?? 0).toFixed(2));
-    return accumulator;
-  }, {});
-}
-
-function mergeAllocationRecords(
-  currentRecord: Record<string, number>,
-  nextRecord: Record<string, number>,
-): Record<string, number> {
-  return Object.keys(nextRecord).reduce<Record<string, number>>((accumulator, userId) => {
-    accumulator[userId] = currentRecord[userId] ?? nextRecord[userId] ?? 0;
-    return accumulator;
-  }, {});
-}
-
-function areAllocationRecordsEqual(
-  left: Record<string, number>,
-  right: Record<string, number>,
-): boolean {
-  const allKeys = new Set([...Object.keys(left), ...Object.keys(right)]);
-
-  return [...allKeys].every((key) => {
-    const leftValue = Number((left[key] ?? 0).toFixed(2));
-    const rightValue = Number((right[key] ?? 0).toFixed(2));
-    return leftValue === rightValue;
-  });
-}
-
-function applySplitDraft(): void {
-  setUsers(
-    users.value.map((user) => ({
-      ...user,
-      allocationPercentage: splitDraft.value[user.id] ?? user.allocationPercentage,
-    })),
-  );
-}
-
-function resetSplitDraft(): void {
-  splitDraft.value = createAllocationRecord(users.value);
-}
 </script>
 
 <template>
