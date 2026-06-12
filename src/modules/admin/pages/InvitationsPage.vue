@@ -70,14 +70,8 @@ const selectedInvitation = computed(() => {
     return null;
   }
 
-  return (
-    invitationsState.items.value.find(
-      (invitation) => invitation.id === selectedInvitationId.value,
-    ) ?? null
-  );
+  return invitationsState.items.value.find((invitation) => invitation.id === selectedInvitationId.value) ?? null;
 });
-
-const visibleInvitations = computed(() => invitationsState.items.value);
 
 const actionModalActions = computed(() => [
   { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
@@ -169,11 +163,14 @@ async function confirmInvitationAction(): Promise<void> {
       status: pendingAction.value,
     });
 
-    invitationsState.setItems(
-      invitationsState.items.value.map((invitation) =>
-        invitation.id === updatedInvitation.id ? updatedInvitation : invitation,
-      ),
-    );
+    if (updatedInvitation.status !== 'pending') {
+      invitationsState.removeItem((invitation) => invitation.id === updatedInvitation.id);
+    } else {
+      invitationsState.replaceItem(
+        (invitation) => invitation.id === updatedInvitation.id,
+        updatedInvitation,
+      );
+    }
 
     closeInvitationAction();
   } catch (error) {
@@ -223,7 +220,7 @@ function infiniteStatusLabel(): string {
       @retry="reloadInvitations"
     >
       <FacilityInvitationsList
-        :invitations="visibleInvitations"
+        :invitations="invitationsState.items.value"
         @accept="openInvitationAction($event, 'accepted')"
         @reject="openInvitationAction($event, 'declined')"
       >
@@ -231,9 +228,7 @@ function infiniteStatusLabel(): string {
           <div ref="loadMoreSentinel">
             <AppLoadMoreFooter
               :label="infiniteStatusLabel()"
-              :show-retry="
-                Boolean(invitationsState.loadError.value && invitationsState.items.value.length > 0)
-              "
+              :show-retry="Boolean(invitationsState.loadError.value && invitationsState.items.value.length > 0)"
               @retry="handleLoadMoreRetry"
             />
           </div>
