@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import {
-  XMarkIcon,
-} from '@heroicons/vue/24/outline';
-import { computed, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import AccountDeleteModal from '@/modules/accounts/components/AccountDeleteModal.vue';
@@ -12,6 +9,7 @@ import AccountsList from '@/modules/accounts/components/AccountsList.vue';
 import AccountsToolbar from '@/modules/accounts/components/AccountsToolbar.vue';
 import { useAccountsCrud } from '@/modules/accounts/composables/useAccountsCrud';
 import { useAccountFilters } from '@/modules/accounts/composables/useAccountFilters';
+import { useAccountModalActions } from '@/modules/accounts/composables/useAccountModalActions';
 import { useAccountModals } from '@/modules/accounts/composables/useAccountModals';
 import type {
   AccountKindFilter,
@@ -97,6 +95,15 @@ const {
   clearSaveError,
 });
 
+const { createAccountActions, deleteAccountActions, editAccountActions } =
+  useAccountModalActions({
+    createFormState,
+    editFormState,
+    isDeleting,
+    isSaving,
+    selectedAccount,
+  });
+
 const accountsPerPage = computed(() => {
   const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
@@ -113,40 +120,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
     void loadMoreAccounts();
   },
 });
-
-const createAccountActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-account',
-    label: isSaving.value ? 'Guardando...' : 'Crear cuenta',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'account-form',
-    disabled: !createFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const editAccountActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'submit-edit-account',
-    label: isSaving.value ? 'Guardando...' : 'Guardar cambios',
-    tone: 'primary' as const,
-    type: 'submit' as const,
-    form: 'edit-account-form',
-    disabled: !editFormState.value.canSubmit || isSaving.value,
-  },
-]);
-
-const deleteAccountActions = computed(() => [
-  { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-  {
-    key: 'confirm-delete-account',
-    label: isDeleting.value ? 'Eliminando...' : 'Eliminar cuenta',
-    tone: 'primary' as const,
-    disabled: !selectedAccount.value || isDeleting.value,
-  },
-]);
 
 watch(
   [activeFilters, accountsPerPage],
