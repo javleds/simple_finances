@@ -28,16 +28,14 @@ function formatCurrency(value: number): string {
 <template>
   <div class="space-y-3">
     <AppCard class="rounded-3xl">
-      <div class="flex items-center justify-between gap-4">
-        <div class="flex flex-col items-center gap-4 space-y-1">
-          <AppTitle as="h2" size="sm">Planeación de subscripciones</AppTitle>
+      <div class="flex flex-col items-center gap-4">
+        <AppTitle as="h2" size="sm">Planeación de subscripciones</AppTitle>
 
-          <AppToggleButton
-            :model-value="savingsCadence"
-            :options="cadenceOptions"
-            @update:model-value="savingsCadence = $event as SavingsCadence"
-          />
-        </div>
+        <AppToggleButton
+          :model-value="savingsCadence"
+          :options="cadenceOptions"
+          @update:model-value="savingsCadence = $event as SavingsCadence"
+        />
       </div>
     </AppCard>
 
