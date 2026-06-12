@@ -94,11 +94,6 @@ function handleDelete(): void {
           <p class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums">
             {{ formattedAmount(props.targetAmount) }}
           </p>
-          <p
-            class="text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
-          >
-            cantidad
-          </p>
         </div>
 
         <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
@@ -123,7 +118,10 @@ function handleDelete(): void {
       <div class="relative h-7 overflow-hidden rounded-full bg-(--app-color-surface-muted)">
         <div
           class="h-full rounded-full"
-          :style="{ width: progressWidth(props.progress), backgroundColor: progressBarStyle(props.status) }"
+          :style="{
+            width: progressWidth(props.progress),
+            backgroundColor: progressBarStyle(props.status),
+          }"
         />
         <p
           class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-(--app-color-text) tabular-nums"
