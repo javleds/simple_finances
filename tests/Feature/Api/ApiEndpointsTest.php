@@ -716,6 +716,7 @@ it('manages nested account users, invites, transactions and financial goals', fu
             'financial_goal_id' => $goalId,
         ])
         ->assertCreated()
+        ->assertJsonPath('data.financial_goal_id', $goalId)
         ->assertJsonPath('meta.account.id', $account->id)
         ->assertJsonPath('meta.account.balance', 5000);
 
@@ -725,6 +726,19 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ->getJson("/api/accounts/{$account->id}/transactions?type=income&financial_goal_id={$goalId}")
         ->assertOk()
         ->assertJsonPath('meta.total', 1);
+
+    $this->withHeaders(apiHeaders($owner))
+        ->putJson("/api/accounts/{$account->id}/transactions/{$transactionId}", [
+            'type' => 'income',
+            'status' => 'completed',
+            'concept' => 'Salary Updated',
+            'amount' => 4500,
+            'split_between_users' => false,
+            'scheduled_at' => now()->toDateString(),
+            'financial_goal_id' => $goalId,
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.financial_goal_id', $goalId);
 
     $inviteResponse = $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/invites", [

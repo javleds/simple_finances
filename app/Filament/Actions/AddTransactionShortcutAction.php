@@ -159,7 +159,7 @@ class AddTransactionShortcutAction extends Action
                     splitBetweenUsers: $data['split_between_users'] ?? false,
                     userPayments: collect($data['user_payments'] ?? [])->map(fn (array $userPayment) => UserPaymentDto::fromFormArray($userPayment))->all() ?? [],
                     scheduledAt: $data['scheduled_at'],
-                    finanialGoalId: null,
+                    financialGoalId: null,
                 ));
 
                 Notification::make('transaction_added')

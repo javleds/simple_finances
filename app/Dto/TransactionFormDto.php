@@ -18,7 +18,7 @@ class TransactionFormDto
         public bool $splitBetweenUsers,
         public array $userPayments,
         public string|CarbonInterface $scheduledAt,
-        public ?int $finanialGoalId,
+        public ?int $financialGoalId,
     ) {}
 
     public static function fromFormArray(array $data): self
@@ -36,7 +36,7 @@ class TransactionFormDto
             splitBetweenUsers: $data['split_between_users'] ?? false,
             userPayments: collect($data['user_payments'] ?? [])->map(fn (array $userPayment) => UserPaymentDto::fromFormArray($userPayment))->all(),
             scheduledAt: $data['scheduled_at'] ?? '',
-            finanialGoalId: $data['financial_goal_id'] ?? null,
+            financialGoalId: $data['financial_goal_id'] ?? null,
         );
     }
 }

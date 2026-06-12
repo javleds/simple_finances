@@ -283,7 +283,7 @@ class TransactionsRelationManager extends RelationManager
                             splitBetweenUsers: $data['split_between_users'] ?? false,
                             userPayments: collect($data['user_payments'] ?? [])->map(fn (array $userPayment) => UserPaymentDto::fromFormArray($userPayment))->all() ?? [],
                             scheduledAt: $data['scheduled_at'],
-                            finanialGoalId: $data['financial_goal_id'] ?? null,
+                            financialGoalId: $data['financial_goal_id'] ?? null,
                         ));
 
                         Notification::make('transaction_added')
@@ -368,7 +368,7 @@ class TransactionsRelationManager extends RelationManager
                                 splitBetweenUsers: $data['concept'],
                                 userPayments: collect($data['user_payments'] ?? [])->map(fn (array $userPayment) => UserPaymentDto::fromFormArray($userPayment))->all() ?? [],
                                 scheduledAt: $data['scheduled_at'],
-                                finanialGoalId: $data['financial_goal_id'] ?? null,
+                                financialGoalId: $data['financial_goal_id'] ?? null,
                             )
                         );
 

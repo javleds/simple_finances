@@ -55,7 +55,7 @@ class TransactionCreator
         $transaction->percentage = 100.0;
         $transaction->account_id = $dto->accountId;
         $transaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
-        $transaction->financial_goal_id = $dto->finanialGoalId ?: null;
+        $transaction->financial_goal_id = $dto->financialGoalId ?: null;
         $transaction->user_id = $this->auth->id();
         $transaction->save();
 
@@ -72,7 +72,7 @@ class TransactionCreator
         $mainTransaction->percentage = 100.0;
         $mainTransaction->account_id = $dto->accountId;
         $mainTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
-        $mainTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
+        $mainTransaction->financial_goal_id = $dto->financialGoalId ?: null;
         $mainTransaction->user_id = $this->auth->id();
         $mainTransaction->save();
 
@@ -87,7 +87,7 @@ class TransactionCreator
             $subTransaction->percentage = $allocation->percentage;
             $subTransaction->account_id = $dto->accountId;
             $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
-            $subTransaction->financial_goal_id = $dto->finanialGoalId ?: null;
+            $subTransaction->financial_goal_id = $dto->financialGoalId ?: null;
             $subTransaction->user_id = $user->id;
             $subTransaction->parent_transaction_id = $mainTransaction->id;
 
