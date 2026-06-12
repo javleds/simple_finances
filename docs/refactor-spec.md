@@ -284,6 +284,14 @@ Commits aplicados:
 - `586f3f5 refactor(dashboard): extract subscriptions planning`
 - `d7ba1ed refactor(dashboard): extract complete pending modal`
 - `848d846 refactor(dashboard): extract pending action state`
+- `fb9c870 refactor(transactions): use shared list state components`
+- `e9a9d48 refactor(transactions): extract transactions toolbar`
+- `37ae352 refactor(transactions): extract filters modal`
+- `53b7ea7 refactor(transactions): extract transactions header`
+- `d3db068 refactor(transactions): extract transaction form modal`
+- `9787dd5 refactor(transactions): extract confirmation modals`
+- `3731c70 refactor(transactions): extract query synced filters`
+- `7934be6 refactor(transactions): extract modal actions`
 
 Estado actual:
 
@@ -339,6 +347,19 @@ Estado actual:
   - `DashboardCompletePendingModal.vue`
 - La logica de pendientes del dashboard quedo separada en:
   - `useDashboardPendingActions.ts`
+- `AccountTransactionsPage.vue` bajo de ~1025 lineas a 696 lineas en la primera fase.
+- La UI de transacciones quedo parcialmente separada en:
+  - `AccountTransactionsHeader.vue`
+  - `AccountTransactionsToolbar.vue`
+  - `AccountTransactionsList.vue`
+  - `AccountTransactionFiltersModal.vue`
+  - `AccountTransactionFormModal.vue`
+  - `AccountTransactionDeleteModal.vue`
+  - `AccountTransactionCompleteModal.vue`
+  - `AccountCompletePendingByUserModal.vue`
+- La logica de filtros y acciones de modales de transacciones quedo separada en:
+  - `useAccountTransactionFilters.ts`
+  - `useAccountTransactionModalActions.ts`
 
 Verificacion:
 
@@ -347,6 +368,6 @@ Verificacion:
 Siguiente paso recomendado:
 
 1. Extraer acciones CRUD de `AccountGoalsPage.vue` a un composable pequeno, por ejemplo `useAccountGoalPageActions`.
-2. Preparar `AccountTransactionsPage.vue` como fase separada por riesgo: antes de mover piezas, identificar y preservar la logica reciente de balance, pending por usuario y complete batch.
-3. Revisar si `reloadGoals`, `infiniteStatusLabel` y `goalsPerPage` deben quedarse en pagina o moverse a un composable de carga/lista.
+2. Continuar `AccountTransactionsPage.vue` extrayendo estado de modales y acciones CRUD normales.
+3. Despues aislar la logica de balance/pending por usuario en un composable con pruebas enfocadas antes de mover mas flujo.
 4. Despues continuar con `AccountsPage.vue`, `SubscriptionsPage.vue` y `DistributionPage.vue`.
