@@ -3,7 +3,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import SubscriptionDeleteModal from '@/modules/subscriptions/components/SubscriptionDeleteModal.vue';
@@ -11,15 +11,14 @@ import SubscriptionFiltersModal from '@/modules/subscriptions/components/Subscri
 import SubscriptionFormModal from '@/modules/subscriptions/components/SubscriptionFormModal.vue';
 import SubscriptionsList from '@/modules/subscriptions/components/SubscriptionsList.vue';
 import SubscriptionsToolbar from '@/modules/subscriptions/components/SubscriptionsToolbar.vue';
+import { useSubscriptionFilters } from '@/modules/subscriptions/composables/useSubscriptionFilters';
 import { useSubscriptionsCrud } from '@/modules/subscriptions/composables/useSubscriptionsCrud';
 import type {
   SubscriptionFrequencyType,
-  SubscriptionListFilters,
   SubscriptionStatusFilter,
   SubscriptionWritePayload,
 } from '@/modules/subscriptions/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
   AppListState,
   AppLoadMoreFooter,
@@ -33,24 +32,11 @@ type FormState = {
 
 const accountsRepository = createAccountsRepository();
 const route = useRoute();
-const router = useRouter();
 
-const defaultSubscriptionStatuses: SubscriptionStatusFilter[] = ['active'];
-const searchTerm = ref(typeof route.query.search === 'string' ? route.query.search : '');
 const isFiltersOpen = ref(false);
 const isCreateSubscriptionOpen = ref(false);
 const isEditSubscriptionOpen = ref(false);
 const isDeleteSubscriptionOpen = ref(false);
-const selectedStatuses = ref<SubscriptionStatusFilter[]>(
-  parseQueryValuesOrDefault(
-    route.query.status,
-    isSubscriptionStatusFilter,
-    defaultSubscriptionStatuses,
-  ),
-);
-const selectedUnits = ref<SubscriptionFrequencyType[]>(
-  parseQueryValues(route.query.frequencyType, isSubscriptionFrequencyType),
-);
 const selectedSubscriptionId = ref<string | null>(null);
 const createFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
 const editFormState = ref<FormState>({ canSubmit: false, isSubmitting: false });
@@ -69,6 +55,15 @@ const subscriptionUnitOptions = [
   { value: 'years', label: 'Años' },
 ] as const;
 const defaultSubscriptionsPerPage = 20;
+const {
+  activeFilters,
+  clearFilters,
+  searchTerm,
+  selectedStatuses,
+  selectedUnits,
+  toggleStatus,
+  toggleUnit,
+} = useSubscriptionFilters();
 
 const {
   subscriptions,
@@ -108,12 +103,6 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
     void loadMoreSubscriptions();
   },
 });
-
-const activeFilters = computed<SubscriptionListFilters>(() => ({
-  search: searchTerm.value.trim() || undefined,
-  status: selectedStatuses.value.length > 0 ? [...selectedStatuses.value] : undefined,
-  frequencyType: selectedUnits.value.length > 0 ? [...selectedUnits.value] : undefined,
-}));
 
 const selectedSubscription = computed(() => {
   if (!selectedSubscriptionId.value) {
@@ -165,40 +154,6 @@ onMounted(() => {
 });
 
 watch(
-  () => route.query,
-  (nextQuery) => {
-    searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
-    setArrayValueIfChanged(
-      selectedStatuses,
-      parseQueryValues(nextQuery.status, isSubscriptionStatusFilter),
-    );
-    setArrayValueIfChanged(
-      selectedUnits,
-      parseQueryValues(nextQuery.frequencyType, isSubscriptionFrequencyType),
-    );
-  },
-);
-
-watch(
-  [searchTerm, selectedStatuses, selectedUnits],
-  () => {
-    const nextQuery = {
-      ...route.query,
-      search: searchTerm.value.trim() || undefined,
-      status: selectedStatuses.value.length > 0 ? selectedStatuses.value.join(',') : undefined,
-      frequencyType: selectedUnits.value.length > 0 ? selectedUnits.value.join(',') : undefined,
-    };
-
-    if (areQueriesEqual(route.query, nextQuery)) {
-      return;
-    }
-
-    void router.replace({ query: nextQuery });
-  },
-  { deep: true, immediate: true },
-);
-
-watch(
   [activeFilters, subscriptionsPerPage],
   ([nextFilters, nextPerPage]) => {
     void loadSubscriptions(nextFilters, {
@@ -228,29 +183,6 @@ function openFilters(): void {
 
 function closeFilters(): void {
   isFiltersOpen.value = false;
-}
-
-function clearFilters(): void {
-  selectedStatuses.value = [];
-  selectedUnits.value = [];
-}
-
-function toggleStatus(status: SubscriptionStatusFilter): void {
-  if (selectedStatuses.value.includes(status)) {
-    selectedStatuses.value = selectedStatuses.value.filter((item) => item !== status);
-    return;
-  }
-
-  selectedStatuses.value = [status];
-}
-
-function toggleUnit(unit: SubscriptionFrequencyType): void {
-  if (selectedUnits.value.includes(unit)) {
-    selectedUnits.value = selectedUnits.value.filter((item) => item !== unit);
-    return;
-  }
-
-  selectedUnits.value = [...selectedUnits.value, unit];
 }
 
 function openCreateSubscription(): void {
@@ -329,50 +261,11 @@ function handleEditFormStateChange(state: FormState): void {
   editFormState.value = state;
 }
 
-function parseQueryValuesOrDefault<TValue extends string>(
-  value: unknown,
-  isAllowedValue: (value: string) => value is TValue,
-  defaultValues: TValue[],
-): TValue[] {
-  if (typeof value !== 'string') {
-    return [...defaultValues];
-  }
-
-  return parseQueryValues(value, isAllowedValue);
-}
-
-function setArrayValueIfChanged<TValue>(
-  target: { value: TValue[] },
-  nextValue: TValue[],
-): void {
-  if (areArraysEqual(target.value, nextValue)) {
-    return;
-  }
-
-  target.value = nextValue;
-}
-
-function areArraysEqual<TValue>(currentValue: TValue[], nextValue: TValue[]): boolean {
-  if (currentValue.length !== nextValue.length) {
-    return false;
-  }
-
-  return currentValue.every((item, index) => item === nextValue[index]);
-}
-
 function reloadSubscriptions(): void {
   void loadSubscriptions(activeFilters.value, {
     reset: true,
     perPage: subscriptionsPerPage.value,
   });
-}
-
-function isSubscriptionStatusFilter(value: string): value is SubscriptionStatusFilter {
-  return value === 'active' || value === 'cancelled';
-}
-
-function isSubscriptionFrequencyType(value: string): value is SubscriptionFrequencyType {
-  return value === 'days' || value === 'months' || value === 'years';
 }
 
 function handleLoadMoreRetry(): void {
