@@ -13,6 +13,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import type { Account, AccountPendingByUser } from '@/modules/accounts/types';
+import AccountTransactionsList from '@/modules/accounts/components/AccountTransactionsList.vue';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import { createDashboardRepository } from '@/modules/admin/repositories/dashboardRepository';
 import {
@@ -22,6 +23,8 @@ import {
   AppHeroMetric,
   AppIconButton,
   AppInput,
+  AppListState,
+  AppLoadMoreFooter,
   AppModal,
   AppSectionBar,
   AppText,
@@ -31,7 +34,6 @@ import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScrol
 import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
 import TransactionsForm from '@/modules/transactions/components/TransactionsForm.vue';
-import TransactionListItem from '@/modules/transactions/components/TransactionListItem.vue';
 import type {
   TransactionListFilters,
   TransactionMutationMeta,
@@ -300,14 +302,6 @@ watch(listMeta, (nextMeta) => {
 
   applyMutationMeta(nextMeta);
 });
-
-function formatDateLabel(date: string): string {
-  return new Intl.DateTimeFormat('es-MX', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(`${date}T00:00:00`));
-}
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-MX', {
@@ -799,68 +793,31 @@ function infiniteStatusLabel(): string {
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
-    <section v-if="isLoading && !hasTransactions" class="rounded-2xl border px-4 py-10 text-center">
-      <AppText>Cargando transacciones...</AppText>
-    </section>
-
-    <section
-      v-else-if="loadError && !hasTransactions"
-      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    <AppListState
+      :error="loadError"
+      :has-items="hasTransactions"
+      :is-loading="isLoading"
+      loading-label="Cargando transacciones..."
+      @retry="reloadTransactions"
     >
-      <AppText>{{ loadError }}</AppText>
-      <div class="flex justify-center">
-        <AppButton variant="secondary" @click="reloadTransactions">Reintentar</AppButton>
-      </div>
-    </section>
-
-    <section v-else class="space-y-3">
-      <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">
-          {{ transactions.length }} transacciones visibles
-        </AppText>
-        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
-      </div>
-
-      <div class="space-y-4">
-        <TransactionListItem
-          v-for="transaction in transactions"
-          :key="transaction.id"
-          :amount="transaction.amount"
-          :can-complete="canCompleteTransaction(transaction)"
-          :concept="transaction.concept"
-          :creator-name="transaction.creatorName"
-          :date-label="formatDateLabel(transaction.date)"
-          :item-id="transaction.id"
-          :show-actions="canManageTransaction(transaction)"
-          :status="transaction.status ?? 'completed'"
-          :type="transaction.type"
-          @complete="openCompleteTransaction"
-          @delete="openDeleteTransaction"
-          @edit="openEditTransaction"
-        />
-
-        <div
-          v-if="transactions.length === 0"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm"
-            >No hay transacciones que coincidan con la búsqueda o los filtros actuales.</AppText
-          >
-        </div>
-
-        <div
-          ref="loadMoreSentinel"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
-          <div v-if="loadError && hasTransactions" class="mt-3 flex justify-center">
-            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+      <AccountTransactionsList
+        :current-user-id="currentUserId"
+        :transactions="transactions"
+        @complete="openCompleteTransaction"
+        @delete="openDeleteTransaction"
+        @edit="openEditTransaction"
+      >
+        <template #footer>
+          <div ref="loadMoreSentinel">
+            <AppLoadMoreFooter
+              :label="infiniteStatusLabel()"
+              :show-retry="Boolean(loadError && hasTransactions)"
+              @retry="handleLoadMoreRetry"
+            />
           </div>
-        </div>
-      </div>
-    </section>
+        </template>
+      </AccountTransactionsList>
+    </AppListState>
 
     <AppModal
       :open="isFiltersOpen"
