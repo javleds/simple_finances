@@ -32,7 +32,6 @@ const emit = defineEmits<{
 const {
   name,
   email,
-  phoneNumber,
   password,
   passwordConfirmation,
   isSubmitting,
@@ -44,7 +43,6 @@ const {
 });
 const { error: nameError, touch: touchName } = useFormFieldInteraction('name');
 const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
-const { error: phoneNumberError, touch: touchPhoneNumber } = useFormFieldInteraction('phoneNumber');
 const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('password');
 const { error: passwordConfirmationError, touch: touchPasswordConfirmation } =
   useFormFieldInteraction('passwordConfirmation');
@@ -102,15 +100,6 @@ async function handleSubmit(): Promise<void> {
         :error="emailError"
         @blur="touchEmail"
         required
-      />
-
-      <AppInput
-        id="profile-phone-number"
-        v-model="phoneNumber"
-        label="Teléfono"
-        placeholder="55 1234 5678"
-        :error="phoneNumberError"
-        @blur="touchPhoneNumber"
       />
     </section>
 
