@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import {
-  AdjustmentsHorizontalIcon,
-  ArrowPathIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import AccountFiltersModal from '@/modules/accounts/components/AccountFiltersModal.vue';
 import AccountsForm from '@/modules/accounts/components/AccountsForm.vue';
-import AccountListItem from '@/modules/accounts/components/AccountListItem.vue';
+import AccountsList from '@/modules/accounts/components/AccountsList.vue';
+import AccountsToolbar from '@/modules/accounts/components/AccountsToolbar.vue';
 import { useAccountsCrud } from '@/modules/accounts/composables/useAccountsCrud';
 import type {
   Account,
@@ -23,13 +21,10 @@ import type {
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
-  AppButton,
-  AppIconButton,
-  AppInput,
+  AppListState,
+  AppLoadMoreFooter,
   AppModal,
-  AppSectionBar,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 type FormState = {
@@ -293,17 +288,6 @@ function clearFilters(): void {
   selectedSurfaces.value = [];
 }
 
-function handleFiltersModalAction(actionKey: string): void {
-  if (actionKey === 'clear') {
-    clearFilters();
-    return;
-  }
-
-  if (actionKey === 'close') {
-    closeFilters();
-  }
-}
-
 function reloadAccounts(): void {
   void loadAccounts(activeFilters.value, {
     reset: true,
@@ -413,189 +397,55 @@ function isAccountSurfaceFilter(value: string): value is AccountSurfaceFilter {
 
 <template>
   <div class="space-y-5">
-    <AppSectionBar
-      title="Gestión de cuentas"
-      description="La navegación por default es entrar al detalle de cada cuenta."
+    <AccountsToolbar
+      v-model:search-term="searchTerm"
+      @create="openCreateAccount"
+      @open-filters="openFilters"
+    />
+
+    <section v-if="loadError && hasAccounts" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+      <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
+    </section>
+
+    <AppListState
+      :error="loadError"
+      :has-items="hasAccounts"
+      :is-loading="isLoading"
+      loading-label="Cargando cuentas..."
+      @retry="reloadAccounts"
     >
-      <template #actions>
-        <AppButton variant="primary" @click="openCreateAccount">
-          <PlusIcon class="h-4 w-4" />
-        </AppButton>
-      </template>
-    </AppSectionBar>
+      <AccountsList :accounts="accounts" @delete="openDeleteAccount" @edit="openEditAccount">
+        <template #footer>
+          <AppLoadMoreFooter
+            :label="infiniteStatusLabel()"
+            :show-retry="Boolean(loadError && hasAccounts)"
+            @retry="handleLoadMoreRetry"
+          />
 
-    <div class="flex items-center gap-3">
-      <div class="relative flex-1">
-        <div
-          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
-        >
-          <MagnifyingGlassIcon class="h-5 w-5" />
-        </div>
-        <AppInput
-          id="account-search"
-          v-model="searchTerm"
-          type="search"
-          placeholder="Buscar cuenta por nombre"
-          class="pl-11"
-        />
-      </div>
+          <div
+            v-if="hasMoreAccounts || isLoadingMore || hasReachedEnd"
+            ref="loadMoreSentinel"
+            class="h-1 w-full"
+            aria-hidden="true"
+          />
+        </template>
+      </AccountsList>
+    </AppListState>
 
-      <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
-        <AdjustmentsHorizontalIcon class="h-5 w-5" />
-      </AppIconButton>
-    </div>
-
-    <section v-if="isLoading && !hasAccounts" class="rounded-2xl border px-4 py-10 text-center">
-      <AppText>Cargando cuentas...</AppText>
-    </section>
-
-    <section
-      v-else-if="loadError && !hasAccounts"
-      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
-    >
-      <AppText>{{ loadError }}</AppText>
-      <div class="flex justify-center">
-        <AppButton variant="outline" @click="reloadAccounts"> Reintentar </AppButton>
-      </div>
-    </section>
-
-    <section v-else class="space-y-3">
-      <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle"> {{ accounts.length }} cuentas visibles </AppText>
-        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
-      </div>
-
-      <div class="space-y-4">
-        <AccountListItem
-          v-for="account in accounts"
-          :key="account.id"
-          :account="account"
-          @delete="openDeleteAccount"
-          @edit="openEditAccount"
-        />
-
-        <div
-          v-if="accounts.length === 0"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">
-            No hay cuentas que coincidan con la búsqueda o los filtros actuales.
-          </AppText>
-        </div>
-
-        <div
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">
-            {{ infiniteStatusLabel() }}
-          </AppText>
-        </div>
-
-        <div
-          v-if="loadError && hasAccounts"
-          class="rounded-2xl border border-(--app-color-danger) px-4 py-4 text-center"
-        >
-          <AppText size="sm" class="text-(--app-color-danger)!">
-            {{ loadError }}
-          </AppText>
-          <div class="mt-3 flex justify-center">
-            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
-          </div>
-        </div>
-
-        <div
-          v-if="hasMoreAccounts || isLoadingMore || hasReachedEnd"
-          ref="loadMoreSentinel"
-          class="h-1 w-full"
-          aria-hidden="true"
-        />
-      </div>
-    </section>
-
-    <AppModal
+    <AccountFiltersModal
       :open="isFiltersOpen"
-      :actions="[
-        { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Filtros avanzados"
-      variant="default"
-      @action="handleFiltersModalAction"
+      :kind-options="kindOptions"
+      :selected-kinds="selectedKinds"
+      :selected-statuses="selectedStatuses"
+      :selected-surfaces="selectedSurfaces"
+      :status-options="statusOptions"
+      :surface-options="surfaceOptions"
+      @clear="clearFilters"
       @close="closeFilters"
-    >
-      <div class="space-y-5">
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Estatus</AppTitle>
-          <AppText>Refina la lista usando el estado operativo de la cuenta.</AppText>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="status in statusOptions"
-            :key="status"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedStatuses.includes(status)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleStatus(status)"
-          >
-            {{ status }}
-          </button>
-        </div>
-
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Tipo de cuenta</AppTitle>
-          <AppText>Filtra entre cuentas de crédito y débito.</AppText>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="kind in kindOptions"
-            :key="kind.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedKinds.includes(kind.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleKind(kind.value)"
-          >
-            {{ kind.label }}
-          </button>
-        </div>
-
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Superficie</AppTitle>
-          <AppText>Filtra entre cuentas virtuales y físicas.</AppText>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="surface in surfaceOptions"
-            :key="surface.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedSurfaces.includes(surface.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleSurface(surface.value)"
-          >
-            {{ surface.label }}
-          </button>
-        </div>
-      </div>
-    </AppModal>
+      @toggle-kind="toggleKind"
+      @toggle-status="toggleStatus"
+      @toggle-surface="toggleSurface"
+    />
 
     <AppModal
       :open="isCreateAccountOpen"
