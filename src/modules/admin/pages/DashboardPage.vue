@@ -2,6 +2,7 @@
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
+import DashboardSummaryCards from '@/modules/admin/components/DashboardSummaryCards.vue';
 import { useDashboard } from '@/modules/admin/composables/useDashboard';
 import type {
   DashboardPendingAction,
@@ -215,40 +216,7 @@ async function confirmCompletePendingAction(): Promise<void> {
       </div>
     </AppCard>
 
-    <section class="grid gap-3 sm:grid-cols-3">
-      <AppCard
-        class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-primary)_10%,transparent),transparent)] p-4!"
-      >
-        <div class="space-y-1">
-          <AppText size="sm" tone="subtle">Cuentas activas</AppText>
-          <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
-            {{ dashboard.accountsSummary.activeAccounts }}
-          </p>
-        </div>
-      </AppCard>
-
-      <AppCard
-        class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-success)_10%,transparent),transparent)] p-4!"
-      >
-        <div class="space-y-1">
-          <AppText size="sm" tone="subtle">Cuentas compartidas</AppText>
-          <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
-            {{ dashboard.accountsSummary.sharedAccounts }}
-          </p>
-        </div>
-      </AppCard>
-
-      <AppCard
-        class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-warning)_10%,transparent),transparent)] p-4!"
-      >
-        <div class="space-y-1">
-          <AppText size="sm" tone="subtle">Por pagar</AppText>
-          <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
-            {{ formatCurrency(dashboard.accountsSummary.pendingTotal) }}
-          </p>
-        </div>
-      </AppCard>
-    </section>
+    <DashboardSummaryCards :summary="dashboard.accountsSummary" />
 
     <AppCard class="rounded-3xl">
       <div class="space-y-4">
