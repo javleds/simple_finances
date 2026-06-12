@@ -1,20 +1,25 @@
 import { computed, ref, watch, type ComputedRef } from 'vue';
 
 import { createDashboardRepository } from '@/modules/admin/repositories/dashboardRepository';
+import type { BatchTransactionsResult } from '@/modules/admin/types/dashboard';
 import type { Account, AccountPendingByUser } from '@/modules/accounts/types';
 import type { TransactionMutationMeta } from '@/modules/transactions/types';
 
+type PendingTransactionsRepository = {
+  completePendingTransactions: (transactionIds: string[]) => Promise<BatchTransactionsResult>;
+};
+
 type UseAccountTransactionsPendingStateOptions = {
   account: ComputedRef<Account | undefined>;
+  dashboardRepository?: PendingTransactionsRepository;
   markTransactionsCompleted: (transactionIds: string[]) => void;
   reloadTransactions: () => Promise<void>;
 };
 
-const dashboardRepository = createDashboardRepository();
-
 export function useAccountTransactionsPendingState(
   options: UseAccountTransactionsPendingStateOptions,
 ) {
+  const dashboardRepository = options.dashboardRepository ?? createDashboardRepository();
   const isCompletePendingByUserModalOpen = ref(false);
   const selectedPendingByUserId = ref<string | null>(null);
   const isCompletingPendingByUser = ref(false);
