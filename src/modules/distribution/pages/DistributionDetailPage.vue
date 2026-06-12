@@ -1,15 +1,23 @@
 <script setup lang="ts">
-import { PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import DistributionRelationForm from '@/modules/distribution/components/DistributionRelationForm.vue';
-import DistributionRelationListItem from '@/modules/distribution/components/DistributionRelationListItem.vue';
+import DistributionRelationDeleteModal from '@/modules/distribution/components/DistributionRelationDeleteModal.vue';
+import DistributionRelationFormModal from '@/modules/distribution/components/DistributionRelationFormModal.vue';
+import DistributionRelationsHeader from '@/modules/distribution/components/DistributionRelationsHeader.vue';
+import DistributionRelationsList from '@/modules/distribution/components/DistributionRelationsList.vue';
 import { useDistributionRelationsCrud } from '@/modules/distribution/composables/useDistributionRelationsCrud';
-import { formatDistributionFrequency } from '@/modules/distribution/schemas/distributionSchemas';
 import type { DistributionRelationWritePayload } from '@/modules/distribution/types';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { AppButton, AppModal, AppSectionBar, AppText, AppTitle } from '@/modules/shared/components';
+import {
+  AppButton,
+  AppCard,
+  AppListState,
+  AppLoadMoreFooter,
+  AppText,
+  AppTitle,
+} from '@/modules/shared/components';
 
 type FormState = {
   canSubmit: boolean;
@@ -232,16 +240,7 @@ function infiniteStatusLabel(): string {
 
 <template>
   <section v-if="rule" class="space-y-4">
-    <AppSectionBar
-      :title="rule.name"
-      :description="`${formatDistributionFrequency(rule.frequency)} · ${rule.outcomesCount} relaciones registradas`"
-    >
-      <template #actions>
-        <AppButton variant="primary" @click="openCreateRelation">
-          <PlusIcon class="h-4 w-4" />
-        </AppButton>
-      </template>
-    </AppSectionBar>
+    <DistributionRelationsHeader :rule="rule" @create="openCreateRelation" />
 
     <section
       v-if="loadError && hasRelations"
@@ -250,108 +249,64 @@ function infiniteStatusLabel(): string {
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
-    <section v-if="isLoading && !hasRelations" class="rounded-2xl border px-4 py-10 text-center">
-      <AppText>Cargando relaciones...</AppText>
-    </section>
-
-    <section
-      v-else-if="loadError && !hasRelations"
-      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+    <AppListState
+      :error="loadError"
+      :has-items="hasRelations"
+      :is-loading="isLoading"
+      loading-label="Cargando relaciones..."
+      @retry="reloadRelations"
     >
-      <AppText>{{ loadError }}</AppText>
-      <div class="flex justify-center">
-        <AppButton variant="secondary" @click="reloadRelations">Reintentar</AppButton>
-      </div>
-    </section>
-
-    <section v-else class="space-y-3">
-      <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">{{ relations.length }} relaciones visibles</AppText>
-        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
-      </div>
-
-      <div class="space-y-4">
-        <DistributionRelationListItem
-          v-for="relation in relations"
-          :key="relation.id"
-          :amount="relation.amount"
-          :concept="relation.name"
-          :type="relation.type"
-          @delete="openDeleteRelation(relation.id)"
-          @edit="openEditRelation(relation.id)"
-        />
-
-        <div
-          v-if="relations.length === 0"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">Esta regla todavía no tiene relaciones registradas.</AppText>
-        </div>
-
-        <div
-          ref="loadMoreSentinel"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
-          <div v-if="loadError && hasRelations" class="mt-3 flex justify-center">
-            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+      <DistributionRelationsList
+        :relations="relations"
+        @delete="openDeleteRelation"
+        @edit="openEditRelation"
+      >
+        <template #footer>
+          <div ref="loadMoreSentinel">
+            <AppLoadMoreFooter
+              :label="infiniteStatusLabel()"
+              :show-retry="Boolean(loadError && hasRelations)"
+              @retry="handleLoadMoreRetry"
+            />
           </div>
-        </div>
-      </div>
-    </section>
+        </template>
+      </DistributionRelationsList>
+    </AppListState>
 
-    <AppModal
+    <DistributionRelationFormModal
       :open="isCreateRelationOpen"
       :actions="createRelationActions"
+      :fixed-income-id="rule.id"
+      form-id="distribution-relation-form"
+      :server-error="saveError"
       title="Nueva relación"
-      variant="default"
       @close="closeCreateRelation"
-    >
-      <DistributionRelationForm
-        :fixed-income-id="rule.id"
-        form-id="distribution-relation-form"
-        :server-error="saveError"
-        @state-change="handleCreateFormStateChange"
-        @submit="handleCreateRelationSubmit"
-      />
-    </AppModal>
+      @state-change="handleCreateFormStateChange"
+      @submit="handleCreateRelationSubmit"
+    />
 
-    <AppModal
+    <DistributionRelationFormModal
       :open="isEditRelationOpen"
       :actions="editRelationActions"
+      :fixed-income-id="rule.id"
+      form-id="edit-distribution-relation-form"
+      :initial-values="selectedRelation"
+      requires-initial-values
+      :server-error="saveError"
       title="Editar relación"
-      variant="default"
       @close="closeEditRelation"
-    >
-      <DistributionRelationForm
-        v-if="selectedRelation"
-        :fixed-income-id="rule.id"
-        form-id="edit-distribution-relation-form"
-        :initial-values="selectedRelation"
-        :server-error="saveError"
-        @state-change="handleEditFormStateChange"
-        @submit="handleEditRelationSubmit"
-      />
-    </AppModal>
+      @state-change="handleEditFormStateChange"
+      @submit="handleEditRelationSubmit"
+    />
 
-    <AppModal
+    <DistributionRelationDeleteModal
       :open="isDeleteRelationOpen"
       :actions="deleteRelationActions"
-      title="Eliminar relación"
-      variant="danger"
-      @action="$event === 'confirm-delete-relation' && confirmDeleteRelation()"
+      :delete-error="deleteError"
+      :relation="selectedRelation"
       @close="closeDeleteRelation"
-    >
-      <div class="space-y-3">
-        <AppText v-if="selectedRelation">
-          Vas a eliminar <strong>{{ selectedRelation.name }}</strong
-          >.
-        </AppText>
-        <AppText v-if="deleteError" class="text-(--app-color-danger)!">{{ deleteError }}</AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmDeleteRelation"
+    />
   </section>
 
   <AppCard v-else class="rounded-3xl">
