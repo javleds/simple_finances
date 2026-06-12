@@ -6,12 +6,17 @@ use App\Http\Requests\Api\AccountFinancialGoalRequest;
 use App\Models\Account;
 use App\Models\FinancialGoal;
 use App\Models\Transaction;
+use App\Services\Api\AuthorizeAccountAccess;
 use App\Services\FinancialGoals\RecalculateFinancialGoalProgress;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AccountFinancialGoalController extends ApiController
 {
+    public function __construct(
+        private readonly AuthorizeAccountAccess $authorizeAccountAccess,
+    ) {}
+
     public function index(Account $account, Request $request): JsonResponse
     {
         $this->ensureAccountMember($account);
@@ -75,12 +80,12 @@ class AccountFinancialGoalController extends ApiController
 
     private function ensureAccountMember(Account $account): void
     {
-        abort_unless($account->users()->where('users.id', auth()->id())->exists(), 403);
+        $this->authorizeAccountAccess->ensureMember($account);
     }
 
     private function ensureAccountGoal(Account $account, FinancialGoal $financialGoal): void
     {
         $this->ensureAccountMember($account);
-        abort_unless($financialGoal->account_id === $account->id, 404);
+        $this->authorizeAccountAccess->ensureBelongsToAccount($account, $financialGoal->account_id);
     }
 }

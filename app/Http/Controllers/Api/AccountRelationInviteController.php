@@ -10,11 +10,16 @@ use App\Models\Account;
 use App\Models\AccountInvite;
 use App\Models\User;
 use App\Services\AccountInvites\CreateAccountInvite;
+use App\Services\Api\AuthorizeAccountAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AccountRelationInviteController extends ApiController
 {
+    public function __construct(
+        private readonly AuthorizeAccountAccess $authorizeAccountAccess,
+    ) {}
+
     public function index(Account $account, Request $request): JsonResponse
     {
         $this->ensureOwner($account);
@@ -93,12 +98,12 @@ class AccountRelationInviteController extends ApiController
 
     private function ensureOwner(Account $account): void
     {
-        abort_unless($account->user_id === auth()->id(), 403);
+        $this->authorizeAccountAccess->ensureOwner($account);
     }
 
     private function ensureAccountInvite(Account $account, AccountInvite $invite): void
     {
         $this->ensureOwner($account);
-        abort_unless($invite->account_id === $account->id, 404);
+        $this->authorizeAccountAccess->ensureBelongsToAccount($account, $invite->account_id);
     }
 }

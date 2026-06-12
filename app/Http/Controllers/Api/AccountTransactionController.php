@@ -7,6 +7,7 @@ use App\Http\Requests\Api\AccountTransactionRequest;
 use App\Models\Account;
 use App\Models\Transaction;
 use App\Services\Accounts\BuildPendingIncomeByUser;
+use App\Services\Api\AuthorizeAccountAccess;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
 use App\Services\Transaction\TransactionUpdater;
@@ -18,6 +19,7 @@ class AccountTransactionController extends ApiController
 {
     public function __construct(
         private readonly BuildPendingIncomeByUser $buildPendingIncomeByUser,
+        private readonly AuthorizeAccountAccess $authorizeAccountAccess,
     ) {}
 
     public function index(Account $account, Request $request): JsonResponse
@@ -118,13 +120,13 @@ class AccountTransactionController extends ApiController
 
     private function ensureAccountMember(Account $account): void
     {
-        abort_unless($account->users()->where('users.id', auth()->id())->exists(), 403);
+        $this->authorizeAccountAccess->ensureMember($account);
     }
 
     private function ensureAccountTransaction(Account $account, Transaction $transaction): void
     {
         $this->ensureAccountMember($account);
-        abort_unless($transaction->account_id === $account->id, 404);
+        $this->authorizeAccountAccess->ensureBelongsToAccount($account, $transaction->account_id);
     }
 
     private function transactionAccountMeta(int $accountId, ?int $previousAccountId = null): array

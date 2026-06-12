@@ -8,12 +8,17 @@ use App\Handlers\Accounts\AccountEditor;
 use App\Http\Requests\Api\AccountRequest;
 use App\Models\Account;
 use App\Services\Accounts\BuildPendingIncomeByUser;
+use App\Services\Api\AuthorizeAccountAccess;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AccountController extends ApiController
 {
+    public function __construct(
+        private readonly AuthorizeAccountAccess $authorizeAccountAccess,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         return $this->respondPaginated(
@@ -44,7 +49,7 @@ class AccountController extends ApiController
 
     public function update(AccountRequest $request, Account $account, AccountEditor $accountEditor): JsonResponse
     {
-        abort_unless($account->user_id === $request->user()->id, 403);
+        $this->authorizeAccountAccess->ensureOwner($account, $request->user()->id);
 
         $account = $accountEditor->execute(
             $account,
@@ -58,7 +63,7 @@ class AccountController extends ApiController
 
     public function delete(Account $account): JsonResponse
     {
-        abort_unless($account->user_id === auth()->id(), 403);
+        $this->authorizeAccountAccess->ensureOwner($account);
 
         $account->delete();
 

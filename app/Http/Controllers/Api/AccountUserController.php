@@ -7,11 +7,16 @@ use App\Http\Requests\Api\AccountUserRequest;
 use App\Models\Account;
 use App\Models\User;
 use App\Services\Accounts\UpdateAccountUsersPercentages;
+use App\Services\Api\AuthorizeAccountAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AccountUserController extends ApiController
 {
+    public function __construct(
+        private readonly AuthorizeAccountAccess $authorizeAccountAccess,
+    ) {}
+
     public function index(Account $account, Request $request): JsonResponse
     {
         $this->ensureOwner($account);
@@ -105,11 +110,11 @@ class AccountUserController extends ApiController
 
     private function ensureOwner(Account $account): void
     {
-        abort_unless($account->user_id === auth()->id(), 403);
+        $this->authorizeAccountAccess->ensureOwner($account);
     }
 
     private function ensureAttached(Account $account, User $user): void
     {
-        abort_unless($account->users()->where('users.id', $user->id)->exists(), 404);
+        $this->authorizeAccountAccess->ensureAccountUser($account, $user);
     }
 }
