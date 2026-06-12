@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Dto\AccountInviteDto;
 use App\Enums\InviteStatus;
-use App\Events\AccountInviteCreated;
 use App\Http\Requests\Api\AccountInviteRequest;
 use App\Models\Account;
 use App\Models\AccountInvite;
 use App\Models\User;
 use App\Services\AccountInvites\CreateAccountInvite;
 use App\Services\AccountInvites\Respond;
+use App\Services\AccountInvites\SendApiInvitationNotification;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -61,6 +61,7 @@ class AccountInviteController extends ApiController
         AccountInviteRequest $request,
         AccountInvite $accountInvite,
         Respond $respond,
+        SendApiInvitationNotification $sendApiInvitationNotification,
     ): JsonResponse {
         $this->authorizeInviteAccess($accountInvite);
 
@@ -80,7 +81,7 @@ class AccountInviteController extends ApiController
         $accountInvite->save();
 
         if ($accountInvite->status === InviteStatus::Pending) {
-            event(new AccountInviteCreated($accountInvite));
+            $sendApiInvitationNotification->execute($accountInvite);
         }
 
         return $this->respondModel($accountInvite->fresh(), ['account', 'user']);

@@ -7,12 +7,10 @@ use App\Dto\TransactionFormDto;
 use App\Enums\Action;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
-use App\Events\TransactionSaved;
 use App\Models\Transaction;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Auth\Guard;
-use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -20,8 +18,8 @@ class TransactionCreator
 {
     public function __construct(
         private Guard $auth,
-        private Dispatcher $dispatcher,
         private BuildSplitTransactionAllocations $buildSplitTransactionAllocations,
+        private ProcessTransactionSideEffects $processTransactionSideEffects,
     ) {}
 
     public function execute(TransactionFormDto $dto): Transaction
@@ -33,14 +31,14 @@ class TransactionCreator
         if ($dto->type !== TransactionType::Outcome || count($dto->userPayments) === 0) {
             $transaction = $this->createSingleTransaction($dto);
 
-            $this->dispatcher->dispatch(new TransactionSaved($transaction, Action::Created));
+            $this->processTransactionSideEffects->execute($transaction, Action::Created);
 
             return $transaction;
         }
 
         $transaction = DB::transaction(fn () => $this->createSplitTransactions($dto));
 
-        $this->dispatcher->dispatch(new TransactionSaved($transaction, Action::Created));
+        $this->processTransactionSideEffects->execute($transaction, Action::Created);
 
         return $transaction;
     }

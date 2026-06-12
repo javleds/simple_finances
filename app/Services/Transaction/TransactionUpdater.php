@@ -7,13 +7,11 @@ use App\Dto\TransactionFormDto;
 use App\Enums\Action;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
-use App\Events\TransactionSaved;
 use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Auth\Guard;
-use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -21,8 +19,8 @@ class TransactionUpdater
 {
     public function __construct(
         private Guard $auth,
-        private Dispatcher $dispatcher,
         private BuildSplitTransactionAllocations $buildSplitTransactionAllocations,
+        private ProcessTransactionSideEffects $processTransactionSideEffects,
     ) {}
 
     public function execute(Transaction $transaction, TransactionFormDto $dto): Transaction
@@ -47,8 +45,6 @@ class TransactionUpdater
                 $transaction->subTransactions()->where('status', TransactionStatus::Pending)->delete();
                 $transaction->subTransactions()->where('status', TransactionStatus::Completed)->update(['parent_transaction_id' => null]);
 
-                $this->dispatcher->dispatch(new TransactionSaved($transaction, Action::Updated));
-
                 return $transaction;
             }
 
@@ -56,8 +52,6 @@ class TransactionUpdater
 
             if ($dto->type === TransactionType::Outcome && $dto->userPayments !== [] && $subTransactions->isEmpty()) {
                 $this->createSubTransactions($transaction, $dto);
-
-                $this->dispatcher->dispatch(new TransactionSaved($transaction, Action::Updated));
 
                 return $transaction;
             }
@@ -71,7 +65,7 @@ class TransactionUpdater
             return $transaction;
         });
 
-        $this->dispatcher->dispatch(new TransactionSaved($transaction, Action::Updated));
+        $this->processTransactionSideEffects->execute($transaction, Action::Updated);
 
         return $transaction;
     }

@@ -4,15 +4,13 @@ namespace App\Services\Transaction;
 
 use App\Enums\Action;
 use App\Enums\TransactionStatus;
-use App\Events\TransactionSaved;
 use App\Models\Transaction;
-use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
 
 class TransactionRemover
 {
     public function __construct(
-        private Dispatcher $dispatcher,
+        private ProcessTransactionSideEffects $processTransactionSideEffects,
     ) {}
 
     public function execute(Transaction $transaction): void
@@ -35,6 +33,6 @@ class TransactionRemover
             $transaction->delete();
         });
 
-        $this->dispatcher->dispatch(new TransactionSaved($transaction, Action::Deleted));
+        $this->processTransactionSideEffects->execute($transaction, Action::Deleted);
     }
 }
