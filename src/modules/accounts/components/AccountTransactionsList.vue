@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import TransactionListItem from '@/modules/transactions/components/TransactionListItem.vue';
-import type {
-  Transaction,
-  TransactionStatus,
-} from '@/modules/transactions/types';
+import {
+  canCompleteTransaction,
+  canManageTransaction,
+} from '@/modules/transactions/lib/transactionPermissions';
+import type { Transaction } from '@/modules/transactions/types';
 import { AppEmptyState, AppText } from '@/modules/shared/components';
 
 const props = defineProps<{
@@ -25,16 +26,6 @@ function formatDateLabel(date: string): string {
   }).format(new Date(`${date}T00:00:00`));
 }
 
-function canManageTransaction(options: { creatorId: string | null }, currentUserId: string | null): boolean {
-  return Boolean(currentUserId && options.creatorId === currentUserId);
-}
-
-function canCompleteTransaction(
-  options: { creatorId: string | null; status: TransactionStatus | null },
-  currentUserId: string | null,
-): boolean {
-  return canManageTransaction(options, currentUserId) && options.status === 'pending';
-}
 </script>
 
 <template>

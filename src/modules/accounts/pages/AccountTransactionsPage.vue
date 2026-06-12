@@ -26,7 +26,7 @@ import {
   AppText,
 } from '@/modules/shared/components';
 import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
-import type { TransactionStatus } from '@/modules/transactions/types';
+import { canCompleteTransaction } from '@/modules/transactions/lib/transactionPermissions';
 
 const props = defineProps<{
   account?: Account;
@@ -178,7 +178,8 @@ const {
   handleTransactionSubmit,
 } = useAccountTransactionActions({
   accountId,
-  canCompleteTransaction,
+  canCompleteTransaction: (transaction) =>
+    canCompleteTransaction(transaction, currentUserId.value),
   closeCompleteTransactionModal,
   closeCreateTransactionModal,
   closeDeleteTransactionModal,
@@ -197,17 +198,6 @@ watch(listMeta, (nextMeta) => {
 
   applyMutationMeta(nextMeta);
 });
-
-function canManageTransaction(options: { creatorId: string | null }): boolean {
-  return Boolean(currentUserId.value && options.creatorId === currentUserId.value);
-}
-
-function canCompleteTransaction(options: {
-  creatorId: string | null;
-  status: TransactionStatus | null;
-}): boolean {
-  return canManageTransaction(options) && options.status === 'pending';
-}
 
 </script>
 
