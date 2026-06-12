@@ -11,6 +11,7 @@ use App\Models\AccountInvite;
 use App\Models\User;
 use App\Services\AccountInvites\CreateAccountInvite;
 use App\Services\AccountInvites\Respond;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,7 +21,14 @@ class AccountInviteController extends ApiController
     {
         return $this->respondPaginated(
             AccountInvite::query()
-            ->with(['account', 'user'])
+            ->with([
+                'account' => function (BelongsTo $query): void {
+                    $query
+                        ->withoutGlobalScopes()
+                        ->select(['id', 'name']);
+                },
+                'user',
+            ])
             ->where('email', $request->user()->email)
             ->latest(),
             $request,

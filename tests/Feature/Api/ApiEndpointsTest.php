@@ -534,8 +534,14 @@ it('lists only account invites addressed to the authenticated user', function ()
     $user = User::factory()->create();
     $sender = User::factory()->create();
     $otherUser = User::factory()->create();
+    $account = Account::factory()->create([
+        'name' => 'Shared Budget',
+        'user_id' => $sender->id,
+    ]);
+    $account->users()->attach($sender->id);
 
     $receivedInvite = AccountInvite::factory()->create([
+        'account_id' => $account->id,
         'email' => $user->email,
         'user_id' => $sender->id,
     ]);
@@ -553,7 +559,8 @@ it('lists only account invites addressed to the authenticated user', function ()
     $response = $this->withHeaders(apiHeaders($user))
         ->getJson('/api/account-invites')
         ->assertOk()
-        ->assertJsonPath('meta.total', 1);
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.account.name', 'Shared Budget');
 
     expect(collect($response->json('data'))->pluck('id')->all())->toBe([$receivedInvite->id]);
 });
