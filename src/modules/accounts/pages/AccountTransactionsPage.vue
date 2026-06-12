@@ -1,49 +1,24 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
 
-import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import type { Account } from '@/modules/accounts/types';
-import AccountCompletePendingByUserModal from '@/modules/accounts/components/AccountCompletePendingByUserModal.vue';
-import AccountTransactionCompleteModal from '@/modules/accounts/components/AccountTransactionCompleteModal.vue';
-import AccountTransactionDeleteModal from '@/modules/accounts/components/AccountTransactionDeleteModal.vue';
-import AccountTransactionFiltersModal from '@/modules/accounts/components/AccountTransactionFiltersModal.vue';
-import AccountTransactionFormModal from '@/modules/accounts/components/AccountTransactionFormModal.vue';
+import AccountTransactionsActivity from '@/modules/accounts/components/AccountTransactionsActivity.vue';
+import AccountTransactionsFilters from '@/modules/accounts/components/AccountTransactionsFilters.vue';
 import AccountTransactionsHeader from '@/modules/accounts/components/AccountTransactionsHeader.vue';
-import AccountTransactionsList from '@/modules/accounts/components/AccountTransactionsList.vue';
-import AccountTransactionsToolbar from '@/modules/accounts/components/AccountTransactionsToolbar.vue';
+import AccountTransactionsModals from '@/modules/accounts/components/AccountTransactionsModals.vue';
 import { useAccountTransactionActions } from '@/modules/accounts/composables/useAccountTransactionActions';
 import { useAccountTransactionFilters } from '@/modules/accounts/composables/useAccountTransactionFilters';
 import { useAccountTransactionListLoader } from '@/modules/accounts/composables/useAccountTransactionListLoader';
 import { useAccountTransactionModalActions } from '@/modules/accounts/composables/useAccountTransactionModalActions';
 import { useAccountTransactionModals } from '@/modules/accounts/composables/useAccountTransactionModals';
+import { useAccountTransactionsContext } from '@/modules/accounts/composables/useAccountTransactionsContext';
 import { useAccountTransactionsPendingState } from '@/modules/accounts/composables/useAccountTransactionsPendingState';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
-import {
-  AppButton,
-  AppListState,
-  AppLoadMoreFooter,
-  AppText,
-} from '@/modules/shared/components';
 import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
 import { canCompleteTransaction } from '@/modules/transactions/lib/transactionPermissions';
 
-const props = defineProps<{
-  account?: Account;
-}>();
+const props = defineProps<{ account?: Account }>();
 
-const route = useRoute();
-
-const transactionStatusOptions = [
-  { value: 'completed', label: 'Completado' },
-  { value: 'pending', label: 'Pendiente' },
-] as const;
-
-const transactionTypeOptions = [
-  { value: 'income', label: 'Ingreso' },
-  { value: 'expense', label: 'Egreso' },
-] as const;
-const currentUserId = computed(() => getStoredAuthSession()?.user.id ?? null);
 const {
   activeFilters,
   clearFilters,
@@ -54,13 +29,8 @@ const {
   toggleType,
 } = useAccountTransactionFilters();
 
-const accountId = computed(() =>
-  typeof route.params.accountId === 'string' ? route.params.accountId : '',
-);
 const account = computed(() => props.account);
-
-const accountUsers = computed(() => props.account?.users ?? []);
-const isSharedAccount = computed(() => accountUsers.value.length > 1);
+const { accountId, accountUsers, currentUserId, isSharedAccount } = useAccountTransactionsContext(account);
 const {
   goals: financialGoals,
   isLoading: isLoadingFinancialGoals,
@@ -198,7 +168,6 @@ watch(listMeta, (nextMeta) => {
 
   applyMutationMeta(nextMeta);
 });
-
 </script>
 
 <template>
@@ -212,114 +181,70 @@ watch(listMeta, (nextMeta) => {
       @complete-pending-user="openCompletePendingByUser"
     />
 
-    <AccountTransactionsToolbar
+    <AccountTransactionsActivity
       v-model:search-term="searchTerm"
-      @create="openCreateTransactionModal"
-      @open-filters="openFilters"
-    />
-
-    <section
-      v-if="loadError && hasTransactions"
-      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
-    >
-      <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
-    </section>
-
-    <AppListState
-      :error="loadError"
-      :has-items="hasTransactions"
+      :current-user-id="currentUserId"
+      :has-transactions="hasTransactions"
+      :infinite-status-label="infiniteStatusLabel()"
       :is-loading="isLoading"
-      loading-label="Cargando transacciones..."
+      :load-error="loadError"
+      :show-load-more-retry="Boolean(loadError && hasTransactions)"
+      :transactions="transactions"
+      @complete="openCompleteTransaction"
+      @create="openCreateTransactionModal"
+      @delete="openDeleteTransaction"
+      @edit="openEditTransaction"
+      @load-more-retry="handleLoadMoreRetry"
+      @open-filters="openFilters"
       @retry="reloadTransactions"
     >
-      <AccountTransactionsList
-        :current-user-id="currentUserId"
-        :transactions="transactions"
-        @complete="openCompleteTransaction"
-        @delete="openDeleteTransaction"
-        @edit="openEditTransaction"
-      >
-        <template #footer>
-          <div ref="loadMoreSentinel">
-            <AppLoadMoreFooter
-              :label="infiniteStatusLabel()"
-              :show-retry="Boolean(loadError && hasTransactions)"
-              @retry="handleLoadMoreRetry"
-            />
-          </div>
-        </template>
-      </AccountTransactionsList>
-    </AppListState>
+      <template #loadMoreSentinel>
+        <div ref="loadMoreSentinel" class="h-1 w-full" aria-hidden="true" />
+      </template>
+    </AccountTransactionsActivity>
 
-    <AccountTransactionFiltersModal
+    <AccountTransactionsFilters
       :open="isFiltersOpen"
       :selected-statuses="selectedStatuses"
       :selected-types="selectedTypes"
-      :status-options="transactionStatusOptions"
-      :type-options="transactionTypeOptions"
       @clear="clearFilters"
       @close="closeFilters"
       @toggle-status="toggleStatus"
       @toggle-type="toggleType"
     />
 
-    <AccountTransactionFormModal
-      :open="isCreateTransactionModalOpen"
+    <AccountTransactionsModals
       :account-id="accountId"
       :account-users="accountUsers"
-      :actions="createTransactionActions"
-      :financial-goals="financialGoals"
-      form-id="transaction-form"
-      :is-loading-financial-goals="isLoadingFinancialGoals"
-      :server-error="saveError"
-      title="Nueva transacción"
-      @close="closeCreateTransactionModal"
-      @state-change="handleCreateFormStateChange"
-      @submit="handleTransactionSubmit"
-    />
-
-    <AccountTransactionFormModal
-      :open="isEditTransactionModalOpen"
-      :account-id="accountId"
-      :account-users="accountUsers"
-      :actions="editTransactionActions"
-      :financial-goals="financialGoals"
-      form-id="edit-transaction-form"
-      :initial-values="selectedTransaction"
-      :is-loading-financial-goals="isLoadingFinancialGoals"
-      requires-initial-values
-      :server-error="saveError"
-      title="Editar transacción"
-      @close="closeEditTransactionModal"
-      @state-change="handleEditFormStateChange"
-      @submit="handleEditTransactionSubmit"
-    />
-
-    <AccountTransactionDeleteModal
-      :open="isDeleteTransactionModalOpen"
-      :actions="deleteTransactionActions"
+      :complete-pending-by-user-actions="completePendingByUserActions"
+      :complete-pending-by-user-error="completePendingByUserError"
+      :complete-transaction-actions="completeTransactionActions"
+      :create-transaction-actions="createTransactionActions"
       :delete-error="deleteError"
-      :transaction="selectedTransaction"
-      @close="closeDeleteTransactionModal"
-      @confirm="confirmDeleteTransaction"
-    />
-
-    <AccountTransactionCompleteModal
-      :open="isCompleteTransactionModalOpen"
-      :actions="completeTransactionActions"
+      :delete-transaction-actions="deleteTransactionActions"
+      :edit-transaction-actions="editTransactionActions"
+      :financial-goals="financialGoals"
+      :is-complete-pending-by-user-modal-open="isCompletePendingByUserModalOpen"
+      :is-complete-transaction-modal-open="isCompleteTransactionModalOpen"
+      :is-create-transaction-modal-open="isCreateTransactionModalOpen"
+      :is-delete-transaction-modal-open="isDeleteTransactionModalOpen"
+      :is-edit-transaction-modal-open="isEditTransactionModalOpen"
+      :is-loading-financial-goals="isLoadingFinancialGoals"
       :save-error="saveError"
-      :transaction="selectedTransaction"
-      @close="closeCompleteTransactionModal"
-      @confirm="confirmCompleteTransaction"
-    />
-
-    <AccountCompletePendingByUserModal
-      :open="isCompletePendingByUserModalOpen"
-      :actions="completePendingByUserActions"
-      :complete-error="completePendingByUserError"
-      :pending-user="selectedPendingByUser"
-      @close="closeCompletePendingByUserModal"
-      @confirm="confirmCompletePendingByUser"
+      :selected-pending-by-user="selectedPendingByUser"
+      :selected-transaction="selectedTransaction"
+      @close-complete-pending-by-user="closeCompletePendingByUserModal"
+      @close-complete-transaction="closeCompleteTransactionModal"
+      @close-create-transaction="closeCreateTransactionModal"
+      @close-delete-transaction="closeDeleteTransactionModal"
+      @close-edit-transaction="closeEditTransactionModal"
+      @confirm-complete-pending-by-user="confirmCompletePendingByUser"
+      @confirm-complete-transaction="confirmCompleteTransaction"
+      @confirm-delete-transaction="confirmDeleteTransaction"
+      @create-form-state-change="handleCreateFormStateChange"
+      @edit-form-state-change="handleEditFormStateChange"
+      @edit-submit="handleEditTransactionSubmit"
+      @submit="handleTransactionSubmit"
     />
   </section>
 </template>
