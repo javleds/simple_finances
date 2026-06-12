@@ -278,6 +278,12 @@ Commits aplicados:
 - `0253755 refactor(users): extract modal actions`
 - `a79408a refactor(users): extract split draft state`
 - `1b1b79c refactor(users): extract page actions`
+- `b1c4f4b refactor(dashboard): extract summary cards`
+- `8c2ed48 refactor(dashboard): extract balance section`
+- `b30698c refactor(dashboard): extract pending actions`
+- `586f3f5 refactor(dashboard): extract subscriptions planning`
+- `d7ba1ed refactor(dashboard): extract complete pending modal`
+- `848d846 refactor(dashboard): extract pending action state`
 
 Estado actual:
 
@@ -324,6 +330,15 @@ Estado actual:
   - `useAccountUserModalActions.ts`
   - `useAccountUsersSplitDraft.ts`
   - `useAccountUserActions.ts`
+- `DashboardPage.vue` bajo de ~426 lineas a 126 lineas.
+- La UI del dashboard quedo separada en:
+  - `DashboardBalanceSection.vue`
+  - `DashboardSummaryCards.vue`
+  - `DashboardPendingActions.vue`
+  - `DashboardSubscriptionsPlanning.vue`
+  - `DashboardCompletePendingModal.vue`
+- La logica de pendientes del dashboard quedo separada en:
+  - `useDashboardPendingActions.ts`
 
 Verificacion:
 
@@ -332,6 +347,6 @@ Verificacion:
 Siguiente paso recomendado:
 
 1. Extraer acciones CRUD de `AccountGoalsPage.vue` a un composable pequeno, por ejemplo `useAccountGoalPageActions`.
-2. Continuar con `DashboardPage.vue`, que es el siguiente punto del orden recomendado y ya tiene una primera separacion de grafica.
+2. Preparar `AccountTransactionsPage.vue` como fase separada por riesgo: antes de mover piezas, identificar y preservar la logica reciente de balance, pending por usuario y complete batch.
 3. Revisar si `reloadGoals`, `infiniteStatusLabel` y `goalsPerPage` deben quedarse en pagina o moverse a un composable de carga/lista.
-4. Despues abordar `AccountTransactionsPage.vue` como fase separada por mayor riesgo.
+4. Despues continuar con `AccountsPage.vue`, `SubscriptionsPage.vue` y `DistributionPage.vue`.
