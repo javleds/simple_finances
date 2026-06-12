@@ -1,19 +1,17 @@
 <script setup lang="ts">
 import {
-  AdjustmentsHorizontalIcon,
-  ArrowPathIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
-import SubscriptionsForm from '@/modules/subscriptions/components/SubscriptionsForm.vue';
-import SubscriptionListItem from '@/modules/subscriptions/components/SubscriptionListItem.vue';
+import SubscriptionDeleteModal from '@/modules/subscriptions/components/SubscriptionDeleteModal.vue';
+import SubscriptionFiltersModal from '@/modules/subscriptions/components/SubscriptionFiltersModal.vue';
+import SubscriptionFormModal from '@/modules/subscriptions/components/SubscriptionFormModal.vue';
+import SubscriptionsList from '@/modules/subscriptions/components/SubscriptionsList.vue';
+import SubscriptionsToolbar from '@/modules/subscriptions/components/SubscriptionsToolbar.vue';
 import { useSubscriptionsCrud } from '@/modules/subscriptions/composables/useSubscriptionsCrud';
-import { formatSubscriptionFrequency } from '@/modules/subscriptions/schemas/subscriptionSchemas';
 import type {
   SubscriptionFrequencyType,
   SubscriptionListFilters,
@@ -23,13 +21,9 @@ import type {
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import {
-  AppButton,
-  AppIconButton,
-  AppInput,
-  AppModal,
-  AppSectionBar,
+  AppListState,
+  AppLoadMoreFooter,
   AppText,
-  AppTitle,
 } from '@/modules/shared/components';
 
 type FormState = {
@@ -259,17 +253,6 @@ function toggleUnit(unit: SubscriptionFrequencyType): void {
   selectedUnits.value = [...selectedUnits.value, unit];
 }
 
-function handleFiltersModalAction(actionKey: string): void {
-  if (actionKey === 'clear') {
-    clearFilters();
-    return;
-  }
-
-  if (actionKey === 'close') {
-    closeFilters();
-  }
-}
-
 function openCreateSubscription(): void {
   clearSaveError();
   createFormState.value = { canSubmit: false, isSubmitting: false };
@@ -377,25 +360,6 @@ function areArraysEqual<TValue>(currentValue: TValue[], nextValue: TValue[]): bo
   return currentValue.every((item, index) => item === nextValue[index]);
 }
 
-function formatDateLabel(date: string | null | undefined): string {
-  if (!date) {
-    return 'Sin fecha';
-  }
-
-  const normalizedDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : date;
-  const parsedDate = new Date(normalizedDate);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return 'Sin fecha';
-  }
-
-  return new Intl.DateTimeFormat('es-MX', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsedDate);
-}
-
 function reloadSubscriptions(): void {
   void loadSubscriptions(activeFilters.value, {
     reset: true,
@@ -430,34 +394,11 @@ function infiniteStatusLabel(): string {
 
 <template>
   <div class="space-y-5">
-    <AppSectionBar title="Subscripciones">
-      <template #actions>
-        <AppButton variant="primary" @click="openCreateSubscription">
-          <PlusIcon class="h-4 w-4" />
-        </AppButton>
-      </template>
-    </AppSectionBar>
-
-    <div class="flex items-center gap-3">
-      <div class="relative flex-1">
-        <div
-          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-(--app-color-text-subtle)"
-        >
-          <MagnifyingGlassIcon class="h-5 w-5" />
-        </div>
-        <AppInput
-          id="subscription-search"
-          v-model="searchTerm"
-          type="search"
-          placeholder="Buscar suscripción por nombre"
-          class="pl-11"
-        />
-      </div>
-
-      <AppIconButton ariaLabel="Abrir filtros avanzados" @click="openFilters">
-        <AdjustmentsHorizontalIcon class="h-5 w-5" />
-      </AppIconButton>
-    </div>
+    <SubscriptionsToolbar
+      v-model:search-term="searchTerm"
+      @create="openCreateSubscription"
+      @open-filters="openFilters"
+    />
 
     <section
       v-if="loadError && hasSubscriptions"
@@ -468,182 +409,75 @@ function infiniteStatusLabel(): string {
       </AppText>
     </section>
 
-    <section
-      v-if="isLoading && !hasSubscriptions"
-      class="rounded-2xl border px-4 py-10 text-center"
+    <AppListState
+      :error="loadError"
+      :has-items="hasSubscriptions"
+      :is-loading="isLoading"
+      loading-label="Cargando suscripciones..."
+      @retry="reloadSubscriptions"
     >
-      <AppText>Cargando suscripciones...</AppText>
-    </section>
-
-    <section
-      v-else-if="loadError && !hasSubscriptions"
-      class="space-y-3 rounded-2xl border px-4 py-6 text-center"
-    >
-      <AppText>{{ loadError }}</AppText>
-      <div class="flex justify-center">
-        <AppButton variant="secondary" @click="reloadSubscriptions">Reintentar</AppButton>
-      </div>
-    </section>
-
-    <section v-else class="space-y-3">
-      <div class="flex items-center justify-between gap-3">
-        <AppText size="sm" tone="subtle">
-          {{ subscriptions.length }} suscripciones visibles
-        </AppText>
-        <AppText size="sm" tone="subtle">Scroll continuo</AppText>
-      </div>
-
-      <div class="space-y-4">
-        <SubscriptionListItem
-          v-for="subscription in subscriptions"
-          :key="subscription.id"
-          :amount="subscription.amount"
-          :cycle="
-            formatSubscriptionFrequency(subscription.frequencyUnit, subscription.frequencyType)
-          "
-          :item-id="subscription.id"
-          :next-charge="formatDateLabel(subscription.nextPaymentDate)"
-          :plan="subscription.name"
-          :status="subscription.finishedAt ? 'cancelled' : 'active'"
-          @delete="openDeleteSubscription"
-          @edit="openEditSubscription"
-        />
-
-        <div
-          v-if="subscriptions.length === 0"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">
-            No hay suscripciones que coincidan con la búsqueda o los filtros actuales.
-          </AppText>
-        </div>
-
-        <div
-          ref="loadMoreSentinel"
-          class="rounded-2xl border border-dashed px-4 py-4 text-center"
-          :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-          <AppText size="sm">{{ infiniteStatusLabel() }}</AppText>
-          <div v-if="loadError && hasSubscriptions" class="mt-3 flex justify-center">
-            <AppButton variant="secondary" @click="handleLoadMoreRetry">Reintentar</AppButton>
+      <SubscriptionsList
+        :subscriptions="subscriptions"
+        @delete="openDeleteSubscription"
+        @edit="openEditSubscription"
+      >
+        <template #footer>
+          <div ref="loadMoreSentinel">
+            <AppLoadMoreFooter
+              :label="infiniteStatusLabel()"
+              :show-retry="Boolean(loadError && hasSubscriptions)"
+              @retry="handleLoadMoreRetry"
+            />
           </div>
-        </div>
-      </div>
-    </section>
+        </template>
+      </SubscriptionsList>
+    </AppListState>
 
-    <AppModal
+    <SubscriptionFiltersModal
       :open="isFiltersOpen"
-      :actions="[
-        { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Filtros avanzados"
-      variant="default"
-      @action="handleFiltersModalAction"
+      :selected-statuses="selectedStatuses"
+      :selected-units="selectedUnits"
+      :status-options="subscriptionStatusOptions"
+      :unit-options="subscriptionUnitOptions"
+      @clear="clearFilters"
       @close="closeFilters"
-    >
-      <div class="space-y-5">
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Estatus</AppTitle>
-          <AppText>Filtra la cobertura según el estado operativo de cada suscripción.</AppText>
-        </div>
+      @toggle-status="toggleStatus"
+      @toggle-unit="toggleUnit"
+    />
 
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="status in subscriptionStatusOptions"
-            :key="status.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedStatuses.includes(status.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleStatus(status.value)"
-          >
-            {{ status.label }}
-          </button>
-        </div>
-
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Frecuencia</AppTitle>
-          <AppText>Refina la lista por la unidad principal de recurrencia.</AppText>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="unit in subscriptionUnitOptions"
-            :key="unit.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedUnits.includes(unit.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleUnit(unit.value)"
-          >
-            {{ unit.label }}
-          </button>
-        </div>
-      </div>
-    </AppModal>
-
-    <AppModal
+    <SubscriptionFormModal
       :open="isCreateSubscriptionOpen"
       :actions="createSubscriptionActions"
+      form-id="subscription-form"
+      :funding-account-options="fundingAccountOptions"
+      :server-error="saveError"
       title="Nueva suscripción"
-      variant="default"
       @close="closeCreateSubscription"
-    >
-      <SubscriptionsForm
-        form-id="subscription-form"
-        :funding-account-options="fundingAccountOptions"
-        :server-error="saveError"
-        @state-change="handleCreateFormStateChange"
-        @submit="handleCreateSubscriptionSubmit"
-      />
-    </AppModal>
+      @state-change="handleCreateFormStateChange"
+      @submit="handleCreateSubscriptionSubmit"
+    />
 
-    <AppModal
+    <SubscriptionFormModal
       :open="isEditSubscriptionOpen"
       :actions="editSubscriptionActions"
+      form-id="edit-subscription-form"
+      :funding-account-options="fundingAccountOptions"
+      :initial-values="selectedSubscription"
+      requires-initial-values
+      :server-error="saveError"
       title="Editar suscripción"
-      variant="default"
       @close="closeEditSubscription"
-    >
-      <SubscriptionsForm
-        v-if="selectedSubscription"
-        form-id="edit-subscription-form"
-        :initial-values="selectedSubscription"
-        :funding-account-options="fundingAccountOptions"
-        :server-error="saveError"
-        @state-change="handleEditFormStateChange"
-        @submit="handleEditSubscriptionSubmit"
-      />
-    </AppModal>
+      @state-change="handleEditFormStateChange"
+      @submit="handleEditSubscriptionSubmit"
+    />
 
-    <AppModal
+    <SubscriptionDeleteModal
       :open="isDeleteSubscriptionOpen"
       :actions="deleteSubscriptionActions"
-      title="Eliminar suscripción"
-      variant="danger"
-      @action="$event === 'confirm-delete-subscription' && confirmDeleteSubscription()"
+      :delete-error="deleteError"
+      :subscription="selectedSubscription"
       @close="closeDeleteSubscription"
-    >
-      <div class="space-y-3">
-        <AppText v-if="selectedSubscription">
-          Vas a eliminar
-          <strong>{{ selectedSubscription.name }}</strong
-          >.
-        </AppText>
-        <AppText v-if="deleteError" class="text-(--app-color-danger)!">
-          {{ deleteError }}
-        </AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmDeleteSubscription"
+    />
   </div>
 </template>
