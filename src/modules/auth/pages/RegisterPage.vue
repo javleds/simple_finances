@@ -2,8 +2,11 @@
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import PrivacyPolicyContent from '@/modules/auth/components/PrivacyPolicyContent.vue';
-import TermsAndConditionsContent from '@/modules/auth/components/TermsAndConditionsContent.vue';
+import AuthThemeSelector from '@/modules/auth/components/AuthThemeSelector.vue';
+import RegisterLegalFields from '@/modules/auth/components/RegisterLegalFields.vue';
+import RegisterLegalModals, {
+  type RegisterLegalDocument,
+} from '@/modules/auth/components/RegisterLegalModals.vue';
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { useRegisterForm } from '@/modules/auth/composables/useRegisterForm';
 import {
@@ -12,31 +15,22 @@ import {
 } from '@/modules/auth/lib/postAuthRedirect';
 import type { AuthSession } from '@/modules/auth/schemas/authSchemas';
 import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
-import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
+import { useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
   AppCard,
   AppInput,
   AppLink,
-  AppModal,
   AppPasswordInput,
   AppText,
-  AppToggleButton,
   AppTitle,
 } from '@/modules/shared/components';
-
-type LegalDocument = 'terms' | 'privacy' | null;
 
 const themeStore = useThemeStore();
 const route = useRoute();
 const router = useRouter();
 const authRepository = createAuthRepository();
-const activeDocument = ref<LegalDocument>(null);
-
-const themeOptions = [
-  { value: THEME_MODE.LIGHT, label: 'Light' },
-  { value: THEME_MODE.DARK, label: 'Dark' },
-] as const;
+const activeDocument = ref<RegisterLegalDocument>(null);
 
 const {
   name,
@@ -73,7 +67,7 @@ function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
 }
 
-function openDocument(document: Exclude<LegalDocument, null>): void {
+function openDocument(document: Exclude<RegisterLegalDocument, null>): void {
   activeDocument.value = document;
 }
 
@@ -126,27 +120,7 @@ async function handleSubmit(): Promise<void> {
     <div class="w-full max-w-md">
       <AppCard>
         <div class="space-y-6">
-          <AppCard
-            muted
-            :padded="false"
-            class="rounded-xl px-4 py-3"
-            :style="{ borderColor: 'var(--app-color-border-strong)' }"
-          >
-            <div class="flex items-center justify-between gap-4">
-              <div class="space-y-1">
-                <AppText as="div" tone="muted" class="font-medium text-(--app-color-text)">
-                  Tema visual
-                </AppText>
-                <AppText size="sm" tone="subtle"> Cambia entre light y dark mode. </AppText>
-              </div>
-
-              <AppToggleButton
-                :model-value="themeStore.mode"
-                :options="themeOptions"
-                @update:model-value="updateTheme"
-              />
-            </div>
-          </AppCard>
+          <AuthThemeSelector :mode="themeStore.mode" @update:mode="updateTheme" />
 
           <div class="space-y-2">
             <AppTitle as="h1" size="md">Crear cuenta</AppTitle>
@@ -198,56 +172,16 @@ async function handleSubmit(): Promise<void> {
               @blur="touchPasswordConfirmation"
             />
 
-            <div
-              class="space-y-3 rounded-xl border px-4 py-4"
-              :style="{ borderColor: 'var(--app-color-border)' }"
-            >
-              <label class="flex items-start gap-3">
-                <input
-                  v-model="termsAccepted"
-                  type="checkbox"
-                  class="mt-1 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
-                  @change="touchTermsAccepted"
-                />
-                <span class="text-sm text-(--app-color-text)">
-                  Acepto los
-                  <AppLink
-                    href=""
-                    variant="primary"
-                    class="font-semibold"
-                    @click.prevent="openDocument('terms')"
-                  >
-                    términos y condiciones
-                  </AppLink>
-                </span>
-              </label>
-              <p v-if="termsAcceptedError" class="text-sm text-(--app-color-danger)">
-                {{ termsAcceptedError }}
-              </p>
-
-              <label class="flex items-start gap-3">
-                <input
-                  v-model="privacyPolicyAccepted"
-                  type="checkbox"
-                  class="mt-1 h-4 w-4 rounded border-(--app-color-input-border) text-(--app-color-primary) focus:ring-(--app-color-focus-ring)"
-                  @change="touchPrivacyPolicyAccepted"
-                />
-                <span class="text-sm text-(--app-color-text)">
-                  Acepto la
-                  <AppLink
-                    href=""
-                    variant="primary"
-                    class="font-semibold"
-                    @click.prevent="openDocument('privacy')"
-                  >
-                    política de privacidad
-                  </AppLink>
-                </span>
-              </label>
-              <p v-if="privacyPolicyAcceptedError" class="text-sm text-(--app-color-danger)">
-                {{ privacyPolicyAcceptedError }}
-              </p>
-            </div>
+            <RegisterLegalFields
+              v-model:privacy-policy-accepted="privacyPolicyAccepted"
+              v-model:terms-accepted="termsAccepted"
+              :privacy-policy-error="privacyPolicyAcceptedError"
+              :terms-error="termsAcceptedError"
+              @open-privacy="openDocument('privacy')"
+              @open-terms="openDocument('terms')"
+              @touch-privacy-policy="touchPrivacyPolicyAccepted"
+              @touch-terms="touchTermsAccepted"
+            />
 
             <AppButton
               type="submit"
@@ -276,22 +210,6 @@ async function handleSubmit(): Promise<void> {
       </AppCard>
     </div>
 
-    <AppModal
-      :open="activeDocument === 'terms'"
-      title="Términos y condiciones"
-      close-label="Cerrar"
-      @close="closeDocument"
-    >
-      <TermsAndConditionsContent />
-    </AppModal>
-
-    <AppModal
-      :open="activeDocument === 'privacy'"
-      title="Política de privacidad"
-      close-label="Cerrar"
-      @close="closeDocument"
-    >
-      <PrivacyPolicyContent />
-    </AppModal>
+    <RegisterLegalModals :active-document="activeDocument" @close="closeDocument" />
   </section>
 </template>
