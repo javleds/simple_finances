@@ -97,7 +97,10 @@ export const accountGoalApiSchema = z.object({
     .nullable(),
   name: z.string(),
   amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-  achieved_amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  achieved_amount: z
+    .unknown()
+    .optional()
+    .transform((value) => parseNullableNumber(value) ?? 0),
   progress: z
     .unknown()
     .optional()
