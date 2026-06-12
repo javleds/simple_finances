@@ -9,11 +9,9 @@ import AccountUserEditModal from '@/modules/accounts/components/AccountUserEditM
 import AccountUsersList from '@/modules/accounts/components/AccountUsersList.vue';
 import AccountUsersSplitEditor from '@/modules/accounts/components/AccountUsersSplitEditor.vue';
 import AccountUsersToolbar from '@/modules/accounts/components/AccountUsersToolbar.vue';
-import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
+import { useAccountUsersCrud } from '@/modules/accounts/composables/useAccountUsersCrud';
 import type { AccountMember } from '@/modules/accounts/types';
-import { ApiError } from '@/lib/api/apiClient';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 import { areQueriesEqual } from '@/modules/shared/lib/queryParams';
 import {
   AppButton,
@@ -22,7 +20,6 @@ import {
   AppText,
 } from '@/modules/shared/components';
 
-const accountsRepository = createAccountsRepository();
 const route = useRoute();
 const router = useRouter();
 const defaultUsersPerPage = 20;
@@ -32,10 +29,6 @@ const emit = defineEmits<{
 }>();
 
 const searchTerm = ref('');
-const isSaving = ref(false);
-const isDeleting = ref(false);
-const saveError = ref<string | null>(null);
-const deleteError = ref<string | null>(null);
 const isCreateUserOpen = ref(false);
 const isEditUserOpen = ref(false);
 const isDeleteUserOpen = ref(false);
@@ -58,29 +51,35 @@ const usersPerPage = computed(() => {
   return rawValue;
 });
 
-const usersState = usePaginatedCollection<AccountMember, [string]>({
-  defaultPerPage: defaultUsersPerPage,
-  loadPage: (options, nextAccountId) =>
-    accountsRepository.listUsers(nextAccountId, {
-      ...options,
-      filters: {
-        search: searchTerm.value.trim() || undefined,
-      },
-    }),
-  resolveErrorMessage,
-  loadErrorMessage: 'No fue posible cargar los usuarios.',
-  loadMoreErrorMessage: 'No fue posible cargar más usuarios.',
-});
+const activeFilters = computed(() => ({
+  search: searchTerm.value.trim() || undefined,
+}));
+
+const {
+  clearDeleteError,
+  clearSaveError,
+  deleteError,
+  hasMoreUsers,
+  hasReachedEnd,
+  hasUsers,
+  isDeleting,
+  isLoading,
+  isLoadingMore,
+  isSaving,
+  loadError,
+  loadMoreUsers,
+  loadUsers: loadAccountUsers,
+  removeUser,
+  saveError,
+  setUsers,
+  updateUserPercentage,
+  users,
+} = useAccountUsersCrud(activeFilters);
 
 const { target: loadMoreSentinel } = useInfiniteScroll({
-  enabled: computed(
-    () =>
-      !usersState.isLoading.value &&
-      !usersState.isLoadingMore.value &&
-      usersState.hasMoreItems.value,
-  ),
+  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreUsers.value),
   onIntersect: () => {
-    void usersState.loadMore();
+    void loadMoreUsers();
   },
 });
 
@@ -89,22 +88,22 @@ const selectedUser = computed(() => {
     return null;
   }
 
-  return usersState.items.value.find((user) => user.id === selectedUserId.value) ?? null;
+  return users.value.find((user) => user.id === selectedUserId.value) ?? null;
 });
 
 const splitUsers = computed(() =>
-  usersState.items.value.map((user) => ({
+  users.value.map((user) => ({
     id: user.id,
     name: user.name,
   })),
 );
 const canShowSplitEditor = computed(() => splitUsers.value.length > 1);
 
-const hasLoadedEveryUserForSplit = computed(() => !usersState.hasMoreItems.value);
+const hasLoadedEveryUserForSplit = computed(() => !hasMoreUsers.value);
 
 const hasSplitChanges = computed(
   () =>
-    !areAllocationRecordsEqual(splitDraft.value, createAllocationRecord(usersState.items.value)),
+    !areAllocationRecordsEqual(splitDraft.value, createAllocationRecord(users.value)),
 );
 
 const editUserActions = computed(() => [
@@ -132,18 +131,6 @@ const createUserActions = [
   { key: 'close', label: 'Cerrar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
 ];
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 function parsePercentage(value: string): number | null {
   const normalizedValue = value.trim();
 
@@ -170,7 +157,7 @@ async function loadUsers(): Promise<void> {
     return;
   }
 
-  await usersState.load([accountId.value], {
+  await loadAccountUsers(accountId.value, {
     reset: true,
     perPage: usersPerPage.value,
   });
@@ -207,7 +194,7 @@ watch(searchTerm, () => {
 });
 
 watch(
-  () => usersState.items.value,
+  () => users.value,
   (nextUsers) => {
     const nextRecord = createAllocationRecord(nextUsers);
 
@@ -231,7 +218,7 @@ function closeCreateUser(): void {
 }
 
 function openEditUser(userId: string): void {
-  saveError.value = null;
+  clearSaveError();
   selectedUserId.value = userId;
   editPercentage.value = selectedUser.value ? String(selectedUser.value.allocationPercentage) : '';
   isEditUserOpen.value = true;
@@ -241,11 +228,11 @@ function closeEditUser(): void {
   isEditUserOpen.value = false;
   selectedUserId.value = null;
   editPercentage.value = '';
-  saveError.value = null;
+  clearSaveError();
 }
 
 function openDeleteUser(userId: string): void {
-  deleteError.value = null;
+  clearDeleteError();
   selectedUserId.value = userId;
   isDeleteUserOpen.value = true;
 }
@@ -253,7 +240,7 @@ function openDeleteUser(userId: string): void {
 function closeDeleteUser(): void {
   isDeleteUserOpen.value = false;
   selectedUserId.value = null;
-  deleteError.value = null;
+  clearDeleteError();
 }
 
 async function saveUserPercentage(): Promise<void> {
@@ -268,22 +255,10 @@ async function saveUserPercentage(): Promise<void> {
     return;
   }
 
-  isSaving.value = true;
-  saveError.value = null;
+  const wasUpdated = await updateUserPercentage(accountId.value, selectedUser.value.id, percentage);
 
-  try {
-    const updatedUser = await accountsRepository.updateUserPercentage(
-      accountId.value,
-      selectedUser.value.id,
-      percentage,
-    );
-
-    usersState.replaceItem((user) => user.id === updatedUser.id, updatedUser);
+  if (wasUpdated) {
     closeEditUser();
-  } catch (error) {
-    saveError.value = resolveErrorMessage(error, 'No fue posible actualizar el porcentaje.');
-  } finally {
-    isSaving.value = false;
   }
 }
 
@@ -292,17 +267,10 @@ async function confirmDeleteUser(): Promise<void> {
     return;
   }
 
-  isDeleting.value = true;
-  deleteError.value = null;
+  const wasDeleted = await removeUser(accountId.value, selectedUser.value.id);
 
-  try {
-    await accountsRepository.removeUser(accountId.value, selectedUser.value.id);
-    usersState.removeItem((user) => user.id === selectedUser.value?.id);
+  if (wasDeleted) {
     closeDeleteUser();
-  } catch (error) {
-    deleteError.value = resolveErrorMessage(error, 'No fue posible quitar al usuario.');
-  } finally {
-    isDeleting.value = false;
   }
 }
 
@@ -311,15 +279,15 @@ function reloadUsers(): void {
 }
 
 function handleLoadMoreRetry(): void {
-  void usersState.loadMore();
+  void loadMoreUsers();
 }
 
 function infiniteStatusLabel(): string {
-  if (usersState.isLoadingMore.value) {
+  if (isLoadingMore.value) {
     return 'Cargando más usuarios...';
   }
 
-  if (usersState.hasReachedEnd.value) {
+  if (hasReachedEnd.value) {
     return 'Has llegado al final.';
   }
 
@@ -357,8 +325,8 @@ function areAllocationRecordsEqual(
 }
 
 function applySplitDraft(): void {
-  usersState.setItems(
-    usersState.items.value.map((user) => ({
+  setUsers(
+    users.value.map((user) => ({
       ...user,
       allocationPercentage: splitDraft.value[user.id] ?? user.allocationPercentage,
     })),
@@ -366,7 +334,7 @@ function applySplitDraft(): void {
 }
 
 function resetSplitDraft(): void {
-  splitDraft.value = createAllocationRecord(usersState.items.value);
+  splitDraft.value = createAllocationRecord(users.value);
 }
 </script>
 
@@ -385,21 +353,21 @@ function resetSplitDraft(): void {
     />
 
     <section
-      v-if="usersState.loadError.value && usersState.items.value.length > 0"
+      v-if="loadError && hasUsers"
       class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
     >
-      <AppText class="text-(--app-color-danger)!">{{ usersState.loadError.value }}</AppText>
+      <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
     <AppListState
-      :error="usersState.loadError.value"
-      :has-items="usersState.items.value.length > 0"
-      :is-loading="usersState.isLoading.value"
+      :error="loadError"
+      :has-items="hasUsers"
+      :is-loading="isLoading"
       loading-label="Cargando usuarios..."
       @retry="reloadUsers"
     >
       <AccountUsersList
-        :users="usersState.items.value"
+        :users="users"
         @delete="openDeleteUser"
         @edit="openEditUser"
       >
@@ -407,7 +375,7 @@ function resetSplitDraft(): void {
           <div ref="loadMoreSentinel">
             <AppLoadMoreFooter
               :label="infiniteStatusLabel()"
-              :show-retry="Boolean(usersState.loadError.value && usersState.items.value.length > 0)"
+              :show-retry="Boolean(loadError && hasUsers)"
               @retry="handleLoadMoreRetry"
             />
           </div>
