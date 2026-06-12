@@ -5,8 +5,9 @@ import {
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import AccountDeleteModal from '@/modules/accounts/components/AccountDeleteModal.vue';
 import AccountFiltersModal from '@/modules/accounts/components/AccountFiltersModal.vue';
-import AccountsForm from '@/modules/accounts/components/AccountsForm.vue';
+import AccountFormModal from '@/modules/accounts/components/AccountFormModal.vue';
 import AccountsList from '@/modules/accounts/components/AccountsList.vue';
 import AccountsToolbar from '@/modules/accounts/components/AccountsToolbar.vue';
 import { useAccountsCrud } from '@/modules/accounts/composables/useAccountsCrud';
@@ -23,7 +24,6 @@ import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryPar
 import {
   AppListState,
   AppLoadMoreFooter,
-  AppModal,
   AppText,
 } from '@/modules/shared/components';
 
@@ -447,61 +447,37 @@ function isAccountSurfaceFilter(value: string): value is AccountSurfaceFilter {
       @toggle-surface="toggleSurface"
     />
 
-    <AppModal
+    <AccountFormModal
       :open="isCreateAccountOpen"
       :actions="createAccountActions"
+      form-id="account-form"
+      :server-error="saveError"
       title="Nueva cuenta"
-      variant="default"
       @close="closeCreateAccount"
-    >
-      <AccountsForm
-        form-id="account-form"
-        :server-error="saveError"
-        @state-change="handleCreateFormStateChange"
-        @submit="handleCreateAccountSubmit"
-      />
-    </AppModal>
+      @state-change="handleCreateFormStateChange"
+      @submit="handleCreateAccountSubmit"
+    />
 
-    <AppModal
+    <AccountFormModal
       :open="isEditAccountOpen"
       :actions="editAccountActions"
+      form-id="edit-account-form"
+      :initial-values="editAccountInitialValues"
+      requires-initial-values
+      :server-error="saveError"
       title="Editar cuenta"
-      variant="default"
       @close="closeEditAccount"
-    >
-      <AccountsForm
-        v-if="editAccountInitialValues"
-        :key="selectedAccountId ?? 'edit-account-form'"
-        form-id="edit-account-form"
-        :initial-values="editAccountInitialValues"
-        :server-error="saveError"
-        @state-change="handleEditFormStateChange"
-        @submit="handleEditAccountSubmit"
-      />
-    </AppModal>
+      @state-change="handleEditFormStateChange"
+      @submit="handleEditAccountSubmit"
+    />
 
-    <AppModal
+    <AccountDeleteModal
       :open="isDeleteAccountOpen"
+      :account="selectedAccount"
       :actions="deleteAccountActions"
-      title="Eliminar cuenta"
-      variant="danger"
-      @action="$event === 'confirm-delete-account' && confirmDeleteAccount()"
+      :delete-error="deleteError"
       @close="closeDeleteAccount"
-    >
-      <div class="space-y-3">
-        <AppText v-if="selectedAccount">
-          Vas a eliminar
-          <strong>{{ selectedAccount.name }}</strong
-          >.
-        </AppText>
-        <AppText v-if="deleteError" class="text-(--app-color-danger)!">
-          {{ deleteError }}
-        </AppText>
-        <AppText size="sm" tone="subtle">
-          Esta acción seguirá el mismo flujo de confirmación antes de conectarse a persistencia
-          real.
-        </AppText>
-      </div>
-    </AppModal>
+      @confirm="confirmDeleteAccount"
+    />
   </div>
 </template>
