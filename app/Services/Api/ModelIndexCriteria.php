@@ -24,10 +24,15 @@ class ModelIndexCriteria
                 continue;
             }
 
-            $query->where(
-                $key,
-                $this->normalizeValue($model, $key, $value)
-            );
+            $values = $this->normalizeFilterValues($model, $key, $value);
+
+            if (count($values) > 1) {
+                $query->whereIn($key, $values);
+
+                continue;
+            }
+
+            $query->where($key, $values[0]);
         }
 
         return $query;
@@ -101,6 +106,27 @@ class ModelIndexCriteria
         }
 
         return $value;
+    }
+
+    private function normalizeFilterValues(Model $model, string $key, mixed $value): array
+    {
+        if (! is_string($value) || ! str_contains($value, ',')) {
+            return [$this->normalizeValue($model, $key, $value)];
+        }
+
+        $values = array_filter(
+            array_map(trim(...), explode(',', $value)),
+            fn (string $item): bool => $item !== '',
+        );
+
+        if ($values === []) {
+            return [$this->normalizeValue($model, $key, $value)];
+        }
+
+        return array_values(array_map(
+            fn (string $item): mixed => $this->normalizeValue($model, $key, $item),
+            $values,
+        ));
     }
 
     private function normalizeEnumValue(string $enumClass, mixed $value): mixed

@@ -586,6 +586,36 @@ it('sends the invitation email before persisting account invites from the nested
     Notification::assertSentOnDemand(InviteAccountApiEmail::class);
 });
 
+it('filters nested account invites by multiple statuses', function () {
+    $owner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->attach($owner->id);
+
+    AccountInvite::factory()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'status' => InviteStatus::Pending,
+    ]);
+
+    AccountInvite::factory()->accepted()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+    ]);
+
+    AccountInvite::factory()->declined()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/invites?status=pending,accepted")
+        ->assertOk()
+        ->assertJsonPath('meta.total', 2);
+
+    expect(collect($response->json('data'))->pluck('status')->sort()->values()->all())
+        ->toBe(['accepted', 'pending']);
+});
+
 it('manages nested account users, invites, transactions and financial goals', function () {
     Notification::fake();
     seedNotificationTypes();
