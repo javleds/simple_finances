@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
-
 import AccountDeleteModal from '@/modules/accounts/components/AccountDeleteModal.vue';
 import AccountFiltersModal from '@/modules/accounts/components/AccountFiltersModal.vue';
 import AccountFormModal from '@/modules/accounts/components/AccountFormModal.vue';
@@ -9,6 +6,7 @@ import AccountsList from '@/modules/accounts/components/AccountsList.vue';
 import AccountsToolbar from '@/modules/accounts/components/AccountsToolbar.vue';
 import { useAccountsCrud } from '@/modules/accounts/composables/useAccountsCrud';
 import { useAccountFilters } from '@/modules/accounts/composables/useAccountFilters';
+import { useAccountListLoader } from '@/modules/accounts/composables/useAccountListLoader';
 import { useAccountModalActions } from '@/modules/accounts/composables/useAccountModalActions';
 import { useAccountModals } from '@/modules/accounts/composables/useAccountModals';
 import type {
@@ -24,10 +22,7 @@ import {
   AppText,
 } from '@/modules/shared/components';
 
-const route = useRoute();
-
 const statusOptions = ['Activo', 'Inactivo'] as const;
-const defaultAccountsPerPage = 20;
 const kindOptions = [
   { value: 'credit', label: 'Crédito' },
   { value: 'debit', label: 'Débito' },
@@ -104,56 +99,20 @@ const { createAccountActions, deleteAccountActions, editAccountActions } =
     selectedAccount,
   });
 
-const accountsPerPage = computed(() => {
-  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
-
-  if (!Number.isInteger(rawValue) || rawValue <= 0) {
-    return defaultAccountsPerPage;
-  }
-
-  return rawValue;
+const {
+  handleLoadMoreRetry,
+  infiniteStatusLabel,
+  loadMoreSentinel,
+  reloadAccounts,
+} = useAccountListLoader({
+  activeFilters,
+  hasMoreAccounts,
+  hasReachedEnd,
+  isLoading,
+  isLoadingMore,
+  loadAccounts,
+  loadMoreAccounts,
 });
-
-const { target: loadMoreSentinel } = useInfiniteScroll({
-  enabled: computed(() => !isLoading.value && !isLoadingMore.value && hasMoreAccounts.value),
-  onIntersect: () => {
-    void loadMoreAccounts();
-  },
-});
-
-watch(
-  [activeFilters, accountsPerPage],
-  ([nextFilters, nextPerPage]) => {
-    void loadAccounts(nextFilters, {
-      reset: true,
-      perPage: nextPerPage,
-    });
-  },
-  { immediate: true },
-);
-
-function reloadAccounts(): void {
-  void loadAccounts(activeFilters.value, {
-    reset: true,
-    perPage: accountsPerPage.value,
-  });
-}
-
-function handleLoadMoreRetry(): void {
-  void loadMoreAccounts();
-}
-
-function infiniteStatusLabel(): string {
-  if (isLoadingMore.value) {
-    return 'Cargando más cuentas...';
-  }
-
-  if (hasReachedEnd.value) {
-    return 'Has llegado al final.';
-  }
-
-  return 'Sigue desplazándote para explorar más cuentas cuando la facility crezca.';
-}
 
 async function handleCreateAccountSubmit(payload: AccountWritePayload): Promise<void> {
   const wasCreated = await createAccount(payload);
