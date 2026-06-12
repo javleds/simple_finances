@@ -7,10 +7,7 @@ import DashboardPendingActions from '@/modules/admin/components/DashboardPending
 import DashboardSubscriptionsPlanning from '@/modules/admin/components/DashboardSubscriptionsPlanning.vue';
 import DashboardSummaryCards from '@/modules/admin/components/DashboardSummaryCards.vue';
 import { useDashboard } from '@/modules/admin/composables/useDashboard';
-import type {
-  DashboardPendingAction,
-  DashboardPendingActionGroup,
-} from '@/modules/admin/types/dashboard';
+import { useDashboardPendingActions } from '@/modules/admin/composables/useDashboardPendingActions';
 import {
   AppButton,
   AppText,
@@ -21,9 +18,6 @@ type AccountGraphMode = 'physical' | 'virtual';
 
 const savingsCadence = ref<SavingsCadence>('monthly');
 const accountGraphMode = ref<AccountGraphMode>('physical');
-const isCompletePendingActionOpen = ref(false);
-const selectedPendingActionId = ref<string | null>(null);
-const selectedPendingAccountId = ref<string | null>(null);
 const {
   dashboard,
   hasDashboardData,
@@ -36,52 +30,19 @@ const {
   completePendingTransactions,
 } = useDashboard();
 
-const pendingActions = computed<DashboardPendingAction[]>(() =>
-  [...dashboard.value.pendingActions].sort(
-    (left, right) => parseDate(right.date) - parseDate(left.date),
-  ),
-);
-
-const pendingActionGroups = computed<DashboardPendingActionGroup[]>(() => {
-  const groups = new Map<string, DashboardPendingActionGroup>();
-
-  for (const action of pendingActions.value) {
-    const group = groups.get(action.accountId);
-
-    if (group) {
-      group.items.push(action);
-      group.totalAmount += action.amount;
-      continue;
-    }
-
-    groups.set(action.accountId, {
-      accountId: action.accountId,
-      accountName: action.accountName,
-      accountColor: action.accountColor,
-      totalAmount: action.amount,
-      items: [action],
-    });
-  }
-
-  return [...groups.values()].sort(
-    (left, right) => parseDate(right.items[0]?.date) - parseDate(left.items[0]?.date),
-  );
-});
-
-const selectedPendingAction = computed(() => {
-  if (!selectedPendingActionId.value) {
-    return null;
-  }
-
-  return pendingActions.value.find((item) => item.id === selectedPendingActionId.value) ?? null;
-});
-
-const selectedPendingAccountActions = computed(() => {
-  if (!selectedPendingAccountId.value) {
-    return [];
-  }
-
-  return pendingActions.value.filter((item) => item.accountId === selectedPendingAccountId.value);
+const {
+  closeCompletePendingAction,
+  confirmCompletePendingAction,
+  isCompletePendingActionOpen,
+  openCompletePendingAccount,
+  openCompletePendingAction,
+  pendingActionGroups,
+  selectedPendingAccountActions,
+  selectedPendingAction,
+} = useDashboardPendingActions({
+  clearCompleteError,
+  completePendingTransactions,
+  dashboard,
 });
 
 const annualSubscriptionsSpend = computed(() => dashboard.value.subscriptionsSummary.annualTotal);
@@ -101,45 +62,6 @@ onMounted(() => {
   void loadDashboard();
 });
 
-function parseDate(value?: string): number {
-  if (!value) {
-    return 0;
-  }
-
-  return Date.parse(value);
-}
-
-function openCompletePendingAction(actionId: string): void {
-  clearCompleteError();
-  selectedPendingActionId.value = actionId;
-  selectedPendingAccountId.value = null;
-  isCompletePendingActionOpen.value = true;
-}
-
-function openCompletePendingAccount(accountId: string): void {
-  clearCompleteError();
-  selectedPendingActionId.value = null;
-  selectedPendingAccountId.value = accountId;
-  isCompletePendingActionOpen.value = true;
-}
-
-function closeCompletePendingAction(): void {
-  isCompletePendingActionOpen.value = false;
-  selectedPendingActionId.value = null;
-  selectedPendingAccountId.value = null;
-}
-
-async function confirmCompletePendingAction(): Promise<void> {
-  const transactionIds = selectedPendingAction.value
-    ? [selectedPendingAction.value.id]
-    : selectedPendingAccountActions.value.map((action) => action.id);
-
-  const wasCompleted = await completePendingTransactions(transactionIds);
-
-  if (wasCompleted) {
-    closeCompletePendingAction();
-  }
-}
 </script>
 
 <template>
