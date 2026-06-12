@@ -9,6 +9,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import type { Account, AccountPendingByUser } from '@/modules/accounts/types';
 import AccountTransactionFiltersModal from '@/modules/accounts/components/AccountTransactionFiltersModal.vue';
+import AccountTransactionFormModal from '@/modules/accounts/components/AccountTransactionFormModal.vue';
 import AccountTransactionsHeader from '@/modules/accounts/components/AccountTransactionsHeader.vue';
 import AccountTransactionsList from '@/modules/accounts/components/AccountTransactionsList.vue';
 import AccountTransactionsToolbar from '@/modules/accounts/components/AccountTransactionsToolbar.vue';
@@ -25,7 +26,6 @@ import {
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { areQueriesEqual, parseQueryValues } from '@/modules/shared/lib/queryParams';
 import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
-import TransactionsForm from '@/modules/transactions/components/TransactionsForm.vue';
 import type {
   TransactionListFilters,
   TransactionMutationMeta,
@@ -748,45 +748,37 @@ function infiniteStatusLabel(): string {
       @toggle-type="toggleType"
     />
 
-    <AppModal
+    <AccountTransactionFormModal
       :open="isCreateTransactionModalOpen"
+      :account-id="accountId"
+      :account-users="accountUsers"
       :actions="createTransactionActions"
+      :financial-goals="financialGoals"
+      form-id="transaction-form"
+      :is-loading-financial-goals="isLoadingFinancialGoals"
+      :server-error="saveError"
       title="Nueva transacción"
-      variant="default"
       @close="closeCreateTransactionModal"
-    >
-      <TransactionsForm
-        form-id="transaction-form"
-        :account-users="accountUsers"
-        :financial-goals="financialGoals"
-        :is-loading-financial-goals="isLoadingFinancialGoals"
-        :locked-account-id="accountId"
-        :server-error="saveError"
-        @state-change="handleCreateFormStateChange"
-        @submit="handleTransactionSubmit"
-      />
-    </AppModal>
+      @state-change="handleCreateFormStateChange"
+      @submit="handleTransactionSubmit"
+    />
 
-    <AppModal
+    <AccountTransactionFormModal
       :open="isEditTransactionModalOpen"
+      :account-id="accountId"
+      :account-users="accountUsers"
       :actions="editTransactionActions"
+      :financial-goals="financialGoals"
+      form-id="edit-transaction-form"
+      :initial-values="selectedTransaction"
+      :is-loading-financial-goals="isLoadingFinancialGoals"
+      requires-initial-values
+      :server-error="saveError"
       title="Editar transacción"
-      variant="default"
       @close="closeEditTransactionModal"
-    >
-      <TransactionsForm
-        v-if="selectedTransaction"
-        form-id="edit-transaction-form"
-        :account-users="accountUsers"
-        :financial-goals="financialGoals"
-        :is-loading-financial-goals="isLoadingFinancialGoals"
-        :locked-account-id="accountId"
-        :initial-values="selectedTransaction"
-        :server-error="saveError"
-        @state-change="handleEditFormStateChange"
-        @submit="handleEditTransactionSubmit"
-      />
-    </AppModal>
+      @state-change="handleEditFormStateChange"
+      @submit="handleEditTransactionSubmit"
+    />
 
     <AppModal
       :open="isDeleteTransactionModalOpen"
