@@ -67,10 +67,9 @@ export const accountInviteFormSchema = z.object({
   percentage: z
     .string()
     .trim()
-    .min(1, 'El porcentaje es obligatorio.')
     .refine((value) => {
       const percentage = parseNullableNumber(value);
-      return percentage !== null && percentage >= 0 && percentage <= 100;
+      return percentage === null || (percentage >= 0 && percentage <= 100);
     }, 'El porcentaje debe estar entre 0 y 100.'),
   status: z.union([z.literal('pending'), z.literal('accepted'), z.literal('declined')]),
 });
@@ -112,7 +111,7 @@ export function createDefaultAccountInviteFormValues(
     email: invite?.email ?? '',
     percentage:
       invite?.percentage === null || invite?.percentage === undefined
-        ? ''
+        ? '0.0'
         : String(invite.percentage),
     status: invite?.status ?? 'pending',
   };

@@ -88,7 +88,7 @@ async function handleSubmit(): Promise<void> {
     <AppInput
       id="invite-percentage"
       v-model="percentage"
-      label="Porcentaje asignado"
+      label="Porcentaje asignado (opcional)"
       type="number"
       inputmode="decimal"
       min="0"
@@ -97,7 +97,6 @@ async function handleSubmit(): Promise<void> {
       placeholder="0.00"
       :error="percentageError"
       @blur="touchPercentage"
-      required
     />
   </form>
 </template>
