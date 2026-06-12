@@ -641,6 +641,31 @@ it('searches nested account invites by email', function () {
     expect(collect($response->json('data'))->pluck('id')->all())->toBe([$matchingInvite->id]);
 });
 
+it('searches nested account transactions by concept', function () {
+    $owner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->attach($owner->id);
+
+    $matchingTransaction = Transaction::factory()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'concept' => 'Grocery store',
+    ]);
+
+    Transaction::factory()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'concept' => 'Internet bill',
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/transactions?search=grocery")
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    expect(collect($response->json('data'))->pluck('id')->all())->toBe([$matchingTransaction->id]);
+});
+
 it('manages nested account users, invites, transactions and financial goals', function () {
     Notification::fake();
     seedNotificationTypes();

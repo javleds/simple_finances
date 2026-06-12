@@ -31,6 +31,12 @@ class AccountTransactionController extends ApiController
             ->orderByDesc('id')
             ->getQuery();
 
+        $search = $request->string('search')->trim()->toString();
+
+        if ($search !== '') {
+            $query->where('concept', 'like', '%'.$search.'%');
+        }
+
         return $this->respondPaginated(
             $query,
             $request,
