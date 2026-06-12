@@ -9,27 +9,15 @@ import { useDistributionRuleListLoader } from '@/modules/distribution/composable
 import { useDistributionRuleModalActions } from '@/modules/distribution/composables/useDistributionRuleModalActions';
 import { useDistributionRuleModals } from '@/modules/distribution/composables/useDistributionRuleModals';
 import { useDistributionRulesCrud } from '@/modules/distribution/composables/useDistributionRulesCrud';
-import type {
-  DistributionFrequency,
-  DistributionRuleWritePayload,
-} from '@/modules/distribution/types';
-import {
-  AppListState,
-  AppLoadMoreFooter,
-  AppText,
-} from '@/modules/shared/components';
+import type { DistributionRuleWritePayload } from '@/modules/distribution/types';
+import { AppListState, AppLoadMoreFooter, AppText } from '@/modules/shared/components';
 
 const frequencyOptions = [
   { value: 'monthly', label: 'Mensual' },
   { value: 'semi_monthly', label: 'Quincenal' },
 ] as const;
-const {
-  activeFilters,
-  clearFilters,
-  searchTerm,
-  selectedFrequencies,
-  toggleFrequency,
-} = useDistributionRuleFilters();
+const { activeFilters, clearFilters, searchTerm, selectedFrequencies, toggleFrequency } =
+  useDistributionRuleFilters();
 
 const {
   rules,
@@ -76,29 +64,24 @@ const {
   rules,
 });
 
-const { createRuleActions, deleteRuleActions, editRuleActions } =
-  useDistributionRuleModalActions({
-    createFormState,
-    editFormState,
-    isDeleting,
-    isSaving,
-    selectedRule,
-  });
-
-const {
-  handleLoadMoreRetry,
-  infiniteStatusLabel,
-  loadMoreSentinel,
-  reloadRules,
-} = useDistributionRuleListLoader({
-  activeFilters,
-  hasMoreRules,
-  hasReachedEnd,
-  isLoading,
-  isLoadingMore,
-  loadMoreRules,
-  loadRules,
+const { createRuleActions, deleteRuleActions, editRuleActions } = useDistributionRuleModalActions({
+  createFormState,
+  editFormState,
+  isDeleting,
+  isSaving,
+  selectedRule,
 });
+
+const { handleLoadMoreRetry, infiniteStatusLabel, loadMoreSentinel, reloadRules } =
+  useDistributionRuleListLoader({
+    activeFilters,
+    hasMoreRules,
+    hasReachedEnd,
+    isLoading,
+    isLoadingMore,
+    loadMoreRules,
+    loadRules,
+  });
 
 async function handleCreateRuleSubmit(payload: DistributionRuleWritePayload): Promise<void> {
   const wasCreated = await createRule(payload);
@@ -131,7 +114,6 @@ async function confirmDeleteRule(): Promise<void> {
     closeDeleteRule();
   }
 }
-
 </script>
 
 <template>

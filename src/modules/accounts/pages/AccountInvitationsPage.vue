@@ -14,21 +14,11 @@ import { useAccountInvitationModals } from '@/modules/accounts/composables/useAc
 import { useAccountInvitesCrud } from '@/modules/accounts/composables/useAccountInvitesCrud';
 import type { AccountInviteStatus } from '@/modules/accounts/schemas/accountInviteSchemas';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import {
-  AppButton,
-  AppListState,
-  AppLoadMoreFooter,
-  AppText,
-} from '@/modules/shared/components';
+import { AppListState, AppLoadMoreFooter, AppText } from '@/modules/shared/components';
 
 const route = useRoute();
-const {
-  activeFilters,
-  clearFilters,
-  searchTerm,
-  selectedStatuses,
-  toggleStatus,
-} = useAccountInvitationFilters();
+const { activeFilters, clearFilters, searchTerm, selectedStatuses, toggleStatus } =
+  useAccountInvitationFilters();
 
 const invitationStatusOptions = [
   { value: 'pending', label: 'Pendiente' },
@@ -77,7 +67,6 @@ const {
   isFiltersOpen,
   openCreateInvitation,
   openDeleteInvitation,
-  openEditInvitation,
   openFilters,
   selectedInvitation,
 } = useAccountInvitationModals({
@@ -86,20 +75,18 @@ const {
   invitations: invites,
 });
 
-const {
-  createInviteActions,
-  deleteInviteActions,
-  editInviteActions,
-} = useAccountInvitationModalActions({
-  createFormState,
-  editFormState,
-  isDeleting,
-  isSaving,
-  selectedInvitation,
-});
+const { createInviteActions, deleteInviteActions, editInviteActions } =
+  useAccountInvitationModalActions({
+    createFormState,
+    editFormState,
+    isDeleting,
+    isSaving,
+    selectedInvitation,
+  });
 
 const invitationsPerPage = computed(() => {
-  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+  const rawValue =
+    typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
   if (!Number.isInteger(rawValue) || rawValue <= 0) {
     return defaultInvitesPerPage;
@@ -153,7 +140,6 @@ watch(
   },
   { immediate: true },
 );
-
 </script>
 
 <template>

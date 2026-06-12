@@ -10,16 +10,8 @@ import { useSubscriptionListLoader } from '@/modules/subscriptions/composables/u
 import { useSubscriptionModalActions } from '@/modules/subscriptions/composables/useSubscriptionModalActions';
 import { useSubscriptionModals } from '@/modules/subscriptions/composables/useSubscriptionModals';
 import { useSubscriptionsCrud } from '@/modules/subscriptions/composables/useSubscriptionsCrud';
-import type {
-  SubscriptionFrequencyType,
-  SubscriptionStatusFilter,
-  SubscriptionWritePayload,
-} from '@/modules/subscriptions/types';
-import {
-  AppListState,
-  AppLoadMoreFooter,
-  AppText,
-} from '@/modules/shared/components';
+import type { SubscriptionWritePayload } from '@/modules/subscriptions/types';
+import { AppListState, AppLoadMoreFooter, AppText } from '@/modules/shared/components';
 
 const subscriptionStatusOptions = [
   { value: 'active', label: 'Activa' },
@@ -87,32 +79,25 @@ const {
   subscriptions,
 });
 
-const {
-  createSubscriptionActions,
-  deleteSubscriptionActions,
-  editSubscriptionActions,
-} = useSubscriptionModalActions({
-  createFormState,
-  editFormState,
-  isDeleting,
-  isSaving,
-  selectedSubscription,
-});
+const { createSubscriptionActions, deleteSubscriptionActions, editSubscriptionActions } =
+  useSubscriptionModalActions({
+    createFormState,
+    editFormState,
+    isDeleting,
+    isSaving,
+    selectedSubscription,
+  });
 
-const {
-  handleLoadMoreRetry,
-  infiniteStatusLabel,
-  loadMoreSentinel,
-  reloadSubscriptions,
-} = useSubscriptionListLoader({
-  activeFilters,
-  hasMoreSubscriptions,
-  hasReachedEnd,
-  isLoading,
-  isLoadingMore,
-  loadMoreSubscriptions,
-  loadSubscriptions,
-});
+const { handleLoadMoreRetry, infiniteStatusLabel, loadMoreSentinel, reloadSubscriptions } =
+  useSubscriptionListLoader({
+    activeFilters,
+    hasMoreSubscriptions,
+    hasReachedEnd,
+    isLoading,
+    isLoadingMore,
+    loadMoreSubscriptions,
+    loadSubscriptions,
+  });
 
 async function handleCreateSubscriptionSubmit(payload: SubscriptionWritePayload): Promise<void> {
   const wasCreated = await createSubscription(payload);
@@ -145,7 +130,6 @@ async function confirmDeleteSubscription(): Promise<void> {
     closeDeleteSubscription();
   }
 }
-
 </script>
 
 <template>

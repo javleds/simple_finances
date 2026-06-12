@@ -17,12 +17,7 @@ import { useAccountGoalPageActions } from '@/modules/accounts/composables/useAcc
 import { useAccountGoalPresentation } from '@/modules/accounts/composables/useAccountGoalPresentation';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import {
-  AppButton,
-  AppListState,
-  AppLoadMoreFooter,
-  AppText,
-} from '@/modules/shared/components';
+import { AppListState, AppLoadMoreFooter, AppText } from '@/modules/shared/components';
 
 const route = useRoute();
 const { activeFilters, clearFilters, searchTerm, selectedStatuses, toggleStatus } =
@@ -85,7 +80,8 @@ const {
 });
 
 const goalsPerPage = computed(() => {
-  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+  const rawValue =
+    typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
   if (!Number.isInteger(rawValue) || rawValue <= 0) {
     return defaultGoalsPerPage;
@@ -149,7 +145,6 @@ watch(
   },
   { immediate: true },
 );
-
 </script>
 
 <template>
@@ -174,11 +169,7 @@ watch(
       loading-label="Cargando metas..."
       @retry="reloadGoals"
     >
-      <AccountGoalsList
-        :goals="filteredGoalItems"
-        @delete="openDeleteGoal"
-        @edit="openEditGoal"
-      >
+      <AccountGoalsList :goals="filteredGoalItems" @delete="openDeleteGoal" @edit="openEditGoal">
         <template #footer>
           <div ref="loadMoreSentinel">
             <AppLoadMoreFooter

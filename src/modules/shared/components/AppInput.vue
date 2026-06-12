@@ -61,11 +61,7 @@ const inputAttrs = computed(() => {
     return attrs;
   }
 
-  const {
-    type: _type,
-    inputmode: _inputmode,
-    ...restAttrs
-  } = attrs;
+  const { ...restAttrs } = attrs;
 
   return restAttrs;
 });
@@ -157,7 +153,9 @@ function normalizeAmountValue(
     return '';
   }
 
-  const rawValue = String(value).replace(',', '.').replace(/[^0-9.]/g, '');
+  const rawValue = String(value)
+    .replace(',', '.')
+    .replace(/[^0-9.]/g, '');
 
   if (rawValue === '') {
     return '';

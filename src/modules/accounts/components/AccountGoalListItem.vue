@@ -27,30 +27,6 @@ const currencyFormatter = new Intl.NumberFormat('es-MX', {
   maximumFractionDigits: 2,
 });
 
-function statusLabel(status: GoalStatus): string {
-  if (status === 'completed') {
-    return 'Completada';
-  }
-
-  if (status === 'at-risk') {
-    return 'En riesgo';
-  }
-
-  return 'En curso';
-}
-
-function statusClasses(status: GoalStatus): string {
-  if (status === 'completed') {
-    return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
-  }
-
-  if (status === 'at-risk') {
-    return 'bg-amber-500/12 text-amber-700 dark:text-amber-300';
-  }
-
-  return 'bg-sky-500/10 text-sky-700 dark:text-sky-300';
-}
-
 function accentStyle(status: GoalStatus): string {
   if (status === 'completed') {
     return 'linear-gradient(90deg, color-mix(in srgb, #10b981 16%, transparent), transparent 78%)';

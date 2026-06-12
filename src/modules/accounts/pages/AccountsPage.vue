@@ -9,18 +9,8 @@ import { useAccountFilters } from '@/modules/accounts/composables/useAccountFilt
 import { useAccountListLoader } from '@/modules/accounts/composables/useAccountListLoader';
 import { useAccountModalActions } from '@/modules/accounts/composables/useAccountModalActions';
 import { useAccountModals } from '@/modules/accounts/composables/useAccountModals';
-import type {
-  AccountKindFilter,
-  AccountSurfaceFilter,
-  AccountStatus,
-  AccountWritePayload,
-} from '@/modules/accounts/types';
-import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import {
-  AppListState,
-  AppLoadMoreFooter,
-  AppText,
-} from '@/modules/shared/components';
+import type { AccountWritePayload } from '@/modules/accounts/types';
+import { AppListState, AppLoadMoreFooter, AppText } from '@/modules/shared/components';
 
 const statusOptions = ['Activo', 'Inactivo'] as const;
 const kindOptions = [
@@ -90,29 +80,24 @@ const {
   clearSaveError,
 });
 
-const { createAccountActions, deleteAccountActions, editAccountActions } =
-  useAccountModalActions({
-    createFormState,
-    editFormState,
-    isDeleting,
-    isSaving,
-    selectedAccount,
-  });
-
-const {
-  handleLoadMoreRetry,
-  infiniteStatusLabel,
-  loadMoreSentinel,
-  reloadAccounts,
-} = useAccountListLoader({
-  activeFilters,
-  hasMoreAccounts,
-  hasReachedEnd,
-  isLoading,
-  isLoadingMore,
-  loadAccounts,
-  loadMoreAccounts,
+const { createAccountActions, deleteAccountActions, editAccountActions } = useAccountModalActions({
+  createFormState,
+  editFormState,
+  isDeleting,
+  isSaving,
+  selectedAccount,
 });
+
+const { handleLoadMoreRetry, infiniteStatusLabel, loadMoreSentinel, reloadAccounts } =
+  useAccountListLoader({
+    activeFilters,
+    hasMoreAccounts,
+    hasReachedEnd,
+    isLoading,
+    isLoadingMore,
+    loadAccounts,
+    loadMoreAccounts,
+  });
 
 async function handleCreateAccountSubmit(payload: AccountWritePayload): Promise<void> {
   const wasCreated = await createAccount(payload);
@@ -145,7 +130,6 @@ async function confirmDeleteAccount(): Promise<void> {
     closeDeleteAccount();
   }
 }
-
 </script>
 
 <template>
@@ -156,7 +140,10 @@ async function confirmDeleteAccount(): Promise<void> {
       @open-filters="openFilters"
     />
 
-    <section v-if="loadError && hasAccounts" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+    <section
+      v-if="loadError && hasAccounts"
+      class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+    >
       <AppText class="text-(--app-color-danger)!">{{ loadError }}</AppText>
     </section>
 
