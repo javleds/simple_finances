@@ -10,6 +10,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import type { Account, AccountPendingByUser } from '@/modules/accounts/types';
+import AccountTransactionFiltersModal from '@/modules/accounts/components/AccountTransactionFiltersModal.vue';
 import AccountTransactionsList from '@/modules/accounts/components/AccountTransactionsList.vue';
 import AccountTransactionsToolbar from '@/modules/accounts/components/AccountTransactionsToolbar.vue';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
@@ -421,17 +422,6 @@ function toggleType(type: TransactionType): void {
   selectedTypes.value = [...selectedTypes.value, type];
 }
 
-function handleFiltersModalAction(actionKey: string): void {
-  if (actionKey === 'clear') {
-    clearFilters();
-    return;
-  }
-
-  if (actionKey === 'close') {
-    closeFilters();
-  }
-}
-
 function resolveErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) {
     return error.message;
@@ -792,65 +782,17 @@ function infiniteStatusLabel(): string {
       </AccountTransactionsList>
     </AppListState>
 
-    <AppModal
+    <AccountTransactionFiltersModal
       :open="isFiltersOpen"
-      :actions="[
-        { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-        { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-      ]"
-      title="Filtros avanzados"
-      variant="default"
-      @action="handleFiltersModalAction"
+      :selected-statuses="selectedStatuses"
+      :selected-types="selectedTypes"
+      :status-options="transactionStatusOptions"
+      :type-options="transactionTypeOptions"
+      @clear="clearFilters"
       @close="closeFilters"
-    >
-      <div class="space-y-5">
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Estatus</AppTitle>
-          <AppText>Refina la actividad según el estado de conciliación de cada movimiento.</AppText>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="status in transactionStatusOptions"
-            :key="status.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedStatuses.includes(status.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleStatus(status.value)"
-          >
-            {{ status.label }}
-          </button>
-        </div>
-
-        <div class="space-y-2">
-          <AppTitle as="h2" size="sm">Tipo</AppTitle>
-          <AppText>Filtra entre ingresos y egresos.</AppText>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="type in transactionTypeOptions"
-            :key="type.value"
-            type="button"
-            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-            :class="
-              selectedTypes.includes(type.value)
-                ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-            "
-            :style="{ borderColor: 'var(--app-color-border)' }"
-            @click="toggleType(type.value)"
-          >
-            {{ type.label }}
-          </button>
-        </div>
-      </div>
-    </AppModal>
+      @toggle-status="toggleStatus"
+      @toggle-type="toggleType"
+    />
 
     <AppModal
       :open="isCreateTransactionModalOpen"
