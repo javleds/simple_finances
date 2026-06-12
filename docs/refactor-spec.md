@@ -292,6 +292,11 @@ Commits aplicados:
 - `9787dd5 refactor(transactions): extract confirmation modals`
 - `3731c70 refactor(transactions): extract query synced filters`
 - `7934be6 refactor(transactions): extract modal actions`
+- `899f23b refactor(transactions): extract modal state`
+- `0be6cc7 refactor(transactions): extract page actions`
+- `aab786d refactor(transactions): extract pending state`
+- `9622770 refactor(transactions): extract list loader`
+- `4a0f55a refactor(transactions): share permission rules`
 
 Estado actual:
 
@@ -347,7 +352,7 @@ Estado actual:
   - `DashboardCompletePendingModal.vue`
 - La logica de pendientes del dashboard quedo separada en:
   - `useDashboardPendingActions.ts`
-- `AccountTransactionsPage.vue` bajo de ~1025 lineas a 696 lineas en la primera fase.
+- `AccountTransactionsPage.vue` bajo de ~1025 lineas a 325 lineas en la fase actual.
 - La UI de transacciones quedo parcialmente separada en:
   - `AccountTransactionsHeader.vue`
   - `AccountTransactionsToolbar.vue`
@@ -359,7 +364,13 @@ Estado actual:
   - `AccountCompletePendingByUserModal.vue`
 - La logica de filtros y acciones de modales de transacciones quedo separada en:
   - `useAccountTransactionFilters.ts`
+  - `useAccountTransactionModals.ts`
   - `useAccountTransactionModalActions.ts`
+  - `useAccountTransactionActions.ts`
+  - `useAccountTransactionsPendingState.ts`
+  - `useAccountTransactionListLoader.ts`
+- Las reglas puras de permisos de transacciones quedaron centralizadas en:
+  - `src/modules/transactions/lib/transactionPermissions.ts`
 
 Verificacion:
 
@@ -367,7 +378,6 @@ Verificacion:
 
 Siguiente paso recomendado:
 
-1. Extraer acciones CRUD de `AccountGoalsPage.vue` a un composable pequeno, por ejemplo `useAccountGoalPageActions`.
-2. Continuar `AccountTransactionsPage.vue` extrayendo estado de modales y acciones CRUD normales.
-3. Despues aislar la logica de balance/pending por usuario en un composable con pruebas enfocadas antes de mover mas flujo.
-4. Despues continuar con `AccountsPage.vue`, `SubscriptionsPage.vue` y `DistributionPage.vue`.
+1. Agregar pruebas enfocadas para `useAccountTransactionsPendingState.ts`, especialmente balance, ocultamiento del usuario completado y completado parcial/fallido.
+2. Evaluar si `AccountTransactionsPage.vue` requiere una ultima extraccion pequena o si ya puede considerarse aceptable temporalmente.
+3. Continuar con `AccountsPage.vue`, `SubscriptionsPage.vue` y `DistributionPage.vue`.
