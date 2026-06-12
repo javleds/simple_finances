@@ -21,10 +21,7 @@ class AccountInviteController extends ApiController
         return $this->respondPaginated(
             AccountInvite::query()
             ->with(['account', 'user'])
-            ->where(function ($query): void {
-                $query->where('user_id', auth()->id())
-                    ->orWhere('email', auth()->user()->email);
-            })
+            ->where('email', $request->user()->email)
             ->latest(),
             $request,
         );

@@ -530,6 +530,34 @@ it('creates account invites and lets the invited user accept them', function () 
     expect($account->fresh()->users()->pluck('users.id')->all())->toContain($invitee->id);
 });
 
+it('lists only account invites addressed to the authenticated user', function () {
+    $user = User::factory()->create();
+    $sender = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $receivedInvite = AccountInvite::factory()->create([
+        'email' => $user->email,
+        'user_id' => $sender->id,
+    ]);
+
+    AccountInvite::factory()->create([
+        'email' => $otherUser->email,
+        'user_id' => $user->id,
+    ]);
+
+    AccountInvite::factory()->create([
+        'email' => $otherUser->email,
+        'user_id' => $sender->id,
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/account-invites')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    expect(collect($response->json('data'))->pluck('id')->all())->toBe([$receivedInvite->id]);
+});
+
 it('sends the invitation email before persisting account invites from the nested endpoint', function () {
     Notification::fake();
     seedNotificationTypes();
