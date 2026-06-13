@@ -33,8 +33,15 @@ it('serves the dashboard endpoints and completes pending transactions through th
         'balance' => 100,
         'color' => '#6a4d4d',
         'user_id' => $user->id,
+        'virtual' => false,
+    ]);
+    $virtualAccount = Account::factory()->create([
+        'name' => 'Savings projection',
+        'user_id' => $user->id,
+        'virtual' => true,
     ]);
     $account->users()->attach($user->id);
+    $virtualAccount->users()->attach($user->id);
 
     $transaction = Transaction::factory()->income()->pending()->create([
         'concept' => 'Pending reimbursement',
@@ -59,13 +66,14 @@ it('serves the dashboard endpoints and completes pending transactions through th
         ->assertOk()
         ->assertJsonPath('data.0.account_id', $account->id)
         ->assertJsonPath('data.0.account_name', 'Nomina')
-        ->assertJsonPath('data.0.balance', 100)
+        ->assertJsonPath('data.0.balance', 100.0)
         ->assertJsonPath('data.0.color', '#6a4d4d');
 
     $this->withHeaders($headers)
         ->getJson('/api/dashboard/accounts')
         ->assertOk()
         ->assertJsonPath('data.summary.active_accounts', 1)
+        ->assertJsonPath('data.summary.virtual_accounts', 1)
         ->assertJsonPath('data.summary.shared_accounts', 0)
         ->assertJsonPath('data.summary.pending_total', 450.5)
         ->assertJsonPath('data.pending_actions.0.id', 'tx-'.$transaction->id)
@@ -74,7 +82,7 @@ it('serves the dashboard endpoints and completes pending transactions through th
     $this->withHeaders($headers)
         ->getJson('/api/dashboard/subscriptions')
         ->assertOk()
-        ->assertJsonPath('data.annual_total', 1200)
+        ->assertJsonPath('data.annual_total', 1200.0)
         ->assertJsonPath('data.subscriptions_count', 1);
 
     $this->withHeaders($headers)

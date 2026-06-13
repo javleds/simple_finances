@@ -17,18 +17,27 @@ it('returns dashboard account summary and pending actions for the signed in user
         'name' => 'Nomina',
         'color' => '#6a4d4d',
         'user_id' => $user->id,
+        'virtual' => false,
     ]);
     $sharedAccount = Account::factory()->create([
         'name' => 'Shared',
         'user_id' => $user->id,
+        'virtual' => false,
+    ]);
+    $virtualAccount = Account::factory()->create([
+        'name' => 'Virtual',
+        'user_id' => $user->id,
+        'virtual' => true,
     ]);
     $otherAccount = Account::factory()->create([
         'name' => 'Other',
         'user_id' => $otherUser->id,
+        'virtual' => false,
     ]);
 
     $account->users()->attach($user->id);
     $sharedAccount->users()->attach([$user->id, $sharedUser->id]);
+    $virtualAccount->users()->attach($user->id);
     $otherAccount->users()->attach($otherUser->id);
 
     $pendingTransaction = Transaction::factory()->income()->pending()->create([
@@ -55,6 +64,7 @@ it('returns dashboard account summary and pending actions for the signed in user
 
     expect($data['summary'])->toBe([
         'active_accounts' => 2,
+        'virtual_accounts' => 1,
         'shared_accounts' => 1,
         'pending_total' => 450.5,
     ])
