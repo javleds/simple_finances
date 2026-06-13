@@ -1231,6 +1231,28 @@ it('filters active subscriptions from the API', function () {
     expect(collect($response->json('data'))->pluck('name')->all())->toBe(['Active subscription']);
 });
 
+it('searches subscriptions by name', function () {
+    $user = User::factory()->create();
+
+    Subscription::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Cloud Storage',
+        'next_payment_date' => '2026-01-10',
+    ]);
+    Subscription::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Music Service',
+        'next_payment_date' => '2026-01-11',
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/subscriptions?search=cloud')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    expect(collect($response->json('data'))->pluck('name')->all())->toBe(['Cloud Storage']);
+});
+
 it('manages fixed incomes, partials and outcomes', function () {
     $user = User::factory()->create();
 
@@ -1262,6 +1284,49 @@ it('manages fixed incomes, partials and outcomes', function () {
     expect(FixedIncome::query()->count())->toBe(1);
     expect(PartialFixedIncome::query()->count())->toBe(1);
     expect(FixedOutcome::query()->count())->toBe(1);
+});
+
+it('searches fixed incomes by name', function () {
+    $user = User::factory()->create();
+
+    FixedIncome::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Primary Payroll',
+    ]);
+    FixedIncome::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Consulting',
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/fixed-incomes?search=payroll')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    expect(collect($response->json('data'))->pluck('name')->all())->toBe(['Primary Payroll']);
+});
+
+it('searches fixed outcomes by name', function () {
+    $user = User::factory()->create();
+    $fixedIncome = FixedIncome::factory()->create(['user_id' => $user->id]);
+
+    FixedOutcome::factory()->create([
+        'user_id' => $user->id,
+        'fixed_income_id' => $fixedIncome->id,
+        'name' => 'Emergency Savings',
+    ]);
+    FixedOutcome::factory()->create([
+        'user_id' => $user->id,
+        'fixed_income_id' => $fixedIncome->id,
+        'name' => 'Rent',
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/fixed-outcomes?search=emergency')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    expect(collect($response->json('data'))->pluck('name')->all())->toBe(['Emergency Savings']);
 });
 
 it('generates telegram verification codes with rate limits', function () {

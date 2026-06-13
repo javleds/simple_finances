@@ -16,6 +16,7 @@ class FixedIncomeController extends ApiController
             ->with(['partials', 'outcomes'])
             ->latest(),
             $request,
+            searchColumns: ['name'],
         );
     }
 

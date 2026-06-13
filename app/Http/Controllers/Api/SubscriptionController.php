@@ -17,6 +17,7 @@ class SubscriptionController extends ApiController
             ->orderBy('next_payment_date'),
             $request,
             ['finished' => 'finished_at'],
+            searchColumns: ['name'],
         );
     }
 

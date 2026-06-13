@@ -17,6 +17,7 @@ class FixedOutcomeController extends ApiController
             ->with('fixedIncome')
             ->latest(),
             $request,
+            searchColumns: ['name'],
         );
     }
 

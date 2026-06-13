@@ -17,7 +17,12 @@ class BuildDashboardAccounts
 
         return [
             'summary' => [
-                'active_accounts' => Account::query()->count(),
+                'active_accounts' => Account::query()
+                    ->where('virtual', false)
+                    ->count(),
+                'virtual_accounts' => Account::query()
+                    ->where('virtual', true)
+                    ->count(),
                 'shared_accounts' => Account::query()
                     ->has('users', '>', 1)
                     ->count(),
