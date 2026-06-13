@@ -120,11 +120,13 @@ const {
   editPercentage,
   hasReachedEnd,
   isLoadingMore,
+  loadUsers: loadAccountUsers,
   loadMoreUsers,
   removeUser,
   saveError,
   selectedUser,
   updateUserPercentage,
+  usersPerPage,
 });
 
 const { createUserActions, deleteUserActions, editUserActions } = useAccountUserModalActions({

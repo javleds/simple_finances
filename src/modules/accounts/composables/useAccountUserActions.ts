@@ -9,11 +9,13 @@ type UseAccountUserActionsOptions = {
   editPercentage: Ref<string>;
   hasReachedEnd: Ref<boolean>;
   isLoadingMore: Ref<boolean>;
+  loadUsers: (accountId: string, options?: { reset?: boolean; perPage?: number }) => Promise<void>;
   loadMoreUsers: () => Promise<void>;
   removeUser: (accountId: string, userId: string) => Promise<boolean>;
   saveError: Ref<string | null>;
   selectedUser: ComputedRef<AccountMember | null>;
   updateUserPercentage: (accountId: string, userId: string, percentage: number) => Promise<boolean>;
+  usersPerPage: ComputedRef<number>;
 };
 
 export function useAccountUserActions(options: UseAccountUserActionsOptions) {
@@ -73,6 +75,10 @@ export function useAccountUserActions(options: UseAccountUserActionsOptions) {
 
     if (wasDeleted) {
       options.closeDeleteUser();
+      await options.loadUsers(options.accountId.value, {
+        reset: true,
+        perPage: options.usersPerPage.value,
+      });
     }
   }
 
