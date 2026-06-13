@@ -11,13 +11,20 @@ type SplitUser = {
 };
 
 const TOTAL_BASIS_POINTS = 10_000;
+const DEFAULT_STEP_PERCENTAGE = 5;
 const HANDLE_WIDTH_PX = 18;
 const USER_COLORS = ['#2563EB', '#0F766E', '#EA580C', '#7C3AED', '#D97706', '#DC2626'] as const;
 
-const props = defineProps<{
-  users: ReadonlyArray<SplitUser>;
-  modelValue: Record<string, number>;
-}>();
+const props = withDefaults(
+  defineProps<{
+    users: ReadonlyArray<SplitUser>;
+    modelValue: Record<string, number>;
+    step?: number;
+  }>(),
+  {
+    step: DEFAULT_STEP_PERCENTAGE,
+  },
+);
 
 const emit = defineEmits<{
   'update:modelValue': [value: Record<string, number>];
@@ -31,6 +38,7 @@ const focusedInputUserId = ref<string | null>(null);
 const percentageInputDrafts = ref<Record<string, string>>({});
 
 const normalizedPercentages = computed(() => normalizePercentages(props.users, props.modelValue));
+const stepBasisPoints = computed(() => normalizeStepBasisPoints(props.step));
 
 const userItems = computed(() =>
   props.users.map((user, index) => ({
@@ -224,6 +232,19 @@ function clampBasisPoints(value: number): number {
   return Math.min(TOTAL_BASIS_POINTS, Math.max(0, value));
 }
 
+function normalizeStepBasisPoints(step: number): number {
+  const sanitizedStep =
+    Number.isFinite(step) && step > 0 ? step : DEFAULT_STEP_PERCENTAGE;
+
+  return Math.min(TOTAL_BASIS_POINTS, Math.max(1, Math.round(sanitizedStep * 100)));
+}
+
+function snapBasisPoints(value: number): number {
+  const snappedValue = Math.round(value / stepBasisPoints.value) * stepBasisPoints.value;
+
+  return clampBasisPoints(snappedValue);
+}
+
 function arePercentagesEqual(left: Record<string, number>, right: Record<string, number>): boolean {
   const allKeys = new Set([...Object.keys(left), ...Object.keys(right)]);
 
@@ -271,7 +292,7 @@ function updateUserPercentage(userId: string, nextValue: string): void {
   }
 
   const requestedValue = Number.parseFloat(nextValue);
-  const nextBasisPoints = clampBasisPoints(
+  const nextBasisPoints = snapBasisPoints(
     Number.isFinite(requestedValue) ? toBasisPoints(requestedValue) : 0,
   );
   const remainingBasisPoints = TOTAL_BASIS_POINTS - nextBasisPoints;
@@ -357,7 +378,7 @@ function handlePointerMove(event: PointerEvent): void {
   const pointerOffset = clampNumber(event.clientX - trackBounds.left, 0, trackWidth);
   const pointerBasisPoints = Math.round((pointerOffset / trackWidth) * TOTAL_BASIS_POINTS);
   const nextLeftBasisPoints = clampNumber(
-    pointerBasisPoints - prefixBasisPoints,
+    snapBasisPoints(pointerBasisPoints - prefixBasisPoints),
     0,
     pairTotalBasisPoints,
   );
@@ -478,7 +499,7 @@ onBeforeUnmount(() => {
               inputmode="decimal"
               min="0"
               max="100"
-              step="0.01"
+              :step="props.step"
               class="[&_input]:h-10 [&_input]:px-3"
               @focus="handlePercentageFocus(user.id, user.percentage)"
               @update:model-value="handlePercentageInput(user.id, $event)"
