@@ -18,7 +18,7 @@ class MigrateAccountsToManyToMany extends Command
         $accounts = Account::withoutGlobalScopes()->get();
 
         progress('Migrating accounts', $accounts, function (Account $account) {
-            $account->users()->attach($account->user_id);
+            $account->users()->syncWithoutDetaching([$account->user_id]);
         });
 
         return self::SUCCESS;

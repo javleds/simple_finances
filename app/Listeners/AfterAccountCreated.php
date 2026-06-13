@@ -20,7 +20,7 @@ class AfterAccountCreated
     public function handle(AccountCreated $event): void
     {
         if (auth()->check()) {
-            $event->account->users()->attach(auth()->id());
+            $event->account->users()->syncWithoutDetaching([auth()->id()]);
         }
     }
 }

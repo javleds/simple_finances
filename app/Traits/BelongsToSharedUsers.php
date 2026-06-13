@@ -15,7 +15,7 @@ trait BelongsToSharedUsers
 
         static::creating(function (Model $model) {
             if (auth()->check()) {
-                $model->users()->attach(auth()->id());
+                $model->users()->syncWithoutDetaching([auth()->id()]);
             }
         });
     }

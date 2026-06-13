@@ -18,6 +18,7 @@ use App\Notifications\InviteAccountEmail;
 use App\Services\Auth\JwtTokenService;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
 function apiHeaders(User $user): array
@@ -535,7 +536,11 @@ it('creates account invites and lets the invited user accept them', function () 
         ->assertOk()
         ->assertJsonPath('data.status', 'accepted');
 
-    expect($account->fresh()->users()->pluck('users.id')->all())->toContain($invitee->id);
+    expect($account->fresh()->users()->pluck('users.id')->all())->toContain($invitee->id)
+        ->and(DB::table('account_user')
+            ->where('account_id', $account->id)
+            ->where('user_id', $invitee->id)
+            ->count())->toBe(1);
 });
 
 it('lists only account invites addressed to the authenticated user', function () {

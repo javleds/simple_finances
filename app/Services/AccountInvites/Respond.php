@@ -20,9 +20,12 @@ readonly class Respond
         ]);
 
         Account::withoutGlobalScopes()
-            ->find($invite->account_id)->users()
-            ->attach(auth()->id(), [
-                'percentage' => $invite->percentage,
+            ->find($invite->account_id)
+            ->users()
+            ->syncWithoutDetaching([
+                auth()->id() => [
+                    'percentage' => $invite->percentage,
+                ],
             ]);
 
         $this->notifyOnInteract->execute($invite);
