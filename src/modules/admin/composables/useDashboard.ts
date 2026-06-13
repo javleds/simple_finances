@@ -12,6 +12,7 @@ const emptyDashboardData: DashboardData = {
   accountsSummary: {
     activeAccounts: 0,
     sharedAccounts: 0,
+    virtualAccounts: 0,
     pendingTotal: 0,
   },
   pendingActions: [],
@@ -46,6 +47,7 @@ export function useDashboard() {
       dashboard.value.pendingActions.length > 0 ||
       dashboard.value.accountsSummary.activeAccounts > 0 ||
       dashboard.value.accountsSummary.sharedAccounts > 0 ||
+      dashboard.value.accountsSummary.virtualAccounts > 0 ||
       dashboard.value.subscriptionsSummary.subscriptionsCount > 0,
   );
 
