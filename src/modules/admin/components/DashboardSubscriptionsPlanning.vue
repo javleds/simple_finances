@@ -37,32 +37,26 @@ function formatCurrency(value: number): string {
           @update:model-value="savingsCadence = $event as SavingsCadence"
         />
       </div>
+
+      <section class="mt-3 grid grid-cols-2 gap-3">
+        <AppCard class="mx-auto border-0 text-center">
+          <div class="space-y-1">
+            <AppText size="sm" tone="subtle">Gasto anual</AppText>
+            <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
+              {{ formatCurrency(props.annualSpend) }}
+            </p>
+          </div>
+        </AppCard>
+
+        <AppCard class="mx-auto border-0 text-center">
+          <div class="space-y-1">
+            <AppText size="sm" tone="subtle">Ahorro </AppText>
+            <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
+              {{ formatCurrency(props.recommendedSavings) }}
+            </p>
+          </div>
+        </AppCard>
+      </section>
     </AppCard>
-
-    <section class="grid gap-3 sm:grid-cols-2">
-      <AppCard
-        class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-primary)_8%,transparent),transparent)] p-4!"
-      >
-        <div class="space-y-1">
-          <AppText size="sm" tone="subtle">Gasto anual en subscripciones</AppText>
-          <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
-            {{ formatCurrency(props.annualSpend) }}
-          </p>
-        </div>
-      </AppCard>
-
-      <AppCard
-        class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-secondary)_10%,transparent),transparent)] p-4!"
-      >
-        <div class="space-y-1">
-          <AppText size="sm" tone="subtle">
-            Ahorro {{ savingsCadence === 'monthly' ? 'mensual' : 'quincenal' }} recomendado
-          </AppText>
-          <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
-            {{ formatCurrency(props.recommendedSavings) }}
-          </p>
-        </div>
-      </AppCard>
-    </section>
   </div>
 </template>
