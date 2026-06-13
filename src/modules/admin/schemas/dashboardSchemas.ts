@@ -80,11 +80,13 @@ const dashboardAccountsSummaryApiSchema = z
   .object({
     active_accounts: z.coerce.number().catch(0),
     shared_accounts: z.coerce.number().catch(0),
+    virtual_accounts: z.coerce.number().catch(0),
     pending_total: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   })
   .transform<DashboardAccountsSummary>((payload) => ({
     activeAccounts: payload.active_accounts,
     sharedAccounts: payload.shared_accounts,
+    virtualAccounts: payload.virtual_accounts,
     pendingTotal: payload.pending_total,
   }));
 

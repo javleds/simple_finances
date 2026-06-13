@@ -10,6 +10,7 @@ export type DashboardAccountsSummary = {
   activeAccounts: number;
   sharedAccounts: number;
   pendingTotal: number;
+  virtualAccounts: number;
 };
 
 export type DashboardPendingAction = {
