@@ -42,10 +42,10 @@ const emit = defineEmits<{
       </div>
 
       <div class="flex gap-2 self-end sm:self-auto">
-        <AppButton variant="secondary" :disabled="!props.hasChanges" @click="emit('reset')">
+        <AppButton variant="secondary" @click="emit('reset')">
           Restablecer
         </AppButton>
-        <AppButton variant="primary" :disabled="!props.hasChanges" @click="emit('apply')">
+        <AppButton variant="primary" @click="emit('apply')">
           Aplicar
         </AppButton>
       </div>
