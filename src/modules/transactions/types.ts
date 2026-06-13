@@ -57,6 +57,7 @@ export type TransactionMutationMeta = {
   accountBalance: number | null;
   previousAccountBalance: number | null;
   pendingByUser: TransactionPendingByUser[] | null;
+  subtransactionIds: string[];
 };
 
 export type TransactionPendingByUser = {

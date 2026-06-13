@@ -58,6 +58,8 @@ const transactionMutationCollectionDataSchema = z.union([
   z.array(transactionResponseDataSchema),
 ]);
 
+const transactionIdSchema = z.union([z.string(), z.number()]).transform((value) => String(value));
+
 const singleTransactionSchema = z.union([
   transactionMutationDataSchema,
   z
@@ -86,11 +88,11 @@ function parseNullableBalance(value: unknown): number | null {
 
 const pendingByUserApiSchema = z
   .object({
-    user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    user_id: transactionIdSchema,
     user_name: z.string().catch('Usuario no disponible'),
     amount: z.unknown().transform((value) => parseNullableBalance(value) ?? 0),
     transaction_ids: z
-      .array(z.union([z.string(), z.number()]).transform((value) => String(value)))
+      .array(transactionIdSchema)
       .optional()
       .transform((value) => value ?? []),
   })
@@ -115,12 +117,14 @@ const transactionMutationMetaPayloadSchema = z
       })
       .optional(),
     pending_by_user: z.array(pendingByUserApiSchema).optional(),
+    subtransactions: z.array(transactionIdSchema).optional().default([]),
   })
   .optional()
   .transform<TransactionMutationMeta>((payload) => ({
     accountBalance: payload?.account?.balance ?? null,
     previousAccountBalance: payload?.previous_account?.balance ?? null,
     pendingByUser: payload?.pending_by_user ?? payload?.account?.pending_by_user ?? null,
+    subtransactionIds: payload?.subtransactions ?? [],
   }));
 
 const mutationMetaSchema = z
@@ -139,6 +143,7 @@ export const transactionListMetaSchema = z
       accountBalance: null,
       previousAccountBalance: null,
       pendingByUser: null,
+      subtransactionIds: [],
     },
   })
   .transform<TransactionMutationMeta>((payload) => ({
@@ -196,6 +201,7 @@ export const createdTransactionResponseSchema = z
         accountBalance: null,
         previousAccountBalance: null,
         pendingByUser: null,
+        subtransactionIds: [],
       },
     })),
   ])

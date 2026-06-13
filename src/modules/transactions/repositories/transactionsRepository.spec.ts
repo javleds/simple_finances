@@ -52,6 +52,7 @@ describe('transactions repository schemas', () => {
     ).toEqual({
       accountBalance: null,
       previousAccountBalance: null,
+      subtransactionIds: [],
       pendingByUser: [
         {
           userId: '7',
@@ -90,6 +91,7 @@ describe('transactions repository schemas', () => {
     ).toEqual({
       accountBalance: 10000,
       previousAccountBalance: null,
+      subtransactionIds: [],
       pendingByUser: [
         {
           userId: '7',
@@ -117,6 +119,7 @@ describe('transactions repository schemas', () => {
     ).toEqual({
       accountBalance: null,
       previousAccountBalance: null,
+      subtransactionIds: [],
       pendingByUser: [
         {
           userId: '8',
@@ -232,6 +235,7 @@ describe('transactions repository schemas', () => {
       meta: {
         accountBalance: 2400,
         previousAccountBalance: null,
+        subtransactionIds: [],
         pendingByUser: [
           {
             userId: '7',
@@ -248,5 +252,16 @@ describe('transactions repository schemas', () => {
         ],
       },
     });
+  });
+
+  it('parses subtransaction ids from mutation meta', () => {
+    const result = createdTransactionResponseSchema.parse({
+      data: baseTransactionPayload,
+      meta: {
+        subtransactions: [11, '12'],
+      },
+    });
+
+    expect(result.meta.subtransactionIds).toEqual(['11', '12']);
   });
 });

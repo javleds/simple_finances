@@ -113,7 +113,8 @@ export function useTransactionsCrud() {
 
     try {
       const result = await transactionsRepository.remove(transactionId, accountId);
-      transactionsState.removeItem((transaction) => transaction.id === transactionId);
+      const removedIds = new Set([transactionId, ...result.meta.subtransactionIds]);
+      transactionsState.removeItem((transaction) => removedIds.has(transaction.id));
       return result;
     } catch (error) {
       deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la transacción.');
