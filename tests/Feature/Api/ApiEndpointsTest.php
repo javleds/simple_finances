@@ -738,6 +738,16 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ->assertOk()
         ->assertJsonPath('meta.total', 1);
 
+    $this->withHeaders(apiHeaders($owner))
+        ->deleteJson("/api/accounts/{$account->id}/users/{$member->id}")
+        ->assertOk();
+
+    $users = $account->fresh()->users()->get();
+
+    expect($users)->toHaveCount(1)
+        ->and($users->first()->id)->toBe($owner->id)
+        ->and((float) $users->first()->pivot->percentage)->toBe(100.0);
+
     $goalResponse = $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/financial-goals", [
             'name' => 'Emergency Fund',

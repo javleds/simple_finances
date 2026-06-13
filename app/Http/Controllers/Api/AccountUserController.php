@@ -6,6 +6,7 @@ use App\Http\Requests\Api\BulkUpdateAccountUsersRequest;
 use App\Http\Requests\Api\AccountUserRequest;
 use App\Models\Account;
 use App\Models\User;
+use App\Services\Accounts\RemoveAccountUser;
 use App\Services\Accounts\UpdateAccountUserPercentage;
 use App\Services\Accounts\UpdateAccountUsersPercentages;
 use App\Services\Api\AuthorizeAccountAccess;
@@ -103,12 +104,12 @@ class AccountUserController extends ApiController
         ]);
     }
 
-    public function delete(Account $account, User $user): JsonResponse
+    public function delete(Account $account, User $user, RemoveAccountUser $removeAccountUser): JsonResponse
     {
         $this->ensureOwner($account);
         $this->ensureAttached($account, $user);
 
-        $account->users()->detach($user->id);
+        $removeAccountUser->execute($account, $user);
 
         return $this->respondDeleted('Account user deleted successfully.');
     }
