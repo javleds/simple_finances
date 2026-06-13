@@ -72,11 +72,13 @@ class TransactionController extends ApiController
         abort_unless($transaction->user_id === auth()->id(), 403);
 
         $accountId = $transaction->account_id;
-        $transactionRemover->execute($transaction);
+        $subTransactionIds = $transactionRemover->execute($transaction);
+        $meta = $this->transactionAccountMeta($accountId);
+        $meta['subtransactions'] = $subTransactionIds;
 
         return $this->respondDeleted(
             'Transaction deleted successfully.',
-            $this->transactionAccountMeta($accountId),
+            $meta,
         );
     }
 

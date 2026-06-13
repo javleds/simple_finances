@@ -40,13 +40,14 @@ it('deletes pending sub transactions and detaches completed ones when removing p
     $subTransactions->first()->status = TransactionStatus::Completed;
     $subTransactions->first()->save();
 
-    app(TransactionRemover::class)->execute($mainTransaction);
+    $removedSubTransactionIds = app(TransactionRemover::class)->execute($mainTransaction);
 
     $remainingMain = Transaction::find($mainTransaction->id);
     $pendingSubs = Transaction::where('parent_transaction_id', $mainTransaction->id)->where('status', TransactionStatus::Pending)->get();
     $detachedCompleted = Transaction::whereNull('parent_transaction_id')->where('status', TransactionStatus::Completed)->get();
 
     expect($remainingMain)->toBeNull()
+        ->and($removedSubTransactionIds)->toBe($subTransactions->pluck('id')->all())
         ->and($pendingSubs)->toHaveCount(0)
         ->and($detachedCompleted)->toHaveCount(1);
 });
@@ -63,7 +64,8 @@ it('deletes a transaction without sub transactions', function () {
         'account_id' => $account->id,
     ]);
 
-    app(TransactionRemover::class)->execute($transaction);
+    $removedSubTransactionIds = app(TransactionRemover::class)->execute($transaction);
 
-    expect(Transaction::find($transaction->id))->toBeNull();
+    expect(Transaction::find($transaction->id))->toBeNull()
+        ->and($removedSubTransactionIds)->toBe([]);
 });

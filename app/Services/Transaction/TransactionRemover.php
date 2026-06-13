@@ -13,13 +13,24 @@ class TransactionRemover
         private ProcessTransactionSideEffects $processTransactionSideEffects,
     ) {}
 
-    public function execute(Transaction $transaction): void
+    public function execute(Transaction $transaction): array
     {
         $transaction->setRelation('account', $transaction->account()->withoutGlobalScopes()->first());
+        $subTransactionIds = [];
 
-        DB::transaction(function () use ($transaction) {
-            $pendingSubTransactions = $transaction->subTransactions()->where('status', TransactionStatus::Pending)->get();
-            $completedSubTransactions = $transaction->subTransactions()->where('status', TransactionStatus::Completed)->get();
+        DB::transaction(function () use ($transaction, &$subTransactionIds): void {
+            $subTransactions = Transaction::withoutGlobalScopes()
+                ->where('parent_transaction_id', $transaction->id)
+                ->orderBy('id')
+                ->get();
+
+            $subTransactionIds = $subTransactions
+                ->pluck('id')
+                ->map(fn (int $id): int => $id)
+                ->all();
+
+            $pendingSubTransactions = $subTransactions->where('status', TransactionStatus::Pending);
+            $completedSubTransactions = $subTransactions->where('status', TransactionStatus::Completed);
 
             foreach ($pendingSubTransactions as $subTransaction) {
                 $subTransaction->delete();
@@ -34,5 +45,7 @@ class TransactionRemover
         });
 
         $this->processTransactionSideEffects->execute($transaction, Action::Deleted);
+
+        return $subTransactionIds;
     }
 }

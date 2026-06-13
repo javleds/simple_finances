@@ -385,7 +385,8 @@ it('creates and updates accounts and transactions through the api', function () 
         ->deleteJson("/api/transactions/{$transaction->id}")
         ->assertOk()
         ->assertJsonPath('meta.account.id', $accountId)
-        ->assertJsonPath('meta.account.balance', 0.0);
+        ->assertJsonPath('meta.account.balance', 0.0)
+        ->assertJsonPath('meta.subtransactions', []);
 
     expect(Account::findOrFail($accountId)->fresh()->balance)->toBe(0.0);
 });
@@ -1023,6 +1024,7 @@ it('returns every created transaction when storing a split account transaction',
         ->deleteJson("/api/accounts/{$account->id}/transactions/{$transactionIds[0]}")
         ->assertOk()
         ->assertJsonPath('meta.account.id', $account->id)
+        ->assertJsonPath('meta.subtransactions', array_slice($transactionIds, 1))
         ->assertJsonPath('meta.pending_by_user.0.amount', 0.0)
         ->assertJsonPath('meta.pending_by_user.1.amount', 0.0)
         ->assertJsonPath('meta.pending_by_user.2.amount', 0.0)
