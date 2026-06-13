@@ -27,6 +27,8 @@ const trackRef = ref<HTMLElement | null>(null);
 const draggingHandleIndex = ref<number | null>(null);
 const activePointerId = ref<number | null>(null);
 const activeHandleElement = ref<HTMLElement | null>(null);
+const focusedInputUserId = ref<string | null>(null);
+const percentageInputDrafts = ref<Record<string, string>>({});
 
 const normalizedPercentages = computed(() => normalizePercentages(props.users, props.modelValue));
 
@@ -55,6 +57,21 @@ watch(
     }
 
     emit('update:modelValue', nextValue);
+  },
+  { immediate: true },
+);
+
+watch(
+  userItems,
+  (nextUsers) => {
+    percentageInputDrafts.value = nextUsers.reduce<Record<string, string>>((drafts, user) => {
+      drafts[user.id] =
+        focusedInputUserId.value === user.id
+          ? (percentageInputDrafts.value[user.id] ?? user.percentage.toFixed(2))
+          : user.percentage.toFixed(2);
+
+      return drafts;
+    }, {});
   },
   { immediate: true },
 );
@@ -219,6 +236,31 @@ function emitBasisPointValues(
   values: ReadonlyArray<{ userId: string; basisPoints: number }>,
 ): void {
   emit('update:modelValue', basisPointsToRecord(values));
+}
+
+function inputValue(userId: string, percentage: number): string {
+  return percentageInputDrafts.value[userId] ?? percentage.toFixed(2);
+}
+
+function handlePercentageInput(userId: string, nextValue: string): void {
+  percentageInputDrafts.value = {
+    ...percentageInputDrafts.value,
+    [userId]: nextValue,
+  };
+}
+
+function handlePercentageFocus(userId: string, percentage: number): void {
+  focusedInputUserId.value = userId;
+  percentageInputDrafts.value = {
+    ...percentageInputDrafts.value,
+    [userId]: percentageInputDrafts.value[userId] ?? percentage.toFixed(2),
+  };
+}
+
+function handlePercentageBlur(userId: string): void {
+  const draftValue = percentageInputDrafts.value[userId] ?? '';
+  focusedInputUserId.value = null;
+  updateUserPercentage(userId, draftValue);
 }
 
 function updateUserPercentage(userId: string, nextValue: string): void {
@@ -431,14 +473,16 @@ onBeforeUnmount(() => {
 
             <AppInput
               :id="`percentage-split-${user.id}`"
-              :model-value="user.percentage.toFixed(2)"
+              :model-value="inputValue(user.id, user.percentage)"
               type="number"
               inputmode="decimal"
               min="0"
               max="100"
               step="0.01"
               class="[&_input]:h-10 [&_input]:px-3"
-              @update:model-value="updateUserPercentage(user.id, $event)"
+              @focus="handlePercentageFocus(user.id, user.percentage)"
+              @update:model-value="handlePercentageInput(user.id, $event)"
+              @blur="handlePercentageBlur(user.id)"
             />
           </div>
         </div>
