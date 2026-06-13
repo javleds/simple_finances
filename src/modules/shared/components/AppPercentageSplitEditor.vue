@@ -292,7 +292,7 @@ function updateUserPercentage(userId: string, nextValue: string): void {
   }
 
   const requestedValue = Number.parseFloat(nextValue);
-  const nextBasisPoints = snapBasisPoints(
+  const nextBasisPoints = clampBasisPoints(
     Number.isFinite(requestedValue) ? toBasisPoints(requestedValue) : 0,
   );
   const remainingBasisPoints = TOTAL_BASIS_POINTS - nextBasisPoints;
@@ -499,7 +499,7 @@ onBeforeUnmount(() => {
               inputmode="decimal"
               min="0"
               max="100"
-              :step="props.step"
+              step="any"
               class="[&_input]:h-10 [&_input]:px-3"
               @focus="handlePercentageFocus(user.id, user.percentage)"
               @update:model-value="handlePercentageInput(user.id, $event)"
