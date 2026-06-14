@@ -6,17 +6,31 @@ use Illuminate\Console\Command;
 
 class PostDeploy extends Command
 {
-    protected $signature = 'app:post-deploy {--migrate}';
+    protected $signature = 'app:post-deploy {--migrate : Run database migrations without asking for confirmation}';
 
     protected $description = 'Command description';
 
-    public function handle(): void
+    public function handle(): int
     {
-        $this->call('migrate');
+        if ($this->shouldRunMigrations()) {
+            $this->call('migrate', ['--force' => true]);
+        }
+
         $this->call('config:cache');
         $this->call('route:cache');
         $this->call('icons:cache');
         $this->call('event:cache');
         $this->call('filament:cache-components');
+
+        return self::SUCCESS;
+    }
+
+    private function shouldRunMigrations(): bool
+    {
+        if ((bool) $this->option('migrate')) {
+            return true;
+        }
+
+        return $this->confirm('Do you want to run database migrations?', false);
     }
 }
