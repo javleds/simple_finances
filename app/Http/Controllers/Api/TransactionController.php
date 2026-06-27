@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Dto\TransactionFormDto;
 use App\Http\Requests\Api\TransactionIndexRequest;
 use App\Http\Requests\Api\TransactionRequest;
-use App\Models\Account;
 use App\Models\Transaction;
+use App\Services\Transaction\BuildTransactionAccountMeta;
 use App\Services\Transaction\BuildTransactionFacilityQuery;
+use App\Services\Transaction\BuildTransactionSummary;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
 use App\Services\Transaction\TransactionUpdater;
@@ -18,13 +19,14 @@ class TransactionController extends ApiController
     public function index(
         TransactionIndexRequest $request,
         BuildTransactionFacilityQuery $buildTransactionFacilityQuery,
+        BuildTransactionSummary $buildTransactionSummary,
     ): JsonResponse
     {
         $query = $buildTransactionFacilityQuery->execute(
             $request->validated(),
             $request->user()->id,
         );
-        $summary = $this->summary($query);
+        $summary = $buildTransactionSummary->execute($query);
         $perPage = min(100, max(1, (int) $request->integer('per_page', 20)));
         $paginator = $query->paginate($perPage)->withQueryString();
 
@@ -37,13 +39,16 @@ class TransactionController extends ApiController
                 'per_page' => $paginator->perPage(),
                 'to' => $paginator->lastItem(),
                 'total' => $paginator->total(),
-                'summary' => $summary,
+                'summary' => $summary->toArray(),
             ],
         ]);
     }
 
-    public function store(TransactionRequest $request, TransactionCreator $transactionCreator): JsonResponse
-    {
+    public function store(
+        TransactionRequest $request,
+        TransactionCreator $transactionCreator,
+        BuildTransactionAccountMeta $buildTransactionAccountMeta,
+    ): JsonResponse {
         $transaction = $transactionCreator->execute(
             TransactionFormDto::fromFormArray($request->validated())
         );
@@ -52,7 +57,7 @@ class TransactionController extends ApiController
             $transaction->fresh(),
             ['account', 'user', 'financialGoal', 'subTransactions'],
             201,
-            $this->transactionAccountMeta($transaction->account_id),
+            $buildTransactionAccountMeta->execute($transaction->account_id),
         );
     }
 
@@ -65,6 +70,7 @@ class TransactionController extends ApiController
         TransactionRequest $request,
         Transaction $transaction,
         TransactionUpdater $transactionUpdater,
+        BuildTransactionAccountMeta $buildTransactionAccountMeta,
     ): JsonResponse {
         abort_unless($transaction->user_id === $request->user()->id, 403);
 
@@ -80,17 +86,20 @@ class TransactionController extends ApiController
         return $this->respondModel(
             $transaction->fresh(),
             ['account', 'user', 'financialGoal', 'subTransactions'],
-            meta: $this->transactionAccountMeta($transaction->account_id, $previousAccountId),
+            meta: $buildTransactionAccountMeta->execute($transaction->account_id, $previousAccountId),
         );
     }
 
-    public function delete(Transaction $transaction, TransactionRemover $transactionRemover): JsonResponse
-    {
+    public function delete(
+        Transaction $transaction,
+        TransactionRemover $transactionRemover,
+        BuildTransactionAccountMeta $buildTransactionAccountMeta,
+    ): JsonResponse {
         abort_unless($transaction->user_id === auth()->id(), 403);
 
         $accountId = $transaction->account_id;
         $subTransactionIds = $transactionRemover->execute($transaction);
-        $meta = $this->transactionAccountMeta($accountId);
+        $meta = $buildTransactionAccountMeta->execute($accountId);
         $meta['subtransactions'] = $subTransactionIds;
 
         return $this->respondDeleted(
@@ -99,41 +108,4 @@ class TransactionController extends ApiController
         );
     }
 
-    private function transactionAccountMeta(int $accountId, ?int $previousAccountId = null): array
-    {
-        $meta = [
-            'account' => $this->accountMeta($accountId),
-        ];
-
-        if ($previousAccountId && $previousAccountId !== $accountId) {
-            $meta['previous_account'] = $this->accountMeta($previousAccountId);
-        }
-
-        return $meta;
-    }
-
-    private function accountMeta(int $accountId): array
-    {
-        $account = Account::withoutGlobalScopes()->findOrFail($accountId);
-
-        return [
-            'id' => $account->id,
-            'balance' => $account->balance,
-        ];
-    }
-
-    private function summary(\Illuminate\Database\Eloquent\Builder $query): array
-    {
-        $incomeTotal = (clone $query)->income()->sum('amount');
-        $outcomeTotal = (clone $query)->outcome()->sum('amount');
-
-        $incomeTotal = round((float) $incomeTotal, 2);
-        $outcomeTotal = round((float) $outcomeTotal, 2);
-
-        return [
-            'income_total' => $incomeTotal,
-            'outcome_total' => $outcomeTotal,
-            'balance' => round($incomeTotal - $outcomeTotal, 2),
-        ];
-    }
 }

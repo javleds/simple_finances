@@ -6,8 +6,8 @@ use App\Dto\TransactionFormDto;
 use App\Http\Requests\Api\AccountTransactionRequest;
 use App\Models\Account;
 use App\Models\Transaction;
-use App\Services\Accounts\BuildPendingIncomeByUser;
 use App\Services\Api\AuthorizeAccountAccess;
+use App\Services\Transaction\BuildTransactionAccountMeta;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
 use App\Services\Transaction\TransactionUpdater;
@@ -18,8 +18,8 @@ use Illuminate\Http\Request;
 class AccountTransactionController extends ApiController
 {
     public function __construct(
-        private readonly BuildPendingIncomeByUser $buildPendingIncomeByUser,
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
+        private readonly BuildTransactionAccountMeta $buildTransactionAccountMeta,
     ) {}
 
     public function index(Account $account, Request $request): JsonResponse
@@ -134,33 +134,11 @@ class AccountTransactionController extends ApiController
 
     private function transactionAccountMeta(int $accountId, ?int $previousAccountId = null): array
     {
-        $meta = [
-            'account' => $this->accountMeta($accountId),
-            'pending_by_user' => $this->pendingByUserMeta($accountId),
-        ];
-
-        if ($previousAccountId && $previousAccountId !== $accountId) {
-            $meta['previous_account'] = $this->accountMeta($previousAccountId);
-        }
-
-        return $meta;
-    }
-
-    private function accountMeta(int $accountId): array
-    {
-        $account = Account::withoutGlobalScopes()->findOrFail($accountId);
-
-        return [
-            'id' => $account->id,
-            'balance' => $account->balance,
-        ];
-    }
-
-    private function pendingByUserMeta(int $accountId): array
-    {
-        $account = Account::withoutGlobalScopes()->findOrFail($accountId);
-
-        return $this->buildPendingIncomeByUser->execute($account);
+        return $this->buildTransactionAccountMeta->execute(
+            accountId: $accountId,
+            previousAccountId: $previousAccountId,
+            includePendingByUser: true,
+        );
     }
 
     private function createdTransactions(Transaction $transaction): ?EloquentCollection
