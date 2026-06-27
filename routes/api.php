@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Auth\PasswordResetController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\DashboardAccountController;
 use App\Http\Controllers\Api\DashboardGraphController;
+use App\Http\Controllers\Api\DashboardPeriodSummaryController;
 use App\Http\Controllers\Api\DashboardSubscriptionController;
 use App\Http\Controllers\Api\FinancialGoalController;
 use App\Http\Controllers\Api\FixedIncomeController;
@@ -60,6 +61,7 @@ Route::middleware('api.auth')->group(function (): void {
     Route::get('dashboard/graph', [DashboardGraphController::class, 'index']);
     Route::get('dashboard/accounts', [DashboardAccountController::class, 'index']);
     Route::get('dashboard/subscriptions', [DashboardSubscriptionController::class, 'index']);
+    Route::get('dashboard/period-summary', [DashboardPeriodSummaryController::class, 'index']);
     Route::post('batch/transactions', [BatchTransactionController::class, 'store']);
 
     Route::get('notification-settings', [NotificationSettingsController::class, 'show']);
