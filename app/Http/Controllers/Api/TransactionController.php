@@ -3,26 +3,43 @@
 namespace App\Http\Controllers\Api;
 
 use App\Dto\TransactionFormDto;
+use App\Http\Requests\Api\TransactionIndexRequest;
 use App\Http\Requests\Api\TransactionRequest;
 use App\Models\Account;
 use App\Models\Transaction;
+use App\Services\Transaction\BuildTransactionFacilityQuery;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
 use App\Services\Transaction\TransactionUpdater;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class TransactionController extends ApiController
 {
-    public function index(Request $request): JsonResponse
+    public function index(
+        TransactionIndexRequest $request,
+        BuildTransactionFacilityQuery $buildTransactionFacilityQuery,
+    ): JsonResponse
     {
-        return $this->respondPaginated(
-            Transaction::query()
-            ->with(['account', 'user', 'financialGoal', 'subTransactions'])
-            ->orderByDesc('scheduled_at')
-            ->orderByDesc('created_at'),
-            $request,
+        $query = $buildTransactionFacilityQuery->execute(
+            $request->validated(),
+            $request->user()->id,
         );
+        $summary = $this->summary($query);
+        $perPage = min(100, max(1, (int) $request->integer('per_page', 20)));
+        $paginator = $query->paginate($perPage)->withQueryString();
+
+        return $this->respond([
+            'data' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'from' => $paginator->firstItem(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'to' => $paginator->lastItem(),
+                'total' => $paginator->total(),
+                'summary' => $summary,
+            ],
+        ]);
     }
 
     public function store(TransactionRequest $request, TransactionCreator $transactionCreator): JsonResponse
@@ -102,6 +119,21 @@ class TransactionController extends ApiController
         return [
             'id' => $account->id,
             'balance' => $account->balance,
+        ];
+    }
+
+    private function summary(\Illuminate\Database\Eloquent\Builder $query): array
+    {
+        $incomeTotal = (clone $query)->income()->sum('amount');
+        $outcomeTotal = (clone $query)->outcome()->sum('amount');
+
+        $incomeTotal = round((float) $incomeTotal, 2);
+        $outcomeTotal = round((float) $outcomeTotal, 2);
+
+        return [
+            'income_total' => $incomeTotal,
+            'outcome_total' => $outcomeTotal,
+            'balance' => round($incomeTotal - $outcomeTotal, 2),
         ];
     }
 }
