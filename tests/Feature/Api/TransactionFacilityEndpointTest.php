@@ -21,7 +21,7 @@ it('lists completed transactions created by the signed in user with summary meta
     $account = Account::factory()->create(['name' => 'Nomina', 'user_id' => $user->id]);
     $account->users()->attach([$user->id, $sharedUser->id]);
 
-    Transaction::factory()->income()->completed()->create([
+    $parentTransaction = Transaction::factory()->income()->completed()->create([
         'concept' => 'Monthly salary',
         'amount' => 45000,
         'account_id' => $account->id,
@@ -34,6 +34,14 @@ it('lists completed transactions created by the signed in user with summary meta
         'account_id' => $account->id,
         'user_id' => $user->id,
         'scheduled_at' => '2026-06-10',
+    ]);
+    Transaction::factory()->income()->completed()->create([
+        'concept' => 'Child reimbursement',
+        'amount' => 400,
+        'account_id' => $account->id,
+        'user_id' => $user->id,
+        'parent_transaction_id' => $parentTransaction->id,
+        'scheduled_at' => '2026-06-12',
     ]);
     Transaction::factory()->income()->completed()->create([
         'concept' => 'Partner salary',

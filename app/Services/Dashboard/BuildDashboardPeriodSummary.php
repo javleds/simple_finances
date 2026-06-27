@@ -32,6 +32,7 @@ class BuildDashboardPeriodSummary
     {
         $total = Transaction::query()
             ->completed()
+            ->whereNull('parent_transaction_id')
             ->where('type', $type)
             ->whereBetween('scheduled_at', [$start, $end])
             ->sum('amount');

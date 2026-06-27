@@ -34,6 +34,13 @@ it('builds the transaction facility query for completed transactions created by 
         'scheduled_at' => '2026-06-05',
     ]);
     Transaction::factory()->income()->completed()->create([
+        'concept' => 'Monthly salary child',
+        'account_id' => $account->id,
+        'user_id' => $user->id,
+        'parent_transaction_id' => $matchingTransaction->id,
+        'scheduled_at' => '2026-06-05',
+    ]);
+    Transaction::factory()->income()->completed()->create([
         'concept' => 'Monthly salary',
         'account_id' => $account->id,
         'user_id' => $user->id,

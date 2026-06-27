@@ -14,6 +14,7 @@ class BuildTransactionFacilityQuery
         $query = Transaction::query()
             ->with(['account', 'user', 'financialGoal', 'subTransactions'])
             ->where('user_id', $userId)
+            ->whereNull('parent_transaction_id')
             ->where('status', TransactionStatus::Completed);
 
         $this->applyDateRange($query, $filters);

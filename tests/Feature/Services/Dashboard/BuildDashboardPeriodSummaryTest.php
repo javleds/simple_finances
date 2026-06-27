@@ -23,10 +23,17 @@ it('summarizes completed transaction totals inside the selected period', functio
         'user_id' => $user->id,
         'scheduled_at' => '2026-06-01',
     ]);
-    Transaction::factory()->income()->completed()->create([
+    $parentTransaction = Transaction::factory()->income()->completed()->create([
         'amount' => 45000,
         'account_id' => $account->id,
         'user_id' => $user->id,
+        'scheduled_at' => '2026-06-05',
+    ]);
+    Transaction::factory()->income()->completed()->create([
+        'amount' => 700,
+        'account_id' => $account->id,
+        'user_id' => $user->id,
+        'parent_transaction_id' => $parentTransaction->id,
         'scheduled_at' => '2026-06-05',
     ]);
     Transaction::factory()->outcome()->completed()->create([
