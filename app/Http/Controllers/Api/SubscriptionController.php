@@ -18,6 +18,7 @@ class SubscriptionController extends ApiController
             $request,
             ['finished' => 'finished_at'],
             searchColumns: ['name'],
+            filterColumns: ['feed_account_id', 'frequency', 'period'],
         );
     }
 

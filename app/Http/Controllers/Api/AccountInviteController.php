@@ -32,6 +32,7 @@ class AccountInviteController extends ApiController
             ->where('email', $request->user()->email)
             ->latest(),
             $request,
+            filterColumns: ['account_id', 'user_id', 'email', 'status'],
         );
     }
 

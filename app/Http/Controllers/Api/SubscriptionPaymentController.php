@@ -25,6 +25,7 @@ class SubscriptionPaymentController extends ApiController
             ->with('subscription')
             ->latest('scheduled_at'),
             $request,
+            filterColumns: ['subscription_id', 'status'],
         );
     }
 

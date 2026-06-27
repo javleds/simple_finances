@@ -17,6 +17,7 @@ class PartialFixedIncomeController extends ApiController
             ->with('fixedIncome')
             ->latest(),
             $request,
+            filterColumns: ['fixed_income_id'],
         );
     }
 

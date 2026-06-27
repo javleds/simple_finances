@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Dto\ApiIndexCriteriaDto;
 use App\Http\Controllers\Controller;
 use App\Services\Api\ModelIndexCriteria;
 use Illuminate\Database\Eloquent\Builder;
@@ -60,11 +61,17 @@ abstract class ApiController extends Controller
         Request $request,
         array $nullableBooleanFilters = [],
         array $searchColumns = [],
+        array $filterColumns = [],
     ): JsonResponse
     {
         $perPage = min(100, max(1, (int) $request->integer('per_page', 20)));
         $paginator = app(ModelIndexCriteria::class)
-            ->apply($query, $request, $nullableBooleanFilters, $searchColumns)
+            ->apply($query, new ApiIndexCriteriaDto(
+                request: $request,
+                filterColumns: $filterColumns,
+                nullableBooleanFilters: $nullableBooleanFilters,
+                searchColumns: $searchColumns,
+            ))
             ->paginate($perPage)
             ->withQueryString();
 

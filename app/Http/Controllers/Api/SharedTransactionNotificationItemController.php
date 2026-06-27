@@ -18,6 +18,7 @@ class SharedTransactionNotificationItemController extends ApiController
             ->with(['batch', 'transaction', 'modifier'])
             ->latest(),
             $request,
+            filterColumns: ['batch_id', 'transaction_id', 'modifier_id', 'action', 'type'],
         );
     }
 

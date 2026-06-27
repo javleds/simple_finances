@@ -33,6 +33,7 @@ class AccountRelationInviteController extends ApiController
             $query,
             $request,
             searchColumns: ['email'],
+            filterColumns: ['status'],
         );
     }
 

@@ -2,32 +2,25 @@
 
 namespace App\Services\Api;
 
+use App\Dto\ApiIndexCriteriaDto;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 
 class ModelIndexCriteria
 {
-    public function apply(
-        Builder $query,
-        Request $request,
-        array $nullableBooleanFilters = [],
-        array $searchColumns = [],
-    ): Builder
+    public function apply(Builder $query, ApiIndexCriteriaDto $criteria): Builder
     {
         $model = $query->getModel();
-        $columns = Schema::getColumnListing($model->getTable());
 
-        $this->applySearch($query, $request, $searchColumns);
+        $this->applySearch($query, $criteria);
 
-        foreach ($request->query() as $key => $value) {
-            if ($this->applyNullableBooleanFilter($query, $key, $value, $nullableBooleanFilters)) {
+        foreach ($criteria->request->query() as $key => $value) {
+            if ($this->applyNullableBooleanFilter($query, $key, $value, $criteria)) {
                 continue;
             }
 
-            if ($this->shouldSkip($key, $value, $columns)) {
+            if ($this->shouldSkip($key, $value, $criteria)) {
                 continue;
             }
 
@@ -45,16 +38,16 @@ class ModelIndexCriteria
         return $query;
     }
 
-    private function applySearch(Builder $query, Request $request, array $searchColumns): void
+    private function applySearch(Builder $query, ApiIndexCriteriaDto $criteria): void
     {
-        $search = $request->string('search')->trim()->toString();
+        $search = $criteria->request->string('search')->trim()->toString();
 
-        if ($search === '' || $searchColumns === []) {
+        if ($search === '' || $criteria->searchColumns === []) {
             return;
         }
 
-        $query->where(function (Builder $query) use ($search, $searchColumns): void {
-            foreach ($searchColumns as $column) {
+        $query->where(function (Builder $query) use ($search, $criteria): void {
+            foreach ($criteria->searchColumns as $column) {
                 $query->orWhere($column, 'like', '%'.$search.'%');
             }
         });
@@ -64,9 +57,9 @@ class ModelIndexCriteria
         Builder $query,
         string $key,
         mixed $value,
-        array $nullableBooleanFilters
+        ApiIndexCriteriaDto $criteria,
     ): bool {
-        $column = $nullableBooleanFilters[$key] ?? null;
+        $column = $criteria->nullableBooleanFilters[$key] ?? null;
 
         if ($column === null) {
             return false;
@@ -89,13 +82,13 @@ class ModelIndexCriteria
         return true;
     }
 
-    private function shouldSkip(string $key, mixed $value, array $columns): bool
+    private function shouldSkip(string $key, mixed $value, ApiIndexCriteriaDto $criteria): bool
     {
         if (in_array($key, ['page', 'per_page', 'search'], true)) {
             return true;
         }
 
-        if (! in_array($key, $columns, true)) {
+        if (! in_array($key, $criteria->filterColumns, true)) {
             return true;
         }
 

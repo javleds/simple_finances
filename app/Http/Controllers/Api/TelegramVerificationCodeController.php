@@ -16,6 +16,7 @@ class TelegramVerificationCodeController extends ApiController
             ->where('user_id', auth()->id())
             ->latest(),
             $request,
+            filterColumns: ['used_at'],
         );
     }
 

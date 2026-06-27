@@ -30,6 +30,7 @@ class AccountFinancialGoalController extends ApiController
             $query,
             $request,
             searchColumns: ['name'],
+            filterColumns: ['account_id', 'status'],
         );
     }
 

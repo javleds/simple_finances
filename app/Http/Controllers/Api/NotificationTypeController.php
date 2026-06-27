@@ -14,6 +14,7 @@ class NotificationTypeController extends ApiController
         return $this->respondPaginated(
             NotificationType::query()->orderBy('name'),
             $request,
+            filterColumns: ['name'],
         );
     }
 

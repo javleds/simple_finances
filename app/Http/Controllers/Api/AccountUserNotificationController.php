@@ -16,6 +16,7 @@ class AccountUserNotificationController extends ApiController
             ->where('user_id', auth()->id())
             ->latest(),
             $request,
+            filterColumns: ['account_id'],
         );
     }
 

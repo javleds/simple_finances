@@ -17,6 +17,7 @@ class FinancialGoalController extends ApiController
             ->with('account')
             ->latest(),
             $request,
+            filterColumns: ['account_id', 'status'],
         );
     }
 

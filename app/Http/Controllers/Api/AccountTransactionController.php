@@ -37,6 +37,7 @@ class AccountTransactionController extends ApiController
             $query,
             $request,
             searchColumns: ['concept'],
+            filterColumns: ['type', 'status', 'financial_goal_id', 'user_id', 'parent_transaction_id'],
         );
     }
 
