@@ -18,7 +18,10 @@ const emptyDashboardData: DashboardData = {
   pendingActions: [],
   subscriptionsSummary: {
     annualTotal: 0,
+    nearestPayment: null,
+    savingsTargetToday: 0,
     subscriptionsCount: 0,
+    upcomingCommitment: 0,
   },
 };
 

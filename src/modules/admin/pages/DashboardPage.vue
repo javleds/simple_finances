@@ -120,6 +120,7 @@ onMounted(() => {
       v-model:savings-cadence="savingsCadence"
       :annual-spend="annualSubscriptionsSpend"
       :recommended-savings="recommendedSavings"
+      :summary="dashboard.subscriptionsSummary"
     />
 
     <DashboardPeriodSummary

@@ -25,7 +25,17 @@ export type DashboardPendingAction = {
 
 export type DashboardSubscriptionsSummary = {
   annualTotal: number;
+  nearestPayment: {
+    amount: number;
+    cycleStartDate: string;
+    name: string;
+    nextPaymentDate: string;
+    subscriptionId: string;
+    targetToday: number;
+  } | null;
+  savingsTargetToday: number;
   subscriptionsCount: number;
+  upcomingCommitment: number;
 };
 
 export type DashboardPeriodSummary = {

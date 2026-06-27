@@ -127,12 +127,38 @@ export const dashboardSubscriptionsResponseSchema = z
   .object({
     data: z.object({
       annual_total: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+      savings_target_today: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+      upcoming_commitment: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
       subscriptions_count: z.coerce.number().catch(0),
+      nearest_payment: z
+        .object({
+          subscription_id: entityIdSchema,
+          name: z.string(),
+          amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+          next_payment_date: z.string(),
+          cycle_start_date: z.string(),
+          target_today: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+        })
+        .nullable()
+        .optional()
+        .transform((value) => value ?? null),
     }),
   })
   .transform<DashboardSubscriptionsSummary>((payload) => ({
     annualTotal: payload.data.annual_total,
-  subscriptionsCount: payload.data.subscriptions_count,
+    nearestPayment: payload.data.nearest_payment
+      ? {
+          amount: payload.data.nearest_payment.amount,
+          cycleStartDate: payload.data.nearest_payment.cycle_start_date,
+          name: payload.data.nearest_payment.name,
+          nextPaymentDate: payload.data.nearest_payment.next_payment_date,
+          subscriptionId: payload.data.nearest_payment.subscription_id,
+          targetToday: payload.data.nearest_payment.target_today,
+        }
+      : null,
+    savingsTargetToday: payload.data.savings_target_today,
+    subscriptionsCount: payload.data.subscriptions_count,
+    upcomingCommitment: payload.data.upcoming_commitment,
   }));
 
 export const dashboardPeriodSummaryResponseSchema = z
