@@ -3,10 +3,12 @@ import { computed, onMounted, ref } from 'vue';
 
 import DashboardBalanceSection from '@/modules/admin/components/DashboardBalanceSection.vue';
 import DashboardCompletePendingModal from '@/modules/admin/components/DashboardCompletePendingModal.vue';
+import DashboardPeriodSummary from '@/modules/admin/components/DashboardPeriodSummary.vue';
 import DashboardPendingActions from '@/modules/admin/components/DashboardPendingActions.vue';
 import DashboardSubscriptionsPlanning from '@/modules/admin/components/DashboardSubscriptionsPlanning.vue';
 import DashboardSummaryCards from '@/modules/admin/components/DashboardSummaryCards.vue';
 import { useDashboard } from '@/modules/admin/composables/useDashboard';
+import { useDashboardPeriodSummary } from '@/modules/admin/composables/useDashboardPeriodSummary';
 import { useDashboardPendingActions } from '@/modules/admin/composables/useDashboardPendingActions';
 import { AppButton, AppText } from '@/modules/shared/components';
 
@@ -26,6 +28,17 @@ const {
   loadDashboard,
   completePendingTransactions,
 } = useDashboard();
+
+const {
+  startDate: periodStartDate,
+  endDate: periodEndDate,
+  summary: periodSummary,
+  isLoading: isLoadingPeriodSummary,
+  loadError: periodSummaryError,
+  validationError: periodSummaryValidationError,
+  resetToCurrentMonth,
+  loadPeriodSummary,
+} = useDashboardPeriodSummary();
 
 const {
   closeCompletePendingAction,
@@ -107,6 +120,17 @@ onMounted(() => {
       v-model:savings-cadence="savingsCadence"
       :annual-spend="annualSubscriptionsSpend"
       :recommended-savings="recommendedSavings"
+    />
+
+    <DashboardPeriodSummary
+      v-model:start-date="periodStartDate"
+      v-model:end-date="periodEndDate"
+      :summary="periodSummary"
+      :is-loading="isLoadingPeriodSummary"
+      :load-error="periodSummaryError"
+      :validation-error="periodSummaryValidationError"
+      @reset-period="resetToCurrentMonth"
+      @retry="loadPeriodSummary"
     />
 
     <DashboardCompletePendingModal

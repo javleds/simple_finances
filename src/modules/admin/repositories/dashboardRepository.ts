@@ -4,9 +4,15 @@ import {
   batchTransactionsResponseSchema,
   dashboardAccountsResponseSchema,
   dashboardGraphResponseSchema,
+  dashboardPeriodSummaryResponseSchema,
   dashboardSubscriptionsResponseSchema,
 } from '../schemas/dashboardSchemas';
-import type { BatchTransactionsResult, DashboardData } from '../types/dashboard';
+import type {
+  BatchTransactionsResult,
+  DashboardData,
+  DashboardPeriodSummary,
+  DashboardPeriodSummaryParams,
+} from '../types/dashboard';
 
 const apiClient = createApiClient();
 
@@ -38,6 +44,20 @@ export function createDashboardRepository() {
       });
 
       return batchTransactionsResponseSchema.parse(response);
+    },
+
+    async loadPeriodSummary(
+      params: DashboardPeriodSummaryParams,
+    ): Promise<DashboardPeriodSummary> {
+      const searchParams = new URLSearchParams({
+        start_date: params.startDate,
+        end_date: params.endDate,
+      });
+      const response = await apiClient.get<unknown>(
+        `/dashboard/period-summary?${searchParams.toString()}`,
+      );
+
+      return dashboardPeriodSummaryResponseSchema.parse(response);
     },
   };
 }

@@ -5,6 +5,7 @@ import type {
   DashboardAccountsSummary,
   DashboardGraphAccount,
   DashboardPendingAction,
+  DashboardPeriodSummary,
   DashboardSubscriptionsSummary,
 } from '../types/dashboard';
 
@@ -131,7 +132,29 @@ export const dashboardSubscriptionsResponseSchema = z
   })
   .transform<DashboardSubscriptionsSummary>((payload) => ({
     annualTotal: payload.data.annual_total,
-    subscriptionsCount: payload.data.subscriptions_count,
+  subscriptionsCount: payload.data.subscriptions_count,
+  }));
+
+export const dashboardPeriodSummaryResponseSchema = z
+  .object({
+    data: z.object({
+      period: z.object({
+        start_date: z.string(),
+        end_date: z.string(),
+      }),
+      income_total: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+      outcome_total: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+      balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    }),
+  })
+  .transform<DashboardPeriodSummary>((payload) => ({
+    period: {
+      startDate: payload.data.period.start_date,
+      endDate: payload.data.period.end_date,
+    },
+    incomeTotal: payload.data.income_total,
+    outcomeTotal: payload.data.outcome_total,
+    balance: payload.data.balance,
   }));
 
 export const batchTransactionsResponseSchema = z

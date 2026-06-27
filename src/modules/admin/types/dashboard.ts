@@ -28,6 +28,21 @@ export type DashboardSubscriptionsSummary = {
   subscriptionsCount: number;
 };
 
+export type DashboardPeriodSummary = {
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  incomeTotal: number;
+  outcomeTotal: number;
+  balance: number;
+};
+
+export type DashboardPeriodSummaryParams = {
+  startDate: string;
+  endDate: string;
+};
+
 export type DashboardData = {
   graphAccounts: DashboardGraphAccount[];
   accountsSummary: DashboardAccountsSummary;
