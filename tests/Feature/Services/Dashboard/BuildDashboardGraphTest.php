@@ -14,12 +14,14 @@ it('returns visible accounts ordered for the dashboard graph', function () {
         'balance' => 1200.5,
         'color' => '#00ffaa',
         'user_id' => $user->id,
+        'virtual' => false,
     ]);
     $firstAccount = Account::factory()->create([
         'name' => 'Checking',
         'balance' => -25,
         'color' => '#6a4d4d',
         'user_id' => $user->id,
+        'virtual' => false,
     ]);
     $hiddenAccount = Account::factory()->create([
         'name' => 'Hidden',
@@ -38,12 +40,14 @@ it('returns visible accounts ordered for the dashboard graph', function () {
             'account_name' => 'Checking',
             'balance' => -25.0,
             'color' => '#6a4d4d',
+            'is_virtual' => false,
         ],
         [
             'account_id' => $secondAccount->id,
             'account_name' => 'Savings',
             'balance' => 1200.5,
             'color' => '#00ffaa',
+            'is_virtual' => false,
         ],
     ]);
 });
