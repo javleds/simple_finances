@@ -5,10 +5,9 @@ use App\Models\NotificationType;
 use App\Models\User;
 use App\Notifications\InviteAccountApiEmail;
 use App\Services\AccountInvites\SendApiInvitationNotification;
-use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Notification;
 
-it('sends the api invitation email without relying on the current filament panel', function () {
+it('sends the api invitation email with the spa login link', function () {
     config()->set('app.spa_url', 'https://spa.example.test');
     Notification::fake();
 
@@ -21,8 +20,6 @@ it('sends the api invitation email without relying on the current filament panel
     $invitee = User::factory()->create(['email' => 'invitee@example.com']);
     $invitee->notificationTypes()->sync([$notificationType->id]);
     $account = Account::factory()->create(['user_id' => $owner->id]);
-
-    Filament::setCurrentPanel(null);
 
     $invite = new \App\Models\AccountInvite([
         'account_id' => $account->id,

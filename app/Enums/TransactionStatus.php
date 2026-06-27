@@ -3,11 +3,8 @@
 namespace App\Enums;
 
 use App\Traits\EnumToArray;
-use Filament\Support\Colors\Color;
-use Filament\Support\Contracts\HasColor;
-use Filament\Support\Contracts\HasLabel;
 
-enum TransactionStatus: string implements HasColor, HasLabel
+enum TransactionStatus: string
 {
     use EnumToArray;
 
@@ -22,11 +19,11 @@ enum TransactionStatus: string implements HasColor, HasLabel
         };
     }
 
-    public function getColor(): array|string|null
+    public function getColor(): string
     {
         return match ($this) {
-            self::Pending => Color::Amber,
-            self::Completed => Color::Green,
+            self::Pending => 'amber',
+            self::Completed => 'green',
         };
     }
 }

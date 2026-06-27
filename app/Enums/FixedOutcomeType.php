@@ -3,11 +3,8 @@
 namespace App\Enums;
 
 use App\Traits\EnumToArray;
-use Filament\Support\Colors\Color;
-use Filament\Support\Contracts\HasColor;
-use Filament\Support\Contracts\HasLabel;
 
-enum FixedOutcomeType: string implements HasColor, HasLabel
+enum FixedOutcomeType: string
 {
     use EnumToArray;
 
@@ -22,11 +19,11 @@ enum FixedOutcomeType: string implements HasColor, HasLabel
         };
     }
 
-    public function getColor(): string|array|null
+    public function getColor(): string
     {
         return match ($this) {
-            self::Savings => Color::Teal,
-            self::Transfer => Color::Pink,
+            self::Savings => 'teal',
+            self::Transfer => 'pink',
         };
     }
 }

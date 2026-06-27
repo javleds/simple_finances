@@ -20,7 +20,6 @@ class PostDeploy extends Command
         $this->call('route:cache');
         $this->call('icons:cache');
         $this->call('event:cache');
-        $this->call('filament:cache-components');
 
         return self::SUCCESS;
     }

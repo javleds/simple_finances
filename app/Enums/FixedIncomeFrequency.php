@@ -3,11 +3,8 @@
 namespace App\Enums;
 
 use App\Traits\EnumToArray;
-use Filament\Support\Colors\Color;
-use Filament\Support\Contracts\HasColor;
-use Filament\Support\Contracts\HasLabel;
 
-enum FixedIncomeFrequency: string implements HasColor, HasLabel
+enum FixedIncomeFrequency: string
 {
     use EnumToArray;
 
@@ -22,11 +19,11 @@ enum FixedIncomeFrequency: string implements HasColor, HasLabel
         };
     }
 
-    public function getColor(): string|array|null
+    public function getColor(): string
     {
         return match ($this) {
-            self::Monthly => Color::Pink,
-            self::SemiMonthly => Color::Teal,
+            self::Monthly => 'pink',
+            self::SemiMonthly => 'teal',
         };
     }
 }

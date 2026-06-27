@@ -77,7 +77,6 @@ function expectPostDeployCacheSteps(PostDeploy&MockInterface $command): void
     expectPostDeployStep($command, 'route:cache');
     expectPostDeployStep($command, 'icons:cache');
     expectPostDeployStep($command, 'event:cache');
-    expectPostDeployStep($command, 'filament:cache-components');
 }
 
 function expectPostDeployStep(

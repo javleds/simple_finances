@@ -6,7 +6,6 @@ use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Events\BulkTransactionSaved;
 use App\Models\Account;
-use Filament\Notifications\Notification;
 
 class TransferCreator
 {
@@ -39,10 +38,5 @@ class TransferCreator
         );
 
         event(new BulkTransactionSaved($transactions));
-
-        Notification::make()
-            ->success()
-            ->title('Transacción realizada')
-            ->send();
     }
 }

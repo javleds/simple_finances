@@ -7,7 +7,7 @@ use App\Http\Requests\Api\Auth\RegisterRequest;
 use App\Models\User;
 use App\Services\Auth\JwtTokenService;
 use App\Services\Auth\ResolveInvitePostAuthRedirect;
-use Filament\Events\Auth\Registered as FilamentRegistered;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 
 class RegisterController extends ApiController
@@ -25,7 +25,7 @@ class RegisterController extends ApiController
             'phone_number' => $request->string('phone_number')->toString() ?: null,
         ]);
 
-        event(new FilamentRegistered($user));
+        event(new Registered($user));
         $user->sendEmailVerificationNotification();
 
         $meta = [

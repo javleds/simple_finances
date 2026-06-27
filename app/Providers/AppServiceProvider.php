@@ -6,16 +6,10 @@ use App\Contracts\TelegramServiceInterface;
 use App\Services\Telegram\DummyTelegramService;
 use App\Services\Telegram\TelegramService;
 use App\Support\SpaUrl;
-use Filament\Actions\Action;
-use Filament\Infolists\Infolist;
-use Filament\Pages\Page;
-use Filament\Support\Enums\Alignment;
-use Filament\Tables\Actions\Action as TableAction;
-use Filament\Tables\Table;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -54,9 +48,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $defaultCurrency = 'MXN';
-        $defaultLocale = config('app.locale');
-
         RateLimiter::for('auth-email-action', function (Request $request): Limit {
             $email = mb_strtolower((string) $request->input('email'));
 
@@ -83,19 +74,5 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Model::unguard();
-        Table::$defaultCurrency = $defaultCurrency;
-        Table::$defaultNumberLocale = $defaultLocale;
-        Infolist::$defaultNumberLocale = $defaultCurrency;
-        Infolist::$defaultNumberLocale = $defaultLocale;
-
-        Action::configureUsing(function (Action $action) {
-            $action->modalFooterActionsAlignment(Alignment::Right);
-        });
-
-        TableAction::configureUsing(function (TableAction $action) {
-            $action->modalFooterActionsAlignment(Alignment::Right);
-        });
-
-        Page::$formActionsAlignment = Alignment::Right;
     }
 }

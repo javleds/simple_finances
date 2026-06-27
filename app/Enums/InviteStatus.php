@@ -3,11 +3,8 @@
 namespace App\Enums;
 
 use App\Traits\EnumToArray;
-use Filament\Support\Colors\Color;
-use Filament\Support\Contracts\HasColor;
-use Filament\Support\Contracts\HasLabel;
 
-enum InviteStatus: string implements HasColor, HasLabel
+enum InviteStatus: string
 {
     use EnumToArray;
 
@@ -24,12 +21,12 @@ enum InviteStatus: string implements HasColor, HasLabel
         };
     }
 
-    public function getColor(): array|string|null
+    public function getColor(): string
     {
         return match ($this) {
-            self::Pending => Color::Purple,
-            self::Accepted => Color::Teal,
-            self::Declined => Color::Red,
+            self::Pending => 'purple',
+            self::Accepted => 'teal',
+            self::Declined => 'red',
         };
     }
 

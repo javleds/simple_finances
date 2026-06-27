@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use App\Enums\Action;
-use App\Filament\Resources\AccountResource\Pages\ViewAccount;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Support\SpaUrl;
@@ -51,11 +50,7 @@ class SharedTransactionChangedEmail extends Notification
 
     private function link(): string
     {
-        if ($this->useSpaUrl) {
-            return app(SpaUrl::class)->to('accounts/'.$this->transaction->account_id);
-        }
-
-        return ViewAccount::getUrl([$this->transaction->account_id]);
+        return app(SpaUrl::class)->to('accounts/'.$this->transaction->account_id);
     }
 
     /**

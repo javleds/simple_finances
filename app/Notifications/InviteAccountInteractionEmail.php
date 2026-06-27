@@ -5,7 +5,6 @@ namespace App\Notifications;
 use App\Models\Account;
 use App\Models\AccountInvite;
 use App\Support\SpaUrl;
-use Filament\Facades\Filament;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -46,11 +45,7 @@ class InviteAccountInteractionEmail extends Notification
 
     private function link(): string
     {
-        if ($this->useSpaUrl) {
-            return app(SpaUrl::class)->to('accounts/'.$this->invite->account_id);
-        }
-
-        return Filament::getUrl();
+        return app(SpaUrl::class)->to('accounts/'.$this->invite->account_id);
     }
 
     /**
