@@ -35,6 +35,7 @@ function formatDateLabel(date: string): string {
         :creator-name="transaction.creatorName"
         :date-label="formatDateLabel(transaction.date)"
         :item-id="transaction.id"
+        :meta-label="transaction.accountName ?? 'Cuenta no disponible'"
         :show-actions="false"
         :status="transaction.status ?? 'completed'"
         :type="transaction.type"

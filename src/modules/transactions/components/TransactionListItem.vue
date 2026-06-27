@@ -16,6 +16,7 @@ const props = defineProps<{
   dateLabel: string;
   creatorName: string | null;
   accountName?: string | null;
+  metaLabel?: string | null;
   canComplete?: boolean;
   showActions?: boolean;
 }>();
@@ -103,14 +104,20 @@ function creatorLabel(): string {
   return props.creatorName?.trim() || 'Usuario no disponible';
 }
 
-function metaLabel(): string {
-  const accountName = props.accountName?.trim();
+function secondaryLabel(): string {
+  const metaLabel = props.metaLabel?.trim();
 
-  if (!accountName) {
-    return creatorLabel();
+  if (metaLabel) {
+    return metaLabel;
   }
 
-  return `${accountName} · ${creatorLabel()}`;
+  const accountName = props.accountName?.trim();
+
+  if (accountName) {
+    return `${accountName} · ${creatorLabel()}`;
+  }
+
+  return creatorLabel();
 }
 
 function handleEdit(): void {
@@ -175,7 +182,7 @@ function handleAction(actionKey: string): void {
 
       <div class="col-span-3 flex min-w-0 items-center justify-between gap-3">
         <p class="min-w-0 truncate text-[11px] font-medium text-(--app-color-text-subtle)">
-          {{ metaLabel() }}
+          {{ secondaryLabel() }}
         </p>
 
         <div class="flex shrink-0 items-center gap-2">
