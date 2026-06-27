@@ -3,7 +3,6 @@
 namespace App\Services\Transaction;
 
 use App\Enums\Action;
-use App\Events\TransactionSaved;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +10,8 @@ use Throwable;
 
 class LastTransactionService
 {
+    public function __construct(private readonly ProcessTransactionSideEffects $processTransactionSideEffects) {}
+
     public function getLastUserTransaction(User $user): ?Transaction
     {
         try {
@@ -85,8 +86,7 @@ class LastTransactionService
 
             $transaction->save();
 
-            // Disparar evento de modificación
-            event(new TransactionSaved($transaction, Action::Updated));
+            $this->processTransactionSideEffects->execute($transaction, Action::Updated);
 
             Log::info('LastTransactionService: Transaction modified successfully', [
                 'user_id' => $user->id,
@@ -120,10 +120,8 @@ class LastTransactionService
                 return false;
             }
 
-            $account = $transaction->account;
-
             $transaction->delete();
-            event(new TransactionSaved($transaction, Action::Deleted));
+            $this->processTransactionSideEffects->execute($transaction, Action::Deleted);
 
             Log::info('LastTransactionService: Transaction deleted successfully', [
                 'user_id' => $user->id,

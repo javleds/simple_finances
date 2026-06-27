@@ -7,7 +7,6 @@ use App\Dto\TransactionExtractionDto;
 use App\Enums\Action;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
-use App\Events\TransactionSaved;
 use App\Models\Account;
 use App\Models\FinancialGoal;
 use App\Models\Transaction;
@@ -20,6 +19,7 @@ class TransactionProcessorService
     public function __construct(
         private readonly OpenAIServiceInterface $openAIService,
         private readonly TransactionDataValidator $validator,
+        private readonly ProcessTransactionSideEffects $processTransactionSideEffects,
     ) {}
 
     public function processText(string $text, User $user): string
@@ -122,7 +122,7 @@ class TransactionProcessorService
 
         $transaction->save();
 
-        event(new TransactionSaved($transaction, Action::Created));
+        $this->processTransactionSideEffects->execute($transaction, Action::Created);
 
         Log::info('Transaction created successfully', [
             'transaction_id' => $transaction->id,

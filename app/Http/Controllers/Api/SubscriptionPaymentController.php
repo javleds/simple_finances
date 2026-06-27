@@ -6,18 +6,20 @@ use App\Enums\Action;
 use App\Enums\PaymentStatus;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
-use App\Events\TransactionSaved;
 use App\Http\Requests\Api\SubscriptionPaymentRequest;
 use App\Models\Account;
 use App\Models\Subscription;
 use App\Models\SubscriptionPayment;
 use App\Models\Transaction;
+use App\Services\Transaction\ProcessTransactionSideEffects;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SubscriptionPaymentController extends ApiController
 {
+    public function __construct(private readonly ProcessTransactionSideEffects $processTransactionSideEffects) {}
+
     public function index(Request $request): JsonResponse
     {
         return $this->respondPaginated(
@@ -100,7 +102,7 @@ class SubscriptionPaymentController extends ApiController
             'account_id' => $account->id,
         ]);
 
-        event(new TransactionSaved($transaction, Action::Created));
+        $this->processTransactionSideEffects->execute($transaction, Action::Created);
     }
 
     private function refreshSubscriptionDates(Subscription $subscription): void
