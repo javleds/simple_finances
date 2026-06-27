@@ -3,16 +3,11 @@
 namespace App\Listeners;
 
 use App\Events\AccountSaved;
+use App\Services\Accounts\RecalculateAccountBalance;
 
 class UpdateDataOnAccountSaved
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(private readonly RecalculateAccountBalance $recalculateAccountBalance) {}
 
     /**
      * Handle the event.
@@ -21,7 +16,7 @@ class UpdateDataOnAccountSaved
     {
         $account = $event->account;
         if ($account->isCreditCard()) {
-            $event->account->updateBalance();
+            $this->recalculateAccountBalance->execute($account);
         }
     }
 }

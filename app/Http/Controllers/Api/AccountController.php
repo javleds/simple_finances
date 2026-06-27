@@ -8,6 +8,7 @@ use App\Handlers\Accounts\AccountEditor;
 use App\Http\Requests\Api\AccountRequest;
 use App\Models\Account;
 use App\Services\Accounts\BuildPendingIncomeByUser;
+use App\Services\Accounts\RecalculateAccountBalance;
 use App\Services\Accounts\VisibleAccountsForUser;
 use App\Services\Api\AuthorizeAccountAccess;
 use Carbon\CarbonImmutable;
@@ -18,6 +19,7 @@ class AccountController extends ApiController
 {
     public function __construct(
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
+        private readonly RecalculateAccountBalance $recalculateAccountBalance,
     ) {}
 
     public function index(Request $request, VisibleAccountsForUser $visibleAccountsForUser): JsonResponse
@@ -88,6 +90,6 @@ class AccountController extends ApiController
             ? $today->setDay($cutoffDay)->addMonth()->endOfDay()
             : $today->setDay($cutoffDay)->endOfDay();
         $account->save();
-        $account->updateBalance();
+        $this->recalculateAccountBalance->execute($account);
     }
 }

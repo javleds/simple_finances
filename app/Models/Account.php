@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Scopes\BelongsToSharedUsersScope;
+use App\Services\Accounts\RecalculateAccountBalance;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -65,25 +66,7 @@ class Account extends Model
 
     public function updateBalance(): float
     {
-        if (! $this->credit_card) {
-            $this->balance = $this->transactions()->completed()->income()->sum('amount')
-                - $this->transactions()->completed()->outcome()->sum('amount');
-            $this->save();
-
-            return $this->balance;
-        }
-
-        $this->spent = $this->transactions()->completed()->income()->sum('amount')
-            - $this->transactions()->completed()->outcome()->sum('amount');
-
-        $this->available_credit = $this->credit_line - ($this->spent * -1);
-
-        $this->balance = $this->transactions()->beforeOrEqualsTo($this->next_cutoff_date)->completed()->income()->sum('amount')
-            - $this->transactions()->beforeOrEqualsTo($this->next_cutoff_date)->completed()->outcome()->sum('amount');
-
-        $this->save();
-
-        return $this->balance;
+        return app(RecalculateAccountBalance::class)->execute($this)->balance;
     }
 
     public function getBalanceUntilNow(): float

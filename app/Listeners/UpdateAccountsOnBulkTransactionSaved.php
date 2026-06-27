@@ -4,16 +4,11 @@ namespace App\Listeners;
 
 use App\Events\BulkTransactionSaved;
 use App\Models\Account;
+use App\Services\Accounts\RecalculateAccountBalance;
 
 class UpdateAccountsOnBulkTransactionSaved
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(private readonly RecalculateAccountBalance $recalculateAccountBalance) {}
 
     /**
      * Handle the event.
@@ -33,7 +28,7 @@ class UpdateAccountsOnBulkTransactionSaved
 
             /** @var Account $account */
             $account = $transaction->account;
-            $account->updateBalance();
+            $this->recalculateAccountBalance->execute($account);
         }
     }
 }

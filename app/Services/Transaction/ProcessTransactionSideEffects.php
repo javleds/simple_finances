@@ -8,6 +8,7 @@ use App\Models\NotificationType;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Notifications\SharedTransactionChangedEmail;
+use App\Services\Accounts\RecalculateAccountBalance;
 use App\Services\FinancialGoals\RecalculateFinancialGoalProgress;
 use App\Services\SharedTransactions\RegisterSharedTransactionNotificationAction;
 use Illuminate\Support\Facades\Notification;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Notification;
 class ProcessTransactionSideEffects
 {
     public function __construct(
+        private readonly RecalculateAccountBalance $recalculateAccountBalance,
         private readonly RecalculateFinancialGoalProgress $recalculateFinancialGoalProgress,
         private readonly RegisterSharedTransactionNotificationAction $registerSharedTransactionNotificationAction,
     ) {}
@@ -29,7 +31,7 @@ class ProcessTransactionSideEffects
 
         $transaction->setRelation('account', $account);
 
-        $account->updateBalance();
+        $this->recalculateAccountBalance->execute($account);
         $this->recalculateFinancialGoals($transaction);
         $this->notifySharedUsers($transaction, $action);
     }

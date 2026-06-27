@@ -3,10 +3,13 @@
 namespace App\Services;
 
 use App\Models\Account;
+use App\Services\Accounts\RecalculateAccountBalance;
 use Carbon\Carbon;
 
 class AutomatedAccountUpdater
 {
+    public function __construct(private readonly RecalculateAccountBalance $recalculateAccountBalance) {}
+
     public function handle(): void
     {
         $accounts = Account::withoutGlobalScopes()->get();
@@ -21,7 +24,7 @@ class AutomatedAccountUpdater
                 $account->next_cutoff_date = $account->next_cutoff_date->addMonth()->clone();
                 $account->save();
 
-                $account->updateBalance();
+                $this->recalculateAccountBalance->execute($account);
             }
         }
     }
