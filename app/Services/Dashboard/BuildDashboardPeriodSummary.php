@@ -4,11 +4,17 @@ namespace App\Services\Dashboard;
 
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
-use App\Models\Transaction;
+use App\Services\Transaction\VisibleTransactionsForUser;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Support\Carbon;
 
 class BuildDashboardPeriodSummary
 {
+    public function __construct(
+        private readonly Guard $auth,
+        private readonly VisibleTransactionsForUser $visibleTransactionsForUser,
+    ) {}
+
     public function execute(string $startDate, string $endDate): array
     {
         $start = Carbon::createFromFormat('Y-m-d', $startDate)->startOfDay();
@@ -30,7 +36,8 @@ class BuildDashboardPeriodSummary
 
     private function sumByType(TransactionType $type, Carbon $start, Carbon $end): float
     {
-        $total = Transaction::query()
+        $total = $this->visibleTransactionsForUser
+            ->query($this->auth->id())
             ->completed()
             ->whereNull('parent_transaction_id')
             ->where('type', $type)

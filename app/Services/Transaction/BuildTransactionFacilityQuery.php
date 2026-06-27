@@ -9,11 +9,13 @@ use Illuminate\Support\Carbon;
 
 class BuildTransactionFacilityQuery
 {
+    public function __construct(private readonly OwnedTransactionsForUser $ownedTransactionsForUser) {}
+
     public function execute(array $filters, int $userId): Builder
     {
-        $query = Transaction::query()
+        $query = $this->ownedTransactionsForUser
+            ->query($userId)
             ->with(['account', 'user', 'financialGoal', 'subTransactions'])
-            ->where('user_id', $userId)
             ->whereNull('parent_transaction_id')
             ->where('status', TransactionStatus::Completed);
 

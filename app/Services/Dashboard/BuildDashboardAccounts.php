@@ -3,27 +3,34 @@
 namespace App\Services\Dashboard;
 
 use App\Enums\TransactionStatus;
-use App\Models\Account;
 use App\Models\Transaction;
+use App\Services\Accounts\VisibleAccountsForUser;
+use App\Services\Transaction\VisibleTransactionsForUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Auth\Guard;
 
 class BuildDashboardAccounts
 {
-    public function __construct(private Guard $auth) {}
+    public function __construct(
+        private readonly Guard $auth,
+        private readonly VisibleAccountsForUser $visibleAccountsForUser,
+        private readonly VisibleTransactionsForUser $visibleTransactionsForUser,
+    ) {}
 
     public function execute(): array
     {
         $pendingActions = $this->pendingActions();
+        $visibleAccounts = $this->visibleAccounts();
 
         return [
             'summary' => [
-                'active_accounts' => Account::query()
+                'active_accounts' => (clone $visibleAccounts)
                     ->where('virtual', false)
                     ->count(),
-                'virtual_accounts' => Account::query()
+                'virtual_accounts' => (clone $visibleAccounts)
                     ->where('virtual', true)
                     ->count(),
-                'shared_accounts' => Account::query()
+                'shared_accounts' => (clone $visibleAccounts)
                     ->has('users', '>', 1)
                     ->count(),
                 'pending_total' => $pendingActions->sum('amount'),
@@ -34,7 +41,8 @@ class BuildDashboardAccounts
 
     private function pendingActions(): \Illuminate\Support\Collection
     {
-        return Transaction::query()
+        return $this->visibleTransactionsForUser
+            ->query($this->auth->id())
             ->with('account')
             ->where('status', TransactionStatus::Pending)
             ->where('user_id', $this->auth->id())
@@ -50,5 +58,11 @@ class BuildDashboardAccounts
                 'amount' => $transaction->amount,
                 'date' => $transaction->scheduled_at->toDateString(),
             ]);
+    }
+
+    private function visibleAccounts(): Builder
+    {
+        return $this->visibleAccountsForUser
+            ->query($this->auth->id());
     }
 }

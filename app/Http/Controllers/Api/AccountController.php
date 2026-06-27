@@ -8,6 +8,7 @@ use App\Handlers\Accounts\AccountEditor;
 use App\Http\Requests\Api\AccountRequest;
 use App\Models\Account;
 use App\Services\Accounts\BuildPendingIncomeByUser;
+use App\Services\Accounts\VisibleAccountsForUser;
 use App\Services\Api\AuthorizeAccountAccess;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -19,10 +20,10 @@ class AccountController extends ApiController
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
     ) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, VisibleAccountsForUser $visibleAccountsForUser): JsonResponse
     {
         return $this->respondPaginated(
-            Account::query()
+            $visibleAccountsForUser->query($request->user()->id)
             ->with(['users', 'feedAccount'])
             ->orderBy('name'),
             $request,
