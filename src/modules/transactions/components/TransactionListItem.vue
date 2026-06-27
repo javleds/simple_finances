@@ -15,6 +15,7 @@ const props = defineProps<{
   status: TransactionItemStatus;
   dateLabel: string;
   creatorName: string | null;
+  accountName?: string | null;
   canComplete?: boolean;
   showActions?: boolean;
 }>();
@@ -102,6 +103,16 @@ function creatorLabel(): string {
   return props.creatorName?.trim() || 'Usuario no disponible';
 }
 
+function metaLabel(): string {
+  const accountName = props.accountName?.trim();
+
+  if (!accountName) {
+    return creatorLabel();
+  }
+
+  return `${accountName} · ${creatorLabel()}`;
+}
+
 function handleEdit(): void {
   emit('edit', props.itemId);
 }
@@ -164,7 +175,7 @@ function handleAction(actionKey: string): void {
 
       <div class="col-span-3 flex min-w-0 items-center justify-between gap-3">
         <p class="min-w-0 truncate text-[11px] font-medium text-(--app-color-text-subtle)">
-          {{ creatorLabel() }}
+          {{ metaLabel() }}
         </p>
 
         <div class="flex shrink-0 items-center gap-2">

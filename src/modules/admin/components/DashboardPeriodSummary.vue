@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { ArrowPathIcon } from '@heroicons/vue/24/outline';
+import { computed } from 'vue';
 
 import type { DashboardPeriodSummary } from '@/modules/admin/types/dashboard';
-import { AppButton, AppCard, AppDatePicker, AppText, AppTitle } from '@/modules/shared/components';
+import {
+  AppCard,
+  AppDatePicker,
+  AppIconButton,
+  AppLink,
+  AppText,
+  AppTitle,
+} from '@/modules/shared/components';
 
 const startDate = defineModel<string | null>('startDate', { required: true });
 const endDate = defineModel<string | null>('endDate', { required: true });
@@ -29,21 +37,28 @@ const currencyFormatter = new Intl.NumberFormat('es-MX', {
 function formatCurrency(value: number): string {
   return currencyFormatter.format(value);
 }
+
+const transactionsRoute = computed(() => ({
+  name: 'admin.transactions',
+  query: {
+    start_date: startDate.value ?? undefined,
+    end_date: endDate.value ?? undefined,
+  },
+}));
 </script>
 
 <template>
   <AppCard class="rounded-3xl">
     <div class="space-y-4">
-      <div class="flex flex-col gap-3">
+      <div class="flex items-start justify-between gap-3">
         <div class="space-y-1">
           <AppTitle as="h2" size="sm">Resumen del periodo</AppTitle>
           <AppText>Ingresos y egresos registrados dentro del rango seleccionado.</AppText>
         </div>
 
-        <AppButton class="self-start" variant="outline" @click="emit('resetPeriod')">
-          <ArrowPathIcon class="mr-2 h-4 w-4" />
-          Mes actual
-        </AppButton>
+        <AppIconButton ariaLabel="Volver al mes actual" @click="emit('resetPeriod')">
+          <ArrowPathIcon class="h-4 w-4" />
+        </AppIconButton>
       </div>
 
       <div class="grid gap-3 sm:grid-cols-2">
@@ -106,6 +121,10 @@ function formatCurrency(value: number): string {
           </AppCard>
         </div>
       </section>
+
+      <div class="flex justify-end">
+        <AppLink :to="transactionsRoute" variant="secondary">Ver transacciones</AppLink>
+      </div>
     </div>
   </AppCard>
 </template>

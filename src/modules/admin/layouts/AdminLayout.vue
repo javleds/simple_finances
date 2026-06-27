@@ -108,6 +108,10 @@ function showBackButton(): boolean {
     return true;
   }
 
+  if (route.name === 'admin.transactions') {
+    return true;
+  }
+
   return route.name.startsWith('admin.accounts.') && route.name !== 'admin.accounts';
 }
 
@@ -183,7 +187,9 @@ onBeforeUnmount(() => {
             :to="
               route.name === 'admin.distribution.detail'
                 ? { name: 'admin.distribution' }
-                : route.name === 'admin.profile' || route.name === 'admin.invitations'
+                : route.name === 'admin.profile' ||
+                    route.name === 'admin.invitations' ||
+                    route.name === 'admin.transactions'
                   ? { name: 'admin.dashboard' }
                   : { name: 'admin.accounts' }
             "
@@ -192,7 +198,9 @@ onBeforeUnmount(() => {
             :aria-label="
               route.name === 'admin.distribution.detail'
                 ? 'Volver a distribución'
-                : route.name === 'admin.profile' || route.name === 'admin.invitations'
+                : route.name === 'admin.profile' ||
+                    route.name === 'admin.invitations' ||
+                    route.name === 'admin.transactions'
                   ? 'Volver al escritorio'
                   : 'Volver a cuentas'
             "

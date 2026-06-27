@@ -4,6 +4,7 @@ import accountsRoutes from '@/modules/accounts/routes';
 import distributionRoutes from '@/modules/distribution/routes';
 import settingsRoutes from '@/modules/settings/routes';
 import subscriptionsRoutes from '@/modules/subscriptions/routes';
+import transactionsRoutes from '@/modules/transactions/routes';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -29,6 +30,7 @@ const routes: RouteRecordRaw[] = [
       ...accountsRoutes,
       ...subscriptionsRoutes,
       ...distributionRoutes,
+      ...transactionsRoutes,
       ...settingsRoutes,
     ],
   },

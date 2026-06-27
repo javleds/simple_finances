@@ -8,6 +8,22 @@ export type TransactionListFilters = {
   type?: TransactionType[];
 };
 
+export type TransactionFacilityFilters = {
+  search?: string;
+  startDate: string;
+  endDate: string;
+};
+
+export type TransactionFacilitySummary = {
+  incomeTotal: number;
+  outcomeTotal: number;
+  balance: number;
+};
+
+export type TransactionFacilityListResult = PaginatedCollection<Transaction> & {
+  summary: TransactionFacilitySummary;
+};
+
 export type TransactionListResult = PaginatedCollection<Transaction> & {
   meta: TransactionMutationMeta;
 };

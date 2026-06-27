@@ -12,6 +12,9 @@ import type {
   CreatedTransactionResult,
   DeletedTransactionResult,
   Transaction,
+  TransactionFacilityFilters,
+  TransactionFacilityListResult,
+  TransactionFacilitySummary,
   TransactionListFilters,
   TransactionListResult,
   TransactionMutationMeta,
@@ -151,6 +154,26 @@ export const transactionListMetaSchema = z
     pendingByUser: payload.meta.pendingByUser ?? payload.pending_by_user ?? null,
   }));
 
+const transactionFacilitySummarySchema = z
+  .object({
+    income_total: z.unknown().transform((value) => parseNullableBalance(value) ?? 0),
+    outcome_total: z.unknown().transform((value) => parseNullableBalance(value) ?? 0),
+    balance: z.unknown().transform((value) => parseNullableBalance(value) ?? 0),
+  })
+  .transform<TransactionFacilitySummary>((payload) => ({
+    incomeTotal: payload.income_total,
+    outcomeTotal: payload.outcome_total,
+    balance: payload.balance,
+  }));
+
+const transactionFacilityResponseSchema = transactionCollectionSchema.and(
+  z.object({
+    meta: z.object({
+      summary: transactionFacilitySummarySchema,
+    }),
+  }),
+);
+
 function getCreatedAtTime(transaction: Transaction): number | null {
   if (!transaction.createdAt) {
     return null;
@@ -270,6 +293,32 @@ export function createTransactionsRepository() {
         ...parsedResponse,
         items: parsedResponse.items.map(mapTransactionApiToDomain),
         meta: transactionListMetaSchema.parse(response),
+      };
+    },
+    async listFacility(
+      options: {
+        page?: number;
+        perPage?: number;
+        filters: TransactionFacilityFilters;
+      },
+    ): Promise<TransactionFacilityListResult> {
+      const searchParams = buildQueryParams({
+        page: options.page,
+        per_page: options.perPage,
+        search: options.filters.search,
+        start_date: options.filters.startDate,
+        end_date: options.filters.endDate,
+      });
+      const query = searchParams.toString();
+      const response = await apiClient.get<unknown>(
+        query ? `${transactionsPath}?${query}` : transactionsPath,
+      );
+      const parsedResponse = transactionFacilityResponseSchema.parse(response);
+
+      return {
+        ...parsedResponse,
+        items: parsedResponse.items.map(mapTransactionApiToDomain),
+        summary: parsedResponse.meta.summary,
       };
     },
     async create(payload: TransactionWritePayload): Promise<CreatedTransactionResult> {
