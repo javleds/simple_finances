@@ -6,10 +6,12 @@ use App\Models\Subscription;
 use App\Services\Subscriptions\BuildSubscriptionSavingsTarget;
 use App\Services\Subscriptions\CalculateAnnualSubscriptionAmount;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Auth\Guard;
 
 class BuildDashboardSubscriptions
 {
     public function __construct(
+        private readonly Guard $auth,
         private readonly CalculateAnnualSubscriptionAmount $calculateAnnualSubscriptionAmount,
         private readonly BuildSubscriptionSavingsTarget $buildSubscriptionSavingsTarget,
     ) {}
@@ -18,6 +20,7 @@ class BuildDashboardSubscriptions
     {
         $today = CarbonImmutable::now()->startOfDay();
         $subscriptions = Subscription::query()
+            ->where('user_id', $this->auth->id())
             ->whereNull('finished_at')
             ->get();
         $targets = $subscriptions

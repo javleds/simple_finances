@@ -35,6 +35,8 @@ class AccountController extends ApiController
 
     public function store(AccountRequest $request, AccountCreator $accountCreator): JsonResponse
     {
+        $this->ensureFeedAccountAccess($request);
+
         $account = $accountCreator->execute(
             AccountDto::fromFormArray($request->validated())
         );
@@ -46,6 +48,7 @@ class AccountController extends ApiController
 
     public function show(Account $account, BuildPendingIncomeByUser $buildPendingIncomeByUser): JsonResponse
     {
+        $this->authorizeAccountAccess->ensureMember($account);
         $account->setAttribute('pending_by_user', $buildPendingIncomeByUser->execute($account));
 
         return $this->respondModel($account, ['users', 'feedAccount', 'financialGoals', 'invites']);
@@ -54,6 +57,7 @@ class AccountController extends ApiController
     public function update(AccountRequest $request, Account $account, AccountEditor $accountEditor): JsonResponse
     {
         $this->authorizeAccountAccess->ensureOwner($account, $request->user()->id);
+        $this->ensureFeedAccountAccess($request);
 
         $account = $accountEditor->execute(
             $account,
@@ -91,5 +95,17 @@ class AccountController extends ApiController
             : $today->setDay($cutoffDay)->endOfDay();
         $account->save();
         $this->recalculateAccountBalance->execute($account);
+    }
+
+    private function ensureFeedAccountAccess(AccountRequest $request): void
+    {
+        $feedAccountId = $request->integer('feed_account_id');
+
+        if ($feedAccountId === 0) {
+            return;
+        }
+
+        $feedAccount = Account::withoutGlobalScopes()->findOrFail($feedAccountId);
+        $this->authorizeAccountAccess->ensureMember($feedAccount, $request->user()->id);
     }
 }

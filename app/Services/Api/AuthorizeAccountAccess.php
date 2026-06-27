@@ -15,7 +15,7 @@ class AuthorizeAccountAccess
     public function ensureMember(Account $account, ?int $userId = null): void
     {
         abort_unless(
-            $account->users()->where('users.id', $this->resolveUserId($userId))->exists(),
+            $account->users()->withoutGlobalScopes()->where('users.id', $this->resolveUserId($userId))->exists(),
             403,
         );
     }
@@ -27,7 +27,7 @@ class AuthorizeAccountAccess
 
     public function ensureAccountUser(Account $account, User $user): void
     {
-        abort_unless($account->users()->where('users.id', $user->id)->exists(), 404);
+        abort_unless($account->users()->withoutGlobalScopes()->where('users.id', $user->id)->exists(), 404);
     }
 
     private function resolveUserId(?int $userId): int

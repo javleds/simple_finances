@@ -4,16 +4,13 @@ namespace App\Models;
 
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
-use App\Models\Scopes\BelongsToUserThroughAccount;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[ScopedBy([BelongsToUserThroughAccount::class])]
 class Transaction extends Model
 {
     use HasFactory;

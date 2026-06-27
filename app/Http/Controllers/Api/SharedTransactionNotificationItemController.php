@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\Api\SharedTransactionNotificationItemRequest;
 use App\Models\SharedTransactionNotificationBatch;
 use App\Models\SharedTransactionNotificationItem;
+use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -26,6 +27,7 @@ class SharedTransactionNotificationItemController extends ApiController
     {
         $batch = SharedTransactionNotificationBatch::query()->findOrFail($request->integer('batch_id'));
         abort_unless($batch->user_id === $request->user()->id, 403);
+        $this->ensureTransactionBelongsToBatch($request, $batch);
 
         $record = SharedTransactionNotificationItem::create($request->validated());
 
@@ -44,6 +46,7 @@ class SharedTransactionNotificationItemController extends ApiController
         SharedTransactionNotificationItem $item,
     ): JsonResponse {
         abort_unless($item->batch->user_id === auth()->id(), 403);
+        $this->ensureTransactionBelongsToBatch($request, $item->batch);
 
         $item->update($request->validated());
 
@@ -57,5 +60,19 @@ class SharedTransactionNotificationItemController extends ApiController
         $item->delete();
 
         return $this->respondDeleted('Shared transaction notification item deleted successfully.');
+    }
+
+    private function ensureTransactionBelongsToBatch(
+        SharedTransactionNotificationItemRequest $request,
+        SharedTransactionNotificationBatch $batch,
+    ): void {
+        $transactionId = $request->integer('transaction_id');
+
+        if ($transactionId === 0) {
+            return;
+        }
+
+        $transaction = Transaction::withoutGlobalScopes()->findOrFail($transactionId);
+        abort_unless($transaction->account_id === $batch->account_id, 404);
     }
 }

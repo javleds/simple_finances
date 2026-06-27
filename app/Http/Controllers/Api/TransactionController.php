@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Dto\TransactionFormDto;
 use App\Http\Requests\Api\TransactionIndexRequest;
 use App\Http\Requests\Api\TransactionRequest;
+use App\Models\Account;
+use App\Models\FinancialGoal;
 use App\Models\Transaction;
+use App\Services\Api\AuthorizeAccountAccess;
 use App\Services\Transaction\BuildTransactionAccountMeta;
 use App\Services\Transaction\BuildTransactionFacilityQuery;
 use App\Services\Transaction\BuildTransactionSummary;
@@ -16,6 +19,8 @@ use Illuminate\Http\JsonResponse;
 
 class TransactionController extends ApiController
 {
+    public function __construct(private readonly AuthorizeAccountAccess $authorizeAccountAccess) {}
+
     public function index(
         TransactionIndexRequest $request,
         BuildTransactionFacilityQuery $buildTransactionFacilityQuery,
@@ -49,6 +54,8 @@ class TransactionController extends ApiController
         TransactionCreator $transactionCreator,
         BuildTransactionAccountMeta $buildTransactionAccountMeta,
     ): JsonResponse {
+        $this->ensureTransactionPayloadAccess($request);
+
         $transaction = $transactionCreator->execute(
             TransactionFormDto::fromFormArray($request->validated())
         );
@@ -63,6 +70,8 @@ class TransactionController extends ApiController
 
     public function show(Transaction $transaction): JsonResponse
     {
+        $this->ensureVisibleTransaction($transaction);
+
         return $this->respondModel($transaction, ['account', 'user', 'financialGoal', 'subTransactions']);
     }
 
@@ -73,6 +82,7 @@ class TransactionController extends ApiController
         BuildTransactionAccountMeta $buildTransactionAccountMeta,
     ): JsonResponse {
         abort_unless($transaction->user_id === $request->user()->id, 403);
+        $this->ensureTransactionPayloadAccess($request);
 
         $previousAccountId = $transaction->account_id;
         $payload = $request->validated();
@@ -108,4 +118,24 @@ class TransactionController extends ApiController
         );
     }
 
+    private function ensureVisibleTransaction(Transaction $transaction): void
+    {
+        $account = Account::withoutGlobalScopes()->findOrFail($transaction->account_id);
+        $this->authorizeAccountAccess->ensureMember($account);
+    }
+
+    private function ensureTransactionPayloadAccess(TransactionRequest $request): void
+    {
+        $account = Account::withoutGlobalScopes()->findOrFail($request->integer('account_id'));
+        $this->authorizeAccountAccess->ensureMember($account, $request->user()->id);
+
+        $financialGoalId = $request->integer('financial_goal_id');
+
+        if ($financialGoalId === 0) {
+            return;
+        }
+
+        $financialGoal = FinancialGoal::query()->findOrFail($financialGoalId);
+        $this->authorizeAccountAccess->ensureBelongsToAccount($account, $financialGoal->account_id);
+    }
 }

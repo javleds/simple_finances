@@ -3,12 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Api\SharedTransactionNotificationBatchRequest;
+use App\Models\Account;
 use App\Models\SharedTransactionNotificationBatch;
+use App\Services\Api\AuthorizeAccountAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SharedTransactionNotificationBatchController extends ApiController
 {
+    public function __construct(
+        private readonly AuthorizeAccountAccess $authorizeAccountAccess,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         return $this->respondPaginated(
@@ -23,6 +29,8 @@ class SharedTransactionNotificationBatchController extends ApiController
 
     public function store(SharedTransactionNotificationBatchRequest $request): JsonResponse
     {
+        $this->ensureAccountAccess($request);
+
         $record = SharedTransactionNotificationBatch::create([
             ...$request->validated(),
             'user_id' => $request->user()->id,
@@ -43,6 +51,7 @@ class SharedTransactionNotificationBatchController extends ApiController
         SharedTransactionNotificationBatch $batch,
     ): JsonResponse {
         abort_unless($batch->user_id === auth()->id(), 403);
+        $this->ensureAccountAccess($request);
 
         $batch->update($request->validated());
 
@@ -56,5 +65,11 @@ class SharedTransactionNotificationBatchController extends ApiController
         $batch->delete();
 
         return $this->respondDeleted('Shared transaction notification batch deleted successfully.');
+    }
+
+    private function ensureAccountAccess(SharedTransactionNotificationBatchRequest $request): void
+    {
+        $account = Account::withoutGlobalScopes()->findOrFail($request->integer('account_id'));
+        $this->authorizeAccountAccess->ensureMember($account, $request->user()->id);
     }
 }

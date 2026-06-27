@@ -11,6 +11,8 @@ use App\Models\Account;
 use App\Models\Subscription;
 use App\Models\SubscriptionPayment;
 use App\Models\Transaction;
+use App\Services\Api\AuthorizeAccountAccess;
+use App\Services\Api\AuthorizeUserOwnedResource;
 use App\Services\Transaction\ProcessTransactionSideEffects;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -18,13 +20,18 @@ use Illuminate\Http\Request;
 
 class SubscriptionPaymentController extends ApiController
 {
-    public function __construct(private readonly ProcessTransactionSideEffects $processTransactionSideEffects) {}
+    public function __construct(
+        private readonly AuthorizeAccountAccess $authorizeAccountAccess,
+        private readonly AuthorizeUserOwnedResource $authorizeUserOwnedResource,
+        private readonly ProcessTransactionSideEffects $processTransactionSideEffects,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
         return $this->respondPaginated(
             SubscriptionPayment::query()
             ->with('subscription')
+            ->where('user_id', $request->user()->id)
             ->latest('scheduled_at'),
             $request,
             filterColumns: ['subscription_id', 'status'],
@@ -33,7 +40,9 @@ class SubscriptionPaymentController extends ApiController
 
     public function store(SubscriptionPaymentRequest $request): JsonResponse
     {
-        $subscription = Subscription::query()->findOrFail($request->integer('subscription_id'));
+        $subscription = Subscription::withoutGlobalScopes()->findOrFail($request->integer('subscription_id'));
+        $this->authorizeUserOwnedResource->ensureOwned($subscription, $request->user()->id);
+
         $record = SubscriptionPayment::create([
             'subscription_id' => $subscription->id,
             'scheduled_at' => $request->date('scheduled_at'),
@@ -49,11 +58,15 @@ class SubscriptionPaymentController extends ApiController
 
     public function show(SubscriptionPayment $subscriptionPayment): JsonResponse
     {
+        $this->authorizeUserOwnedResource->ensureOwned($subscriptionPayment);
+
         return $this->respondModel($subscriptionPayment, ['subscription']);
     }
 
     public function update(SubscriptionPaymentRequest $request, SubscriptionPayment $subscriptionPayment): JsonResponse
     {
+        $this->authorizeUserOwnedResource->ensureOwned($subscriptionPayment, $request->user()->id);
+
         $originalStatus = $subscriptionPayment->status;
 
         $subscriptionPayment->fill($request->safe()->only([
@@ -74,6 +87,8 @@ class SubscriptionPaymentController extends ApiController
 
     public function delete(SubscriptionPayment $subscriptionPayment): JsonResponse
     {
+        $this->authorizeUserOwnedResource->ensureOwned($subscriptionPayment);
+
         $subscription = $subscriptionPayment->subscription;
         $subscriptionPayment->delete();
         $this->refreshSubscriptionDates($subscription);
@@ -87,11 +102,13 @@ class SubscriptionPaymentController extends ApiController
             return;
         }
 
-        $account = Account::query()->find($accountId);
+        $account = Account::withoutGlobalScopes()->find($accountId);
 
         if (! $account instanceof Account) {
             return;
         }
+
+        $this->authorizeAccountAccess->ensureMember($account);
 
         $transaction = Transaction::create([
             'amount' => $payment->amount,

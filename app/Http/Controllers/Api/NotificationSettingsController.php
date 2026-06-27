@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Api\NotificationSettingsUpdateRequest;
-use App\Models\Account;
+use App\Services\Accounts\VisibleAccountsForUser;
 use App\Services\NotificableAccountSetupBuilder;
 use App\Services\NotificationSetupBuilder;
 use Illuminate\Http\JsonResponse;
@@ -26,10 +26,12 @@ class NotificationSettingsController extends ApiController
         ]);
     }
 
-    public function update(NotificationSettingsUpdateRequest $request): JsonResponse
-    {
+    public function update(
+        NotificationSettingsUpdateRequest $request,
+        VisibleAccountsForUser $visibleAccountsForUser,
+    ): JsonResponse {
         $user = $request->user();
-        $accountIds = Account::query()
+        $accountIds = $visibleAccountsForUser->query($user->id)
             ->whereIn('id', $request->input('account_ids', []))
             ->pluck('id')
             ->all();
