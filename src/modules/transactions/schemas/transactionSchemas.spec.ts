@@ -76,12 +76,12 @@ describe('transaction schemas', () => {
     });
   });
 
-  it('maps financial goals only for expense transactions', () => {
+  it('maps financial goals only for income transactions', () => {
     expect(
       mapTransactionFormToWritePayload({
-        type: 'expense',
+        type: 'income',
         status: 'completed',
-        concept: 'Ahorro para viaje',
+        concept: 'Depósito',
         amount: '500',
         accountId: '20',
         splitBetweenUsers: false,
@@ -93,9 +93,9 @@ describe('transaction schemas', () => {
 
     expect(
       mapTransactionFormToWritePayload({
-        type: 'income',
+        type: 'expense',
         status: 'completed',
-        concept: 'Depósito',
+        concept: 'Ahorro para viaje',
         amount: '500',
         accountId: '20',
         splitBetweenUsers: false,

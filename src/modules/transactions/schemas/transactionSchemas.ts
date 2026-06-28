@@ -70,11 +70,11 @@ export const transactionFormSchema = z
       });
     }
 
-    if (values.type === 'income' && values.financialGoalId) {
+    if (values.type === 'expense' && values.financialGoalId) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['financialGoalId'],
-        message: 'La meta financiera sólo aplica a egresos.',
+        message: 'La meta financiera sólo aplica a ingresos.',
       });
     }
 
@@ -265,7 +265,7 @@ export function mapTransactionFormToWritePayload(
     accountId: values.accountId ?? '',
     splitBetweenUsers: values.type === 'expense' && values.splitBetweenUsers,
     date: values.date,
-    financialGoalId: values.type === 'expense' ? values.financialGoalId : null,
+    financialGoalId: values.type === 'income' ? values.financialGoalId : null,
     userPayments:
       values.type === 'expense' && values.splitBetweenUsers
         ? normalizeUserPayments(values.userPayments)

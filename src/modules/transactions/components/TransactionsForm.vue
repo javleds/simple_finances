@@ -260,7 +260,7 @@ async function handleSubmit(): Promise<void> {
       </div>
     </section>
 
-    <section v-if="isExpense" class="space-y-3">
+    <section v-if="isIncome" class="space-y-3">
       <AppSearchSelect
         id="transaction-financial-goal"
         v-model="financialGoalId"
