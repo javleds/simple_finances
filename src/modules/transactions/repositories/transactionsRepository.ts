@@ -5,9 +5,11 @@ import {
   createPaginatedCollectionSchema,
   type PaginatedCollection,
 } from '@/modules/shared/lib/pagination';
+import { parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import { mapTransactionApiToDomain, transactionApiSchema } from '../schemas/transactionSchemas';
+import { buildTransactionWritePayload, mapTransactionTypesToApi } from './transactionPayloads';
 import type {
   CreatedTransactionResult,
   DeletedTransactionResult,
@@ -72,28 +74,11 @@ const singleTransactionSchema = z.union([
     .transform((payload) => payload.data),
 ]);
 
-function parseNullableBalance(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value === 'string') {
-    const parsedValue = Number(value.replace(/[^0-9.-]/g, ''));
-    return Number.isFinite(parsedValue) ? parsedValue : null;
-  }
-
-  return null;
-}
-
 const pendingByUserApiSchema = z
   .object({
     user_id: transactionIdSchema,
     user_name: z.string().catch('Usuario no disponible'),
-    amount: z.unknown().transform((value) => parseNullableBalance(value) ?? 0),
+    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
     transaction_ids: z
       .array(transactionIdSchema)
       .optional()
@@ -110,13 +95,13 @@ const transactionMutationMetaPayloadSchema = z
   .object({
     account: z
       .object({
-        balance: z.unknown().transform(parseNullableBalance),
+        balance: z.unknown().transform(parseNullableNumber),
         pending_by_user: z.array(pendingByUserApiSchema).optional(),
       })
       .optional(),
     previous_account: z
       .object({
-        balance: z.unknown().transform(parseNullableBalance),
+        balance: z.unknown().transform(parseNullableNumber),
       })
       .optional(),
     pending_by_user: z.array(pendingByUserApiSchema).optional(),
@@ -156,9 +141,9 @@ export const transactionListMetaSchema = z
 
 const transactionFacilitySummarySchema = z
   .object({
-    income_total: z.unknown().transform((value) => parseNullableBalance(value) ?? 0),
-    outcome_total: z.unknown().transform((value) => parseNullableBalance(value) ?? 0),
-    balance: z.unknown().transform((value) => parseNullableBalance(value) ?? 0),
+    income_total: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    outcome_total: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   })
   .transform<TransactionFacilitySummary>((payload) => ({
     incomeTotal: payload.income_total,
@@ -247,30 +232,6 @@ export const createdTransactionResponseSchema = z
     };
   });
 
-function buildWritePayload(payload: TransactionWritePayload) {
-  return {
-    type: payload.type === 'expense' ? 'outcome' : 'income',
-    status: payload.status ?? 'completed',
-    concept: payload.concept,
-    amount: payload.amount,
-    split_between_users: payload.splitBetweenUsers,
-    user_payments: Object.entries(payload.userPayments).map(([userId, percentage]) => ({
-      user_id: Number(userId),
-      percentage,
-    })),
-    scheduled_at: payload.date,
-    financial_goal_id: payload.financialGoalId,
-  };
-}
-
-function mapTransactionTypesToApi(types: TransactionListFilters['type']): string[] | undefined {
-  if (!types || types.length === 0) {
-    return undefined;
-  }
-
-  return types.map((type) => (type === 'expense' ? 'outcome' : 'income'));
-}
-
 export function createTransactionsRepository() {
   return {
     async list(
@@ -324,7 +285,7 @@ export function createTransactionsRepository() {
     async create(payload: TransactionWritePayload): Promise<CreatedTransactionResult> {
       const response = await apiClient.post<unknown>(
         `${accountsPath}/${payload.accountId}/transactions`,
-        buildWritePayload(payload),
+        buildTransactionWritePayload(payload),
       );
       return createdTransactionResponseSchema.parse(response);
     },
@@ -334,7 +295,7 @@ export function createTransactionsRepository() {
     ): Promise<CreatedTransactionResult> {
       const response = await apiClient.put<unknown>(
         `${accountsPath}/${payload.accountId}/transactions/${transactionId}`,
-        buildWritePayload(payload),
+        buildTransactionWritePayload(payload),
       );
       return createdTransactionResponseSchema.parse(response);
     },
