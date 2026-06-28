@@ -481,6 +481,35 @@ it('searches visible accounts by name', function () {
     expect(collect($response->json('data'))->pluck('name')->all())->toBe(['Emergency Savings']);
 });
 
+it('filters soft deleted accounts by deleted at state', function () {
+    $user = User::factory()->create();
+
+    $activeAccount = Account::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Active account',
+    ]);
+    $deletedAccount = Account::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Deleted account',
+    ]);
+
+    $activeAccount->users()->attach($user->id);
+    $deletedAccount->users()->attach($user->id);
+    $deletedAccount->delete();
+
+    $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/accounts?deleted_at=0')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.name', 'Active account');
+
+    $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/accounts?deleted_at=1')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.name', 'Deleted account');
+});
+
 it('returns pending income totals by account user', function () {
     $owner = User::factory()->create(['name' => 'Account Owner']);
     $sharedUser = User::factory()->create(['name' => 'Shared User']);
