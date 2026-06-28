@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import DashboardBalanceSection from '@/modules/admin/components/DashboardBalanceSection.vue';
 import DashboardCompletePendingModal from '@/modules/admin/components/DashboardCompletePendingModal.vue';
@@ -68,9 +68,6 @@ const filteredGraphAccounts = computed(() =>
   ),
 );
 
-onMounted(() => {
-  void loadDashboard();
-});
 </script>
 
 <template>

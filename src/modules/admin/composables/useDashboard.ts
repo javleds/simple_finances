@@ -36,7 +36,6 @@ export function useDashboard() {
   const dashboardQuery = useQuery({
     queryKey: dashboardQueryKeys.data(),
     queryFn: () => dashboardRepository.load(),
-    enabled: false,
   });
 
   const completePendingTransactionsMutation = useMutation({
