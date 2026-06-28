@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { UserGroupIcon } from '@heroicons/vue/24/outline';
 import { computed, watch } from 'vue';
 
 import type { AccountMember } from '@/modules/accounts/types';
@@ -261,13 +260,13 @@ async function handleSubmit(): Promise<void> {
       </div>
     </section>
 
-    <section class="space-y-3">
+    <section v-if="isExpense" class="space-y-3">
       <AppSearchSelect
         id="transaction-financial-goal"
         v-model="financialGoalId"
         label="Meta financiera"
         :options="financialGoalOptions"
-        :disabled="isExpense || props.isLoadingFinancialGoals"
+        :disabled="props.isLoadingFinancialGoals"
         open-direction="top"
         :placeholder="
           props.isLoadingFinancialGoals ? 'Cargando metas financieras...' : 'Sin meta financiera'
@@ -282,17 +281,6 @@ async function handleSubmit(): Promise<void> {
         @change="touchFinancialGoal"
         @blur="touchFinancialGoal"
       />
-
-      <div
-        v-if="!props.isLoadingFinancialGoals && props.financialGoals.length === 0"
-        class="rounded-lg border border-dashed px-4 py-4 text-center"
-        :style="{ borderColor: 'var(--app-color-border)' }"
-      >
-        <UserGroupIcon class="mx-auto h-6 w-6 text-(--app-color-text-subtle)" />
-        <AppText size="sm" class="mt-2">
-          Esta cuenta aún no tiene metas financieras disponibles.
-        </AppText>
-      </div>
     </section>
   </form>
 </template>

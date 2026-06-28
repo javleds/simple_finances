@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { mapTransactionApiToDomain, transactionApiSchema } from './transactionSchemas';
+import {
+  mapTransactionApiToDomain,
+  mapTransactionFormToWritePayload,
+  transactionApiSchema,
+} from './transactionSchemas';
 
 const baseTransactionPayload = {
   id: 10,
@@ -70,5 +74,35 @@ describe('transaction schemas', () => {
         '8': 40,
       },
     });
+  });
+
+  it('maps financial goals only for expense transactions', () => {
+    expect(
+      mapTransactionFormToWritePayload({
+        type: 'expense',
+        status: 'completed',
+        concept: 'Ahorro para viaje',
+        amount: '500',
+        accountId: '20',
+        splitBetweenUsers: false,
+        date: '2026-06-20',
+        financialGoalId: 'goal-1',
+        userPayments: {},
+      }).financialGoalId,
+    ).toBe('goal-1');
+
+    expect(
+      mapTransactionFormToWritePayload({
+        type: 'income',
+        status: 'completed',
+        concept: 'Depósito',
+        amount: '500',
+        accountId: '20',
+        splitBetweenUsers: false,
+        date: '2026-06-20',
+        financialGoalId: 'goal-1',
+        userPayments: {},
+      }).financialGoalId,
+    ).toBeNull();
   });
 });

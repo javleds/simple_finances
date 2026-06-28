@@ -39,8 +39,8 @@ export function useTransactionForm(options: UseTransactionFormOptions = {}) {
   const isIncome = computed(() => values.type === 'income');
   const isExpense = computed(() => values.type === 'expense');
 
-  watch(isIncome, (nextIsIncome) => {
-    if (!nextIsIncome) {
+  watch(isExpense, (nextIsExpense) => {
+    if (!nextIsExpense) {
       setFieldValue('financialGoalId', null, false);
     }
   });
