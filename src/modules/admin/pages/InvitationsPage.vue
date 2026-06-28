@@ -7,15 +7,11 @@ import FacilityInvitationActionModal from '@/modules/admin/components/FacilityIn
 import FacilityInvitationsList from '@/modules/admin/components/FacilityInvitationsList.vue';
 import FacilityInvitationsToolbar from '@/modules/admin/components/FacilityInvitationsToolbar.vue';
 import { useFacilityInvitationActions } from '@/modules/admin/composables/useFacilityInvitationActions';
-import { createAccountInvitesRepository } from '@/modules/accounts/repositories/accountInvitesRepository';
-import type { AccountInvite } from '@/modules/accounts/schemas/accountInviteSchemas';
+import { useFacilityInvitationsList } from '@/modules/admin/composables/useFacilityInvitationsList';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
-import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 import { areQueriesEqual } from '@/modules/shared/lib/queryParams';
 import { AppListState, AppLoadMoreFooter, AppText } from '@/modules/shared/components';
 
-const accountInvitesRepository = createAccountInvitesRepository();
 const route = useRoute();
 const router = useRouter();
 const defaultInvitationsPerPage = 20;
@@ -33,19 +29,16 @@ const invitationsPerPage = computed(() => {
   return rawValue;
 });
 
-const invitationsState = usePaginatedCollection<AccountInvite, []>({
+const {
+  invitationsState,
+  loadInvitations,
+  reloadInvitations,
+  handleLoadMoreRetry,
+  infiniteStatusLabel,
+} = useFacilityInvitationsList({
   defaultPerPage: defaultInvitationsPerPage,
-  loadPage: (options) =>
-    accountInvitesRepository.listAll({
-      ...options,
-      filters: {
-        search: searchTerm.value.trim() || undefined,
-        status: ['pending'],
-      },
-    }),
-  resolveErrorMessage: resolveApiErrorMessage,
-  loadErrorMessage: 'No fue posible cargar las invitaciones.',
-  loadMoreErrorMessage: 'No fue posible cargar más invitaciones.',
+  perPage: invitationsPerPage,
+  searchTerm,
 });
 
 const { target: loadMoreSentinel } = useInfiniteScroll({
@@ -88,13 +81,6 @@ const actionModalActions = computed(() => [
   },
 ]);
 
-async function loadInvitations(): Promise<void> {
-  await invitationsState.load([], {
-    reset: true,
-    perPage: invitationsPerPage.value,
-  });
-}
-
 watch(
   () => route.query.search,
   (nextSearch) => {
@@ -124,25 +110,6 @@ watch(
   { immediate: true },
 );
 
-function reloadInvitations(): void {
-  void loadInvitations();
-}
-
-function handleLoadMoreRetry(): void {
-  void invitationsState.loadMore();
-}
-
-function infiniteStatusLabel(): string {
-  if (invitationsState.isLoadingMore.value) {
-    return 'Cargando más invitaciones...';
-  }
-
-  if (invitationsState.hasReachedEnd.value) {
-    return 'Has llegado al final.';
-  }
-
-  return 'Sigue desplazándote para revisar más invitaciones conforme se compartan nuevas cuentas.';
-}
 </script>
 
 <template>
