@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { parseBooleanLike, parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 import type {
   BatchTransactionsResult,
   DashboardAccountsSummary,
@@ -8,45 +9,6 @@ import type {
   DashboardPeriodSummary,
   DashboardSubscriptionsSummary,
 } from '../types/dashboard';
-
-function parseNullableNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value === 'string') {
-    const normalizedValue = value.replace(/[^0-9.-]/g, '');
-
-    if (!normalizedValue) {
-      return null;
-    }
-
-    const parsedValue = Number(normalizedValue);
-    return Number.isFinite(parsedValue) ? parsedValue : null;
-  }
-
-  return null;
-}
-
-function parseBoolean(value: unknown): boolean {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-
-  if (typeof value === 'number') {
-    return value === 1;
-  }
-
-  if (typeof value === 'string') {
-    return ['1', 'true', 'yes'].includes(value.trim().toLowerCase());
-  }
-
-  return false;
-}
 
 const entityIdSchema = z.union([z.string(), z.number()]).transform((value) => String(value));
 const nullableColorSchema = z
@@ -61,7 +23,7 @@ const dashboardGraphItemApiSchema = z
     account_name: z.string(),
     balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
     color: nullableColorSchema,
-    is_virtual: z.unknown().optional().transform(parseBoolean),
+    is_virtual: z.unknown().optional().transform(parseBooleanLike),
   })
   .transform<DashboardGraphAccount>((payload) => ({
     accountId: payload.account_id,

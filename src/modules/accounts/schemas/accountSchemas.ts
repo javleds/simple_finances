@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+import {
+  parseBooleanLike,
+  parseEntityId,
+  parseNullableNumber,
+} from '@/modules/shared/lib/apiParsing';
 import type {
   Account,
   AccountFormValues,
@@ -11,64 +16,12 @@ import type {
 
 const colorPattern = /^#([0-9a-fA-F]{6})$/;
 
-function parseBooleanLike(value: unknown): boolean {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-
-  if (typeof value === 'number') {
-    return value === 1;
-  }
-
-  if (typeof value === 'string') {
-    const normalizedValue = value.trim().toLowerCase();
-    return normalizedValue === '1' || normalizedValue === 'true' || normalizedValue === 'yes';
-  }
-
-  return false;
-}
-
-function parseNullableNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value === 'string') {
-    const normalizedValue = value.replace(/[^0-9.-]/g, '');
-
-    if (!normalizedValue) {
-      return null;
-    }
-
-    const parsedValue = Number(normalizedValue);
-    return Number.isFinite(parsedValue) ? parsedValue : null;
-  }
-
-  return null;
-}
-
 function parseAccountStatus(value: unknown): AccountStatus {
   if (value === 'Activo' || value === 'active' || value === true || value === 1 || value === '1') {
     return 'Activo';
   }
 
   return 'Inactivo';
-}
-
-function parseEntityId(value: unknown): string | null {
-  if (value === null || value === undefined) {
-    return null;
-  }
-
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-
-  return null;
 }
 
 function resolveAccountUserId(value: {

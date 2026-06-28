@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 import type {
   Subscription,
   SubscriptionFormValues,
@@ -8,29 +9,6 @@ import type {
 } from '../types';
 
 const frequencyTypeSchema = z.enum(['days', 'months', 'years']);
-
-function parseNullableNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value === 'string') {
-    const normalizedValue = value.replace(/[^0-9.-]/g, '');
-
-    if (!normalizedValue) {
-      return null;
-    }
-
-    const parsedValue = Number(normalizedValue);
-    return Number.isFinite(parsedValue) ? parsedValue : null;
-  }
-
-  return null;
-}
 
 function parseFrequencyType(value: unknown): SubscriptionFrequencyType {
   if (value === 'days' || value === 'months' || value === 'years') {

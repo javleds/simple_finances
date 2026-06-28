@@ -1,39 +1,6 @@
 import { z } from 'zod';
 
-function parseNullableNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value === 'string') {
-    const normalizedValue = value.replace(/[^0-9.-]/g, '');
-
-    if (!normalizedValue) {
-      return null;
-    }
-
-    const parsedValue = Number(normalizedValue);
-    return Number.isFinite(parsedValue) ? parsedValue : null;
-  }
-
-  return null;
-}
-
-function parseEntityId(value: unknown): string | null {
-  if (value === null || value === undefined) {
-    return null;
-  }
-
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-
-  return null;
-}
+import { parseEntityId, parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 
 export type AccountGoal = {
   id: string;

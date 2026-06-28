@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 import type {
   DistributionFrequency,
   DistributionRelation,
@@ -10,29 +11,6 @@ import type {
   DistributionRuleFormValues,
   DistributionRuleWritePayload,
 } from '../types';
-
-function parseNullableNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value === 'string') {
-    const normalizedValue = value.replace(/[^0-9.-]/g, '');
-
-    if (!normalizedValue) {
-      return null;
-    }
-
-    const parsedValue = Number(normalizedValue);
-    return Number.isFinite(parsedValue) ? parsedValue : null;
-  }
-
-  return null;
-}
 
 function parseFrequency(value: unknown): DistributionFrequency {
   return value === 'semi_monthly' ? 'semi_monthly' : 'monthly';

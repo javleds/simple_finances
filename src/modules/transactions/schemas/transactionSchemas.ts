@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { parseEntityId, parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 import type {
   Transaction,
   TransactionFormValues,
@@ -7,29 +8,6 @@ import type {
   TransactionType,
   TransactionWritePayload,
 } from '../types';
-
-function parseNullableNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value === 'string') {
-    const normalizedValue = value.replace(/[^0-9.-]/g, '');
-
-    if (!normalizedValue) {
-      return null;
-    }
-
-    const parsedValue = Number(normalizedValue);
-    return Number.isFinite(parsedValue) ? parsedValue : null;
-  }
-
-  return null;
-}
 
 function parseType(value: unknown): TransactionType {
   if (value === 'income') {
@@ -46,18 +24,6 @@ function parseType(value: unknown): TransactionType {
 function parseStatus(value: unknown): TransactionStatus | null {
   if (value === 'pending' || value === 'completed') {
     return value;
-  }
-
-  return null;
-}
-
-function parseEntityId(value: unknown): string | null {
-  if (value === null || value === undefined) {
-    return null;
-  }
-
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
   }
 
   return null;
