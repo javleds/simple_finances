@@ -40,7 +40,7 @@ export function useDistributionRelationsCrud() {
     try {
       relationsState.isLoading.value = true;
 
-      const [loadedRule] = await Promise.all([distributionRepository.getRule(ruleId)]);
+      const loadedRule = await distributionRepository.getRule(ruleId);
       rule.value = loadedRule;
     } catch (error) {
       relationsState.loadError.value = resolveApiErrorMessage(

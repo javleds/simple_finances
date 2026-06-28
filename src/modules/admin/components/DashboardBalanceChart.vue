@@ -20,7 +20,7 @@ const themeStore = useThemeStore();
 const chartInitOptions = { renderer: 'svg' as const };
 
 const chartColors = computed(() => {
-  themeStore.mode;
+  const activeTheme = themeStore.mode;
 
   if (typeof window === 'undefined') {
     return {
@@ -30,6 +30,8 @@ const chartColors = computed(() => {
       textSubtle: '#64748b',
     };
   }
+
+  void activeTheme;
 
   const styles = window.getComputedStyle(document.documentElement);
 

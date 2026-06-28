@@ -1,10 +1,7 @@
 import { z } from 'zod';
 
 import { createApiClient } from '@/lib/api/apiClient';
-import {
-  createPaginatedCollectionSchema,
-  type PaginatedCollection,
-} from '@/modules/shared/lib/pagination';
+import { createPaginatedCollectionSchema } from '@/modules/shared/lib/pagination';
 import { parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 

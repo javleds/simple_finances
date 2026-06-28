@@ -6,8 +6,6 @@ import type { Account, AccountWritePayload } from '@/modules/accounts/types';
 import { AppInput, AppText, AppToggleButton } from '@/modules/shared/components';
 import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
 
-type YesNoValue = 'yes' | 'no';
-
 type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;

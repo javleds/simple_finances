@@ -43,9 +43,12 @@ function createPendingState(options: {
   account?: Ref<Account | undefined>;
   completeResult: BatchTransactionsResult;
 }) {
-  const markTransactionsCompleted = vi.fn();
-  const reloadTransactions = vi.fn().mockResolvedValue(undefined);
-  const completePendingTransactions = vi.fn().mockResolvedValue(options.completeResult);
+  const markTransactionsCompleted = vi.fn<(transactionIds: string[]) => void>();
+  const reloadTransactions = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+  const completePendingTransactions =
+    vi.fn<(transactionIds: string[]) => Promise<BatchTransactionsResult>>().mockResolvedValue(
+      options.completeResult,
+    );
   const account = options.account ?? ref<Account | undefined>(createAccount());
   const state = useAccountTransactionsPendingState({
     account: computed(() => account.value),
