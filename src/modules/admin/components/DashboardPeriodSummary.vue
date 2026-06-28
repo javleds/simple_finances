@@ -4,6 +4,7 @@ import { computed } from 'vue';
 
 import type { DashboardPeriodSummary } from '@/modules/admin/types/dashboard';
 import {
+  AppButton,
   AppCard,
   AppDatePicker,
   AppIconButton,
