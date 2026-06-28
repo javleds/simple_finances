@@ -14,11 +14,13 @@ export function buildQueryParams(params: Record<string, QueryParamValue>): URLSe
     }
 
     if (Array.isArray(value)) {
-      if (value.length === 0) {
+      const normalizedValues = normalizeQueryValues(value);
+
+      if (normalizedValues.length === 0) {
         continue;
       }
 
-      searchParams.set(key, value.map((item) => String(item)).join(','));
+      searchParams.set(key, normalizedValues.join(','));
       continue;
     }
 
@@ -38,14 +40,33 @@ export function parseQueryValues<TValue extends string>(
   value: unknown,
   isAllowedValue: (value: string) => value is TValue,
 ): TValue[] {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    return [];
+  return normalizeQueryValues(value)
+    .filter(isAllowedValue);
+}
+
+function normalizeQueryValues(value: unknown): string[] {
+  const rawValues = Array.isArray(value) ? value : [value];
+  const values: string[] = [];
+
+  for (const rawValue of rawValues) {
+    if (rawValue === null || rawValue === undefined) {
+      continue;
+    }
+
+    const items = String(rawValue).split(',');
+
+    for (const item of items) {
+      const normalizedItem = item.trim();
+
+      if (!normalizedItem) {
+        continue;
+      }
+
+      values.push(normalizedItem);
+    }
   }
 
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(isAllowedValue);
+  return values;
 }
 
 export function normalizeQueryRecord(query: Record<string, unknown>): Record<string, string> {
