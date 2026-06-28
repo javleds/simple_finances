@@ -155,6 +155,7 @@ onMounted(() => {
               type="button"
               variant="primary"
               full-width
+              :loading="isSubmitting || isCheckingVerification"
               :disabled="!email || isSubmitting || isCheckingVerification"
               @click="handleResendEmail"
             >

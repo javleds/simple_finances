@@ -4,11 +4,15 @@ const props = withDefaults(
     type?: 'button' | 'submit' | 'reset';
     variant?: 'primary' | 'secondary' | 'ghost' | 'outline';
     fullWidth?: boolean;
+    disabled?: boolean;
+    loading?: boolean;
   }>(),
   {
     type: 'button',
     variant: 'primary',
     fullWidth: false,
+    disabled: false,
+    loading: false,
   },
 );
 
@@ -27,9 +31,16 @@ const variantClasses = {
 <template>
   <button
     :type="props.type"
-    class="inline-flex h-12 items-center justify-center rounded-lg px-4 text-sm font-semibold transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+    :disabled="props.disabled || props.loading"
+    :aria-busy="props.loading"
+    class="inline-flex h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
     :class="[variantClasses[props.variant], props.fullWidth ? 'w-full' : '']"
   >
+    <span
+      v-if="props.loading"
+      aria-hidden="true"
+      class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+    />
     <slot />
   </button>
 </template>

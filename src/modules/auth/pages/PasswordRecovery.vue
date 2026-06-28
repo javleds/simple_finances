@@ -26,19 +26,30 @@ const themeOptions = [
 
 const { email, isSubmitting, isSubmitDisabled, submitForm } = usePasswordRecoveryForm();
 const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
+const isRecoveryPending = ref(false);
 
 function updateTheme(nextTheme: ThemeMode): void {
   themeStore.setTheme(nextTheme);
 }
 
 async function handleSubmit(): Promise<void> {
+  if (isRecoveryPending.value) {
+    return;
+  }
+
   const payload = await submitForm();
 
   if (!payload) {
     return;
   }
 
-  recoveryMessage.value = await authRepository.requestPasswordRecovery(payload);
+  isRecoveryPending.value = true;
+
+  try {
+    recoveryMessage.value = await authRepository.requestPasswordRecovery(payload);
+  } finally {
+    isRecoveryPending.value = false;
+  }
 }
 </script>
 
@@ -109,9 +120,10 @@ async function handleSubmit(): Promise<void> {
               type="submit"
               variant="primary"
               full-width
-              :disabled="isSubmitDisabled || isSubmitting"
+              :loading="isSubmitting || isRecoveryPending"
+              :disabled="isSubmitDisabled || isSubmitting || isRecoveryPending"
             >
-              {{ isSubmitting ? 'Enviando...' : 'Recuperar mi contraseña' }}
+              {{ isSubmitting || isRecoveryPending ? 'Enviando...' : 'Recuperar mi contraseña' }}
             </AppButton>
           </form>
 

@@ -44,12 +44,17 @@ const { token, email, password, passwordConfirmation, isSubmitting, isSubmitDisa
 const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('password');
 const { error: passwordConfirmationError, touch: touchPasswordConfirmation } =
   useFormFieldInteraction('passwordConfirmation');
+const isResetPending = ref(false);
 
 function updateTheme(nextTheme: ThemeMode): void {
   themeStore.setTheme(nextTheme);
 }
 
 async function handleSubmit(): Promise<void> {
+  if (isResetPending.value) {
+    return;
+  }
+
   serverError.value = null;
 
   const payload = await submitForm();
@@ -58,6 +63,8 @@ async function handleSubmit(): Promise<void> {
     return;
   }
 
+  isResetPending.value = true;
+
   try {
     await authRepository.resetPassword(payload);
     clearPendingVerificationEmail();
@@ -65,6 +72,8 @@ async function handleSubmit(): Promise<void> {
   } catch (error) {
     serverError.value =
       error instanceof Error ? error.message : 'No fue posible restablecer la contraseña.';
+  } finally {
+    isResetPending.value = false;
   }
 }
 </script>
@@ -146,9 +155,10 @@ async function handleSubmit(): Promise<void> {
               type="submit"
               variant="primary"
               full-width
-              :disabled="isSubmitDisabled || isSubmitting"
+              :loading="isSubmitting || isResetPending"
+              :disabled="isSubmitDisabled || isSubmitting || isResetPending"
             >
-              {{ isSubmitting ? 'Actualizando...' : 'Actualizar contraseña' }}
+              {{ isSubmitting || isResetPending ? 'Actualizando...' : 'Actualizar contraseña' }}
             </AppButton>
           </form>
 

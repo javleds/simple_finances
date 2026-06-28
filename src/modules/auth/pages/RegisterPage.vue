@@ -52,6 +52,7 @@ const { error: termsAcceptedError, touch: touchTermsAccepted } =
   useFormFieldInteraction('termsAccepted');
 const { error: privacyPolicyAcceptedError, touch: touchPrivacyPolicyAccepted } =
   useFormFieldInteraction('privacyPolicyAccepted');
+const isRegisterPending = ref(false);
 
 watch(
   () => route.query.email,
@@ -95,17 +96,27 @@ async function navigateAfterRegister(session: AuthSession): Promise<void> {
 }
 
 async function handleSubmit(): Promise<void> {
+  if (isRegisterPending.value) {
+    return;
+  }
+
   const payload = await submitForm();
 
   if (!payload) {
     return;
   }
 
-  const session = await authRepository.register({
-    ...payload,
-    postAuthAction: resolvePostAuthAction(route.query.post_auth_action),
-  });
-  await navigateAfterRegister(session);
+  isRegisterPending.value = true;
+
+  try {
+    const session = await authRepository.register({
+      ...payload,
+      postAuthAction: resolvePostAuthAction(route.query.post_auth_action),
+    });
+    await navigateAfterRegister(session);
+  } finally {
+    isRegisterPending.value = false;
+  }
 }
 </script>
 
@@ -187,9 +198,10 @@ async function handleSubmit(): Promise<void> {
               type="submit"
               variant="primary"
               full-width
-              :disabled="isSubmitDisabled || isSubmitting"
+              :loading="isSubmitting || isRegisterPending"
+              :disabled="isSubmitDisabled || isSubmitting || isRegisterPending"
             >
-              {{ isSubmitting ? 'Registrando...' : 'Registrarme' }}
+              {{ isSubmitting || isRegisterPending ? 'Registrando...' : 'Registrarme' }}
             </AppButton>
           </form>
 

@@ -38,6 +38,7 @@ const { email, password, isSubmitting, isSubmitDisabled, submitForm } = useLogin
 const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
 const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('password');
 const submitError = ref<string | null>(null);
+const isLoginPending = ref(false);
 
 watch(
   () => route.query.email,
@@ -73,6 +74,10 @@ async function navigateAfterLogin(session: AuthSession): Promise<void> {
 }
 
 async function handleSubmit(): Promise<void> {
+  if (isLoginPending.value) {
+    return;
+  }
+
   submitError.value = null;
 
   const payload = await submitForm();
@@ -80,6 +85,8 @@ async function handleSubmit(): Promise<void> {
   if (!payload) {
     return;
   }
+
+  isLoginPending.value = true;
 
   try {
     const session = await authRepository.login({
@@ -105,6 +112,8 @@ async function handleSubmit(): Promise<void> {
     }
 
     submitError.value = 'No fue posible iniciar sesión. Revisa tu conexión e inténtalo de nuevo.';
+  } finally {
+    isLoginPending.value = false;
   }
 }
 </script>
@@ -184,9 +193,10 @@ async function handleSubmit(): Promise<void> {
               type="submit"
               variant="primary"
               full-width
-              :disabled="isSubmitDisabled || isSubmitting"
+              :loading="isSubmitting || isLoginPending"
+              :disabled="isSubmitDisabled || isSubmitting || isLoginPending"
             >
-              {{ isSubmitting ? 'Ingresando...' : 'Iniciar sesión' }}
+              {{ isSubmitting || isLoginPending ? 'Ingresando...' : 'Iniciar sesión' }}
             </AppButton>
           </form>
 
