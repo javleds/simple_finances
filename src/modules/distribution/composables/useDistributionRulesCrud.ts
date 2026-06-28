@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 import { createDistributionRepository } from '../repositories/distributionRepository';
 import type {
@@ -12,18 +12,6 @@ import type {
 
 const distributionRepository = createDistributionRepository();
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 export function useDistributionRulesCrud() {
   const rulesState = usePaginatedCollection<
     DistributionRule,
@@ -31,7 +19,7 @@ export function useDistributionRulesCrud() {
   >({
     defaultPerPage: 20,
     loadPage: (options, filters) => distributionRepository.listRules({ ...options, filters }),
-    resolveErrorMessage,
+    resolveErrorMessage: resolveApiErrorMessage,
     loadErrorMessage: 'No fue posible cargar las reglas.',
     loadMoreErrorMessage: 'No fue posible cargar más reglas.',
   });
@@ -65,7 +53,7 @@ export function useDistributionRulesCrud() {
       await rulesState.reload();
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible crear la regla.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible crear la regla.');
       return false;
     } finally {
       isSaving.value = false;
@@ -85,7 +73,7 @@ export function useDistributionRulesCrud() {
       await rulesState.reload();
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible actualizar la regla.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible actualizar la regla.');
       return false;
     } finally {
       isSaving.value = false;
@@ -101,7 +89,7 @@ export function useDistributionRulesCrud() {
       rulesState.removeItem((rule) => rule.id === ruleId);
       return true;
     } catch (error) {
-      deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la regla.');
+      deleteError.value = resolveApiErrorMessage(error, 'No fue posible eliminar la regla.');
       return false;
     } finally {
       isDeleting.value = false;

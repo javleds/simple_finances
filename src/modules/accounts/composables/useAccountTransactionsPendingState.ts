@@ -3,6 +3,7 @@ import { computed, ref, watch, type ComputedRef } from 'vue';
 import { createDashboardRepository } from '@/modules/admin/repositories/dashboardRepository';
 import type { BatchTransactionsResult } from '@/modules/admin/types/dashboard';
 import type { Account, AccountPendingByUser } from '@/modules/accounts/types';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 import type { TransactionMutationMeta } from '@/modules/transactions/types';
 
 type PendingTransactionsRepository = {
@@ -134,7 +135,7 @@ export function useAccountTransactionsPendingState(
         closeCompletePendingByUserModal();
       }
     } catch (error) {
-      completePendingByUserError.value = resolveErrorMessage(
+      completePendingByUserError.value = resolveApiErrorMessage(
         error,
         'No fue posible completar los pendientes del usuario.',
       );
@@ -245,12 +246,4 @@ export function useAccountTransactionsPendingState(
     selectedPendingByUser,
     usersWithPendingExpenses,
   };
-}
-
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
 }

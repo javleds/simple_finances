@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 import { createAccountGoalsRepository } from '../repositories/accountGoalsRepository';
 import type {
@@ -12,18 +12,6 @@ import type {
 
 const accountGoalsRepository = createAccountGoalsRepository();
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 export function useAccountGoalsCrud() {
   const goalsState = usePaginatedCollection<
     AccountGoal,
@@ -32,7 +20,7 @@ export function useAccountGoalsCrud() {
     defaultPerPage: 20,
     loadPage: (options, accountId, filters) =>
       accountGoalsRepository.list(accountId, { ...options, filters }),
-    resolveErrorMessage,
+    resolveErrorMessage: resolveApiErrorMessage,
     loadErrorMessage: 'No fue posible cargar las metas.',
     loadMoreErrorMessage: 'No fue posible cargar más metas.',
   });
@@ -66,7 +54,7 @@ export function useAccountGoalsCrud() {
       goalsState.prependItem(goal);
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible crear la meta.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible crear la meta.');
       return false;
     } finally {
       isSaving.value = false;
@@ -82,7 +70,7 @@ export function useAccountGoalsCrud() {
       goalsState.replaceItem((goal) => goal.id === goalId, updatedGoal);
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible actualizar la meta.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible actualizar la meta.');
       return false;
     } finally {
       isSaving.value = false;
@@ -98,7 +86,7 @@ export function useAccountGoalsCrud() {
       goalsState.removeItem((goal) => goal.id === goalId);
       return true;
     } catch (error) {
-      deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la meta.');
+      deleteError.value = resolveApiErrorMessage(error, 'No fue posible eliminar la meta.');
       return false;
     } finally {
       isDeleting.value = false;

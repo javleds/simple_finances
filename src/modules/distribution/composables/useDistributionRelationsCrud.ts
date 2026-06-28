@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 import { createDistributionRepository } from '../repositories/distributionRepository';
 import type {
@@ -12,25 +12,13 @@ import type {
 
 const distributionRepository = createDistributionRepository();
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 export function useDistributionRelationsCrud() {
   const rule = ref<DistributionRule | null>(null);
   const relationsState = usePaginatedCollection<DistributionRelation, [string]>({
     defaultPerPage: 20,
     loadPage: (options, fixedIncomeId) =>
       distributionRepository.listRelations(fixedIncomeId, options),
-    resolveErrorMessage,
+    resolveErrorMessage: resolveApiErrorMessage,
     loadErrorMessage: 'No fue posible cargar la regla.',
     loadMoreErrorMessage: 'No fue posible cargar más relaciones.',
   });
@@ -55,7 +43,7 @@ export function useDistributionRelationsCrud() {
       const [loadedRule] = await Promise.all([distributionRepository.getRule(ruleId)]);
       rule.value = loadedRule;
     } catch (error) {
-      relationsState.loadError.value = resolveErrorMessage(
+      relationsState.loadError.value = resolveApiErrorMessage(
         error,
         'No fue posible cargar la regla.',
       );
@@ -80,7 +68,7 @@ export function useDistributionRelationsCrud() {
       await loadRule(payload.fixedIncomeId);
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible crear la relación.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible crear la relación.');
       return false;
     } finally {
       isSaving.value = false;
@@ -100,7 +88,7 @@ export function useDistributionRelationsCrud() {
       await loadRule(payload.fixedIncomeId);
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible actualizar la relación.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible actualizar la relación.');
       return false;
     } finally {
       isSaving.value = false;
@@ -117,7 +105,7 @@ export function useDistributionRelationsCrud() {
       await loadRule(fixedIncomeId);
       return true;
     } catch (error) {
-      deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la relación.');
+      deleteError.value = resolveApiErrorMessage(error, 'No fue posible eliminar la relación.');
       return false;
     } finally {
       isDeleting.value = false;

@@ -1,7 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/vue-query';
 import { computed, nextTick, ref } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 import type {
   Transaction,
   TransactionFacilityFilters,
@@ -17,18 +17,6 @@ const defaultSummary: TransactionFacilitySummary = {
   outcomeTotal: 0,
   balance: 0,
 };
-
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
 
 export function useTransactionFacility() {
   const perPage = ref(20);
@@ -95,13 +83,13 @@ export function useTransactionFacility() {
       const result = await query.refetch();
 
       if (result.error) {
-        loadError.value = resolveErrorMessage(
+        loadError.value = resolveApiErrorMessage(
           result.error,
           'No fue posible cargar las transacciones.',
         );
       }
     } catch (error) {
-      loadError.value = resolveErrorMessage(error, 'No fue posible cargar las transacciones.');
+      loadError.value = resolveApiErrorMessage(error, 'No fue posible cargar las transacciones.');
     } finally {
       isManualLoading.value = false;
       isManualLoadingMore.value = false;
@@ -120,13 +108,13 @@ export function useTransactionFacility() {
       const result = await query.fetchNextPage();
 
       if (result.error) {
-        loadError.value = resolveErrorMessage(
+        loadError.value = resolveApiErrorMessage(
           result.error,
           'No fue posible cargar más transacciones.',
         );
       }
     } catch (error) {
-      loadError.value = resolveErrorMessage(error, 'No fue posible cargar más transacciones.');
+      loadError.value = resolveApiErrorMessage(error, 'No fue posible cargar más transacciones.');
     } finally {
       isManualLoadingMore.value = false;
     }

@@ -4,8 +4,8 @@ import { computed, onMounted, ref } from 'vue';
 import ProfileForm from '@/modules/admin/components/ProfileForm.vue';
 import { createProfileRepository } from '@/modules/admin/repositories/profileRepository';
 import type { Profile, ProfileWritePayload } from '@/modules/admin/schemas/profileSchemas';
-import { ApiError } from '@/lib/api/apiClient';
 import { AppButton, AppCard, AppText, AppTitle } from '@/modules/shared/components';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 type FormState = {
   canSubmit: boolean;
@@ -27,18 +27,6 @@ onMounted(() => {
   void loadProfile();
 });
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 async function loadProfile(): Promise<void> {
   isLoading.value = true;
   loadError.value = null;
@@ -46,7 +34,7 @@ async function loadProfile(): Promise<void> {
   try {
     profile.value = await profileRepository.get();
   } catch (error) {
-    loadError.value = resolveErrorMessage(error, 'No fue posible cargar el perfil.');
+    loadError.value = resolveApiErrorMessage(error, 'No fue posible cargar el perfil.');
   } finally {
     isLoading.value = false;
   }
@@ -59,7 +47,7 @@ async function handleSubmit(payload: ProfileWritePayload): Promise<void> {
   try {
     profile.value = await profileRepository.update(payload);
   } catch (error) {
-    saveError.value = resolveErrorMessage(error, 'No fue posible guardar el perfil.');
+    saveError.value = resolveApiErrorMessage(error, 'No fue posible guardar el perfil.');
   } finally {
     isSaving.value = false;
   }

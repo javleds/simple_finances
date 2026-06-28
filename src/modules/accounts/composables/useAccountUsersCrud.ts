@@ -1,24 +1,12 @@
 import { computed, ref, type Ref } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import type { AccountMember, AccountUsersListFilters } from '@/modules/accounts/types';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 const accountsRepository = createAccountsRepository();
 const defaultUsersPerPage = 20;
-
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
 
 export function useAccountUsersCrud(filters: Ref<AccountUsersListFilters>) {
   const usersState = usePaginatedCollection<AccountMember, [string]>({
@@ -28,7 +16,7 @@ export function useAccountUsersCrud(filters: Ref<AccountUsersListFilters>) {
         ...options,
         filters: filters.value,
       }),
-    resolveErrorMessage,
+    resolveErrorMessage: resolveApiErrorMessage,
     loadErrorMessage: 'No fue posible cargar los usuarios.',
     loadMoreErrorMessage: 'No fue posible cargar más usuarios.',
   });
@@ -69,7 +57,7 @@ export function useAccountUsersCrud(filters: Ref<AccountUsersListFilters>) {
       usersState.replaceItem((user) => user.id === updatedUser.id, updatedUser);
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible actualizar el porcentaje.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible actualizar el porcentaje.');
       return false;
     } finally {
       isSaving.value = false;
@@ -85,7 +73,7 @@ export function useAccountUsersCrud(filters: Ref<AccountUsersListFilters>) {
       usersState.removeItem((user) => user.id === userId);
       return true;
     } catch (error) {
-      deleteError.value = resolveErrorMessage(error, 'No fue posible quitar al usuario.');
+      deleteError.value = resolveApiErrorMessage(error, 'No fue posible quitar al usuario.');
       return false;
     } finally {
       isDeleting.value = false;

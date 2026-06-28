@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 import { createTransactionsRepository } from '../repositories/transactionsRepository';
 import type {
@@ -15,18 +15,6 @@ import type {
 
 const transactionsRepository = createTransactionsRepository();
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 export function useTransactionsCrud() {
   const transactionsState = usePaginatedCollection<
     Transaction,
@@ -38,7 +26,7 @@ export function useTransactionsCrud() {
       listMeta.value = response.meta;
       return response;
     },
-    resolveErrorMessage,
+    resolveErrorMessage: resolveApiErrorMessage,
     loadErrorMessage: 'No fue posible cargar las transacciones.',
     loadMoreErrorMessage: 'No fue posible cargar más transacciones.',
   });
@@ -75,7 +63,7 @@ export function useTransactionsCrud() {
       transactionsState.prependItems(result.transactions);
       return result;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible crear la transacción.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible crear la transacción.');
       return null;
     } finally {
       isSaving.value = false;
@@ -97,7 +85,7 @@ export function useTransactionsCrud() {
       );
       return result;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible actualizar la transacción.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible actualizar la transacción.');
       return null;
     } finally {
       isSaving.value = false;
@@ -117,7 +105,7 @@ export function useTransactionsCrud() {
       transactionsState.removeItem((transaction) => removedIds.has(transaction.id));
       return result;
     } catch (error) {
-      deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la transacción.');
+      deleteError.value = resolveApiErrorMessage(error, 'No fue posible eliminar la transacción.');
       return null;
     } finally {
       isDeleting.value = false;

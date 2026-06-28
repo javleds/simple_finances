@@ -3,10 +3,10 @@ import { ArrowsRightLeftIcon, EnvelopeIcon, FlagIcon, UsersIcon } from '@heroico
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { ApiError } from '@/lib/api/apiClient';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import type { Account, AccountMember } from '@/modules/accounts/types';
 import { AppCard, AppContextTabs, AppLink, AppText, AppTitle } from '@/modules/shared/components';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 type AccountRelationSection = 'transactions' | 'invitations' | 'goals' | 'users';
 
@@ -56,18 +56,6 @@ watch(
   { immediate: true },
 );
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 async function loadAccount(nextAccountId: string): Promise<void> {
   if (!nextAccountId) {
     account.value = null;
@@ -82,7 +70,7 @@ async function loadAccount(nextAccountId: string): Promise<void> {
     account.value = await accountsRepository.getById(nextAccountId);
   } catch (error) {
     account.value = null;
-    loadError.value = resolveErrorMessage(error, 'No fue posible cargar la cuenta.');
+    loadError.value = resolveApiErrorMessage(error, 'No fue posible cargar la cuenta.');
   } finally {
     isLoadingAccount.value = false;
   }

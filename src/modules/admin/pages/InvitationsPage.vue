@@ -8,9 +8,9 @@ import FacilityInvitationsList from '@/modules/admin/components/FacilityInvitati
 import FacilityInvitationsToolbar from '@/modules/admin/components/FacilityInvitationsToolbar.vue';
 import { createAccountInvitesRepository } from '@/modules/accounts/repositories/accountInvitesRepository';
 import type { AccountInvite } from '@/modules/accounts/schemas/accountInviteSchemas';
-import { ApiError } from '@/lib/api/apiClient';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 import { areQueriesEqual } from '@/modules/shared/lib/queryParams';
 import { AppListState, AppLoadMoreFooter, AppText } from '@/modules/shared/components';
 
@@ -48,7 +48,7 @@ const invitationsState = usePaginatedCollection<AccountInvite, []>({
         status: ['pending'],
       },
     }),
-  resolveErrorMessage,
+  resolveErrorMessage: resolveApiErrorMessage,
   loadErrorMessage: 'No fue posible cargar las invitaciones.',
   loadMoreErrorMessage: 'No fue posible cargar más invitaciones.',
 });
@@ -86,18 +86,6 @@ const actionModalActions = computed(() => [
     disabled: !selectedInvitation.value || !pendingAction.value || isSaving.value,
   },
 ]);
-
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
 
 async function loadInvitations(): Promise<void> {
   await invitationsState.load([], {
@@ -174,7 +162,7 @@ async function confirmInvitationAction(): Promise<void> {
 
     closeInvitationAction();
   } catch (error) {
-    saveError.value = resolveErrorMessage(error, 'No fue posible responder la invitación.');
+    saveError.value = resolveApiErrorMessage(error, 'No fue posible responder la invitación.');
   } finally {
     isSaving.value = false;
   }

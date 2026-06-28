@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 import { createAccountInvitesRepository } from '../repositories/accountInvitesRepository';
 import type {
@@ -12,18 +12,6 @@ import type {
 
 const accountInvitesRepository = createAccountInvitesRepository();
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 export function useAccountInvitesCrud() {
   const invitesState = usePaginatedCollection<
     AccountInvite,
@@ -32,7 +20,7 @@ export function useAccountInvitesCrud() {
     defaultPerPage: 20,
     loadPage: (options, accountId, filters) =>
       accountInvitesRepository.list(accountId, { ...options, filters }),
-    resolveErrorMessage,
+    resolveErrorMessage: resolveApiErrorMessage,
     loadErrorMessage: 'No fue posible cargar las invitaciones.',
     loadMoreErrorMessage: 'No fue posible cargar más invitaciones.',
   });
@@ -66,7 +54,7 @@ export function useAccountInvitesCrud() {
       invitesState.prependItem(invite);
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible crear la invitación.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible crear la invitación.');
       return false;
     } finally {
       isSaving.value = false;
@@ -85,7 +73,7 @@ export function useAccountInvitesCrud() {
       invitesState.replaceItem((invite) => invite.id === inviteId, updatedInvite);
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible actualizar la invitación.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible actualizar la invitación.');
       return false;
     } finally {
       isSaving.value = false;
@@ -104,7 +92,7 @@ export function useAccountInvitesCrud() {
       invitesState.replaceItem((invite) => invite.id === inviteId, updatedInvite);
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible reenviar la invitación.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible reenviar la invitación.');
       return false;
     } finally {
       isSaving.value = false;
@@ -120,7 +108,7 @@ export function useAccountInvitesCrud() {
       invitesState.removeItem((invite) => invite.id === inviteId);
       return true;
     } catch (error) {
-      deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la invitación.');
+      deleteError.value = resolveApiErrorMessage(error, 'No fue posible eliminar la invitación.');
       return false;
     } finally {
       isDeleting.value = false;

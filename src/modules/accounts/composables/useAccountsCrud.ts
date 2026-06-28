@@ -1,30 +1,18 @@
 import { computed, ref } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 import { createAccountsRepository } from '../repositories/accountsRepository';
 import type { Account, AccountListFilters, AccountWritePayload } from '../types';
 
 const accountsRepository = createAccountsRepository();
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 export function useAccountsCrud() {
   const accountsState = usePaginatedCollection<Account, [AccountListFilters | undefined]>({
     defaultPerPage: 20,
     loadPage: (options, filters) => accountsRepository.list({ ...options, filters }),
-    resolveErrorMessage,
+    resolveErrorMessage: resolveApiErrorMessage,
     loadErrorMessage: 'No fue posible cargar las cuentas.',
     loadMoreErrorMessage: 'No fue posible cargar más cuentas.',
   });
@@ -57,7 +45,7 @@ export function useAccountsCrud() {
       accountsState.prependItem(account);
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible crear la cuenta.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible crear la cuenta.');
       return false;
     } finally {
       isSaving.value = false;
@@ -73,7 +61,7 @@ export function useAccountsCrud() {
       accountsState.replaceItem((account) => account.id === accountId, updatedAccount);
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible actualizar la cuenta.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible actualizar la cuenta.');
       return false;
     } finally {
       isSaving.value = false;
@@ -89,7 +77,7 @@ export function useAccountsCrud() {
       accountsState.removeItem((account) => account.id === accountId);
       return true;
     } catch (error) {
-      deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la cuenta.');
+      deleteError.value = resolveApiErrorMessage(error, 'No fue posible eliminar la cuenta.');
       return false;
     } finally {
       isDeleting.value = false;
