@@ -165,7 +165,7 @@ async function handleSubmit(): Promise<void> {
           id="transaction-type"
           :model-value="type"
           :options="transactionTypeOptions"
-          @update:model-value="type = $event as 'income' | 'expense'"
+          @update:model-value="type = $event"
         />
       </div>
 
@@ -177,7 +177,7 @@ async function handleSubmit(): Promise<void> {
           id="transaction-status"
           :model-value="status"
           :options="transactionStatusOptions"
-          @update:model-value="status = $event as 'pending' | 'completed'"
+          @update:model-value="status = $event"
         />
       </div>
     </section>

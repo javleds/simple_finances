@@ -45,8 +45,8 @@ const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('
 const { error: passwordConfirmationError, touch: touchPasswordConfirmation } =
   useFormFieldInteraction('passwordConfirmation');
 
-function updateTheme(nextTheme: string): void {
-  themeStore.setTheme(nextTheme as ThemeMode);
+function updateTheme(nextTheme: ThemeMode): void {
+  themeStore.setTheme(nextTheme);
 }
 
 async function handleSubmit(): Promise<void> {

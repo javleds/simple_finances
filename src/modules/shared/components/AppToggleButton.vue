@@ -1,24 +1,24 @@
-<script setup lang="ts">
-type ToggleOption = {
-  value: string;
+<script setup lang="ts" generic="TValue extends string">
+type ToggleOption<TOptionValue extends string> = {
+  value: TOptionValue;
   label: string;
 };
 
 const props = defineProps<{
-  modelValue: string;
-  options: ReadonlyArray<ToggleOption>;
+  modelValue: TValue;
+  options: ReadonlyArray<ToggleOption<TValue>>;
 }>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string];
+  'update:modelValue': [value: TValue];
 }>();
 
-function selectValue(nextTheme: string): void {
-  if (props.modelValue === nextTheme) {
+function selectValue(nextValue: TValue): void {
+  if (props.modelValue === nextValue) {
     return;
   }
 
-  emit('update:modelValue', nextTheme);
+  emit('update:modelValue', nextValue);
 }
 </script>
 

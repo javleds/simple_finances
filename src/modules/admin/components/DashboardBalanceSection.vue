@@ -34,7 +34,7 @@ const accountGraphModeOptions = [
             class="self-center"
             :model-value="graphMode"
             :options="accountGraphModeOptions"
-            @update:model-value="graphMode = $event as AccountGraphMode"
+            @update:model-value="graphMode = $event"
           />
         </div>
       </div>

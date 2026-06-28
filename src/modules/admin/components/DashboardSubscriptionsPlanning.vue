@@ -44,7 +44,7 @@ function formatDateLabel(value: string): string {
         <AppToggleButton
           :model-value="savingsCadence"
           :options="cadenceOptions"
-          @update:model-value="savingsCadence = $event as SavingsCadence"
+          @update:model-value="savingsCadence = $event"
         />
       </div>
 

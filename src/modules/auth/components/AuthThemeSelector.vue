@@ -15,8 +15,8 @@ const themeOptions = [
   { value: THEME_MODE.DARK, label: 'Dark' },
 ] as const;
 
-function updateMode(nextMode: string): void {
-  emit('update:mode', nextMode as ThemeMode);
+function updateMode(nextMode: ThemeMode): void {
+  emit('update:mode', nextMode);
 }
 </script>
 

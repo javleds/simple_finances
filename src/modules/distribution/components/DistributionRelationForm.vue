@@ -110,7 +110,7 @@ async function handleSubmit(): Promise<void> {
         id="distribution-relation-type"
         :model-value="type"
         :options="typeOptions"
-        @update:model-value="type = $event as 'savings' | 'transfer'"
+        @update:model-value="type = $event"
       />
     </div>
   </form>

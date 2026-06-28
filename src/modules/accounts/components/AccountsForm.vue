@@ -189,7 +189,7 @@ async function handleSubmit(): Promise<void> {
             id="account-is-virtual"
             :model-value="isVirtual"
             :options="yesNoOptions"
-            @update:model-value="isVirtual = $event as YesNoValue"
+            @update:model-value="isVirtual = $event"
           />
         </div>
 
@@ -207,7 +207,7 @@ async function handleSubmit(): Promise<void> {
             id="account-is-credit"
             :model-value="isCredit"
             :options="yesNoOptions"
-            @update:model-value="isCredit = $event as YesNoValue"
+            @update:model-value="isCredit = $event"
           />
         </div>
       </div>

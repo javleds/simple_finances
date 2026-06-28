@@ -63,8 +63,8 @@ watch(
   { immediate: true },
 );
 
-function updateTheme(nextTheme: string): void {
-  themeStore.setTheme(nextTheme as ThemeMode);
+function updateTheme(nextTheme: ThemeMode): void {
+  themeStore.setTheme(nextTheme);
 }
 
 function openDocument(document: Exclude<RegisterLegalDocument, null>): void {

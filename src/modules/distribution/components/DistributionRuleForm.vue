@@ -89,7 +89,7 @@ async function handleSubmit(): Promise<void> {
         id="distribution-rule-frequency"
         :model-value="frequency"
         :options="frequencyOptions"
-        @update:model-value="frequency = $event as 'monthly' | 'semi_monthly'"
+        @update:model-value="frequency = $event"
       />
     </div>
   </form>

@@ -27,8 +27,8 @@ const themeOptions = [
 const { email, isSubmitting, isSubmitDisabled, submitForm } = usePasswordRecoveryForm();
 const { error: emailError, touch: touchEmail } = useFormFieldInteraction('email');
 
-function updateTheme(nextTheme: string): void {
-  themeStore.setTheme(nextTheme as ThemeMode);
+function updateTheme(nextTheme: ThemeMode): void {
+  themeStore.setTheme(nextTheme);
 }
 
 async function handleSubmit(): Promise<void> {

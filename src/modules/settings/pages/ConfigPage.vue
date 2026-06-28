@@ -28,8 +28,8 @@ const {
   toggleAccountSetting,
 } = useNotificationSettings();
 
-function updateTheme(nextTheme: string): void {
-  themeStore.setTheme(nextTheme as ThemeMode);
+function updateTheme(nextTheme: ThemeMode): void {
+  themeStore.setTheme(nextTheme);
 }
 
 onMounted(() => {
