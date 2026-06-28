@@ -1,4 +1,5 @@
-import { computed, ref, shallowRef } from 'vue';
+import { useInfiniteQuery } from '@tanstack/vue-query';
+import { computed, nextTick, ref } from 'vue';
 
 import { ApiError } from '@/lib/api/apiClient';
 import type {
@@ -6,6 +7,7 @@ import type {
   TransactionFacilityFilters,
   TransactionFacilitySummary,
 } from '@/modules/transactions/types';
+import { transactionFacilityQueryKeys } from '@/modules/transactions/queries/transactionFacilityQueries';
 
 import { createTransactionFacilityRepository } from '../repositories/transactionFacilityRepository';
 
@@ -29,18 +31,47 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useTransactionFacility() {
-  const transactions = shallowRef<Transaction[]>([]);
-  const summary = ref<TransactionFacilitySummary>(defaultSummary);
-  const isLoading = ref(false);
-  const isLoadingMore = ref(false);
-  const loadError = ref<string | null>(null);
-  const currentPage = ref(1);
-  const lastPage = ref(1);
   const perPage = ref(20);
   const lastFilters = ref<TransactionFacilityFilters | null>(null);
+  const loadError = ref<string | null>(null);
+  const isManualLoading = ref(false);
+  const isManualLoadingMore = ref(false);
 
+  const query = useInfiniteQuery({
+    queryKey: computed(() =>
+      lastFilters.value
+        ? transactionFacilityQueryKeys.list(lastFilters.value, perPage.value)
+        : transactionFacilityQueryKeys.all,
+    ),
+    enabled: false,
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => {
+      if (!lastFilters.value) {
+        throw new Error('Transaction facility filters are required.');
+      }
+
+      return transactionFacilityRepository.list({
+        page: pageParam,
+        perPage: perPage.value,
+        filters: lastFilters.value,
+      });
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.currentPage < lastPage.lastPage ? lastPage.currentPage + 1 : undefined,
+  });
+
+  const transactions = computed<Transaction[]>(
+    () => query.data.value?.pages.flatMap((page) => page.items) ?? [],
+  );
+  const summary = computed<TransactionFacilitySummary>(
+    () => query.data.value?.pages[0]?.summary ?? defaultSummary,
+  );
   const hasTransactions = computed(() => transactions.value.length > 0);
-  const hasMoreTransactions = computed(() => currentPage.value < lastPage.value);
+  const hasMoreTransactions = computed(() => query.hasNextPage.value);
+  const isLoading = computed(() => isManualLoading.value || query.isLoading.value);
+  const isLoadingMore = computed(
+    () => isManualLoadingMore.value || query.isFetchingNextPage.value,
+  );
   const hasReachedEnd = computed(
     () => hasTransactions.value && !hasMoreTransactions.value && !isLoadingMore.value,
   );
@@ -56,31 +87,24 @@ export function useTransactionFacility() {
     perPage.value = nextPerPage;
     loadError.value = null;
 
-    if (shouldReset) {
-      isLoading.value = true;
-    } else {
-      isLoadingMore.value = true;
-    }
+    isManualLoading.value = shouldReset;
+    isManualLoadingMore.value = !shouldReset;
 
     try {
-      const response = await transactionFacilityRepository.list({
-        page: 1,
-        perPage: nextPerPage,
-        filters,
-      });
+      await nextTick();
+      const result = await query.refetch();
 
-      transactions.value = response.items;
-      summary.value = response.summary;
-      currentPage.value = response.currentPage;
-      lastPage.value = response.lastPage;
+      if (result.error) {
+        loadError.value = resolveErrorMessage(
+          result.error,
+          'No fue posible cargar las transacciones.',
+        );
+      }
     } catch (error) {
       loadError.value = resolveErrorMessage(error, 'No fue posible cargar las transacciones.');
     } finally {
-      if (shouldReset) {
-        isLoading.value = false;
-      } else {
-        isLoadingMore.value = false;
-      }
+      isManualLoading.value = false;
+      isManualLoadingMore.value = false;
     }
   }
 
@@ -89,24 +113,22 @@ export function useTransactionFacility() {
       return;
     }
 
-    isLoadingMore.value = true;
+    isManualLoadingMore.value = true;
     loadError.value = null;
 
     try {
-      const response = await transactionFacilityRepository.list({
-        page: currentPage.value + 1,
-        perPage: perPage.value,
-        filters: lastFilters.value,
-      });
+      const result = await query.fetchNextPage();
 
-      transactions.value = [...transactions.value, ...response.items];
-      summary.value = response.summary;
-      currentPage.value = response.currentPage;
-      lastPage.value = response.lastPage;
+      if (result.error) {
+        loadError.value = resolveErrorMessage(
+          result.error,
+          'No fue posible cargar más transacciones.',
+        );
+      }
     } catch (error) {
       loadError.value = resolveErrorMessage(error, 'No fue posible cargar más transacciones.');
     } finally {
-      isLoadingMore.value = false;
+      isManualLoadingMore.value = false;
     }
   }
 
