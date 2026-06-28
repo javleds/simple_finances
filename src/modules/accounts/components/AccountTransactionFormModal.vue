@@ -4,12 +4,17 @@ import type { Component } from 'vue';
 import type { AccountMember } from '@/modules/accounts/types';
 import type { AccountGoal } from '@/modules/accounts/schemas/accountGoalSchemas';
 import TransactionsForm from '@/modules/transactions/components/TransactionsForm.vue';
-import type { Transaction, TransactionWritePayload } from '@/modules/transactions/types';
+import type {
+  Transaction,
+  TransactionSubmitOptions,
+  TransactionWritePayload,
+} from '@/modules/transactions/types';
 import { AppModal } from '@/modules/shared/components';
 
 type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;
+  keepOpen: boolean;
 };
 
 type ModalAction = {
@@ -30,14 +35,16 @@ const props = withDefaults(
     actions: ReadonlyArray<ModalAction>;
     financialGoals: AccountGoal[];
     formId: string;
+    enableCreateAndAddAnother?: boolean;
     isLoadingFinancialGoals: boolean;
     open: boolean;
     requiresInitialValues?: boolean;
     serverError?: string | null;
     title: string;
-    initialValues?: Transaction | null;
+    initialValues?: Partial<Transaction> | null;
   }>(),
   {
+    enableCreateAndAddAnother: false,
     initialValues: null,
     requiresInitialValues: false,
     serverError: null,
@@ -48,6 +55,7 @@ const emit = defineEmits<{
   close: [];
   stateChange: [state: FormState];
   submit: [payload: TransactionWritePayload];
+  submitWithOptions: [payload: TransactionWritePayload, options: TransactionSubmitOptions];
 }>();
 </script>
 
@@ -63,6 +71,7 @@ const emit = defineEmits<{
       v-if="!props.requiresInitialValues || props.initialValues"
       :form-id="props.formId"
       :account-users="props.accountUsers"
+      :enable-create-and-add-another="props.enableCreateAndAddAnother"
       :financial-goals="props.financialGoals"
       :is-loading-financial-goals="props.isLoadingFinancialGoals"
       :locked-account-id="props.accountId"
@@ -70,6 +79,9 @@ const emit = defineEmits<{
       :server-error="props.serverError"
       @state-change="emit('stateChange', $event)"
       @submit="emit('submit', $event)"
+      @submit-with-options="
+        (payload, options) => emit('submitWithOptions', payload, options)
+      "
     />
   </AppModal>
 </template>

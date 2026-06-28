@@ -79,6 +79,7 @@ const {
   closeDeleteTransactionModal,
   closeEditTransactionModal,
   closeFilters,
+  createInitialValues,
   createFormState,
   editFormState,
   handleCreateFormStateChange,
@@ -93,6 +94,7 @@ const {
   openDeleteTransaction,
   openEditTransaction,
   openFilters,
+  prepareNextCreateTransaction,
   selectedTransaction,
 } = useAccountTransactionModals({
   clearDeleteError,
@@ -153,6 +155,7 @@ const {
   createTransaction,
   deleteTransaction,
   onMutationMeta: applyMutationMeta,
+  prepareNextCreateTransaction,
   selectedTransaction,
   updateTransaction,
 });
@@ -215,6 +218,7 @@ watch(listMeta, (nextMeta) => {
       :complete-pending-by-user-actions="completePendingByUserActions"
       :complete-pending-by-user-error="completePendingByUserError"
       :complete-transaction-actions="completeTransactionActions"
+      :create-initial-values="createInitialValues"
       :create-transaction-actions="createTransactionActions"
       :delete-error="deleteError"
       :delete-transaction-actions="deleteTransactionActions"

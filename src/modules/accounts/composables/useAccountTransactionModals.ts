@@ -5,6 +5,7 @@ import type { Transaction } from '@/modules/transactions/types';
 type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;
+  keepOpen: boolean;
 };
 
 type UseAccountTransactionModalsOptions = {
@@ -17,6 +18,7 @@ type UseAccountTransactionModalsOptions = {
 const initialFormState: FormState = {
   canSubmit: false,
   isSubmitting: false,
+  keepOpen: false,
 };
 
 export function useAccountTransactionModals(options: UseAccountTransactionModalsOptions) {
@@ -26,6 +28,7 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
   const isCompleteTransactionModalOpen = ref(false);
   const isFiltersOpen = ref(false);
   const selectedTransactionId = ref<string | null>(null);
+  const createInitialValues = ref<Partial<Transaction> | null>(null);
   const createFormState = ref<FormState>({ ...initialFormState });
   const editFormState = ref<FormState>({ ...initialFormState });
 
@@ -43,6 +46,7 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
 
   function openCreateTransactionModal(): void {
     options.clearSaveError();
+    createInitialValues.value = null;
     createFormState.value = { ...initialFormState };
     options.loadGoals();
     isCreateTransactionModalOpen.value = true;
@@ -50,7 +54,26 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
 
   function closeCreateTransactionModal(): void {
     isCreateTransactionModalOpen.value = false;
+    createInitialValues.value = null;
     options.clearSaveError();
+  }
+
+  function prepareNextCreateTransaction(payload: {
+    accountId: string;
+    date: string;
+    financialGoalId: string | null;
+    status: Transaction['status'];
+    type: Transaction['type'];
+  }): void {
+    createInitialValues.value = {
+      accountId: payload.accountId,
+      date: payload.date,
+      financialGoalId: payload.type === 'income' ? payload.financialGoalId : null,
+      status: payload.type === 'income' ? payload.status : null,
+      type: payload.type,
+      userPayments: {},
+    };
+    createFormState.value = { ...initialFormState, keepOpen: true };
   }
 
   function openEditTransaction(transactionId: string): void {
@@ -113,6 +136,7 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
     closeEditTransactionModal,
     closeCompleteTransactionModal,
     closeFilters,
+    createInitialValues,
     createFormState,
     editFormState,
     handleCreateFormStateChange,
@@ -127,6 +151,7 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
     openEditTransaction,
     openCompleteTransaction,
     openFilters,
+    prepareNextCreateTransaction,
     selectedTransaction,
   };
 }

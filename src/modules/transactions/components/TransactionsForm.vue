@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import type { AccountMember } from '@/modules/accounts/types';
 import { useTransactionForm } from '@/modules/transactions/composables/useTransactionForm';
-import type { Transaction, TransactionWritePayload } from '@/modules/transactions/types';
+import type {
+  Transaction,
+  TransactionSubmitOptions,
+  TransactionWritePayload,
+} from '@/modules/transactions/types';
 import {
   AppDatePicker,
   AppInput,
   AppPercentageSplitEditor,
   AppSearchSelect,
+  AppSwitch,
   AppText,
   AppToggleButton,
 } from '@/modules/shared/components';
@@ -17,6 +22,7 @@ import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFie
 type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;
+  keepOpen: boolean;
 };
 
 const props = withDefaults(
@@ -28,6 +34,7 @@ const props = withDefaults(
       name: string;
       description?: string | null;
     }>;
+    enableCreateAndAddAnother?: boolean;
     isLoadingFinancialGoals?: boolean;
     initialValues?: Partial<Transaction> | null;
     lockedAccountId?: string | null;
@@ -37,6 +44,7 @@ const props = withDefaults(
     formId: 'transaction-form',
     accountUsers: () => [],
     financialGoals: () => [],
+    enableCreateAndAddAnother: false,
     isLoadingFinancialGoals: false,
     initialValues: null,
     lockedAccountId: null,
@@ -46,6 +54,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   submit: [payload: TransactionWritePayload];
+  submitWithOptions: [payload: TransactionWritePayload, options: TransactionSubmitOptions];
   stateChange: [payload: FormState];
 }>();
 
@@ -82,6 +91,7 @@ const {
 const hasSharedAccount = computed(() => props.accountUsers.length > 1);
 const showUserSplitToggle = computed(() => isExpense.value && hasSharedAccount.value);
 const showUserSplitInputs = computed(() => showUserSplitToggle.value && splitBetweenUsers.value);
+const createAndAddAnother = ref(false);
 const { error: conceptError, touch: touchConcept } = useFormFieldInteraction('concept');
 const { error: amountError, touch: touchAmount } = useFormFieldInteraction('amount');
 const { error: userPaymentsError, touch: touchUserPayments } =
@@ -99,14 +109,24 @@ const financialGoalOptions = computed(() =>
 );
 
 watch(
-  [isSubmitDisabled, isSubmitting, meta],
+  [isSubmitDisabled, isSubmitting, meta, createAndAddAnother],
   () => {
     emit('stateChange', {
       canSubmit: !isSubmitDisabled.value,
       isSubmitting: isSubmitting.value,
+      keepOpen: props.enableCreateAndAddAnother && createAndAddAnother.value,
     });
   },
   { immediate: true, deep: true },
+);
+
+watch(
+  () => props.enableCreateAndAddAnother,
+  (isEnabled) => {
+    if (!isEnabled) {
+      createAndAddAnother.value = false;
+    }
+  },
 );
 
 watch(
@@ -137,7 +157,12 @@ async function handleSubmit(): Promise<void> {
     return;
   }
 
+  const options = {
+    keepOpen: props.enableCreateAndAddAnother && createAndAddAnother.value,
+  };
+
   emit('submit', payload);
+  emit('submitWithOptions', payload, options);
 }
 </script>
 
@@ -281,6 +306,32 @@ async function handleSubmit(): Promise<void> {
         @change="touchFinancialGoal"
         @blur="touchFinancialGoal"
       />
+    </section>
+
+    <section
+      v-if="props.enableCreateAndAddAnother"
+      class="rounded-xl border px-4 py-4"
+      :style="{ borderColor: 'var(--app-color-border)' }"
+    >
+      <div class="flex items-center justify-between gap-4">
+        <div class="min-w-0 space-y-1">
+          <label
+            for="transaction-create-and-add-another"
+            class="block text-sm font-medium text-(--app-color-label)"
+          >
+            Crear y agregar otro
+          </label>
+          <AppText size="sm" tone="subtle">
+            Conserva tipo, estatus, fecha y meta financiera para capturas rápidas.
+          </AppText>
+        </div>
+
+        <AppSwitch
+          id="transaction-create-and-add-another"
+          v-model="createAndAddAnother"
+          aria-label="Crear y agregar otra transacción"
+        />
+      </div>
     </section>
   </form>
 </template>

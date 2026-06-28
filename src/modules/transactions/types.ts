@@ -69,6 +69,10 @@ export type TransactionWritePayload = {
   userPayments: Record<string, number>;
 };
 
+export type TransactionSubmitOptions = {
+  keepOpen: boolean;
+};
+
 export type TransactionMutationMeta = {
   accountBalance: number | null;
   previousAccountBalance: number | null;

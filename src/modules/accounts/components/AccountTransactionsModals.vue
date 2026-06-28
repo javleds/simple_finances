@@ -7,11 +7,16 @@ import AccountTransactionDeleteModal from '@/modules/accounts/components/Account
 import AccountTransactionFormModal from '@/modules/accounts/components/AccountTransactionFormModal.vue';
 import type { AccountMember, AccountPendingByUser } from '@/modules/accounts/types';
 import type { AccountGoal } from '@/modules/accounts/schemas/accountGoalSchemas';
-import type { Transaction, TransactionWritePayload } from '@/modules/transactions/types';
+import type {
+  Transaction,
+  TransactionSubmitOptions,
+  TransactionWritePayload,
+} from '@/modules/transactions/types';
 
 type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;
+  keepOpen: boolean;
 };
 
 type ModalAction = {
@@ -37,6 +42,7 @@ const props = withDefaults(
     deleteTransactionActions: ReadonlyArray<ModalAction>;
     editTransactionActions: ReadonlyArray<ModalAction>;
     financialGoals: AccountGoal[];
+    createInitialValues?: Partial<Transaction> | null;
     isCompletePendingByUserModalOpen: boolean;
     isCompleteTransactionModalOpen: boolean;
     isCreateTransactionModalOpen: boolean;
@@ -49,6 +55,7 @@ const props = withDefaults(
   }>(),
   {
     completePendingByUserError: null,
+    createInitialValues: null,
     deleteError: null,
     saveError: null,
   },
@@ -66,7 +73,7 @@ const emit = defineEmits<{
   createFormStateChange: [state: FormState];
   editFormStateChange: [state: FormState];
   editSubmit: [payload: TransactionWritePayload];
-  submit: [payload: TransactionWritePayload];
+  submit: [payload: TransactionWritePayload, options: TransactionSubmitOptions];
 }>();
 </script>
 
@@ -76,14 +83,16 @@ const emit = defineEmits<{
     :account-id="props.accountId"
     :account-users="props.accountUsers"
     :actions="props.createTransactionActions"
+    enable-create-and-add-another
     :financial-goals="props.financialGoals"
     form-id="transaction-form"
+    :initial-values="props.createInitialValues"
     :is-loading-financial-goals="props.isLoadingFinancialGoals"
     :server-error="props.saveError"
     title="Nueva transacción"
     @close="emit('closeCreateTransaction')"
     @state-change="emit('createFormStateChange', $event)"
-    @submit="emit('submit', $event)"
+    @submit-with-options="(payload, options) => emit('submit', payload, options)"
   />
 
   <AccountTransactionFormModal

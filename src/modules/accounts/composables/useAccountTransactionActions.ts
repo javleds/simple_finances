@@ -3,6 +3,7 @@ import type { ComputedRef } from 'vue';
 import type {
   Transaction,
   TransactionMutationMeta,
+  TransactionSubmitOptions,
   TransactionWritePayload,
 } from '@/modules/transactions/types';
 
@@ -25,6 +26,7 @@ type UseAccountTransactionActionsOptions = {
     accountId?: string,
   ) => Promise<TransactionMutationResult | null>;
   onMutationMeta: (meta: TransactionMutationMeta) => void;
+  prepareNextCreateTransaction: (payload: TransactionWritePayload) => void;
   selectedTransaction: ComputedRef<Transaction | null>;
   updateTransaction: (
     transactionId: string,
@@ -33,7 +35,10 @@ type UseAccountTransactionActionsOptions = {
 };
 
 export function useAccountTransactionActions(options: UseAccountTransactionActionsOptions) {
-  async function handleTransactionSubmit(payload: TransactionWritePayload): Promise<void> {
+  async function handleTransactionSubmit(
+    payload: TransactionWritePayload,
+    submitOptions: TransactionSubmitOptions = { keepOpen: false },
+  ): Promise<void> {
     const result = await options.createTransaction(payload);
 
     if (!result) {
@@ -41,6 +46,12 @@ export function useAccountTransactionActions(options: UseAccountTransactionActio
     }
 
     options.onMutationMeta(result.meta);
+
+    if (submitOptions.keepOpen) {
+      options.prepareNextCreateTransaction(payload);
+      return;
+    }
+
     options.closeCreateTransactionModal();
   }
 

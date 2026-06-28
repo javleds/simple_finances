@@ -7,6 +7,7 @@ import type { Transaction } from '@/modules/transactions/types';
 type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;
+  keepOpen: boolean;
 };
 
 type UseAccountTransactionModalActionsOptions = {
@@ -26,7 +27,11 @@ export function useAccountTransactionModalActions(
     { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
     {
       key: 'submit-transaction',
-      label: options.isSaving.value ? 'Guardando...' : 'Crear transacción',
+      label: options.isSaving.value
+        ? 'Guardando...'
+        : options.createFormState.value.keepOpen
+          ? 'Crear y agregar otro'
+          : 'Crear transacción',
       tone: 'primary' as const,
       type: 'submit' as const,
       form: 'transaction-form',
