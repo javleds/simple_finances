@@ -48,7 +48,6 @@ export function useNotificationSettings() {
   const settingsQuery = useQuery({
     queryKey: notificationSettingsQueryKeys.detail(),
     queryFn: () => notificationSettingsRepository.get(),
-    enabled: false,
   });
 
   const updateSettingsMutation = useMutation({

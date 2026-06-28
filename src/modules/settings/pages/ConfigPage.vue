@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
-
 import { useNotificationSettings } from '@/modules/settings/composables/useNotificationSettings';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
@@ -23,7 +21,6 @@ const {
   accountNotificationSettings,
   isLoading,
   saveError,
-  loadSettings,
   toggleGlobalSetting,
   toggleAccountSetting,
 } = useNotificationSettings();
@@ -31,10 +28,6 @@ const {
 function updateTheme(nextTheme: ThemeMode): void {
   themeStore.setTheme(nextTheme);
 }
-
-onMounted(() => {
-  void loadSettings();
-});
 </script>
 
 <template>
