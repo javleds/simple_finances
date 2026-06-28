@@ -1,4 +1,5 @@
-import { computed, ref, shallowRef } from 'vue';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/vue-query';
+import { computed, nextTick, ref, shallowRef } from 'vue';
 
 import type { PaginatedCollection } from '@/modules/shared/lib/pagination';
 
@@ -27,6 +28,36 @@ export function usePaginatedCollection<TItem, TArgs extends unknown[]>(
   const perPage = ref(options.defaultPerPage ?? 20);
   const total = ref<number | null>(null);
   const lastArgs = ref<TArgs | null>(null);
+  const queryClient = useQueryClient();
+  const queryKey = computed(() => [
+    'paginated-collection',
+    options.loadErrorMessage,
+    perPage.value,
+    lastArgs.value ?? [],
+  ]);
+
+  const paginatedQuery = useInfiniteQuery({
+    queryKey,
+    enabled: false,
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => {
+      if (!lastArgs.value) {
+        throw new Error('Paginated collection arguments are required.');
+      }
+
+      return options.loadPage(
+        {
+          page: Number(pageParam),
+          perPage: perPage.value,
+        },
+        ...lastArgs.value,
+      );
+    },
+    getNextPageParam: (lastLoadedPage) =>
+      lastLoadedPage.currentPage < lastLoadedPage.lastPage
+        ? lastLoadedPage.currentPage + 1
+        : undefined,
+  });
 
   const hasItems = computed(() => items.value.length > 0);
   const hasMoreItems = computed(() => currentPage.value < lastPage.value);
@@ -52,18 +83,16 @@ export function usePaginatedCollection<TItem, TArgs extends unknown[]>(
     }
 
     try {
-      const response = await options.loadPage(
-        {
-          page: 1,
-          perPage: nextPerPage,
-        },
-        ...args,
-      );
+      await nextTick();
+      queryClient.removeQueries({ queryKey: queryKey.value, exact: true });
+      const response = await paginatedQuery.refetch();
 
-      items.value = response.items;
-      currentPage.value = response.currentPage;
-      lastPage.value = response.lastPage;
-      total.value = response.total;
+      if (response.error) {
+        loadError.value = options.resolveErrorMessage(response.error, options.loadErrorMessage);
+        return;
+      }
+
+      applyLoadedPages(response.data?.pages ?? []);
     } catch (error) {
       loadError.value = options.resolveErrorMessage(error, options.loadErrorMessage);
     } finally {
@@ -92,18 +121,14 @@ export function usePaginatedCollection<TItem, TArgs extends unknown[]>(
     loadError.value = null;
 
     try {
-      const response = await options.loadPage(
-        {
-          page: currentPage.value + 1,
-          perPage: perPage.value,
-        },
-        ...lastArgs.value,
-      );
+      const response = await paginatedQuery.fetchNextPage();
 
-      items.value = [...items.value, ...response.items];
-      currentPage.value = response.currentPage;
-      lastPage.value = response.lastPage;
-      total.value = response.total;
+      if (response.error) {
+        loadError.value = options.resolveErrorMessage(response.error, options.loadMoreErrorMessage);
+        return;
+      }
+
+      applyLoadedPages(response.data?.pages ?? []);
     } catch (error) {
       loadError.value = options.resolveErrorMessage(error, options.loadMoreErrorMessage);
     } finally {
@@ -146,6 +171,15 @@ export function usePaginatedCollection<TItem, TArgs extends unknown[]>(
 
   function setItems(nextItems: TItem[]): void {
     items.value = nextItems;
+  }
+
+  function applyLoadedPages(pages: Array<PaginatedCollection<TItem>>): void {
+    const lastLoadedPage = pages[pages.length - 1];
+
+    items.value = pages.flatMap((page) => page.items);
+    currentPage.value = lastLoadedPage?.currentPage ?? 1;
+    lastPage.value = lastLoadedPage?.lastPage ?? 1;
+    total.value = lastLoadedPage?.total ?? null;
   }
 
   return {
