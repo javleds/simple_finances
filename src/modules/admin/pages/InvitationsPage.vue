@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router';
 import FacilityInvitationActionModal from '@/modules/admin/components/FacilityInvitationActionModal.vue';
 import FacilityInvitationsList from '@/modules/admin/components/FacilityInvitationsList.vue';
 import FacilityInvitationsToolbar from '@/modules/admin/components/FacilityInvitationsToolbar.vue';
+import { useFacilityInvitationActions } from '@/modules/admin/composables/useFacilityInvitationActions';
 import { createAccountInvitesRepository } from '@/modules/accounts/repositories/accountInvitesRepository';
 import type { AccountInvite } from '@/modules/accounts/schemas/accountInviteSchemas';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
@@ -14,18 +15,12 @@ import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 import { areQueriesEqual } from '@/modules/shared/lib/queryParams';
 import { AppListState, AppLoadMoreFooter, AppText } from '@/modules/shared/components';
 
-type PendingInvitationAction = 'accepted' | 'declined';
-
 const accountInvitesRepository = createAccountInvitesRepository();
 const route = useRoute();
 const router = useRouter();
 const defaultInvitationsPerPage = 20;
 
 const searchTerm = ref('');
-const isSaving = ref(false);
-const saveError = ref<string | null>(null);
-const selectedInvitationId = ref<string | null>(null);
-const pendingAction = ref<PendingInvitationAction | null>(null);
 
 const invitationsPerPage = computed(() => {
   const rawValue =
@@ -65,12 +60,18 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   },
 });
 
-const selectedInvitation = computed(() => {
-  if (!selectedInvitationId.value) {
-    return null;
-  }
-
-  return invitationsState.items.value.find((invitation) => invitation.id === selectedInvitationId.value) ?? null;
+const {
+  selectedInvitation,
+  pendingAction,
+  isSaving,
+  saveError,
+  openInvitationAction,
+  closeInvitationAction,
+  confirmInvitationAction,
+} = useFacilityInvitationActions({
+  invitations: invitationsState.items,
+  removeInvitation: invitationsState.removeItem,
+  replaceInvitation: invitationsState.replaceItem,
 });
 
 const actionModalActions = computed(() => [
@@ -122,51 +123,6 @@ watch(
   },
   { immediate: true },
 );
-
-function openInvitationAction(inviteId: string, action: PendingInvitationAction): void {
-  saveError.value = null;
-  selectedInvitationId.value = inviteId;
-  pendingAction.value = action;
-}
-
-function closeInvitationAction(): void {
-  selectedInvitationId.value = null;
-  pendingAction.value = null;
-  saveError.value = null;
-}
-
-async function confirmInvitationAction(): Promise<void> {
-  if (!selectedInvitation.value || !pendingAction.value) {
-    return;
-  }
-
-  isSaving.value = true;
-  saveError.value = null;
-
-  try {
-    const updatedInvitation = await accountInvitesRepository.respond(selectedInvitation.value.id, {
-      accountId: selectedInvitation.value.accountId,
-      email: selectedInvitation.value.email,
-      percentage: selectedInvitation.value.percentage,
-      status: pendingAction.value,
-    });
-
-    if (updatedInvitation.status !== 'pending') {
-      invitationsState.removeItem((invitation) => invitation.id === updatedInvitation.id);
-    } else {
-      invitationsState.replaceItem(
-        (invitation) => invitation.id === updatedInvitation.id,
-        updatedInvitation,
-      );
-    }
-
-    closeInvitationAction();
-  } catch (error) {
-    saveError.value = resolveApiErrorMessage(error, 'No fue posible responder la invitación.');
-  } finally {
-    isSaving.value = false;
-  }
-}
 
 function reloadInvitations(): void {
   void loadInvitations();
