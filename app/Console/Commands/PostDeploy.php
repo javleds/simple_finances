@@ -18,7 +18,6 @@ class PostDeploy extends Command
 
         $this->call('config:cache');
         $this->call('route:cache');
-        $this->call('icons:cache');
         $this->call('event:cache');
 
         return self::SUCCESS;
