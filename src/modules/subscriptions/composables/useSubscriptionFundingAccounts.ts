@@ -1,5 +1,7 @@
-import { onMounted, ref } from 'vue';
+import { useQuery } from '@tanstack/vue-query';
+import { computed } from 'vue';
 
+import { accountQueryKeys } from '@/modules/accounts/queries/accountQueries';
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 
 type FundingAccountOption = {
@@ -11,27 +13,21 @@ type FundingAccountOption = {
 const accountsRepository = createAccountsRepository();
 
 export function useSubscriptionFundingAccounts() {
-  const fundingAccountOptions = ref<FundingAccountOption[]>([]);
-
-  onMounted(() => {
-    void loadFundingAccounts();
+  const fundingAccountsQuery = useQuery({
+    queryKey: accountQueryKeys.list(undefined),
+    queryFn: () => accountsRepository.list(),
   });
 
-  async function loadFundingAccounts(): Promise<void> {
-    try {
-      const response = await accountsRepository.list();
-      fundingAccountOptions.value = response.items.map((account) => ({
+  const fundingAccountOptions = computed<FundingAccountOption[]>(() =>
+    (fundingAccountsQuery.data.value?.items ?? []).map((account) => ({
         value: account.id,
         label: account.name,
         description: account.description,
-      }));
-    } catch {
-      fundingAccountOptions.value = [];
-    }
-  }
+      })),
+  );
 
   return {
     fundingAccountOptions,
-    loadFundingAccounts,
+    loadFundingAccounts: fundingAccountsQuery.refetch,
   };
 }

@@ -1,25 +1,22 @@
 <script setup lang="ts">
 import { ArrowsRightLeftIcon, EnvelopeIcon, FlagIcon, UsersIcon } from '@heroicons/vue/24/outline';
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
-import type { Account, AccountMember } from '@/modules/accounts/types';
+import { useAccountRelationshipAccount } from '@/modules/accounts/composables/useAccountRelationshipAccount';
+import type { AccountMember } from '@/modules/accounts/types';
 import { AppCard, AppContextTabs, AppLink, AppText, AppTitle } from '@/modules/shared/components';
-import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 type AccountRelationSection = 'transactions' | 'invitations' | 'goals' | 'users';
 
 const route = useRoute();
 const router = useRouter();
-const accountsRepository = createAccountsRepository();
-const account = ref<Account | null>(null);
-const isLoadingAccount = ref(false);
-const loadError = ref<string | null>(null);
 
 const accountId = computed(() =>
   typeof route.params.accountId === 'string' ? route.params.accountId : '',
 );
+const { account, isLoadingAccount, loadError, setAccountUsers } =
+  useAccountRelationshipAccount(accountId);
 
 const relationshipSections = [
   {
@@ -48,34 +45,6 @@ const activeSection = computed<AccountRelationSection>(
   () => (String(route.name).split('.').pop() as AccountRelationSection) || 'transactions',
 );
 
-watch(
-  accountId,
-  (nextAccountId) => {
-    void loadAccount(nextAccountId);
-  },
-  { immediate: true },
-);
-
-async function loadAccount(nextAccountId: string): Promise<void> {
-  if (!nextAccountId) {
-    account.value = null;
-    loadError.value = 'La cuenta solicitada no es válida.';
-    return;
-  }
-
-  isLoadingAccount.value = true;
-  loadError.value = null;
-
-  try {
-    account.value = await accountsRepository.getById(nextAccountId);
-  } catch (error) {
-    account.value = null;
-    loadError.value = resolveApiErrorMessage(error, 'No fue posible cargar la cuenta.');
-  } finally {
-    isLoadingAccount.value = false;
-  }
-}
-
 function updateActiveSection(nextSection: string): void {
   if (!accountId.value) {
     return;
@@ -90,14 +59,7 @@ function updateActiveSection(nextSection: string): void {
 }
 
 function handleAccountUsersChange(nextUsers: AccountMember[]): void {
-  if (!account.value) {
-    return;
-  }
-
-  account.value = {
-    ...account.value,
-    users: [...nextUsers],
-  };
+  setAccountUsers(nextUsers);
 }
 </script>
 

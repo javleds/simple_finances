@@ -1,56 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { ref } from 'vue';
 
 import ProfileForm from '@/modules/admin/components/ProfileForm.vue';
-import { createProfileRepository } from '@/modules/admin/repositories/profileRepository';
-import type { Profile, ProfileWritePayload } from '@/modules/admin/schemas/profileSchemas';
+import { useProfile } from '@/modules/admin/composables/useProfile';
+import type { ProfileWritePayload } from '@/modules/admin/schemas/profileSchemas';
 import { AppButton, AppCard, AppText, AppTitle } from '@/modules/shared/components';
-import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 type FormState = {
   canSubmit: boolean;
   isSubmitting: boolean;
 };
 
-const profileRepository = createProfileRepository();
-
-const profile = ref<Profile | null>(null);
-const isLoading = ref(false);
-const isSaving = ref(false);
-const loadError = ref<string | null>(null);
-const saveError = ref<string | null>(null);
 const formState = ref<FormState>({ canSubmit: false, isSubmitting: false });
-
-const hasProfile = computed(() => profile.value !== null);
-
-onMounted(() => {
-  void loadProfile();
-});
-
-async function loadProfile(): Promise<void> {
-  isLoading.value = true;
-  loadError.value = null;
-
-  try {
-    profile.value = await profileRepository.get();
-  } catch (error) {
-    loadError.value = resolveApiErrorMessage(error, 'No fue posible cargar el perfil.');
-  } finally {
-    isLoading.value = false;
-  }
-}
+const { profile, hasProfile, isLoading, isSaving, loadError, saveError, loadProfile, updateProfile } =
+  useProfile();
 
 async function handleSubmit(payload: ProfileWritePayload): Promise<void> {
-  isSaving.value = true;
-  saveError.value = null;
-
-  try {
-    profile.value = await profileRepository.update(payload);
-  } catch (error) {
-    saveError.value = resolveApiErrorMessage(error, 'No fue posible guardar el perfil.');
-  } finally {
-    isSaving.value = false;
-  }
+  await updateProfile(payload);
 }
 
 function handleFormStateChange(state: FormState): void {
