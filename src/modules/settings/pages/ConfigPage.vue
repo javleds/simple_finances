@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
-import { createNotificationSettingsRepository } from '@/modules/settings/repositories/notificationSettingsRepository';
+import { useNotificationSettings } from '@/modules/settings/composables/useNotificationSettings';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppCard,
@@ -13,21 +12,21 @@ import {
 } from '@/modules/shared/components';
 
 const themeStore = useThemeStore();
-const notificationSettingsRepository = createNotificationSettingsRepository();
 
 const themeOptions = [
   { value: THEME_MODE.LIGHT, label: 'Light' },
   { value: THEME_MODE.DARK, label: 'Dark' },
 ] as const;
 
-const globalNotificationSettings = ref<
-  Array<{ id: string; title: string; description: string; enabled: boolean }>
->([]);
-const accountNotificationSettings = ref<
-  Array<{ id: string; accountName: string; enabled: boolean }>
->([]);
-const isLoading = ref(false);
-const saveError = ref<string | null>(null);
+const {
+  globalNotificationSettings,
+  accountNotificationSettings,
+  isLoading,
+  saveError,
+  loadSettings,
+  toggleGlobalSetting,
+  toggleAccountSetting,
+} = useNotificationSettings();
 
 function updateTheme(nextTheme: string): void {
   themeStore.setTheme(nextTheme as ThemeMode);
@@ -36,69 +35,6 @@ function updateTheme(nextTheme: string): void {
 onMounted(() => {
   void loadSettings();
 });
-
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
-async function loadSettings(): Promise<void> {
-  isLoading.value = true;
-  saveError.value = null;
-
-  try {
-    const settings = await notificationSettingsRepository.get();
-    globalNotificationSettings.value = settings.notificationTypes;
-    accountNotificationSettings.value = settings.accounts;
-  } catch (error) {
-    saveError.value = resolveErrorMessage(error, 'No fue posible cargar la configuración.');
-  } finally {
-    isLoading.value = false;
-  }
-}
-
-async function persistSettings(): Promise<void> {
-  saveError.value = null;
-
-  try {
-    await notificationSettingsRepository.update({
-      notificationTypes: globalNotificationSettings.value,
-      accounts: accountNotificationSettings.value,
-    });
-  } catch (error) {
-    saveError.value = resolveErrorMessage(error, 'No fue posible guardar la configuración.');
-    await loadSettings();
-  }
-}
-
-async function toggleGlobalSetting(settingId: string): Promise<void> {
-  const setting = globalNotificationSettings.value.find((item) => item.id === settingId);
-
-  if (!setting) {
-    return;
-  }
-
-  setting.enabled = !setting.enabled;
-  await persistSettings();
-}
-
-async function toggleAccountSetting(accountId: string): Promise<void> {
-  const accountSetting = accountNotificationSettings.value.find((item) => item.id === accountId);
-
-  if (!accountSetting) {
-    return;
-  }
-
-  accountSetting.enabled = !accountSetting.enabled;
-  await persistSettings();
-}
 </script>
 
 <template>

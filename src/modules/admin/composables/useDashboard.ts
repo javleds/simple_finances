@@ -1,7 +1,9 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { computed, ref } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
+import { dashboardQueryKeys } from '../queries/dashboardQueries';
 import { createDashboardRepository } from '../repositories/dashboardRepository';
 import type { DashboardData } from '../types/dashboard';
 
@@ -25,24 +27,28 @@ const emptyDashboardData: DashboardData = {
   },
 };
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 export function useDashboard() {
-  const dashboard = ref<DashboardData>(emptyDashboardData);
-  const isLoading = ref(false);
-  const isCompletingPendingActions = ref(false);
+  const queryClient = useQueryClient();
   const loadError = ref<string | null>(null);
   const completeError = ref<string | null>(null);
+  const isManualLoading = ref(false);
+
+  const dashboardQuery = useQuery({
+    queryKey: dashboardQueryKeys.data(),
+    queryFn: () => dashboardRepository.load(),
+    enabled: false,
+  });
+
+  const completePendingTransactionsMutation = useMutation({
+    mutationFn: (transactionIds: string[]) =>
+      dashboardRepository.completePendingTransactions(transactionIds),
+  });
+
+  const dashboard = computed<DashboardData>(() => dashboardQuery.data.value ?? emptyDashboardData);
+  const isLoading = computed(() => isManualLoading.value || dashboardQuery.isLoading.value);
+  const isCompletingPendingActions = computed(
+    () => completePendingTransactionsMutation.isPending.value,
+  );
 
   const hasDashboardData = computed(
     () =>
@@ -55,15 +61,22 @@ export function useDashboard() {
   );
 
   async function loadDashboard(): Promise<void> {
-    isLoading.value = true;
+    isManualLoading.value = true;
     loadError.value = null;
 
     try {
-      dashboard.value = await dashboardRepository.load();
+      const result = await dashboardQuery.refetch();
+
+      if (result.error) {
+        loadError.value = resolveApiErrorMessage(
+          result.error,
+          'No fue posible cargar el dashboard.',
+        );
+      }
     } catch (error) {
-      loadError.value = resolveErrorMessage(error, 'No fue posible cargar el dashboard.');
+      loadError.value = resolveApiErrorMessage(error, 'No fue posible cargar el dashboard.');
     } finally {
-      isLoading.value = false;
+      isManualLoading.value = false;
     }
   }
 
@@ -72,11 +85,10 @@ export function useDashboard() {
       return false;
     }
 
-    isCompletingPendingActions.value = true;
     completeError.value = null;
 
     try {
-      const result = await dashboardRepository.completePendingTransactions(transactionIds);
+      const result = await completePendingTransactionsMutation.mutateAsync(transactionIds);
       const completedIds =
         result.transactionIds.length > 0 ? result.transactionIds : transactionIds;
       const failedIds = new Set(result.failed.map((item) => item.id));
@@ -84,12 +96,16 @@ export function useDashboard() {
         completedIds.filter((transactionId) => !failedIds.has(transactionId)),
       );
 
-      dashboard.value = {
-        ...dashboard.value,
-        pendingActions: dashboard.value.pendingActions.filter(
-          (action) => !removableIds.has(action.id),
-        ),
-      };
+      queryClient.setQueryData<DashboardData>(dashboardQueryKeys.data(), (previousDashboard) => {
+        const currentDashboard = previousDashboard ?? dashboard.value;
+
+        return {
+          ...currentDashboard,
+          pendingActions: currentDashboard.pendingActions.filter(
+            (action) => !removableIds.has(action.id),
+          ),
+        };
+      });
 
       if (result.failed.length > 0) {
         completeError.value = result.failed.map((item) => item.message).join(' ');
@@ -99,10 +115,11 @@ export function useDashboard() {
       await loadDashboard();
       return true;
     } catch (error) {
-      completeError.value = resolveErrorMessage(error, 'No fue posible completar los movimientos.');
+      completeError.value = resolveApiErrorMessage(
+        error,
+        'No fue posible completar los movimientos.',
+      );
       return false;
-    } finally {
-      isCompletingPendingActions.value = false;
     }
   }
 

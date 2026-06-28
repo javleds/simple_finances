@@ -1,9 +1,10 @@
-import { computed, ref, watch } from 'vue';
+import { useQuery } from '@tanstack/vue-query';
+import { computed, nextTick, ref, watch } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
+import { dashboardQueryKeys } from '../queries/dashboardQueries';
 import { createDashboardRepository } from '../repositories/dashboardRepository';
-import type { DashboardPeriodSummary } from '../types/dashboard';
 
 const dashboardRepository = createDashboardRepository();
 
@@ -30,26 +31,12 @@ function isDateValue(value: string | null): value is string {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-function resolveErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return 'No fue posible cargar el resumen del periodo.';
-}
-
 export function useDashboardPeriodSummary() {
   const defaultRange = currentMonthRange();
   const startDate = ref<string | null>(defaultRange.startDate);
   const endDate = ref<string | null>(defaultRange.endDate);
-  const summary = ref<DashboardPeriodSummary | null>(null);
-  const isLoading = ref(false);
   const loadError = ref<string | null>(null);
-  let requestVersion = 0;
+  const isManualLoading = ref(false);
 
   const validationError = computed(() => {
     if (!isDateValue(startDate.value) || !isDateValue(endDate.value)) {
@@ -63,37 +50,61 @@ export function useDashboardPeriodSummary() {
     return null;
   });
 
-  async function loadPeriodSummary(): Promise<void> {
+  const periodParams = computed(() => {
     if (validationError.value || !isDateValue(startDate.value) || !isDateValue(endDate.value)) {
+      return null;
+    }
+
+    return {
+      startDate: startDate.value,
+      endDate: endDate.value,
+    };
+  });
+
+  const periodSummaryQuery = useQuery({
+    queryKey: computed(() =>
+      periodParams.value
+        ? dashboardQueryKeys.periodSummary(periodParams.value)
+        : [...dashboardQueryKeys.all, 'period-summary', 'invalid'],
+    ),
+    queryFn: () => {
+      if (!periodParams.value) {
+        throw new Error('A valid dashboard period is required.');
+      }
+
+      return dashboardRepository.loadPeriodSummary(periodParams.value);
+    },
+    enabled: false,
+  });
+
+  const summary = computed(() => periodSummaryQuery.data.value ?? null);
+  const isLoading = computed(() => isManualLoading.value || periodSummaryQuery.isLoading.value);
+
+  async function loadPeriodSummary(): Promise<void> {
+    if (!periodParams.value) {
       return;
     }
 
-    const currentRequestVersion = requestVersion + 1;
-    requestVersion = currentRequestVersion;
-    isLoading.value = true;
+    isManualLoading.value = true;
     loadError.value = null;
 
     try {
-      const result = await dashboardRepository.loadPeriodSummary({
-        startDate: startDate.value,
-        endDate: endDate.value,
-      });
+      await nextTick();
+      const result = await periodSummaryQuery.refetch();
 
-      if (currentRequestVersion !== requestVersion) {
-        return;
+      if (result.error) {
+        loadError.value = resolveApiErrorMessage(
+          result.error,
+          'No fue posible cargar el resumen del periodo.',
+        );
       }
-
-      summary.value = result;
     } catch (error) {
-      if (currentRequestVersion !== requestVersion) {
-        return;
-      }
-
-      loadError.value = resolveErrorMessage(error);
+      loadError.value = resolveApiErrorMessage(
+        error,
+        'No fue posible cargar el resumen del periodo.',
+      );
     } finally {
-      if (currentRequestVersion === requestVersion) {
-        isLoading.value = false;
-      }
+      isManualLoading.value = false;
     }
   }
 
