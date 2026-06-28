@@ -36,6 +36,7 @@ export function useAccountTransactionModalActions(
       type: 'submit' as const,
       form: 'transaction-form',
       disabled: !options.createFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -48,6 +49,7 @@ export function useAccountTransactionModalActions(
       type: 'submit' as const,
       form: 'edit-transaction-form',
       disabled: !options.editFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -58,6 +60,7 @@ export function useAccountTransactionModalActions(
       label: options.isDeleting.value ? 'Eliminando...' : 'Eliminar transacción',
       tone: 'primary' as const,
       disabled: !options.selectedTransaction.value || options.isDeleting.value,
+      loading: options.isDeleting.value,
     },
   ]);
 
@@ -69,6 +72,7 @@ export function useAccountTransactionModalActions(
       tone: 'primary' as const,
       icon: CheckCircleIcon,
       disabled: !options.selectedTransaction.value || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -80,6 +84,7 @@ export function useAccountTransactionModalActions(
       tone: 'primary' as const,
       icon: CheckCircleIcon,
       disabled: !options.selectedPendingByUser.value || options.isCompletingPendingByUser.value,
+      loading: options.isCompletingPendingByUser.value,
     },
   ]);
 

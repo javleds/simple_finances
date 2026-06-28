@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { Component } from 'vue';
-
+import type { AppModalAction } from '@/modules/shared/types/modal';
 import DistributionRuleForm from '@/modules/distribution/components/DistributionRuleForm.vue';
 import type { DistributionRule, DistributionRuleWritePayload } from '@/modules/distribution/types';
 import { AppModal } from '@/modules/shared/components';
@@ -10,20 +9,9 @@ type FormState = {
   isSubmitting: boolean;
 };
 
-type ModalAction = {
-  key: string;
-  label: string;
-  tone?: 'primary' | 'danger' | 'neutral';
-  icon?: Component;
-  type?: 'button' | 'submit' | 'reset';
-  disabled?: boolean;
-  form?: string;
-  autoClose?: boolean;
-};
-
 const props = withDefaults(
   defineProps<{
-    actions: ReadonlyArray<ModalAction>;
+    actions: ReadonlyArray<AppModalAction>;
     formId: string;
     open: boolean;
     requiresInitialValues?: boolean;

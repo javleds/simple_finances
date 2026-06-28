@@ -24,6 +24,7 @@ export function useDistributionRelationModalActions(
       type: 'submit' as const,
       form: 'distribution-relation-form',
       disabled: !options.createFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -36,6 +37,7 @@ export function useDistributionRelationModalActions(
       type: 'submit' as const,
       form: 'edit-distribution-relation-form',
       disabled: !options.editFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -46,6 +48,7 @@ export function useDistributionRelationModalActions(
       label: options.isDeleting.value ? 'Eliminando...' : 'Eliminar relación',
       tone: 'primary' as const,
       disabled: !options.selectedRelation.value || options.isDeleting.value,
+      loading: options.isDeleting.value,
     },
   ]);
 

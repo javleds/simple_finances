@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { Component } from 'vue';
-
+import type { AppModalAction } from '@/modules/shared/types/modal';
 import AccountsForm from '@/modules/accounts/components/AccountsForm.vue';
 import type { Account, AccountWritePayload } from '@/modules/accounts/types';
 import { AppModal } from '@/modules/shared/components';
@@ -10,20 +9,9 @@ type FormState = {
   isSubmitting: boolean;
 };
 
-type ModalAction = {
-  key: string;
-  label: string;
-  tone?: 'primary' | 'danger' | 'neutral';
-  icon?: Component;
-  type?: 'button' | 'submit' | 'reset';
-  disabled?: boolean;
-  form?: string;
-  autoClose?: boolean;
-};
-
 const props = withDefaults(
   defineProps<{
-    actions: ReadonlyArray<ModalAction>;
+    actions: ReadonlyArray<AppModalAction>;
     formId: string;
     open: boolean;
     requiresInitialValues?: boolean;

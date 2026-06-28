@@ -72,6 +72,7 @@ function handleFormStateChange(state: FormState): void {
           type="submit"
           variant="primary"
           :disabled="!formState.canSubmit || isSaving"
+          :loading="isSaving"
         >
           {{ isSaving ? 'Guardando...' : 'Guardar perfil' }}
         </AppButton>

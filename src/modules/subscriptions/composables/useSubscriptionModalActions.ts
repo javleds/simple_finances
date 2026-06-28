@@ -22,6 +22,7 @@ export function useSubscriptionModalActions(options: UseSubscriptionModalActions
       type: 'submit' as const,
       form: 'subscription-form',
       disabled: !options.createFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -34,6 +35,7 @@ export function useSubscriptionModalActions(options: UseSubscriptionModalActions
       type: 'submit' as const,
       form: 'edit-subscription-form',
       disabled: !options.editFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -44,6 +46,7 @@ export function useSubscriptionModalActions(options: UseSubscriptionModalActions
       label: options.isDeleting.value ? 'Eliminando...' : 'Eliminar suscripción',
       tone: 'primary' as const,
       disabled: !options.selectedSubscription.value || options.isDeleting.value,
+      loading: options.isDeleting.value,
     },
   ]);
 

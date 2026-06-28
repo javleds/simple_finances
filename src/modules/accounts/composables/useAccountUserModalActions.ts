@@ -23,6 +23,7 @@ export function useAccountUserModalActions(options: UseAccountUserModalActionsOp
       tone: 'primary' as const,
       type: 'button' as const,
       disabled: !options.canSubmitPercentage() || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -33,6 +34,7 @@ export function useAccountUserModalActions(options: UseAccountUserModalActionsOp
       label: options.isDeleting.value ? 'Eliminando...' : 'Quitar usuario',
       tone: 'primary' as const,
       disabled: !options.selectedUser.value || options.isDeleting.value,
+      loading: options.isDeleting.value,
     },
   ]);
 

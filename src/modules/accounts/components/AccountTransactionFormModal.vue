@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { Component } from 'vue';
-
+import type { AppModalAction } from '@/modules/shared/types/modal';
 import type { AccountMember } from '@/modules/accounts/types';
 import type { AccountGoal } from '@/modules/accounts/schemas/accountGoalSchemas';
 import TransactionsForm from '@/modules/transactions/components/TransactionsForm.vue';
@@ -17,22 +16,11 @@ type FormState = {
   keepOpen: boolean;
 };
 
-type ModalAction = {
-  key: string;
-  label: string;
-  tone?: 'primary' | 'danger' | 'neutral';
-  icon?: Component;
-  type?: 'button' | 'submit' | 'reset';
-  disabled?: boolean;
-  form?: string;
-  autoClose?: boolean;
-};
-
 const props = withDefaults(
   defineProps<{
     accountId: string;
     accountUsers: AccountMember[];
-    actions: ReadonlyArray<ModalAction>;
+    actions: ReadonlyArray<AppModalAction>;
     financialGoals: AccountGoal[];
     formId: string;
     enableCreateAndAddAnother?: boolean;

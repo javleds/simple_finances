@@ -22,6 +22,7 @@ export function useDistributionRuleModalActions(options: UseDistributionRuleModa
       type: 'submit' as const,
       form: 'distribution-rule-form',
       disabled: !options.createFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -34,6 +35,7 @@ export function useDistributionRuleModalActions(options: UseDistributionRuleModa
       type: 'submit' as const,
       form: 'edit-distribution-rule-form',
       disabled: !options.editFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -44,6 +46,7 @@ export function useDistributionRuleModalActions(options: UseDistributionRuleModa
       label: options.isDeleting.value ? 'Eliminando...' : 'Eliminar regla',
       tone: 'primary' as const,
       disabled: !options.selectedRule.value || options.isDeleting.value,
+      loading: options.isDeleting.value,
     },
   ]);
 

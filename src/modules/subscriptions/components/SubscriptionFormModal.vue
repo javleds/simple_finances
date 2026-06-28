@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { Component } from 'vue';
-
+import type { AppModalAction } from '@/modules/shared/types/modal';
 import SubscriptionsForm from '@/modules/subscriptions/components/SubscriptionsForm.vue';
 import type { Subscription, SubscriptionWritePayload } from '@/modules/subscriptions/types';
 import { AppModal } from '@/modules/shared/components';
@@ -16,20 +15,9 @@ type SelectOption = {
   description?: string;
 };
 
-type ModalAction = {
-  key: string;
-  label: string;
-  tone?: 'primary' | 'danger' | 'neutral';
-  icon?: Component;
-  type?: 'button' | 'submit' | 'reset';
-  disabled?: boolean;
-  form?: string;
-  autoClose?: boolean;
-};
-
 const props = withDefaults(
   defineProps<{
-    actions: ReadonlyArray<ModalAction>;
+    actions: ReadonlyArray<AppModalAction>;
     formId: string;
     fundingAccountOptions: SelectOption[];
     open: boolean;

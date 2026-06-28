@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { computed } from 'vue';
 
 import type { DashboardPendingAction } from '@/modules/admin/types/dashboard';
 import { AppModal, AppText } from '@/modules/shared/components';
+import type { AppModalAction } from '@/modules/shared/types/modal';
 
 const props = withDefaults(
   defineProps<{
@@ -22,7 +24,7 @@ const emit = defineEmits<{
   confirm: [];
 }>();
 
-const modalActions = [
+const modalActions: ReadonlyArray<AppModalAction> = [
   { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
   {
     key: 'confirm-complete',
@@ -31,6 +33,16 @@ const modalActions = [
     icon: CheckIcon,
   },
 ];
+
+const resolvedModalActions = computed<ReadonlyArray<AppModalAction>>(() =>
+  modalActions.map((action) => ({
+    ...action,
+    label:
+      action.key === 'confirm-complete' && props.isCompleting ? 'Completando...' : action.label,
+    disabled: action.key === 'confirm-complete' ? props.isCompleting : action.disabled,
+    loading: action.key === 'confirm-complete' ? props.isCompleting : action.loading,
+  })),
+);
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-MX', {
@@ -49,14 +61,7 @@ function accountActionsTotal(): number {
 <template>
   <AppModal
     :open="props.open"
-    :actions="
-      modalActions.map((action) => ({
-        ...action,
-        label:
-          action.key === 'confirm-complete' && props.isCompleting ? 'Completando...' : action.label,
-        disabled: action.key === 'confirm-complete' ? props.isCompleting : undefined,
-      }))
-    "
+    :actions="resolvedModalActions"
     title="Completar movimiento"
     variant="warning"
     @action="$event === 'confirm-complete' && emit('confirm')"

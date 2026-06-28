@@ -22,6 +22,7 @@ export function useAccountModalActions(options: UseAccountModalActionsOptions) {
       type: 'submit' as const,
       form: 'account-form',
       disabled: !options.createFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -34,6 +35,7 @@ export function useAccountModalActions(options: UseAccountModalActionsOptions) {
       type: 'submit' as const,
       form: 'edit-account-form',
       disabled: !options.editFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -44,6 +46,7 @@ export function useAccountModalActions(options: UseAccountModalActionsOptions) {
       label: options.isDeleting.value ? 'Eliminando...' : 'Eliminar cuenta',
       tone: 'primary' as const,
       disabled: !options.selectedAccount.value || options.isDeleting.value,
+      loading: options.isDeleting.value,
     },
   ]);
 

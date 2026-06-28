@@ -22,6 +22,7 @@ export function useAccountGoalModalActions(options: UseAccountGoalModalActionsOp
       type: 'submit' as const,
       form: 'account-goal-form',
       disabled: !options.createFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -34,6 +35,7 @@ export function useAccountGoalModalActions(options: UseAccountGoalModalActionsOp
       type: 'submit' as const,
       form: 'edit-account-goal-form',
       disabled: !options.editFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -44,6 +46,7 @@ export function useAccountGoalModalActions(options: UseAccountGoalModalActionsOp
       label: options.isDeleting.value ? 'Eliminando...' : 'Eliminar meta',
       tone: 'primary' as const,
       disabled: !options.selectedGoal.value || options.isDeleting.value,
+      loading: options.isDeleting.value,
     },
   ]);
 

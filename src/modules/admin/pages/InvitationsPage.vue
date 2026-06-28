@@ -78,6 +78,7 @@ const actionModalActions = computed(() => [
         : 'Rechazar invitación',
     tone: 'primary' as const,
     disabled: !selectedInvitation.value || !pendingAction.value || isSaving.value,
+    loading: isSaving.value,
   },
 ]);
 

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Component } from 'vue';
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
@@ -11,27 +10,14 @@ import { computed, onBeforeUnmount, watch } from 'vue';
 
 import AppIconButton from './AppIconButton.vue';
 import AppTitle from './AppTitle.vue';
-
-type ModalVariant = 'default' | 'warning' | 'danger' | 'success';
-type ModalActionTone = 'primary' | 'danger' | 'neutral';
-
-type ModalAction = {
-  key: string;
-  label: string;
-  tone?: ModalActionTone;
-  icon?: Component;
-  type?: 'button' | 'submit' | 'reset';
-  disabled?: boolean;
-  form?: string;
-  autoClose?: boolean;
-};
+import type { AppModalAction, AppModalVariant } from '@/modules/shared/types/modal';
 
 const props = withDefaults(
   defineProps<{
     open: boolean;
     title: string;
-    variant?: ModalVariant;
-    actions?: ReadonlyArray<ModalAction>;
+    variant?: AppModalVariant;
+    actions?: ReadonlyArray<AppModalAction>;
     closeLabel?: string;
   }>(),
   {
@@ -106,7 +92,7 @@ const actionToneStyles = {
 
 const modalStyle = computed(() => modalVariantStyles[props.variant]);
 
-const resolvedActions = computed<ReadonlyArray<ModalAction>>(() => {
+const resolvedActions = computed<ReadonlyArray<AppModalAction>>(() => {
   if (props.actions.length > 0) {
     const limitedActions = props.actions.slice(0, 3);
     const closeActionIndex = limitedActions.findIndex((action) => isCloseAction(action));
@@ -160,7 +146,11 @@ function closeModal(): void {
   emit('close');
 }
 
-function handleAction(action: ModalAction): void {
+function handleAction(action: AppModalAction): void {
+  if (action.disabled || action.loading) {
+    return;
+  }
+
   emit('action', action.key);
 
   if (action.autoClose) {
@@ -168,7 +158,7 @@ function handleAction(action: ModalAction): void {
   }
 }
 
-function isCloseAction(action: ModalAction): boolean {
+function isCloseAction(action: AppModalAction): boolean {
   const normalizedKey = action.key.trim().toLowerCase();
 
   if (normalizedKey === 'close' || normalizedKey === 'cancel') {
@@ -227,13 +217,19 @@ function isCloseAction(action: ModalAction): boolean {
             :key="action.key"
             :type="action.type ?? 'button'"
             :form="action.form"
-            :disabled="action.disabled"
+            :disabled="action.disabled || action.loading"
+            :aria-busy="action.loading ? 'true' : undefined"
             class="relative flex min-w-0 flex-1 items-center justify-center gap-3 border-r px-4 py-4 text-sm font-semibold transition last:border-r-0 focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             :class="actionToneStyles[action.tone ?? 'primary'].buttonClass"
             :style="{ borderColor: 'var(--app-color-border)' }"
             @click="handleAction(action)"
           >
-            <component :is="action.icon" v-if="action.icon" class="h-5 w-5 shrink-0" />
+            <span
+              v-if="action.loading"
+              aria-hidden="true"
+              class="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+            />
+            <component :is="action.icon" v-else-if="action.icon" class="h-5 w-5 shrink-0" />
             <span>{{ action.label }}</span>
             <span
               aria-hidden="true"

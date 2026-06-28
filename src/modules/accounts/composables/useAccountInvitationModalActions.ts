@@ -22,6 +22,7 @@ export function useAccountInvitationModalActions(options: UseAccountInvitationMo
       type: 'submit' as const,
       form: 'account-invitation-form',
       disabled: !options.createFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -34,6 +35,7 @@ export function useAccountInvitationModalActions(options: UseAccountInvitationMo
       type: 'submit' as const,
       form: 'edit-account-invitation-form',
       disabled: !options.editFormState.value.canSubmit || options.isSaving.value,
+      loading: options.isSaving.value,
     },
   ]);
 
@@ -44,6 +46,7 @@ export function useAccountInvitationModalActions(options: UseAccountInvitationMo
       label: options.isDeleting.value ? 'Eliminando...' : 'Eliminar invitación',
       tone: 'primary' as const,
       disabled: !options.selectedInvitation.value || options.isDeleting.value,
+      loading: options.isDeleting.value,
     },
   ]);
 
