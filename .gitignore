@@ -36,5 +36,8 @@ coverage
 # Vitest
 __screenshots__/
 
+# Internal Playwright captures
+tmp/playwright-facilities/
+
 # Vite
 *.timestamp-*-*.mjs
