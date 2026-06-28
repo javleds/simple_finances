@@ -20,6 +20,8 @@ it('lists completed transactions created by the signed in user with summary meta
     $sharedUser = User::factory()->create();
     $account = Account::factory()->create(['name' => 'Nomina', 'user_id' => $user->id]);
     $account->users()->attach([$user->id, $sharedUser->id]);
+    $deletedAccount = Account::factory()->create(['name' => 'Deleted', 'user_id' => $user->id]);
+    $deletedAccount->users()->attach($user->id);
 
     $parentTransaction = Transaction::factory()->income()->completed()->create([
         'concept' => 'Monthly salary',
@@ -50,6 +52,14 @@ it('lists completed transactions created by the signed in user with summary meta
         'user_id' => $sharedUser->id,
         'scheduled_at' => '2026-06-05',
     ]);
+    Transaction::factory()->income()->completed()->create([
+        'concept' => 'Deleted account salary',
+        'amount' => 90000,
+        'account_id' => $deletedAccount->id,
+        'user_id' => $user->id,
+        'scheduled_at' => '2026-06-05',
+    ]);
+    $deletedAccount->delete();
 
     $this
         ->withHeaders(transactionFacilityHeaders($user))

@@ -34,11 +34,18 @@ it('returns dashboard account summary and pending actions for the signed in user
         'user_id' => $otherUser->id,
         'virtual' => false,
     ]);
+    $deletedAccount = Account::factory()->create([
+        'name' => 'Deleted',
+        'user_id' => $user->id,
+        'virtual' => false,
+    ]);
 
     $account->users()->attach($user->id);
     $sharedAccount->users()->attach([$user->id, $sharedUser->id]);
     $virtualAccount->users()->attach($user->id);
     $otherAccount->users()->attach($otherUser->id);
+    $deletedAccount->users()->attach($user->id);
+    $deletedAccount->delete();
 
     $pendingTransaction = Transaction::factory()->income()->pending()->create([
         'concept' => 'Pending reimbursement',
@@ -57,6 +64,11 @@ it('returns dashboard account summary and pending actions for the signed in user
         'type' => TransactionType::Outcome,
         'amount' => 100,
         'account_id' => $account->id,
+        'user_id' => $user->id,
+    ]);
+    Transaction::factory()->income()->pending()->create([
+        'amount' => 999,
+        'account_id' => $deletedAccount->id,
         'user_id' => $user->id,
     ]);
 

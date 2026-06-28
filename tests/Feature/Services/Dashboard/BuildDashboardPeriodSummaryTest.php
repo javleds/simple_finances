@@ -13,6 +13,8 @@ it('summarizes completed transaction totals inside the selected period', functio
 
     $account = Account::factory()->create(['user_id' => $user->id]);
     $account->users()->attach($user->id);
+    $deletedAccount = Account::factory()->create(['user_id' => $user->id]);
+    $deletedAccount->users()->attach($user->id);
 
     $otherAccount = Account::factory()->create(['user_id' => $otherUser->id]);
     $otherAccount->users()->attach($otherUser->id);
@@ -60,6 +62,13 @@ it('summarizes completed transaction totals inside the selected period', functio
         'user_id' => $otherUser->id,
         'scheduled_at' => '2026-06-15',
     ]);
+    Transaction::factory()->income()->completed()->create([
+        'amount' => 90000,
+        'account_id' => $deletedAccount->id,
+        'user_id' => $user->id,
+        'scheduled_at' => '2026-06-15',
+    ]);
+    $deletedAccount->delete();
 
     $summary = app(BuildDashboardPeriodSummary::class)->execute('2026-06-05', '2026-06-30');
 

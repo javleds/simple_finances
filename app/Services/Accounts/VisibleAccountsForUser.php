@@ -9,6 +9,12 @@ class VisibleAccountsForUser
 {
     public function query(int $userId): Builder
     {
+        return $this->queryIncludingDeleted($userId)
+            ->whereNull('deleted_at');
+    }
+
+    public function queryIncludingDeleted(int $userId): Builder
+    {
         return Account::withoutGlobalScopes()
             ->whereHas('users', fn (Builder $query) => $query->where('users.id', $userId));
     }

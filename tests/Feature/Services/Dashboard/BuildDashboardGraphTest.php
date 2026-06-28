@@ -27,10 +27,16 @@ it('returns visible accounts ordered for the dashboard graph', function () {
         'name' => 'Hidden',
         'user_id' => $secondaryUser->id,
     ]);
+    $deletedAccount = Account::factory()->create([
+        'name' => 'Deleted',
+        'user_id' => $user->id,
+    ]);
 
     $firstAccount->users()->attach($user->id);
     $secondAccount->users()->attach($user->id);
     $hiddenAccount->users()->attach($secondaryUser->id);
+    $deletedAccount->users()->attach($user->id);
+    $deletedAccount->delete();
 
     $data = app(BuildDashboardGraph::class)->execute()->all();
 

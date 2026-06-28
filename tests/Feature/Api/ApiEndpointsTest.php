@@ -498,6 +498,12 @@ it('filters soft deleted accounts by deleted at state', function () {
     $deletedAccount->delete();
 
     $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/accounts')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.name', 'Active account');
+
+    $this->withHeaders(apiHeaders($user))
         ->getJson('/api/accounts?deleted_at=0')
         ->assertOk()
         ->assertJsonPath('meta.total', 1)

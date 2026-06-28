@@ -24,8 +24,12 @@ class AccountController extends ApiController
 
     public function index(Request $request, VisibleAccountsForUser $visibleAccountsForUser): JsonResponse
     {
+        $query = $request->query->has('deleted_at')
+            ? $visibleAccountsForUser->queryIncludingDeleted($request->user()->id)
+            : $visibleAccountsForUser->query($request->user()->id);
+
         return $this->respondPaginated(
-            $visibleAccountsForUser->query($request->user()->id)
+            $query
             ->with(['users', 'feedAccount'])
             ->orderBy('name'),
             $request,
