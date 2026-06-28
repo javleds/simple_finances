@@ -29,6 +29,7 @@ class AccountController extends ApiController
             ->with(['users', 'feedAccount'])
             ->orderBy('name'),
             $request,
+            searchColumns: ['name'],
             filterColumns: ['credit_card', 'virtual', 'feed_account_id', 'user_id'],
         );
     }

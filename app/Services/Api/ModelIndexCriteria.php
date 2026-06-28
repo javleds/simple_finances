@@ -65,7 +65,10 @@ class ModelIndexCriteria
             return false;
         }
 
-        $parsedValue = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        $values = $this->rawFilterValues($value);
+        $parsedValue = $values === []
+            ? null
+            : filter_var($values[0], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 
         if ($parsedValue === null) {
             return true;
@@ -93,10 +96,10 @@ class ModelIndexCriteria
         }
 
         if (is_array($value)) {
-            return true;
+            return $this->rawFilterValues($value) === [];
         }
 
-        return $value === null || $value === '';
+        return $value === null || trim((string) $value) === '';
     }
 
     private function normalizeValue(Model $model, string $key, mixed $value): mixed
@@ -125,23 +128,39 @@ class ModelIndexCriteria
 
     private function normalizeFilterValues(Model $model, string $key, mixed $value): array
     {
-        if (! is_string($value) || ! str_contains($value, ',')) {
-            return [$this->normalizeValue($model, $key, $value)];
-        }
-
-        $values = array_filter(
-            array_map(trim(...), explode(',', $value)),
-            fn (string $item): bool => $item !== '',
-        );
-
-        if ($values === []) {
-            return [$this->normalizeValue($model, $key, $value)];
-        }
+        $values = $this->rawFilterValues($value);
 
         return array_values(array_map(
-            fn (string $item): mixed => $this->normalizeValue($model, $key, $item),
+            fn (mixed $item): mixed => $this->normalizeValue($model, $key, $item),
             $values,
         ));
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private function rawFilterValues(mixed $value): array
+    {
+        $rawValues = is_array($value) ? $value : [$value];
+        $values = [];
+
+        foreach ($rawValues as $rawValue) {
+            $items = is_string($rawValue) && str_contains($rawValue, ',')
+                ? explode(',', $rawValue)
+                : [$rawValue];
+
+            foreach ($items as $item) {
+                $normalizedItem = is_string($item) ? trim($item) : $item;
+
+                if ($normalizedItem === null || $normalizedItem === '') {
+                    continue;
+                }
+
+                $values[] = $normalizedItem;
+            }
+        }
+
+        return $values;
     }
 
     private function normalizeEnumValue(string $enumClass, mixed $value): mixed

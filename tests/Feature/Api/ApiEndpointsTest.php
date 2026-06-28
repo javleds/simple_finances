@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Frequency;
 use App\Enums\InviteStatus;
 use App\Models\Account;
 use App\Models\AccountInvite;
@@ -431,6 +432,53 @@ it('filters and paginates index endpoints through query criteria', function () {
         ->getJson("/api/transactions?account_id={$account->id}&per_page=500")
         ->assertOk()
         ->assertJsonPath('meta.per_page', 100);
+});
+
+it('supports array query values in index endpoint filters', function () {
+    $user = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $user->id]);
+    $account->users()->attach($user->id);
+
+    Transaction::factory()->income()->completed()->create([
+        'user_id' => $user->id,
+        'account_id' => $account->id,
+    ]);
+    Transaction::factory()->outcome()->completed()->create([
+        'user_id' => $user->id,
+        'account_id' => $account->id,
+    ]);
+    Transaction::factory()->income()->pending()->create([
+        'user_id' => $user->id,
+        'account_id' => $account->id,
+    ]);
+
+    $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/transactions?type[]=income&type[]=outcome&status[]=completed')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 2);
+});
+
+it('searches visible accounts by name', function () {
+    $user = User::factory()->create();
+
+    $savingsAccount = Account::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Emergency Savings',
+    ]);
+    $checkingAccount = Account::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Daily Checking',
+    ]);
+
+    $savingsAccount->users()->attach($user->id);
+    $checkingAccount->users()->attach($user->id);
+
+    $response = $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/accounts?search=savings')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    expect(collect($response->json('data'))->pluck('name')->all())->toBe(['Emergency Savings']);
 });
 
 it('returns pending income totals by account user', function () {
@@ -1253,6 +1301,30 @@ it('searches subscriptions by name', function () {
         ->assertJsonPath('meta.total', 1);
 
     expect(collect($response->json('data'))->pluck('name')->all())->toBe(['Cloud Storage']);
+});
+
+it('filters subscriptions by frequency type', function () {
+    $user = User::factory()->create();
+
+    Subscription::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Monthly music',
+        'frequency_type' => Frequency::Month,
+        'next_payment_date' => '2026-01-10',
+    ]);
+    Subscription::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Yearly cloud',
+        'frequency_type' => Frequency::Year,
+        'next_payment_date' => '2026-01-11',
+    ]);
+
+    $response = $this->withHeaders(apiHeaders($user))
+        ->getJson('/api/subscriptions?frequency_type=years')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1);
+
+    expect(collect($response->json('data'))->pluck('name')->all())->toBe(['Yearly cloud']);
 });
 
 it('manages fixed incomes, partials and outcomes', function () {
