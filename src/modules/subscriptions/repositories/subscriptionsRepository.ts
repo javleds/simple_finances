@@ -8,6 +8,10 @@ import {
 import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import { mapSubscriptionApiToDomain, subscriptionApiSchema } from '../schemas/subscriptionSchemas';
+import {
+  buildSubscriptionWritePayload,
+  mapSubscriptionStatusesToFinishedFilter,
+} from './subscriptionPayloads';
 import type { Subscription, SubscriptionListFilters, SubscriptionWritePayload } from '../types';
 
 const apiClient = createApiClient();
@@ -23,28 +27,6 @@ const singleSubscriptionSchema = z
     }),
   ])
   .transform((payload) => ('data' in payload ? payload.data : payload));
-
-function buildWritePayload(payload: SubscriptionWritePayload) {
-  return {
-    name: payload.name,
-    amount: payload.amount,
-    started_at: payload.startDate,
-    frequency_unit: payload.frequencyUnit,
-    frequency_type: payload.frequencyType,
-    finished_at: payload.finishedAt,
-    feed_account_id: payload.fundingAccountId,
-  };
-}
-
-function mapSubscriptionStatusesToFinishedFilter(
-  statuses: SubscriptionListFilters['status'],
-): number | undefined {
-  if (!statuses || statuses.length === 0 || statuses.length > 1) {
-    return undefined;
-  }
-
-  return statuses[0] === 'active' ? 0 : 1;
-}
 
 export function createSubscriptionsRepository() {
   return {
@@ -72,13 +54,16 @@ export function createSubscriptionsRepository() {
       };
     },
     async create(payload: SubscriptionWritePayload): Promise<Subscription> {
-      const response = await apiClient.post<unknown>(subscriptionsPath, buildWritePayload(payload));
+      const response = await apiClient.post<unknown>(
+        subscriptionsPath,
+        buildSubscriptionWritePayload(payload),
+      );
       return mapSubscriptionApiToDomain(singleSubscriptionSchema.parse(response));
     },
     async update(subscriptionId: string, payload: SubscriptionWritePayload): Promise<Subscription> {
       const response = await apiClient.put<unknown>(
         `${subscriptionsPath}/${subscriptionId}`,
-        buildWritePayload(payload),
+        buildSubscriptionWritePayload(payload),
       );
       return mapSubscriptionApiToDomain(singleSubscriptionSchema.parse(response));
     },

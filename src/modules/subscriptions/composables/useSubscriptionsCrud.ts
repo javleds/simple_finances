@@ -1,69 +1,137 @@
-import { computed, ref } from 'vue';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/vue-query';
+import { computed, nextTick, ref } from 'vue';
 
-import { ApiError } from '@/lib/api/apiClient';
-import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
+import { subscriptionQueryKeys } from '../queries/subscriptionQueries';
 import { createSubscriptionsRepository } from '../repositories/subscriptionsRepository';
 import type { Subscription, SubscriptionListFilters, SubscriptionWritePayload } from '../types';
 
 const subscriptionsRepository = createSubscriptionsRepository();
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
 export function useSubscriptionsCrud() {
-  const subscriptionsState = usePaginatedCollection<
-    Subscription,
-    [SubscriptionListFilters | undefined]
-  >({
-    defaultPerPage: 20,
-    loadPage: (options, filters) => subscriptionsRepository.list({ ...options, filters }),
-    resolveErrorMessage,
-    loadErrorMessage: 'No fue posible cargar las suscripciones.',
-    loadMoreErrorMessage: 'No fue posible cargar más suscripciones.',
-  });
-  const isSaving = ref(false);
-  const isDeleting = ref(false);
+  const queryClient = useQueryClient();
+  const perPage = ref(20);
+  const lastFilters = ref<SubscriptionListFilters | undefined>();
+  const loadError = ref<string | null>(null);
   const saveError = ref<string | null>(null);
   const deleteError = ref<string | null>(null);
+  const isManualLoading = ref(false);
+  const isManualLoadingMore = ref(false);
 
-  const hasSubscriptions = computed(() => subscriptionsState.hasItems.value);
-  const hasMoreSubscriptions = computed(() => subscriptionsState.hasMoreItems.value);
-  const hasReachedEnd = computed(() => subscriptionsState.hasReachedEnd.value);
+  const activeQueryKey = computed(() => subscriptionQueryKeys.list(lastFilters.value, perPage.value));
+
+  const subscriptionsQuery = useInfiniteQuery({
+    queryKey: activeQueryKey,
+    enabled: false,
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      subscriptionsRepository.list({
+        page: pageParam,
+        perPage: perPage.value,
+        filters: lastFilters.value,
+      }),
+    getNextPageParam: (lastPage) =>
+      lastPage.currentPage < lastPage.lastPage ? lastPage.currentPage + 1 : undefined,
+  });
+
+  const createSubscriptionMutation = useMutation({
+    mutationFn: (payload: SubscriptionWritePayload) => subscriptionsRepository.create(payload),
+  });
+  const updateSubscriptionMutation = useMutation({
+    mutationFn: ({
+      subscriptionId,
+      payload,
+    }: {
+      subscriptionId: string;
+      payload: SubscriptionWritePayload;
+    }) => subscriptionsRepository.update(subscriptionId, payload),
+  });
+  const deleteSubscriptionMutation = useMutation({
+    mutationFn: (subscriptionId: string) => subscriptionsRepository.remove(subscriptionId),
+  });
+
+  const subscriptions = computed<Subscription[]>(
+    () => subscriptionsQuery.data.value?.pages.flatMap((page) => page.items) ?? [],
+  );
+  const hasSubscriptions = computed(() => subscriptions.value.length > 0);
+  const hasMoreSubscriptions = computed(() => subscriptionsQuery.hasNextPage.value);
+  const isLoading = computed(() => isManualLoading.value || subscriptionsQuery.isLoading.value);
+  const isLoadingMore = computed(
+    () => isManualLoadingMore.value || subscriptionsQuery.isFetchingNextPage.value,
+  );
+  const hasReachedEnd = computed(
+    () => hasSubscriptions.value && !hasMoreSubscriptions.value && !isLoadingMore.value,
+  );
+  const isSaving = computed(
+    () => createSubscriptionMutation.isPending.value || updateSubscriptionMutation.isPending.value,
+  );
+  const isDeleting = computed(() => deleteSubscriptionMutation.isPending.value);
 
   async function loadSubscriptions(
     filters?: SubscriptionListFilters,
     options?: { reset?: boolean; perPage?: number },
   ): Promise<void> {
-    await subscriptionsState.load([filters], options);
+    const shouldReset = options?.reset ?? true;
+    lastFilters.value = filters;
+    perPage.value = options?.perPage ?? perPage.value;
+    loadError.value = null;
+    isManualLoading.value = shouldReset;
+    isManualLoadingMore.value = !shouldReset;
+
+    try {
+      await nextTick();
+      const result = await subscriptionsQuery.refetch();
+
+      if (result.error) {
+        loadError.value = resolveApiErrorMessage(
+          result.error,
+          'No fue posible cargar las suscripciones.',
+        );
+      }
+    } catch (error) {
+      loadError.value = resolveApiErrorMessage(error, 'No fue posible cargar las suscripciones.');
+    } finally {
+      isManualLoading.value = false;
+      isManualLoadingMore.value = false;
+    }
   }
 
   async function loadMoreSubscriptions(): Promise<void> {
-    await subscriptionsState.loadMore();
+    if (isLoading.value || isLoadingMore.value || !hasMoreSubscriptions.value) {
+      return;
+    }
+
+    loadError.value = null;
+    isManualLoadingMore.value = true;
+
+    try {
+      const result = await subscriptionsQuery.fetchNextPage();
+
+      if (result.error) {
+        loadError.value = resolveApiErrorMessage(
+          result.error,
+          'No fue posible cargar más suscripciones.',
+        );
+      }
+    } catch (error) {
+      loadError.value = resolveApiErrorMessage(error, 'No fue posible cargar más suscripciones.');
+    } finally {
+      isManualLoadingMore.value = false;
+    }
   }
 
   async function createSubscription(payload: SubscriptionWritePayload): Promise<boolean> {
-    isSaving.value = true;
     saveError.value = null;
 
     try {
-      const subscription = await subscriptionsRepository.create(payload);
-      subscriptionsState.prependItem(subscription);
+      await createSubscriptionMutation.mutateAsync(payload);
+      await queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.all });
+      await loadSubscriptions(lastFilters.value, { reset: true, perPage: perPage.value });
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible crear la suscripción.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible crear la suscripción.');
       return false;
-    } finally {
-      isSaving.value = false;
     }
   }
 
@@ -71,37 +139,30 @@ export function useSubscriptionsCrud() {
     subscriptionId: string,
     payload: SubscriptionWritePayload,
   ): Promise<boolean> {
-    isSaving.value = true;
     saveError.value = null;
 
     try {
-      const updatedSubscription = await subscriptionsRepository.update(subscriptionId, payload);
-      subscriptionsState.replaceItem(
-        (subscription) => subscription.id === subscriptionId,
-        updatedSubscription,
-      );
+      await updateSubscriptionMutation.mutateAsync({ subscriptionId, payload });
+      await queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.all });
+      await loadSubscriptions(lastFilters.value, { reset: true, perPage: perPage.value });
       return true;
     } catch (error) {
-      saveError.value = resolveErrorMessage(error, 'No fue posible actualizar la suscripción.');
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible actualizar la suscripción.');
       return false;
-    } finally {
-      isSaving.value = false;
     }
   }
 
   async function deleteSubscription(subscriptionId: string): Promise<boolean> {
-    isDeleting.value = true;
     deleteError.value = null;
 
     try {
-      await subscriptionsRepository.remove(subscriptionId);
-      subscriptionsState.removeItem((subscription) => subscription.id === subscriptionId);
+      await deleteSubscriptionMutation.mutateAsync(subscriptionId);
+      await queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.all });
+      await loadSubscriptions(lastFilters.value, { reset: true, perPage: perPage.value });
       return true;
     } catch (error) {
-      deleteError.value = resolveErrorMessage(error, 'No fue posible eliminar la suscripción.');
+      deleteError.value = resolveApiErrorMessage(error, 'No fue posible eliminar la suscripción.');
       return false;
-    } finally {
-      isDeleting.value = false;
     }
   }
 
@@ -114,15 +175,15 @@ export function useSubscriptionsCrud() {
   }
 
   return {
-    subscriptions: subscriptionsState.items,
+    subscriptions,
     hasSubscriptions,
     hasMoreSubscriptions,
     hasReachedEnd,
-    isLoading: subscriptionsState.isLoading,
-    isLoadingMore: subscriptionsState.isLoadingMore,
+    isLoading,
+    isLoadingMore,
     isSaving,
     isDeleting,
-    loadError: subscriptionsState.loadError,
+    loadError,
     saveError,
     deleteError,
     clearSaveError,
@@ -132,6 +193,6 @@ export function useSubscriptionsCrud() {
     createSubscription,
     updateSubscription,
     deleteSubscription,
-    perPage: subscriptionsState.perPage,
+    perPage,
   };
 }
