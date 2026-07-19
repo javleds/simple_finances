@@ -1,7 +1,7 @@
-# Playwright Facility Screenshots
+# Playwright View Screenshots
 
-Internal Playwright helpers for opening existing SPA facilities and taking screenshots.
-These scripts are not an E2E test suite and are intentionally kept outside `src`.
+Internal Playwright helpers for opening existing SPA views and taking screenshots.
+These scripts are for product documentation and feature planning, not an E2E test suite, and are intentionally kept outside `src`.
 
 ## Prerequisites
 
@@ -16,49 +16,51 @@ The default login is `test@example.com` / `password`.
 
 ## Usage
 
-List the available facility keys:
+List the available view keys:
 
 ```bash
-npm run pw:facilities -- --list
+npm run pw:views:list
 ```
 
-Shortcut:
+Capture all available views in the mobile viewport:
 
 ```bash
-npm run pw:facilities:list
+npm run pw:views -- --all
 ```
 
-Capture all facilities in mobile viewport:
+Capture one view:
 
 ```bash
-npm run pw:facilities -- --all
-```
-
-Capture one facility:
-
-```bash
-npm run pw:facilities -- --facility account-transactions
+npm run pw:views -- --facility account-transactions
 ```
 
 Capture both mobile and desktop:
 
 ```bash
-npm run pw:facilities -- --facility dashboard --viewport both
+npm run pw:views -- --facility dashboard --viewport both
 ```
 
 Open a visible browser without writing screenshots:
 
 ```bash
-npm run pw:facilities -- --facility transactions --headed --no-screenshot
+npm run pw:views -- --facility transactions --headed --no-screenshot
 ```
 
 Skip dynamic routes that require existing accounts or distribution rules:
 
 ```bash
-npm run pw:facilities -- --list --base-only
+npm run pw:views:list -- --base-only
 ```
 
-Screenshots are written to `tmp/playwright-facilities` by default.
+Screenshots are written to `tmp/playwright-views` by default when using `pw:views`.
+
+The older `pw:facilities` scripts are still available as compatibility aliases:
+
+```bash
+npm run pw:facilities -- --all
+```
+
+Those compatibility commands write to `tmp/playwright-facilities` unless `--output-dir` or `PW_SCREENSHOT_DIR` is set.
 
 ## Environment Overrides
 

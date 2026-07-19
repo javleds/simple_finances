@@ -207,7 +207,7 @@ async function visitFacility(page, facility, viewportKey, currentConfig, selecte
 }
 
 function printFacilities(facilities) {
-  console.log('Available facilities:');
+  console.log('Available views:');
 
   for (const facility of facilities) {
     console.log(`- ${facility.key.padEnd(22)} ${facility.path}`);
@@ -217,20 +217,27 @@ function printFacilities(facilities) {
 function printHelp() {
   console.log(`
 Usage:
+  npm run pw:views:list
+  npm run pw:views -- --all
+  npm run pw:views -- --facility dashboard
+  npm run pw:views -- --facility account-transactions --viewport mobile
+  npm run pw:views -- --all --viewport both
+
+Compatibility aliases:
   npm run pw:facilities -- --list
   npm run pw:facilities -- --facility dashboard
   npm run pw:facilities -- --facility account-transactions --viewport mobile
   npm run pw:facilities -- --all --viewport both
 
 Options:
-  --list                    Print the facility catalog.
-  --all                     Visit every facility. This is the default when no facility is passed.
-  --facility <key>          Visit a single facility. Can be repeated.
+  --list                    Print the view catalog.
+  --all                     Visit every view. This is the default when no view is passed.
+  --facility <key>          Visit a single view by key. Can be repeated.
   --viewport <value>        mobile, desktop, or both. Defaults to mobile.
-  --base-only               Skip dynamic facilities that require account or rule IDs.
+  --base-only               Skip dynamic views that require account or rule IDs.
   --headed                  Show the browser.
   --no-screenshot           Visit routes without writing screenshots.
-  --output-dir <path>       Defaults to tmp/playwright-facilities.
+  --output-dir <path>       Screenshot directory. pw:views uses tmp/playwright-views.
   --app-url <url>           Defaults to PW_APP_URL or http://localhost:5173.
   --api-url <url>           Defaults to PW_API_URL or http://localhost:8000/api.
   --email <email>           Defaults to PW_EMAIL or test@example.com.

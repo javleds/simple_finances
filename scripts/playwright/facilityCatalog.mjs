@@ -91,6 +91,12 @@ export const staticFacilities = [
     path: '/auth/privacy-policy',
     auth: false,
   },
+  {
+    key: 'not-found',
+    label: 'Not found',
+    path: '/not-found-playwright-capture',
+    auth: false,
+  },
 ];
 
 export async function resolveFacilities(config, token, options = {}) {
