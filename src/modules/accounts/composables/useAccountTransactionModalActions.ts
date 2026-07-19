@@ -1,7 +1,6 @@
-import { CheckCircleIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, type ComputedRef, type Ref } from 'vue';
 
-import type { AccountPendingByUser } from '@/modules/accounts/types';
 import type { Transaction } from '@/modules/transactions/types';
 
 type FormState = {
@@ -13,10 +12,8 @@ type FormState = {
 type UseAccountTransactionModalActionsOptions = {
   createFormState: Ref<FormState>;
   editFormState: Ref<FormState>;
-  isCompletingPendingByUser: Ref<boolean>;
   isDeleting: Ref<boolean>;
   isSaving: Ref<boolean>;
-  selectedPendingByUser: ComputedRef<AccountPendingByUser | null>;
   selectedTransaction: ComputedRef<Transaction | null>;
 };
 
@@ -64,33 +61,7 @@ export function useAccountTransactionModalActions(
     },
   ]);
 
-  const completeTransactionActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-    {
-      key: 'confirm-complete-transaction',
-      label: options.isSaving.value ? 'Guardando...' : 'Completar transacción',
-      tone: 'primary' as const,
-      icon: CheckCircleIcon,
-      disabled: !options.selectedTransaction.value || options.isSaving.value,
-      loading: options.isSaving.value,
-    },
-  ]);
-
-  const completePendingByUserActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
-    {
-      key: 'confirm-complete-pending-by-user',
-      label: options.isCompletingPendingByUser.value ? 'Completando...' : 'Completar pendientes',
-      tone: 'primary' as const,
-      icon: CheckCircleIcon,
-      disabled: !options.selectedPendingByUser.value || options.isCompletingPendingByUser.value,
-      loading: options.isCompletingPendingByUser.value,
-    },
-  ]);
-
   return {
-    completePendingByUserActions,
-    completeTransactionActions,
     createTransactionActions,
     deleteTransactionActions,
     editTransactionActions,

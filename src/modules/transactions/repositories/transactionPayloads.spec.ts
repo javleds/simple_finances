@@ -7,7 +7,7 @@ describe('transaction payload builders', () => {
     expect(
       buildTransactionWritePayload({
         type: 'expense',
-        status: null,
+        status: 'completed',
         concept: 'Renta',
         amount: 1200,
         accountId: '10',

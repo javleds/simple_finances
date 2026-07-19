@@ -2,14 +2,11 @@
 import { computed, ref } from 'vue';
 
 import DashboardBalanceSection from '@/modules/admin/components/DashboardBalanceSection.vue';
-import DashboardCompletePendingModal from '@/modules/admin/components/DashboardCompletePendingModal.vue';
 import DashboardPeriodSummary from '@/modules/admin/components/DashboardPeriodSummary.vue';
-import DashboardPendingActions from '@/modules/admin/components/DashboardPendingActions.vue';
 import DashboardSubscriptionsPlanning from '@/modules/admin/components/DashboardSubscriptionsPlanning.vue';
 import DashboardSummaryCards from '@/modules/admin/components/DashboardSummaryCards.vue';
 import { useDashboard } from '@/modules/admin/composables/useDashboard';
 import { useDashboardPeriodSummary } from '@/modules/admin/composables/useDashboardPeriodSummary';
-import { useDashboardPendingActions } from '@/modules/admin/composables/useDashboardPendingActions';
 import { AppButton, AppText } from '@/modules/shared/components';
 
 type SavingsCadence = 'monthly' | 'biweekly';
@@ -21,12 +18,8 @@ const {
   dashboard,
   hasDashboardData,
   isLoading,
-  isCompletingPendingActions,
   loadError,
-  completeError,
-  clearCompleteError,
   loadDashboard,
-  completePendingTransactions,
 } = useDashboard();
 
 const {
@@ -39,21 +32,6 @@ const {
   resetToCurrentMonth,
   loadPeriodSummary,
 } = useDashboardPeriodSummary();
-
-const {
-  closeCompletePendingAction,
-  confirmCompletePendingAction,
-  isCompletePendingActionOpen,
-  openCompletePendingAccount,
-  openCompletePendingAction,
-  pendingActionGroups,
-  selectedPendingAccountActions,
-  selectedPendingAction,
-} = useDashboardPendingActions({
-  clearCompleteError,
-  completePendingTransactions,
-  dashboard,
-});
 
 const annualSubscriptionsSpend = computed(() => dashboard.value.subscriptionsSummary.annualTotal);
 
@@ -107,12 +85,6 @@ const filteredGraphAccounts = computed(() =>
 
     <DashboardSummaryCards :summary="dashboard.accountsSummary" />
 
-    <DashboardPendingActions
-      :groups="pendingActionGroups"
-      @complete-account="openCompletePendingAccount"
-      @complete-action="openCompletePendingAction"
-    />
-
     <DashboardSubscriptionsPlanning
       v-model:savings-cadence="savingsCadence"
       :annual-spend="annualSubscriptionsSpend"
@@ -131,14 +103,5 @@ const filteredGraphAccounts = computed(() =>
       @retry="loadPeriodSummary"
     />
 
-    <DashboardCompletePendingModal
-      :open="isCompletePendingActionOpen"
-      :complete-error="completeError"
-      :is-completing="isCompletingPendingActions"
-      :selected-account-actions="selectedPendingAccountActions"
-      :selected-action="selectedPendingAction"
-      @close="closeCompletePendingAction"
-      @confirm="confirmCompletePendingAction"
-    />
   </div>
 </template>

@@ -18,7 +18,6 @@ import type {
   TransactionListResult,
   TransactionMemberAmount,
   TransactionMutationMeta,
-  TransactionPendingByUser,
   TransactionPendingReimbursement,
   TransactionWritePayload,
 } from '../types';
@@ -73,23 +72,6 @@ const singleTransactionSchema = z.union([
     .transform((payload) => payload.data),
 ]);
 
-const pendingByUserApiSchema = z
-  .object({
-    user_id: transactionIdSchema,
-    user_name: z.string().catch('Usuario no disponible'),
-    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    transaction_ids: z
-      .array(transactionIdSchema)
-      .optional()
-      .transform((value) => value ?? []),
-  })
-  .transform<TransactionPendingByUser>((payload) => ({
-    userId: payload.user_id,
-    userName: payload.user_name,
-    amount: payload.amount,
-    transactionIds: payload.transaction_ids,
-  }));
-
 const memberAmountApiSchema = z
   .object({
     user_id: transactionIdSchema,
@@ -123,7 +105,6 @@ const transactionMutationMetaPayloadSchema = z
     account: z
       .object({
         balance: z.unknown().transform(parseNullableNumber),
-        pending_by_user: z.array(pendingByUserApiSchema).optional(),
       })
       .optional(),
     previous_account: z
@@ -131,7 +112,6 @@ const transactionMutationMetaPayloadSchema = z
         balance: z.unknown().transform(parseNullableNumber),
       })
       .optional(),
-    pending_by_user: z.array(pendingByUserApiSchema).optional(),
     custody_by_user: z.array(memberAmountApiSchema).optional(),
     settlements_by_user: z.array(memberAmountApiSchema).optional(),
     pending_reimbursements: z.array(pendingReimbursementApiSchema).optional(),
@@ -141,7 +121,6 @@ const transactionMutationMetaPayloadSchema = z
   .transform<TransactionMutationMeta>((payload) => ({
     accountBalance: payload?.account?.balance ?? null,
     previousAccountBalance: payload?.previous_account?.balance ?? null,
-    pendingByUser: payload?.pending_by_user ?? payload?.account?.pending_by_user ?? null,
     custodyByUser: payload?.custody_by_user ?? null,
     settlementsByUser: payload?.settlements_by_user ?? null,
     pendingReimbursements: payload?.pending_reimbursements ?? null,
@@ -157,23 +136,18 @@ const mutationMetaSchema = z
 export const transactionListMetaSchema = z
   .object({
     meta: transactionMutationMetaPayloadSchema,
-    pending_by_user: z.array(pendingByUserApiSchema).optional(),
   })
   .catch({
     meta: {
       accountBalance: null,
       previousAccountBalance: null,
-      pendingByUser: null,
       custodyByUser: null,
       settlementsByUser: null,
       pendingReimbursements: null,
       subtransactionIds: [],
     },
   })
-  .transform<TransactionMutationMeta>((payload) => ({
-    ...payload.meta,
-    pendingByUser: payload.meta.pendingByUser ?? payload.pending_by_user ?? null,
-  }));
+  .transform<TransactionMutationMeta>((payload) => payload.meta);
 
 const transactionFacilitySummarySchema = z
   .object({
@@ -244,7 +218,6 @@ export const createdTransactionResponseSchema = z
       meta: {
         accountBalance: null,
         previousAccountBalance: null,
-        pendingByUser: null,
         custodyByUser: null,
         settlementsByUser: null,
         pendingReimbursements: null,
@@ -281,7 +254,6 @@ export function createTransactionsRepository() {
         page: options?.page,
         per_page: options?.perPage,
         search: options?.filters?.search,
-        status: options?.filters?.status,
         type: mapTransactionTypesToApi(options?.filters?.type),
       });
       const query = searchParams.toString();

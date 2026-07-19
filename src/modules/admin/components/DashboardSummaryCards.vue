@@ -6,18 +6,10 @@ const props = defineProps<{
   summary: DashboardAccountsSummary;
 }>();
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 </script>
 
 <template>
-  <section class="grid grid-cols-2 gap-3">
+  <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
     <AppCard
       class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-primary)_10%,transparent),transparent)] p-4!"
     >
@@ -47,17 +39,6 @@ function formatCurrency(value: number): string {
         <AppText size="sm" tone="subtle">Cuentas compartidas</AppText>
         <p class="text-center text-2xl font-semibold tracking-tight text-(--app-color-text)">
           {{ props.summary.sharedAccounts }}
-        </p>
-      </div>
-    </AppCard>
-
-    <AppCard
-      class="rounded-2xl bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-warning)_10%,transparent),transparent)] p-4! text-right"
-    >
-      <div class="space-y-1 text-center">
-        <AppText size="sm" tone="subtle">Por pagar</AppText>
-        <p class="text-2xl font-semibold tracking-tight text-(--app-color-text)">
-          {{ formatCurrency(props.summary.pendingTotal) }}
         </p>
       </div>
     </AppCard>

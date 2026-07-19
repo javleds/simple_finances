@@ -1,28 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { CheckCircleIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type TransactionItemType = 'income' | 'expense';
-type TransactionItemStatus = 'completed' | 'pending';
 
 const props = defineProps<{
   itemId: string;
   concept: string;
   amount: number;
   type: TransactionItemType;
-  status: TransactionItemStatus;
   dateLabel: string;
   creatorName: string | null;
   accountName?: string | null;
   metaLabel?: string | null;
-  canComplete?: boolean;
   showActions?: boolean;
 }>();
 
 const emit = defineEmits<{
-  complete: [itemId: string];
   edit: [itemId: string];
   delete: [itemId: string];
 }>();
@@ -35,18 +31,7 @@ const currencyFormatter = new Intl.NumberFormat('es-MX', {
 });
 
 const actionMenuItems = computed(() => {
-  const actions = [];
-
-  if (props.canComplete) {
-    actions.push({
-      key: 'complete',
-      label: 'Completar',
-      icon: CheckCircleIcon,
-      tone: 'success' as const,
-    });
-  }
-
-  actions.push(
+  return [
     {
       key: 'edit',
       label: 'Editar',
@@ -59,9 +44,7 @@ const actionMenuItems = computed(() => {
       icon: TrashIcon,
       tone: 'danger' as const,
     },
-  );
-
-  return actions;
+  ];
 });
 
 function formattedAmount(amount: number): string {
@@ -82,22 +65,6 @@ function signLabel(type: TransactionItemType): string {
   }
 
   return '−';
-}
-
-function statusClasses(status: TransactionItemStatus): string {
-  if (status === 'completed') {
-    return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
-  }
-
-  return 'bg-amber-500/12 text-amber-700 dark:text-amber-300';
-}
-
-function statusLabel(status: TransactionItemStatus): string {
-  if (status === 'completed') {
-    return 'Completado';
-  }
-
-  return 'Pendiente';
 }
 
 function creatorLabel(): string {
@@ -128,13 +95,6 @@ function handleDelete(): void {
   emit('delete', props.itemId);
 }
 
-function handleAction(actionKey: string): void {
-  if (actionKey !== 'complete') {
-    return;
-  }
-
-  emit('complete', props.itemId);
-}
 </script>
 
 <template>
@@ -174,7 +134,6 @@ function handleAction(actionKey: string): void {
         v-if="props.showActions"
         class="shrink-0"
         :actions="actionMenuItems"
-        @action="handleAction"
         @delete="handleDelete"
         @edit="handleEdit"
       />
@@ -185,20 +144,11 @@ function handleAction(actionKey: string): void {
           {{ secondaryLabel() }}
         </p>
 
-        <div class="flex shrink-0 items-center gap-2">
-          <p
-            class="text-[11px] font-medium tracking-[0.04em] whitespace-nowrap text-(--app-color-text-subtle) uppercase"
-          >
-            {{ props.dateLabel }}
-          </p>
-
-          <span
-            class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
-            :class="statusClasses(props.status)"
-          >
-            {{ statusLabel(props.status) }}
-          </span>
-        </div>
+        <p
+          class="shrink-0 text-[11px] font-medium tracking-[0.04em] whitespace-nowrap text-(--app-color-text-subtle) uppercase"
+        >
+          {{ props.dateLabel }}
+        </p>
       </div>
     </div>
   </AppCard>

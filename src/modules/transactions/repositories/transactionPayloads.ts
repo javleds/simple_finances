@@ -3,7 +3,7 @@ import type { TransactionListFilters, TransactionWritePayload } from '../types';
 export function buildTransactionWritePayload(payload: TransactionWritePayload) {
   return {
     type: payload.type === 'expense' ? 'outcome' : 'income',
-    status: payload.status ?? 'completed',
+    status: 'completed',
     concept: payload.concept,
     amount: payload.amount,
     paid_by_user_id: payload.paidByUserId ? Number(payload.paidByUserId) : null,

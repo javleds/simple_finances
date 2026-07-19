@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import type { Account } from '@/modules/accounts/types';
 import AccountTransactionsActivity from '@/modules/accounts/components/AccountTransactionsActivity.vue';
@@ -12,10 +12,9 @@ import { useAccountTransactionListLoader } from '@/modules/accounts/composables/
 import { useAccountTransactionModalActions } from '@/modules/accounts/composables/useAccountTransactionModalActions';
 import { useAccountTransactionModals } from '@/modules/accounts/composables/useAccountTransactionModals';
 import { useAccountTransactionsContext } from '@/modules/accounts/composables/useAccountTransactionsContext';
-import { useAccountTransactionsPendingState } from '@/modules/accounts/composables/useAccountTransactionsPendingState';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
-import { canCompleteTransaction } from '@/modules/transactions/lib/transactionPermissions';
+import type { TransactionMutationMeta } from '@/modules/transactions/types';
 
 const props = defineProps<{ account?: Account }>();
 
@@ -23,13 +22,12 @@ const {
   activeFilters,
   clearFilters,
   searchTerm,
-  selectedStatuses,
   selectedTypes,
-  toggleStatus,
   toggleType,
 } = useAccountTransactionFilters();
 
 const account = computed(() => props.account);
+const accountBalance = ref(account.value?.balance ?? 0);
 const { accountId, accountUsers, currentUserId, isSharedAccount } =
   useAccountTransactionsContext(account);
 const {
@@ -58,7 +56,6 @@ const {
   createTransaction,
   updateTransaction,
   deleteTransaction,
-  markTransactionsCompleted,
 } = useTransactionsCrud();
 
 const { handleLoadMoreRetry, infiniteStatusLabel, loadMoreSentinel, reloadTransactions } =
@@ -74,7 +71,6 @@ const { handleLoadMoreRetry, infiniteStatusLabel, loadMoreSentinel, reloadTransa
   });
 
 const {
-  closeCompleteTransactionModal,
   closeCreateTransactionModal,
   closeDeleteTransactionModal,
   closeEditTransactionModal,
@@ -84,12 +80,10 @@ const {
   editFormState,
   handleCreateFormStateChange,
   handleEditFormStateChange,
-  isCompleteTransactionModalOpen,
   isCreateTransactionModalOpen,
   isDeleteTransactionModalOpen,
   isEditTransactionModalOpen,
   isFiltersOpen,
-  openCompleteTransaction,
   openCreateTransactionModal,
   openDeleteTransaction,
   openEditTransaction,
@@ -108,47 +102,23 @@ const {
 });
 
 const {
-  accountBalance,
-  applyMutationMeta,
-  closeCompletePendingByUserModal,
-  completePendingByUserError,
-  confirmCompletePendingByUser,
-  isCompletePendingByUserModalOpen,
-  isCompletingPendingByUser,
-  openCompletePendingByUser,
-  selectedPendingByUser,
-  usersWithPendingExpenses,
-} = useAccountTransactionsPendingState({
-  account,
-  markTransactionsCompleted,
-  reloadTransactions,
-});
-
-const {
-  completePendingByUserActions,
-  completeTransactionActions,
   createTransactionActions,
   deleteTransactionActions,
   editTransactionActions,
 } = useAccountTransactionModalActions({
   createFormState,
   editFormState,
-  isCompletingPendingByUser,
   isDeleting,
   isSaving,
-  selectedPendingByUser,
   selectedTransaction,
 });
 
 const {
-  confirmCompleteTransaction,
   confirmDeleteTransaction,
   handleEditTransactionSubmit,
   handleTransactionSubmit,
 } = useAccountTransactionActions({
   accountId,
-  canCompleteTransaction: (transaction) => canCompleteTransaction(transaction, currentUserId.value),
-  closeCompleteTransactionModal,
   closeCreateTransactionModal,
   closeDeleteTransactionModal,
   closeEditTransactionModal,
@@ -160,6 +130,16 @@ const {
   updateTransaction,
 });
 
+watch(
+  () => account.value?.balance,
+  (nextBalance) => {
+    if (typeof nextBalance === 'number') {
+      accountBalance.value = nextBalance;
+    }
+  },
+  { immediate: true },
+);
+
 watch(listMeta, (nextMeta) => {
   if (!nextMeta) {
     return;
@@ -167,18 +147,20 @@ watch(listMeta, (nextMeta) => {
 
   applyMutationMeta(nextMeta);
 });
+
+function applyMutationMeta(meta: TransactionMutationMeta): void {
+  if (typeof meta.accountBalance === 'number') {
+    accountBalance.value = meta.accountBalance;
+  }
+}
 </script>
 
 <template>
   <section class="space-y-4">
     <AccountTransactionsHeader
       :balance="accountBalance"
-      :current-user-id="currentUserId"
-      :is-completing-pending-by-user="isCompletingPendingByUser"
       :is-shared-account="isSharedAccount"
       :pending-reimbursements="account?.pendingReimbursements ?? []"
-      :pending-users="usersWithPendingExpenses"
-      @complete-pending-user="openCompletePendingByUser"
     />
 
     <AccountTransactionsActivity
@@ -190,7 +172,6 @@ watch(listMeta, (nextMeta) => {
       :load-error="loadError"
       :show-load-more-retry="Boolean(loadError && hasTransactions)"
       :transactions="transactions"
-      @complete="openCompleteTransaction"
       @create="openCreateTransactionModal"
       @delete="openDeleteTransaction"
       @edit="openEditTransaction"
@@ -205,42 +186,30 @@ watch(listMeta, (nextMeta) => {
 
     <AccountTransactionsFilters
       :open="isFiltersOpen"
-      :selected-statuses="selectedStatuses"
       :selected-types="selectedTypes"
       @clear="clearFilters"
       @close="closeFilters"
-      @toggle-status="toggleStatus"
       @toggle-type="toggleType"
     />
 
     <AccountTransactionsModals
       :account-id="accountId"
       :account-users="accountUsers"
-      :complete-pending-by-user-actions="completePendingByUserActions"
-      :complete-pending-by-user-error="completePendingByUserError"
-      :complete-transaction-actions="completeTransactionActions"
       :create-initial-values="createInitialValues"
       :create-transaction-actions="createTransactionActions"
       :delete-error="deleteError"
       :delete-transaction-actions="deleteTransactionActions"
       :edit-transaction-actions="editTransactionActions"
       :financial-goals="financialGoals"
-      :is-complete-pending-by-user-modal-open="isCompletePendingByUserModalOpen"
-      :is-complete-transaction-modal-open="isCompleteTransactionModalOpen"
       :is-create-transaction-modal-open="isCreateTransactionModalOpen"
       :is-delete-transaction-modal-open="isDeleteTransactionModalOpen"
       :is-edit-transaction-modal-open="isEditTransactionModalOpen"
       :is-loading-financial-goals="isLoadingFinancialGoals"
       :save-error="saveError"
-      :selected-pending-by-user="selectedPendingByUser"
       :selected-transaction="selectedTransaction"
-      @close-complete-pending-by-user="closeCompletePendingByUserModal"
-      @close-complete-transaction="closeCompleteTransactionModal"
       @close-create-transaction="closeCreateTransactionModal"
       @close-delete-transaction="closeDeleteTransactionModal"
       @close-edit-transaction="closeEditTransactionModal"
-      @confirm-complete-pending-by-user="confirmCompletePendingByUser"
-      @confirm-complete-transaction="confirmCompleteTransaction"
       @confirm-delete-transaction="confirmDeleteTransaction"
       @create-form-state-change="handleCreateFormStateChange"
       @edit-form-state-change="handleEditFormStateChange"

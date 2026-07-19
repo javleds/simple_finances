@@ -27,24 +27,33 @@ const baseTransactionPayload = {
 };
 
 describe('transactions repository schemas', () => {
-  it('parses pending totals from a transaction list response meta', () => {
+  it('parses member summary from a transaction list response meta', () => {
     expect(
       transactionListMetaSchema.parse({
         data: [],
         meta: {
           current_page: 1,
-          pending_by_user: [
+          custody_by_user: [
             {
               user_id: 7,
               user_name: 'Eliot',
               amount: '250.00',
-              transaction_ids: [1454, 1457],
             },
+          ],
+          settlements_by_user: [
             {
               user_id: 8,
               user_name: 'Notradame',
               amount: '9,500.00',
-              transaction_ids: ['1455', 1458],
+            },
+          ],
+          pending_reimbursements: [
+            {
+              from_user_id: 7,
+              from_user_name: 'Eliot',
+              to_user_id: 8,
+              to_user_name: 'Notradame',
+              amount: '125.50',
             },
           ],
         },
@@ -53,41 +62,39 @@ describe('transactions repository schemas', () => {
       accountBalance: null,
       previousAccountBalance: null,
       subtransactionIds: [],
-      custodyByUser: null,
-      settlementsByUser: null,
-      pendingReimbursements: null,
-      pendingByUser: [
+      custodyByUser: [
         {
           userId: '7',
           userName: 'Eliot',
           amount: 250,
-          transactionIds: ['1454', '1457'],
         },
+      ],
+      settlementsByUser: [
         {
           userId: '8',
           userName: 'Notradame',
           amount: 9500,
-          transactionIds: ['1455', '1458'],
+        },
+      ],
+      pendingReimbursements: [
+        {
+          fromUserId: '7',
+          fromUserName: 'Eliot',
+          toUserId: '8',
+          toUserName: 'Notradame',
+          amount: 125.5,
         },
       ],
     });
   });
 
-  it('parses pending totals nested inside the account meta', () => {
+  it('parses account balance from transaction list response meta', () => {
     expect(
       transactionListMetaSchema.parse({
         data: [],
         meta: {
           account: {
             balance: '10,000.00',
-            pending_by_user: [
-              {
-                user_id: 7,
-                user_name: 'Eliot',
-                amount: '250.00',
-                transaction_ids: [1454],
-              },
-            ],
           },
         },
       }),
@@ -98,45 +105,6 @@ describe('transactions repository schemas', () => {
       custodyByUser: null,
       settlementsByUser: null,
       pendingReimbursements: null,
-      pendingByUser: [
-        {
-          userId: '7',
-          userName: 'Eliot',
-          amount: 250,
-          transactionIds: ['1454'],
-        },
-      ],
-    });
-  });
-
-  it('parses pending totals from a top-level list response field', () => {
-    expect(
-      transactionListMetaSchema.parse({
-        data: [],
-        pending_by_user: [
-          {
-            user_id: 8,
-            user_name: 'Notradame',
-            amount: '9,500.00',
-            transaction_ids: ['1455'],
-          },
-        ],
-      }),
-    ).toEqual({
-      accountBalance: null,
-      previousAccountBalance: null,
-      subtransactionIds: [],
-      custodyByUser: null,
-      settlementsByUser: null,
-      pendingReimbursements: null,
-      pendingByUser: [
-        {
-          userId: '8',
-          userName: 'Notradame',
-          amount: 9500,
-          transactionIds: ['1455'],
-        },
-      ],
     });
   });
 
@@ -161,7 +129,7 @@ describe('transactions repository schemas', () => {
           ...baseTransactionPayload,
           id: 11,
           type: 'income',
-          status: 'pending',
+          status: 'completed',
           amount: '720.30',
           created_at: '2026-06-09T12:01:00.000000Z',
         },
@@ -170,20 +138,6 @@ describe('transactions repository schemas', () => {
         account: {
           balance: '$2,400.00',
         },
-        pending_by_user: [
-          {
-            user_id: 7,
-            user_name: 'Eliot',
-            amount: '250.00',
-            transaction_ids: [1454, 1457],
-          },
-          {
-            user_id: 8,
-            user_name: 'Notradame',
-            amount: '9,500.00',
-            transaction_ids: ['1455', 1458],
-          },
-        ],
       },
     });
 
@@ -195,7 +149,7 @@ describe('transactions repository schemas', () => {
         concept: 'Compra mensual',
         amount: 720.3,
         type: 'income',
-        status: 'pending',
+        status: 'completed',
         date: '2026-06-09',
         createdAt: '2026-06-09T12:01:00.000000Z',
         creatorId: '9',
@@ -217,7 +171,7 @@ describe('transactions repository schemas', () => {
           concept: 'Compra mensual',
           amount: 720.3,
           type: 'income',
-          status: 'pending',
+          status: 'completed',
           date: '2026-06-09',
           createdAt: '2026-06-09T12:01:00.000000Z',
           creatorId: '9',
@@ -263,20 +217,6 @@ describe('transactions repository schemas', () => {
         custodyByUser: null,
         settlementsByUser: null,
         pendingReimbursements: null,
-        pendingByUser: [
-          {
-            userId: '7',
-            userName: 'Eliot',
-            amount: 250,
-            transactionIds: ['1454', '1457'],
-          },
-          {
-            userId: '8',
-            userName: 'Notradame',
-            amount: 9500,
-            transactionIds: ['1455', '1458'],
-          },
-        ],
       },
     });
   });

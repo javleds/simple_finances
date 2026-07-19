@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { accountApiSchema, mapAccountApiToDomain } from './accountSchemas';
 
 describe('account schemas', () => {
-  it('maps pending totals returned in the account payload', () => {
+  it('maps member summaries returned in the account payload', () => {
     const parsedAccount = accountApiSchema.parse({
       id: 21,
       name: 'Cuenta compartida',
@@ -18,18 +18,27 @@ describe('account schemas', () => {
       cutoff_day: null,
       feed_account_id: null,
       deleted_at: null,
-      pending_by_user: [
+      custody_by_user: [
         {
           user_id: 7,
           user_name: 'Eliot',
           amount: '250.00',
-          transaction_ids: [1454, 1457],
         },
+      ],
+      settlements_by_user: [
         {
           user_id: 8,
           user_name: 'Notradame',
           amount: '9,500.00',
-          transaction_ids: ['1455', 1458],
+        },
+      ],
+      pending_reimbursements: [
+        {
+          from_user_id: 7,
+          from_user_name: 'Eliot',
+          to_user_id: 8,
+          to_user_name: 'Notradame',
+          amount: '125.50',
         },
       ],
       users: [],
@@ -37,18 +46,27 @@ describe('account schemas', () => {
 
     expect(mapAccountApiToDomain(parsedAccount)).toMatchObject({
       id: '21',
-      pendingByUser: [
+      custodyByUser: [
         {
           userId: '7',
           userName: 'Eliot',
           amount: 250,
-          transactionIds: ['1454', '1457'],
         },
+      ],
+      settlementsByUser: [
         {
           userId: '8',
           userName: 'Notradame',
           amount: 9500,
-          transactionIds: ['1455', '1458'],
+        },
+      ],
+      pendingReimbursements: [
+        {
+          fromUserId: '7',
+          fromUserName: 'Eliot',
+          toUserId: '8',
+          toUserName: 'Notradame',
+          amount: 125.5,
         },
       ],
     });

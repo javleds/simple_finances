@@ -112,27 +112,6 @@ export function useTransactionsCrud() {
     }
   }
 
-  function markTransactionsCompleted(transactionIds: string[]): void {
-    if (transactionIds.length === 0) {
-      return;
-    }
-
-    const completedIds = new Set(transactionIds);
-
-    transactionsState.setItems(
-      transactionsState.items.value.map((transaction) => {
-        if (!completedIds.has(transaction.id) || transaction.status === 'completed') {
-          return transaction;
-        }
-
-        return {
-          ...transaction,
-          status: 'completed',
-        };
-      }),
-    );
-  }
-
   function clearSaveError(): void {
     saveError.value = null;
   }
@@ -161,7 +140,6 @@ export function useTransactionsCrud() {
     createTransaction,
     updateTransaction,
     deleteTransaction,
-    markTransactionsCompleted,
     perPage: transactionsState.perPage,
   };
 }

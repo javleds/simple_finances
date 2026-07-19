@@ -25,7 +25,6 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
   const isCreateTransactionModalOpen = ref(false);
   const isEditTransactionModalOpen = ref(false);
   const isDeleteTransactionModalOpen = ref(false);
-  const isCompleteTransactionModalOpen = ref(false);
   const isFiltersOpen = ref(false);
   const selectedTransactionId = ref<string | null>(null);
   const createInitialValues = ref<Partial<Transaction> | null>(null);
@@ -62,14 +61,12 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
     accountId: string;
     date: string;
     financialGoalId: string | null;
-    status: Transaction['status'];
     type: Transaction['type'];
   }): void {
     createInitialValues.value = {
       accountId: payload.accountId,
       date: payload.date,
       financialGoalId: payload.type === 'income' ? payload.financialGoalId : null,
-      status: payload.type === 'income' ? payload.status : null,
       type: payload.type,
       userPayments: {},
     };
@@ -102,18 +99,6 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
     options.clearDeleteError();
   }
 
-  function openCompleteTransaction(transactionId: string): void {
-    options.clearSaveError();
-    selectedTransactionId.value = transactionId;
-    isCompleteTransactionModalOpen.value = true;
-  }
-
-  function closeCompleteTransactionModal(): void {
-    isCompleteTransactionModalOpen.value = false;
-    selectedTransactionId.value = null;
-    options.clearSaveError();
-  }
-
   function openFilters(): void {
     isFiltersOpen.value = true;
   }
@@ -134,7 +119,6 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
     closeCreateTransactionModal,
     closeDeleteTransactionModal,
     closeEditTransactionModal,
-    closeCompleteTransactionModal,
     closeFilters,
     createInitialValues,
     createFormState,
@@ -144,12 +128,10 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
     isCreateTransactionModalOpen,
     isDeleteTransactionModalOpen,
     isEditTransactionModalOpen,
-    isCompleteTransactionModalOpen,
     isFiltersOpen,
     openCreateTransactionModal,
     openDeleteTransaction,
     openEditTransaction,
-    openCompleteTransaction,
     openFilters,
     prepareNextCreateTransaction,
     selectedTransaction,

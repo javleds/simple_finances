@@ -63,14 +63,8 @@ const transactionTypeOptions = [
   { value: 'expense', label: 'Egreso' },
 ] as const;
 
-const transactionStatusOptions = [
-  { value: 'pending', label: 'Pendiente' },
-  { value: 'completed', label: 'Completado' },
-] as const;
-
 const {
   type,
-  status,
   concept,
   amount,
   paidByUserId,
@@ -217,17 +211,6 @@ async function handleSubmit(): Promise<void> {
         />
       </div>
 
-      <div v-if="isIncome" class="flex items-center justify-between space-y-2">
-        <label for="transaction-status" class="text-sm font-medium text-(--app-color-label)">
-          Estatus
-        </label>
-        <AppToggleButton
-          id="transaction-status"
-          :model-value="status"
-          :options="transactionStatusOptions"
-          @update:model-value="status = $event"
-        />
-      </div>
     </section>
 
     <section class="space-y-5">
@@ -389,7 +372,7 @@ async function handleSubmit(): Promise<void> {
             Crear y agregar otro
           </label>
           <AppText size="sm" tone="subtle">
-            Conserva tipo, estatus, fecha y meta financiera para capturas rápidas.
+            Conserva tipo, fecha y meta financiera para capturas rápidas.
           </AppText>
         </div>
 

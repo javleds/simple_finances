@@ -17,7 +17,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:searchTerm': [value: string];
-  complete: [transactionId: string];
   create: [];
   delete: [transactionId: string];
   edit: [transactionId: string];
@@ -52,7 +51,6 @@ const emit = defineEmits<{
     <AccountTransactionsList
       :current-user-id="props.currentUserId"
       :transactions="props.transactions"
-      @complete="emit('complete', $event)"
       @delete="emit('delete', $event)"
       @edit="emit('edit', $event)"
     >

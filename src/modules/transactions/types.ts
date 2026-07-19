@@ -5,7 +5,6 @@ export type TransactionStatus = 'pending' | 'completed';
 export type TransactionPaymentSource = 'account_fund' | 'member_out_of_pocket';
 export type TransactionListFilters = {
   search?: string;
-  status?: TransactionStatus[];
   type?: TransactionType[];
 };
 
@@ -53,7 +52,7 @@ export type Transaction = {
 
 export type TransactionFormValues = {
   type: TransactionType;
-  status: TransactionStatus;
+  status: 'completed';
   concept: string;
   amount: string;
   accountId: string | null;
@@ -68,7 +67,7 @@ export type TransactionFormValues = {
 
 export type TransactionWritePayload = {
   type: TransactionType;
-  status: TransactionStatus | null;
+  status: 'completed';
   concept: string;
   amount: number;
   accountId: string;
@@ -88,7 +87,6 @@ export type TransactionSubmitOptions = {
 export type TransactionMutationMeta = {
   accountBalance: number | null;
   previousAccountBalance: number | null;
-  pendingByUser: TransactionPendingByUser[] | null;
   custodyByUser: TransactionMemberAmount[] | null;
   settlementsByUser: TransactionMemberAmount[] | null;
   pendingReimbursements: TransactionPendingReimbursement[] | null;
@@ -107,13 +105,6 @@ export type TransactionPendingReimbursement = {
   toUserId: string;
   toUserName: string;
   amount: number;
-};
-
-export type TransactionPendingByUser = {
-  userId: string;
-  userName: string;
-  amount: number;
-  transactionIds: string[];
 };
 
 export type CreatedTransactionResult = {

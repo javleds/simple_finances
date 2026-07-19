@@ -1,26 +1,18 @@
 <script setup lang="ts">
-import { ArrowPathIcon, CheckIcon } from '@heroicons/vue/24/outline';
+import { ArrowPathIcon } from '@heroicons/vue/24/outline';
 
-import type { AccountPendingByUser, AccountPendingReimbursement } from '@/modules/accounts/types';
+import type { AccountPendingReimbursement } from '@/modules/accounts/types';
 import {
   AppAvatarValueRow,
   AppCard,
   AppHeroMetric,
-  AppIconButton,
   AppText,
 } from '@/modules/shared/components';
 
 const props = defineProps<{
   balance: number;
-  currentUserId: string | null;
-  isCompletingPendingByUser: boolean;
   isSharedAccount: boolean;
-  pendingUsers: AccountPendingByUser[];
   pendingReimbursements?: AccountPendingReimbursement[];
-}>();
-
-const emit = defineEmits<{
-  completePendingUser: [userId: string];
 }>();
 
 function formatCurrency(value: number): string {
@@ -67,32 +59,6 @@ function formatCurrency(value: number): string {
           </div>
         </div>
 
-        <div class="space-y-3">
-          <AppText size="sm" tone="subtle">Pendientes anteriores por usuario</AppText>
-
-          <div v-if="props.pendingUsers.length > 0" class="space-y-2">
-            <AppAvatarValueRow
-              v-for="user in props.pendingUsers"
-              :key="user.userId"
-              :name="user.userName"
-              :value="formatCurrency(user.amount)"
-            >
-              <template v-if="props.currentUserId === user.userId" #action>
-                <AppIconButton
-                  :ariaLabel="`Completar pendientes de ${user.userName}`"
-                  :disabled="props.isCompletingPendingByUser"
-                  @click="emit('completePendingUser', user.userId)"
-                >
-                  <CheckIcon class="h-4 w-4" />
-                </AppIconButton>
-              </template>
-            </AppAvatarValueRow>
-          </div>
-
-          <div v-else class="rounded-2xl bg-(--app-color-surface-muted) px-3 py-3">
-            <AppText size="sm" tone="subtle">No hay montos pendientes por usuario.</AppText>
-          </div>
-        </div>
       </template>
     </div>
   </AppCard>

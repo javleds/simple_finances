@@ -11,7 +11,6 @@ import type {
   AccountWritePayload,
   AccountStatus,
   AccountMember,
-  AccountPendingByUser,
   AccountMemberAmount,
   AccountPendingReimbursement,
 } from '../types';
@@ -34,23 +33,6 @@ function resolveAccountUserId(value: {
 }): string {
   return value.user_id ?? value.user?.id ?? value.pivot?.user_id ?? value.id ?? '';
 }
-
-const accountPendingByUserApiSchema = z
-  .object({
-    user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
-    user_name: z.string().catch('Usuario no disponible'),
-    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    transaction_ids: z
-      .array(z.union([z.string(), z.number()]).transform((value) => String(value)))
-      .optional()
-      .transform((value) => value ?? []),
-  })
-  .transform<AccountPendingByUser>((payload) => ({
-    userId: payload.user_id,
-    userName: payload.user_name,
-    amount: payload.amount,
-    transactionIds: payload.transaction_ids,
-  }));
 
 const accountMemberAmountApiSchema = z
   .object({
@@ -161,10 +143,6 @@ export const accountApiSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => value ?? null),
-  pending_by_user: z
-    .array(accountPendingByUserApiSchema)
-    .optional()
-    .transform((value) => value ?? []),
   custody_by_user: z
     .array(accountMemberAmountApiSchema)
     .optional()
@@ -408,7 +386,6 @@ export function mapAccountApiToDomain(payload: z.infer<typeof accountApiSchema>)
       custodyAmount: user.custody_amount,
       settlementAmount: user.settlement_amount,
     })),
-    pendingByUser: payload.pending_by_user,
     custodyByUser: payload.custody_by_user,
     settlementsByUser: payload.settlements_by_user,
     pendingReimbursements: payload.pending_reimbursements,

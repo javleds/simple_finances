@@ -1,14 +1,12 @@
 import { createApiClient } from '@/lib/api/apiClient';
 
 import {
-  batchTransactionsResponseSchema,
   dashboardAccountsResponseSchema,
   dashboardGraphResponseSchema,
   dashboardPeriodSummaryResponseSchema,
   dashboardSubscriptionsResponseSchema,
 } from '../schemas/dashboardSchemas';
 import type {
-  BatchTransactionsResult,
   DashboardData,
   DashboardPeriodSummary,
   DashboardPeriodSummaryParams,
@@ -32,18 +30,8 @@ export function createDashboardRepository() {
       return {
         graphAccounts,
         accountsSummary: accounts.summary,
-        pendingActions: accounts.pendingActions,
         subscriptionsSummary,
       };
-    },
-
-    async completePendingTransactions(transactionIds: string[]): Promise<BatchTransactionsResult> {
-      const response = await apiClient.post<unknown>('/batch/transactions', {
-        action: 'complete',
-        transaction_ids: transactionIds,
-      });
-
-      return batchTransactionsResponseSchema.parse(response);
     },
 
     async loadPeriodSummary(

@@ -54,7 +54,7 @@ function normalizeUserPayments(userPayments: Record<string, number>): Record<str
 export const transactionFormSchema = z
   .object({
     type: z.enum(['income', 'expense']),
-    status: z.enum(['pending', 'completed']),
+    status: z.literal('completed'),
     concept: z.string().trim().min(1, 'El concepto es obligatorio.'),
     amount: z
       .string()
@@ -304,7 +304,7 @@ export function createDefaultTransactionFormValues(
 ): TransactionFormValues {
   return {
     type: transaction?.type ?? 'expense',
-    status: transaction?.status ?? 'completed',
+    status: 'completed',
     concept: transaction?.concept ?? '',
     amount:
       transaction?.amount === null || transaction?.amount === undefined
@@ -360,7 +360,7 @@ export function mapTransactionFormToWritePayload(
 ): TransactionWritePayload {
   return {
     type: values.type,
-    status: values.type === 'income' ? values.status : null,
+    status: 'completed',
     concept: values.concept.trim(),
     amount: parseNullableNumber(values.amount) ?? 0,
     accountId: values.accountId ?? '',

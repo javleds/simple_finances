@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import type { AppModalAction } from '@/modules/shared/types/modal';
-import AccountCompletePendingByUserModal from '@/modules/accounts/components/AccountCompletePendingByUserModal.vue';
-import AccountTransactionCompleteModal from '@/modules/accounts/components/AccountTransactionCompleteModal.vue';
 import AccountTransactionDeleteModal from '@/modules/accounts/components/AccountTransactionDeleteModal.vue';
 import AccountTransactionFormModal from '@/modules/accounts/components/AccountTransactionFormModal.vue';
-import type { AccountMember, AccountPendingByUser } from '@/modules/accounts/types';
+import type { AccountMember } from '@/modules/accounts/types';
 import type { AccountGoal } from '@/modules/accounts/schemas/accountGoalSchemas';
 import type {
   Transaction,
@@ -22,27 +20,20 @@ const props = withDefaults(
   defineProps<{
     accountId: string;
     accountUsers: AccountMember[];
-    completePendingByUserActions: ReadonlyArray<AppModalAction>;
-    completePendingByUserError?: string | null;
-    completeTransactionActions: ReadonlyArray<AppModalAction>;
     createTransactionActions: ReadonlyArray<AppModalAction>;
     deleteError?: string | null;
     deleteTransactionActions: ReadonlyArray<AppModalAction>;
     editTransactionActions: ReadonlyArray<AppModalAction>;
     financialGoals: AccountGoal[];
     createInitialValues?: Partial<Transaction> | null;
-    isCompletePendingByUserModalOpen: boolean;
-    isCompleteTransactionModalOpen: boolean;
     isCreateTransactionModalOpen: boolean;
     isDeleteTransactionModalOpen: boolean;
     isEditTransactionModalOpen: boolean;
     isLoadingFinancialGoals: boolean;
     saveError?: string | null;
-    selectedPendingByUser: AccountPendingByUser | null;
     selectedTransaction: Transaction | null;
   }>(),
   {
-    completePendingByUserError: null,
     createInitialValues: null,
     deleteError: null,
     saveError: null,
@@ -50,13 +41,9 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  closeCompletePendingByUser: [];
-  closeCompleteTransaction: [];
   closeCreateTransaction: [];
   closeDeleteTransaction: [];
   closeEditTransaction: [];
-  confirmCompletePendingByUser: [];
-  confirmCompleteTransaction: [];
   confirmDeleteTransaction: [];
   createFormStateChange: [state: FormState];
   editFormStateChange: [state: FormState];
@@ -107,23 +94,5 @@ const emit = defineEmits<{
     :transaction="props.selectedTransaction"
     @close="emit('closeDeleteTransaction')"
     @confirm="emit('confirmDeleteTransaction')"
-  />
-
-  <AccountTransactionCompleteModal
-    :open="props.isCompleteTransactionModalOpen"
-    :actions="props.completeTransactionActions"
-    :save-error="props.saveError"
-    :transaction="props.selectedTransaction"
-    @close="emit('closeCompleteTransaction')"
-    @confirm="emit('confirmCompleteTransaction')"
-  />
-
-  <AccountCompletePendingByUserModal
-    :open="props.isCompletePendingByUserModalOpen"
-    :actions="props.completePendingByUserActions"
-    :complete-error="props.completePendingByUserError"
-    :pending-user="props.selectedPendingByUser"
-    @close="emit('closeCompletePendingByUser')"
-    @confirm="emit('confirmCompletePendingByUser')"
   />
 </template>

@@ -13,8 +13,6 @@ type TransactionMutationResult = {
 
 type UseAccountTransactionActionsOptions = {
   accountId: ComputedRef<string>;
-  canCompleteTransaction: (transaction: Transaction) => boolean;
-  closeCompleteTransactionModal: () => void;
   closeCreateTransactionModal: () => void;
   closeDeleteTransactionModal: () => void;
   closeEditTransactionModal: () => void;
@@ -56,11 +54,17 @@ export function useAccountTransactionActions(options: UseAccountTransactionActio
   }
 
   async function handleEditTransactionSubmit(payload: TransactionWritePayload): Promise<void> {
-    if (!options.selectedTransaction.value) {
+    const selectedTransaction = options.selectedTransaction.value;
+
+    if (!selectedTransaction) {
       return;
     }
 
-    const result = await options.updateTransaction(options.selectedTransaction.value.id, payload);
+    if (selectedTransaction.type !== payload.type && !confirmTypeChange()) {
+      return;
+    }
+
+    const result = await options.updateTransaction(selectedTransaction.id, payload);
 
     if (!result) {
       return;
@@ -88,38 +92,13 @@ export function useAccountTransactionActions(options: UseAccountTransactionActio
     options.closeDeleteTransactionModal();
   }
 
-  async function confirmCompleteTransaction(): Promise<void> {
-    const selectedTransaction = options.selectedTransaction.value;
-
-    if (!selectedTransaction || !options.canCompleteTransaction(selectedTransaction)) {
-      return;
-    }
-
-    const result = await options.updateTransaction(selectedTransaction.id, {
-      type: selectedTransaction.type,
-      status: 'completed',
-      concept: selectedTransaction.concept,
-      amount: selectedTransaction.amount,
-      accountId: selectedTransaction.accountId,
-      paidByUserId: selectedTransaction.paidByUserId,
-      custodianUserId: selectedTransaction.custodianUserId,
-      paymentSource: selectedTransaction.paymentSource ?? 'account_fund',
-      splitBetweenUsers: Object.keys(selectedTransaction.userPayments).length > 0,
-      date: selectedTransaction.date,
-      financialGoalId: selectedTransaction.financialGoalId,
-      userPayments: selectedTransaction.userPayments,
-    });
-
-    if (!result) {
-      return;
-    }
-
-    options.onMutationMeta(result.meta);
-    options.closeCompleteTransactionModal();
+  function confirmTypeChange(): boolean {
+    return window.confirm(
+      'Cambiar el tipo recalculará balance, divisiones y saldos entre miembros. ¿Quieres guardar este cambio?',
+    );
   }
 
   return {
-    confirmCompleteTransaction,
     confirmDeleteTransaction,
     handleEditTransactionSubmit,
     handleTransactionSubmit,
