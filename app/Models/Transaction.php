@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\TransactionStatus;
+use App\Enums\TransactionPaymentSource;
 use App\Enums\TransactionType;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,12 +25,16 @@ class Transaction extends Model
         return [
             'parent_transaction_id' => 'integer',
             'user_id' => 'integer',
+            'paid_by_user_id' => 'integer',
+            'custodian_user_id' => 'integer',
             'account_id' => 'integer',
             'type' => TransactionType::class,
             'status' => TransactionStatus::class,
+            'payment_source' => TransactionPaymentSource::class,
             'amount' => 'float',
             'percentage' => 'float',
             'scheduled_at' => 'immutable_datetime',
+            'legacy_migrated_at' => 'immutable_datetime',
             'financial_goal_id' => 'integer',
         ];
     }
@@ -42,6 +47,16 @@ class Transaction extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function paidByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'paid_by_user_id');
+    }
+
+    public function custodianUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'custodian_user_id');
     }
 
     public function financialGoal(): BelongsTo
@@ -57,6 +72,16 @@ class Transaction extends Model
     public function subTransactions(): HasMany
     {
         return $this->hasMany(Transaction::class, 'parent_transaction_id');
+    }
+
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(TransactionAllocation::class);
+    }
+
+    public function ledgerEntries(): HasMany
+    {
+        return $this->hasMany(AccountMemberLedgerEntry::class);
     }
 
     public function isSubTransaction(): bool

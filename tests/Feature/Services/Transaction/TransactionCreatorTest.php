@@ -4,7 +4,9 @@ use App\Dto\TransactionFormDto;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Account;
+use App\Models\AccountMemberLedgerEntry;
 use App\Models\Transaction;
+use App\Models\TransactionAllocation;
 use App\Models\User;
 use App\Services\Transaction\TransactionCreator;
 
@@ -34,7 +36,7 @@ it('creates a single transaction when no user payments are provided', function (
         ->and($transaction->status)->toBe(TransactionStatus::Completed);
 });
 
-it('creates sub transactions for outcome type with user payments', function () {
+it('creates allocations and member ledger entries for outcome type with user payments', function () {
     $owner = User::factory()->create();
     $partner = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $owner->id]);
@@ -61,18 +63,20 @@ it('creates sub transactions for outcome type with user payments', function () {
 
     $mainTransaction = app(TransactionCreator::class)->execute($dto);
 
-    $transactions = Transaction::orderBy('id')->get();
-    $subTransactions = $transactions->where('id', '!=', $mainTransaction->id)->values();
+    $allocations = TransactionAllocation::query()->orderBy('id')->get();
+    $ledgerEntries = AccountMemberLedgerEntry::query()->orderBy('id')->get();
 
-    expect($transactions)->toHaveCount(3)
+    expect(Transaction::count())->toBe(1)
         ->and($mainTransaction->status)->toBe(TransactionStatus::Completed)
         ->and($mainTransaction->percentage)->toBe(100.0)
-        ->and($subTransactions->pluck('amount')->sort()->values()->all())->toBe([50.0, 150.0])
-        ->and($subTransactions->pluck('type')->unique()->all())->toBe([TransactionType::Income])
-        ->and($subTransactions->pluck('status')->unique()->all())->toBe([TransactionStatus::Pending])
-        ->and($subTransactions->pluck('user_id')->sort()->values()->all())->toBe([$owner->id, $partner->id])
-        ->and($subTransactions->pluck('percentage')->sort()->values()->all())->toBe([25.0, 75.0])
-        ->and($subTransactions->pluck('parent_transaction_id')->unique()->values()->all())->toBe([$mainTransaction->id]);
+        ->and($mainTransaction->paid_by_user_id)->toBe($owner->id)
+        ->and($mainTransaction->payment_source->value)->toBe('account_fund')
+        ->and($allocations->pluck('amount')->sort()->values()->all())->toBe([50.0, 150.0])
+        ->and($allocations->pluck('user_id')->sort()->values()->all())->toBe([$owner->id, $partner->id])
+        ->and($allocations->pluck('percentage')->sort()->values()->all())->toBe([25.0, 75.0])
+        ->and($ledgerEntries)->toHaveCount(1)
+        ->and($ledgerEntries->first()->type->value)->toBe('account_fund_expense')
+        ->and($ledgerEntries->first()->amount)->toBe(-200.0);
 });
 
 it('does not create pending incomes for users with zero percentage', function () {
@@ -101,14 +105,14 @@ it('does not create pending incomes for users with zero percentage', function ()
     ]);
 
     $mainTransaction = app(TransactionCreator::class)->execute($dto);
-    $subTransactions = Transaction::query()
-        ->where('parent_transaction_id', $mainTransaction->id)
+    $allocations = TransactionAllocation::query()
+        ->where('transaction_id', $mainTransaction->id)
         ->orderBy('id')
         ->get();
 
-    expect($subTransactions)->toHaveCount(1)
-        ->and($subTransactions->pluck('user_id')->all())->toBe([$owner->id])
-        ->and($subTransactions->pluck('percentage')->all())->toBe([100.0]);
+    expect($allocations)->toHaveCount(1)
+        ->and($allocations->pluck('user_id')->all())->toBe([$owner->id])
+        ->and($allocations->pluck('percentage')->all())->toBe([100.0]);
 });
 
 it('allocates the exact split total even when decimal divisions leave a remainder', function () {
@@ -140,13 +144,13 @@ it('allocates the exact split total even when decimal divisions leave a remainde
     ]);
 
     $mainTransaction = app(TransactionCreator::class)->execute($dto);
-    $subTransactions = Transaction::query()
-        ->where('parent_transaction_id', $mainTransaction->id)
+    $allocations = TransactionAllocation::query()
+        ->where('transaction_id', $mainTransaction->id)
         ->orderBy('id')
         ->get();
 
-    expect($subTransactions->pluck('amount')->all())->toBe([33.33, 33.33, 33.34])
-        ->and(round($subTransactions->sum('amount'), 2))->toBe(100.0);
+    expect($allocations->pluck('amount')->all())->toBe([33.33, 33.33, 33.34])
+        ->and(round($allocations->sum('amount'), 2))->toBe(100.0);
 });
 
 it('Throws an exception when creating an income transaction with non-completed status', function () {

@@ -7,6 +7,7 @@ use App\Handlers\Accounts\AccountCreator;
 use App\Handlers\Accounts\AccountEditor;
 use App\Http\Requests\Api\AccountRequest;
 use App\Models\Account;
+use App\Services\Accounts\BuildAccountMemberSummary;
 use App\Services\Accounts\BuildPendingIncomeByUser;
 use App\Services\Accounts\RecalculateAccountBalance;
 use App\Services\Accounts\VisibleAccountsForUser;
@@ -52,10 +53,17 @@ class AccountController extends ApiController
         return $this->respondModel($account->fresh(), ['users', 'feedAccount'], 201);
     }
 
-    public function show(Account $account, BuildPendingIncomeByUser $buildPendingIncomeByUser): JsonResponse
+    public function show(
+        Account $account,
+        BuildPendingIncomeByUser $buildPendingIncomeByUser,
+        BuildAccountMemberSummary $buildAccountMemberSummary,
+    ): JsonResponse
     {
         $this->authorizeAccountAccess->ensureMember($account);
         $account->setAttribute('pending_by_user', $buildPendingIncomeByUser->execute($account));
+        foreach ($buildAccountMemberSummary->execute($account) as $key => $value) {
+            $account->setAttribute($key, $value);
+        }
 
         return $this->respondModel($account, ['users', 'feedAccount', 'financialGoals', 'invites']);
     }

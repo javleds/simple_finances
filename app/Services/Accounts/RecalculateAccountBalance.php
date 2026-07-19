@@ -47,7 +47,11 @@ class RecalculateAccountBalance
 
     private function completedIncome(Account $account, bool $untilCutoff = false): float
     {
-        $query = $account->transactions()->withoutGlobalScopes()->completed()->income();
+        $query = $account->transactions()
+            ->withoutGlobalScopes()
+            ->whereNull('legacy_migrated_at')
+            ->completed()
+            ->income();
 
         if ($untilCutoff) {
             $query->beforeOrEqualsTo($account->next_cutoff_date);
@@ -58,7 +62,11 @@ class RecalculateAccountBalance
 
     private function completedOutcome(Account $account, bool $untilCutoff = false): float
     {
-        $query = $account->transactions()->withoutGlobalScopes()->completed()->outcome();
+        $query = $account->transactions()
+            ->withoutGlobalScopes()
+            ->whereNull('legacy_migrated_at')
+            ->completed()
+            ->outcome();
 
         if ($untilCutoff) {
             $query->beforeOrEqualsTo($account->next_cutoff_date);

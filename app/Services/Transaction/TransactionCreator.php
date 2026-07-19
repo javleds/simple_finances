@@ -2,13 +2,12 @@
 
 namespace App\Services\Transaction;
 
-use App\Dto\SplitTransactionAllocationDto;
 use App\Dto\TransactionFormDto;
 use App\Enums\Action;
 use App\Enums\TransactionStatus;
+use App\Enums\TransactionPaymentSource;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
-use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Support\Carbon;
@@ -18,7 +17,8 @@ class TransactionCreator
 {
     public function __construct(
         private Guard $auth,
-        private BuildSplitTransactionAllocations $buildSplitTransactionAllocations,
+        private SyncTransactionAllocations $syncTransactionAllocations,
+        private SyncAccountMemberLedger $syncAccountMemberLedger,
         private ProcessTransactionSideEffects $processTransactionSideEffects,
     ) {}
 
@@ -28,15 +28,14 @@ class TransactionCreator
             throw new \InvalidArgumentException('Income transactions must have status Completed.');
         }
 
-        if ($dto->type !== TransactionType::Outcome || count($dto->userPayments) === 0) {
+        $transaction = DB::transaction(function () use ($dto): Transaction {
             $transaction = $this->createSingleTransaction($dto);
-
-            $this->processTransactionSideEffects->execute($transaction, Action::Created);
+            $this->syncTransactionAllocations->execute($transaction, $this->userPayments($transaction, $dto));
+            $transaction->load('allocations');
+            $this->syncAccountMemberLedger->execute($transaction);
 
             return $transaction;
-        }
-
-        $transaction = DB::transaction(fn () => $this->createSplitTransactions($dto));
+        });
 
         $this->processTransactionSideEffects->execute($transaction, Action::Created);
 
@@ -52,6 +51,9 @@ class TransactionCreator
         $transaction->amount = $dto->amount;
         $transaction->percentage = 100.0;
         $transaction->account_id = $dto->accountId;
+        $transaction->paid_by_user_id = $this->paidByUserId($dto);
+        $transaction->custodian_user_id = $this->custodianUserId($dto);
+        $transaction->payment_source = $this->paymentSource($dto);
         $transaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
         $transaction->financial_goal_id = $dto->financialGoalId ?: null;
         $transaction->user_id = $this->auth->id();
@@ -60,44 +62,17 @@ class TransactionCreator
         return $transaction;
     }
 
-    private function createSplitTransactions(TransactionFormDto $dto): Transaction
+    private function userPayments(Transaction $transaction, TransactionFormDto $dto): array
     {
-        $mainTransaction = new Transaction;
-        $mainTransaction->type = $dto->type;
-        $mainTransaction->status = TransactionStatus::Completed;
-        $mainTransaction->concept = $dto->concept;
-        $mainTransaction->amount = $dto->amount;
-        $mainTransaction->percentage = 100.0;
-        $mainTransaction->account_id = $dto->accountId;
-        $mainTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
-        $mainTransaction->financial_goal_id = $dto->financialGoalId ?: null;
-        $mainTransaction->user_id = $this->auth->id();
-        $mainTransaction->save();
-
-        foreach ($this->allocations($dto) as $allocation) {
-            $user = User::withoutGlobalScopes()->find($allocation->userId);
-
-            $subTransaction = new Transaction;
-            $subTransaction->type = TransactionType::Income;
-            $subTransaction->status = TransactionStatus::Pending;
-            $subTransaction->concept = $dto->concept.' - Parte de '.$user->name;
-            $subTransaction->amount = $allocation->amount;
-            $subTransaction->percentage = $allocation->percentage;
-            $subTransaction->account_id = $dto->accountId;
-            $subTransaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
-            $subTransaction->financial_goal_id = $dto->financialGoalId ?: null;
-            $subTransaction->user_id = $user->id;
-            $subTransaction->parent_transaction_id = $mainTransaction->id;
-
-            $subTransaction->save();
+        if ($dto->type !== TransactionType::Outcome) {
+            return [];
         }
 
-        return $mainTransaction;
-    }
+        if ($dto->userPayments !== []) {
+            return $dto->userPayments;
+        }
 
-    private function allocations(TransactionFormDto $dto): array
-    {
-        return $this->buildSplitTransactionAllocations->execute($dto->amount, $dto->userPayments);
+        return $this->syncTransactionAllocations->defaultOutcomeAllocation($transaction);
     }
 
     private function resolveScheduleDate(string|CarbonInterface $scheduledAt): CarbonInterface
@@ -111,5 +86,32 @@ class TransactionCreator
         }
 
         return Carbon::parse($scheduledAt);
+    }
+
+    private function paidByUserId(TransactionFormDto $dto): ?int
+    {
+        if ($dto->type !== TransactionType::Outcome) {
+            return null;
+        }
+
+        return $dto->paidByUserId ?? $this->auth->id();
+    }
+
+    private function custodianUserId(TransactionFormDto $dto): ?int
+    {
+        if ($dto->type !== TransactionType::Income) {
+            return null;
+        }
+
+        return $dto->custodianUserId ?? $this->auth->id();
+    }
+
+    private function paymentSource(TransactionFormDto $dto): ?TransactionPaymentSource
+    {
+        if ($dto->type !== TransactionType::Outcome) {
+            return null;
+        }
+
+        return $dto->paymentSource;
     }
 }

@@ -14,6 +14,7 @@ class BuildPendingIncomeByUser
         $users = $this->accountUsers($account);
         $amounts = Transaction::query()
             ->where('account_id', $account->id)
+            ->whereNull('legacy_migrated_at')
             ->income()
             ->pending()
             ->selectRaw('user_id, sum(amount) as amount, GROUP_CONCAT(id) as transaction_ids')

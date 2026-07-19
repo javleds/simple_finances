@@ -1,15 +1,18 @@
 <?php
 
 use App\Dto\TransactionFormDto;
+use App\Enums\TransactionPaymentSource;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Account;
+use App\Models\AccountMemberLedgerEntry;
 use App\Models\Transaction;
+use App\Models\TransactionAllocation;
 use App\Models\User;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
 
-it('deletes pending sub transactions and detaches completed ones when removing parent', function () {
+it('deletes allocations and ledger entries when removing a transaction', function () {
     $owner = User::factory()->create();
     $partner = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $owner->id]);
@@ -19,12 +22,14 @@ it('deletes pending sub transactions and detaches completed ones when removing p
     ]);
     $this->actingAs($owner);
 
-    $createDto = TransactionFormDto::fromFormArray([
+    $transaction = app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
         'type' => TransactionType::Outcome,
         'status' => TransactionStatus::Completed,
-        'concept' => 'Shared expense to delete',
-        'amount' => 100.0,
+        'concept' => 'Shared dinner',
+        'amount' => 120.0,
         'account_id' => $account->id,
+        'payment_source' => TransactionPaymentSource::MemberOutOfPocket,
+        'paid_by_user_id' => $owner->id,
         'split_between_users' => true,
         'user_payments' => [
             ['user_id' => $owner->id, 'percentage' => 50],
@@ -32,40 +37,35 @@ it('deletes pending sub transactions and detaches completed ones when removing p
         ],
         'scheduled_at' => now(),
         'financial_goal_id' => null,
-    ]);
-
-    $mainTransaction = app(TransactionCreator::class)->execute($createDto);
-    $subTransactions = Transaction::where('parent_transaction_id', $mainTransaction->id)->orderBy('id')->get();
-
-    $subTransactions->first()->status = TransactionStatus::Completed;
-    $subTransactions->first()->save();
-
-    $removedSubTransactionIds = app(TransactionRemover::class)->execute($mainTransaction);
-
-    $remainingMain = Transaction::find($mainTransaction->id);
-    $pendingSubs = Transaction::where('parent_transaction_id', $mainTransaction->id)->where('status', TransactionStatus::Pending)->get();
-    $detachedCompleted = Transaction::whereNull('parent_transaction_id')->where('status', TransactionStatus::Completed)->get();
-
-    expect($remainingMain)->toBeNull()
-        ->and($removedSubTransactionIds)->toBe($subTransactions->pluck('id')->all())
-        ->and($pendingSubs)->toHaveCount(0)
-        ->and($detachedCompleted)->toHaveCount(1);
-});
-
-it('deletes a transaction without sub transactions', function () {
-    $user = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $user->id]);
-    $this->actingAs($user);
-
-    $transaction = Transaction::factory()->create([
-        'type' => TransactionType::Income,
-        'status' => TransactionStatus::Completed,
-        'user_id' => $user->id,
-        'account_id' => $account->id,
-    ]);
+    ]));
 
     $removedSubTransactionIds = app(TransactionRemover::class)->execute($transaction);
 
-    expect(Transaction::find($transaction->id))->toBeNull()
-        ->and($removedSubTransactionIds)->toBe([]);
+    expect($removedSubTransactionIds)->toBe([])
+        ->and(Transaction::whereKey($transaction->id)->exists())->toBeFalse()
+        ->and(TransactionAllocation::where('transaction_id', $transaction->id)->count())->toBe(0)
+        ->and(AccountMemberLedgerEntry::where('transaction_id', $transaction->id)->count())->toBe(0);
+});
+
+it('deletes a transaction without allocations', function () {
+    $user = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $user->id]);
+    $account->users()->attach($user->id, ['percentage' => 100]);
+    $this->actingAs($user);
+
+    $transaction = app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Solo expense',
+        'amount' => 90.0,
+        'account_id' => $account->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    app(TransactionRemover::class)->execute($transaction);
+
+    expect(Transaction::whereKey($transaction->id)->exists())->toBeFalse();
 });

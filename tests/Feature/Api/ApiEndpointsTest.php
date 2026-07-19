@@ -1040,7 +1040,7 @@ it('rejects bulk account user percentage updates when the request users do not m
         ->assertJsonValidationErrors(['users']);
 });
 
-it('returns every created transaction when storing a split account transaction', function () {
+it('returns the created transaction with allocations when storing a split account transaction', function () {
     $owner = User::factory()->create();
     $memberOne = User::factory()->create();
     $memberTwo = User::factory()->create();
@@ -1076,45 +1076,47 @@ it('returns every created transaction when storing a split account transaction',
             'scheduled_at' => now()->toDateString(),
         ])
         ->assertCreated()
-        ->assertJsonCount(4, 'data')
-        ->assertJsonPath('data.0.type', 'outcome')
-        ->assertJsonPath('data.0.status', 'completed')
-        ->assertJsonPath('data.1.type', 'income')
-        ->assertJsonPath('data.1.status', 'pending')
+        ->assertJsonPath('data.type', 'outcome')
+        ->assertJsonPath('data.status', 'completed')
+        ->assertJsonPath('data.payment_source', 'account_fund')
+        ->assertJsonPath('data.paid_by_user_id', $owner->id)
+        ->assertJsonCount(3, 'data.allocations')
         ->assertJsonPath('meta.account.id', $account->id)
         ->assertJsonPath('meta.pending_by_user.0.user_id', $owner->id)
         ->assertJsonPath('meta.pending_by_user.0.amount', 0.0)
         ->assertJsonPath('meta.pending_by_user.1.user_id', $memberOne->id)
-        ->assertJsonPath('meta.pending_by_user.1.amount', 99.0)
+        ->assertJsonPath('meta.pending_by_user.1.amount', 0.0)
         ->assertJsonPath('meta.pending_by_user.2.user_id', $memberTwo->id)
-        ->assertJsonPath('meta.pending_by_user.2.amount', 99.99)
+        ->assertJsonPath('meta.pending_by_user.2.amount', 0.0)
         ->assertJsonPath('meta.pending_by_user.3.user_id', $memberThree->id)
-        ->assertJsonPath('meta.pending_by_user.3.amount', 101.01);
+        ->assertJsonPath('meta.pending_by_user.3.amount', 0.0)
+        ->assertJsonPath('meta.settlements_by_user.0.user_id', $owner->id)
+        ->assertJsonPath('meta.settlements_by_user.0.amount', 0.0)
+        ->assertJsonPath('meta.pending_reimbursements', []);
 
-    $transactions = collect($response->json('data'));
-    $transactionIds = $transactions->pluck('id')->all();
+    $transaction = $response->json('data');
+    $allocations = collect($transaction['allocations']);
 
-    expect($transactionIds)->toHaveCount(4)
-        ->and(Transaction::query()->whereIn('id', $transactionIds)->count())->toBe(4)
-        ->and(Transaction::query()->where('parent_transaction_id', $transactionIds[0])->count())->toBe(3)
-        ->and((float) $transactions[0]['amount'])->toBe(300.0)
-        ->and((float) $transactions[1]['percentage'])->toBe(33.0)
-        ->and((float) $transactions[2]['percentage'])->toBe(33.33)
-        ->and((float) $transactions[3]['percentage'])->toBe(33.67)
+    expect(Transaction::query()->whereKey($transaction['id'])->exists())->toBeTrue()
+        ->and(Transaction::query()->where('parent_transaction_id', $transaction['id'])->count())->toBe(0)
+        ->and((float) $transaction['amount'])->toBe(300.0)
+        ->and($allocations->pluck('user_id')->all())->toBe([$memberOne->id, $memberTwo->id, $memberThree->id])
+        ->and($allocations->pluck('percentage')->all())->toBe([33.0, 33.33, 33.67])
+        ->and($allocations->pluck('amount')->all())->toBe([99.0, 99.99, 101.01])
         ->and((float) $response->json('meta.account.balance'))->toBe(-300.0);
 
     $this->withHeaders(apiHeaders($owner))
-        ->deleteJson("/api/accounts/{$account->id}/transactions/{$transactionIds[0]}")
+        ->deleteJson("/api/accounts/{$account->id}/transactions/{$transaction['id']}")
         ->assertOk()
         ->assertJsonPath('meta.account.id', $account->id)
-        ->assertJsonPath('meta.subtransactions', array_slice($transactionIds, 1))
+        ->assertJsonPath('meta.subtransactions', [])
         ->assertJsonPath('meta.pending_by_user.0.amount', 0.0)
         ->assertJsonPath('meta.pending_by_user.1.amount', 0.0)
         ->assertJsonPath('meta.pending_by_user.2.amount', 0.0)
         ->assertJsonPath('meta.pending_by_user.3.amount', 0.0);
 });
 
-it('lists split transactions with pending incomes before the origin outcome', function () {
+it('lists split transactions as single movements with allocations', function () {
     $owner = User::factory()->create();
     $memberOne = User::factory()->create();
     $memberTwo = User::factory()->create();
@@ -1157,22 +1159,14 @@ it('lists split transactions with pending incomes before the origin outcome', fu
 
     $transactions = collect($response->json('data'));
 
-    expect($transactions)->toHaveCount(4)
-        ->and($transactions->pluck('type')->take(4)->all())->toBe([
-            'income',
-            'income',
-            'income',
-            'outcome',
-        ])
-        ->and($transactions->pluck('status')->take(4)->all())->toBe([
-            'pending',
-            'pending',
-            'pending',
-            'completed',
-        ]);
+    expect($transactions)->toHaveCount(1)
+        ->and($transactions->first()['type'])->toBe('outcome')
+        ->and($transactions->first()['status'])->toBe('completed')
+        ->and($transactions->first()['concept'])->toBe('Split order')
+        ->and($transactions->first()['allocations'])->toHaveCount(3);
 });
 
-it('updates split child transactions when editing a parent transaction through the api', function () {
+it('updates split allocations when editing a shared transaction through the api', function () {
     $owner = User::factory()->create();
     $member = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $owner->id]);
@@ -1203,7 +1197,7 @@ it('updates split child transactions when editing a parent transaction through t
         ])
         ->assertCreated();
 
-    $transactionId = $createResponse->json('data.0.id');
+    $transactionId = $createResponse->json('data.id');
 
     $updateResponse = $this->withHeaders(apiHeaders($owner))
         ->putJson("/api/accounts/{$account->id}/transactions/{$transactionId}", [
@@ -1226,20 +1220,15 @@ it('updates split child transactions when editing a parent transaction through t
         ])
         ->assertOk()
         ->assertJsonPath('data.concept', 'Updated dinner')
-        ->assertJsonPath('data.sub_transactions.0.concept', 'Updated dinner - Parte de '.$owner->name)
-        ->assertJsonPath('data.sub_transactions.1.concept', 'Updated dinner - Parte de '.$member->name)
+        ->assertJsonCount(2, 'data.allocations')
         ->assertJsonPath('meta.pending_by_user.0.user_id', $owner->id)
-        ->assertJsonPath('meta.pending_by_user.0.amount', 50.0)
+        ->assertJsonPath('meta.pending_by_user.0.amount', 0.0)
         ->assertJsonPath('meta.pending_by_user.1.user_id', $member->id)
-        ->assertJsonPath('meta.pending_by_user.1.amount', 150.0);
+        ->assertJsonPath('meta.pending_by_user.1.amount', 0.0);
 
-    expect(collect($updateResponse->json('data.sub_transactions'))->pluck('amount')->all())->toBe([50.0, 150.0])
-        ->and(collect($updateResponse->json('data.sub_transactions'))->pluck('percentage')->all())->toBe([25.0, 75.0])
-        ->and(
-            collect($updateResponse->json('data.sub_transactions'))
-                ->pluck('scheduled_at')
-                ->every(fn (string $scheduledAt): bool => str_starts_with($scheduledAt, '2026-01-20'))
-        )->toBeTrue();
+    expect(collect($updateResponse->json('data.allocations'))->pluck('amount')->all())->toBe([50.0, 150.0])
+        ->and(collect($updateResponse->json('data.allocations'))->pluck('percentage')->all())->toBe([25.0, 75.0])
+        ->and(str_starts_with($updateResponse->json('data.scheduled_at'), '2026-01-20'))->toBeTrue();
 });
 
 it('creates subscription payments and registers a transaction when paid', function () {

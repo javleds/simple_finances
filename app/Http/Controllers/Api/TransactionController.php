@@ -62,7 +62,7 @@ class TransactionController extends ApiController
 
         return $this->respondModel(
             $transaction->fresh(),
-            ['account', 'user', 'financialGoal', 'subTransactions'],
+            ['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
             201,
             $buildTransactionAccountMeta->execute($transaction->account_id),
         );
@@ -72,7 +72,7 @@ class TransactionController extends ApiController
     {
         $this->ensureVisibleTransaction($transaction);
 
-        return $this->respondModel($transaction, ['account', 'user', 'financialGoal', 'subTransactions']);
+        return $this->respondModel($transaction, ['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user']);
     }
 
     public function update(
@@ -95,7 +95,7 @@ class TransactionController extends ApiController
 
         return $this->respondModel(
             $transaction->fresh(),
-            ['account', 'user', 'financialGoal', 'subTransactions'],
+            ['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
             meta: $buildTransactionAccountMeta->execute($transaction->account_id, $previousAccountId),
         );
     }
@@ -128,6 +128,7 @@ class TransactionController extends ApiController
     {
         $account = Account::withoutGlobalScopes()->findOrFail($request->integer('account_id'));
         $this->authorizeAccountAccess->ensureMember($account, $request->user()->id);
+        $this->ensurePayloadUsersBelongToAccount($account, $request);
 
         $financialGoalId = $request->integer('financial_goal_id');
 
@@ -137,5 +138,23 @@ class TransactionController extends ApiController
 
         $financialGoal = FinancialGoal::query()->findOrFail($financialGoalId);
         $this->authorizeAccountAccess->ensureBelongsToAccount($account, $financialGoal->account_id);
+    }
+
+    private function ensurePayloadUsersBelongToAccount(Account $account, TransactionRequest $request): void
+    {
+        $userIds = collect([
+            $request->integer('paid_by_user_id') ?: null,
+            $request->integer('custodian_user_id') ?: null,
+        ])
+            ->merge(collect($request->input('user_payments', []))->pluck('user_id'))
+            ->filter()
+            ->unique();
+
+        foreach ($userIds as $userId) {
+            $this->authorizeAccountAccess->ensureAccountUser(
+                $account,
+                \App\Models\User::withoutGlobalScopes()->findOrFail((int) $userId),
+            );
+        }
     }
 }

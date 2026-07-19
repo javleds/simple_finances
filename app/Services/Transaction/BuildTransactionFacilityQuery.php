@@ -15,7 +15,8 @@ class BuildTransactionFacilityQuery
     {
         $query = $this->ownedTransactionsForUser
             ->query($userId)
-            ->with(['account', 'user', 'financialGoal', 'subTransactions'])
+            ->with(['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'])
+            ->whereNull('legacy_migrated_at')
             ->whereNull('parent_transaction_id')
             ->where('status', TransactionStatus::Completed);
 

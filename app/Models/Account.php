@@ -41,6 +41,11 @@ class Account extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function memberLedgerEntries(): HasMany
+    {
+        return $this->hasMany(AccountMemberLedgerEntry::class);
+    }
+
     public function feedAccount(): BelongsTo
     {
         return $this->belongsTo(Account::class, 'feed_account_id', 'id');

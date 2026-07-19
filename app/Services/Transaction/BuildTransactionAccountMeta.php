@@ -4,11 +4,15 @@ namespace App\Services\Transaction;
 
 use App\Dto\AccountBalanceMetaDto;
 use App\Models\Account;
+use App\Services\Accounts\BuildAccountMemberSummary;
 use App\Services\Accounts\BuildPendingIncomeByUser;
 
 class BuildTransactionAccountMeta
 {
-    public function __construct(private readonly BuildPendingIncomeByUser $buildPendingIncomeByUser) {}
+    public function __construct(
+        private readonly BuildPendingIncomeByUser $buildPendingIncomeByUser,
+        private readonly BuildAccountMemberSummary $buildAccountMemberSummary,
+    ) {}
 
     public function execute(
         int $accountId,
@@ -23,6 +27,8 @@ class BuildTransactionAccountMeta
         if ($includePendingByUser) {
             $meta['pending_by_user'] = $this->pendingByUserMeta($accountId);
         }
+
+        $meta = array_merge($meta, $this->memberSummaryMeta($accountId));
 
         if ($previousAccountId && $previousAccountId !== $accountId) {
             $meta['previous_account'] = $this->accountMeta($previousAccountId)->toArray();
@@ -46,5 +52,12 @@ class BuildTransactionAccountMeta
         $account = Account::withoutGlobalScopes()->findOrFail($accountId);
 
         return $this->buildPendingIncomeByUser->execute($account);
+    }
+
+    private function memberSummaryMeta(int $accountId): array
+    {
+        $account = Account::withoutGlobalScopes()->findOrFail($accountId);
+
+        return $this->buildAccountMemberSummary->execute($account);
     }
 }

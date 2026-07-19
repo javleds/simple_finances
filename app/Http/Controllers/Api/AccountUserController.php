@@ -6,6 +6,7 @@ use App\Http\Requests\Api\BulkUpdateAccountUsersRequest;
 use App\Http\Requests\Api\AccountUserRequest;
 use App\Models\Account;
 use App\Models\User;
+use App\Services\Accounts\BuildAccountMemberSummary;
 use App\Services\Accounts\RemoveAccountUser;
 use App\Services\Accounts\UpdateAccountUserPercentage;
 use App\Services\Accounts\UpdateAccountUsersPercentages;
@@ -17,6 +18,7 @@ class AccountUserController extends ApiController
 {
     public function __construct(
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
+        private readonly BuildAccountMemberSummary $buildAccountMemberSummary,
     ) {}
 
     public function index(Account $account, Request $request): JsonResponse
@@ -29,7 +31,26 @@ class AccountUserController extends ApiController
             $relation->wherePivot('percentage', (float) $request->query('percentage'));
         }
 
-        return $this->respondPaginated($relation->getQuery(), $request);
+        $response = $this->respondPaginated($relation->getQuery(), $request);
+        $payload = $response->getData(true);
+        $memberSummary = $this->buildAccountMemberSummary->execute($account);
+        $summaryByUserId = collect($memberSummary['settlements_by_user'])
+            ->keyBy(fn (array $item): string => (string) $item['user_id']);
+        $custodyByUserId = collect($memberSummary['custody_by_user'])
+            ->keyBy(fn (array $item): string => (string) $item['user_id']);
+
+        $payload['data'] = collect($payload['data'])
+            ->map(function (array $user) use ($summaryByUserId, $custodyByUserId): array {
+                $userId = (string) $user['id'];
+                $user['settlement_amount'] = $summaryByUserId->get($userId)['amount'] ?? 0.0;
+                $user['custody_amount'] = $custodyByUserId->get($userId)['amount'] ?? 0.0;
+
+                return $user;
+            })
+            ->values()
+            ->all();
+
+        return $this->respond($payload);
     }
 
     public function store(
