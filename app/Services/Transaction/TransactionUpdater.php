@@ -24,8 +24,8 @@ class TransactionUpdater
 
     public function execute(Transaction $transaction, TransactionFormDto $dto): Transaction
     {
-        if ($dto->type === TransactionType::Income && $dto->status !== TransactionStatus::Completed) {
-            throw new \InvalidArgumentException('Income transactions must have status Completed.');
+        if ($dto->status !== TransactionStatus::Completed) {
+            throw new \InvalidArgumentException('Transactions must have status Completed.');
         }
 
         $transaction = DB::transaction(function () use ($transaction, $dto) {

@@ -153,16 +153,16 @@ it('allocates the exact split total even when decimal divisions leave a remainde
         ->and(round($allocations->sum('amount'), 2))->toBe(100.0);
 });
 
-it('Throws an exception when creating an income transaction with non-completed status', function () {
+it('throws an exception when creating a transaction with non-completed status', function () {
     $user = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $user->id]);
     $account->users()->attach($user->id, ['percentage' => 100]);
     $this->actingAs($user);
 
     $dto = TransactionFormDto::fromFormArray([
-        'type' => TransactionType::Income,
+        'type' => TransactionType::Outcome,
         'status' => TransactionStatus::Pending,
-        'concept' => 'Invalid income',
+        'concept' => 'Invalid transaction',
         'amount' => 100.0,
         'account_id' => $account->id,
         'split_between_users' => false,
@@ -172,4 +172,4 @@ it('Throws an exception when creating an income transaction with non-completed s
     ]);
 
     app(TransactionCreator::class)->execute($dto);
-})->throws(\InvalidArgumentException::class, 'Income transactions must have status Completed.');
+})->throws(\InvalidArgumentException::class, 'Transactions must have status Completed.');

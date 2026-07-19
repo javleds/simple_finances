@@ -8,7 +8,6 @@ use App\Handlers\Accounts\AccountEditor;
 use App\Http\Requests\Api\AccountRequest;
 use App\Models\Account;
 use App\Services\Accounts\BuildAccountMemberSummary;
-use App\Services\Accounts\BuildPendingIncomeByUser;
 use App\Services\Accounts\RecalculateAccountBalance;
 use App\Services\Accounts\VisibleAccountsForUser;
 use App\Services\Api\AuthorizeAccountAccess;
@@ -55,12 +54,10 @@ class AccountController extends ApiController
 
     public function show(
         Account $account,
-        BuildPendingIncomeByUser $buildPendingIncomeByUser,
         BuildAccountMemberSummary $buildAccountMemberSummary,
     ): JsonResponse
     {
         $this->authorizeAccountAccess->ensureMember($account);
-        $account->setAttribute('pending_by_user', $buildPendingIncomeByUser->execute($account));
         foreach ($buildAccountMemberSummary->execute($account) as $key => $value) {
             $account->setAttribute($key, $value);
         }

@@ -35,6 +35,11 @@ elseif (completed outcome?) then (yes)
 endif
 
 :Recalculate non-credit account balances excluding legacy_migrated_at;
+
+:Read active pending transactions where legacy_migrated_at is null;
+:Set status = completed;
+:Build missing allocations and ledger entries;
+:Recalculate affected balances;
 stop
 
 @enduml

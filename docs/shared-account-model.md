@@ -63,6 +63,7 @@ Important transaction fields:
 - `custodian_user_id`: member who holds an income.
 - `payment_source`: `account_fund` or `member_out_of_pocket`.
 - `legacy_migrated_at`: marks old child transactions that were migrated and should not participate in new lists or balances.
+- `status`: kept as a technical field, but active transaction writes must be `completed`.
 
 ## Ledger Entry Types
 
@@ -137,15 +138,14 @@ Example: B pays `$1,000` for a 50/50 shared account with A.
 - reimbursement suggestion: A pays B `$500`.
 - account balance decreases by `$1,000`.
 
-### Pending Transactions
+### Transaction Status
 
-`pending` still matters, but only for the economic movement lifecycle:
+`pending` is not an operational transaction state anymore:
 
-- pending transactions do not affect balance,
-- pending transactions do not create final member ledger entries,
-- member debts are not represented as pending income transactions anymore.
-
-When a transaction becomes `completed`, allocations and ledger entries are synced.
+- new transaction writes must use `completed`,
+- expenses are not planned with transactions,
+- financial goals are the planning mechanism,
+- member debts are represented by ledger summaries and reimbursements, not pending income rows.
 
 ## Member Summary
 
@@ -202,6 +202,10 @@ Data migration:
 
 [2026_07_19_132817_migrate_legacy_split_transactions_to_member_ledger.php](../database/migrations/2026_07_19_132817_migrate_legacy_split_transactions_to_member_ledger.php)
 
+Pending close-out migration:
+
+[2026_07_19_165913_complete_active_pending_transactions.php](../database/migrations/2026_07_19_165913_complete_active_pending_transactions.php)
+
 Migration rules:
 
 - completed legacy incomes become income custody entries,
@@ -214,6 +218,8 @@ Migration rules:
 
 This prevents old child income transactions from appearing as real income in the new balance and transaction lists.
 
+The pending close-out migration converts active `pending` transactions to `completed`, builds missing allocations/ledger entries, and recalculates affected account balances. Child transactions already marked with `legacy_migrated_at` stay excluded.
+
 ## Query Rules
 
 New operational queries must exclude migrated child transactions:
@@ -222,7 +228,7 @@ New operational queries must exclude migrated child transactions:
 whereNull('legacy_migrated_at')
 ```
 
-This is used for balance recalculation, account transaction lists, transaction facility queries, and pending income totals.
+This is used for balance recalculation, account transaction lists, and transaction facility queries.
 
 ## Implementation Map
 
@@ -238,5 +244,5 @@ This is used for balance recalculation, account transaction lists, transaction f
 
 - Completed out-of-pocket expenses immediately produce reimbursement suggestions.
 - Account-fund expenses do not automatically infer which custodian should be reimbursed unless the payment source is captured as out-of-pocket.
-- Legacy pending income flows remain readable through compatibility fields, but new shared expenses should use allocations and ledger entries.
+- Historical pending transaction data is normalized to completed data by migration.
 - `legacy_migrated_at` is the safety marker that prevents double-counting migrated children.

@@ -392,6 +392,24 @@ it('creates and updates accounts and transactions through the api', function () 
     expect(Account::findOrFail($accountId)->fresh()->balance)->toBe(0.0);
 });
 
+it('rejects pending transaction writes', function () {
+    $user = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $user->id]);
+    $account->users()->attach($user->id);
+
+    $this->withHeaders(apiHeaders($user))
+        ->postJson("/api/accounts/{$account->id}/transactions", [
+            'type' => 'outcome',
+            'status' => 'pending',
+            'concept' => 'Unsupported pending expense',
+            'amount' => 100,
+            'split_between_users' => false,
+            'scheduled_at' => now()->toDateString(),
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['status']);
+});
+
 it('filters and paginates index endpoints through query criteria', function () {
     $user = User::factory()->create();
     $account = Account::factory()->create([
@@ -516,77 +534,47 @@ it('filters soft deleted accounts by deleted at state', function () {
         ->assertJsonPath('data.0.name', 'Deleted account');
 });
 
-it('returns pending income totals by account user', function () {
+it('returns member summaries for shared accounts', function () {
     $owner = User::factory()->create(['name' => 'Account Owner']);
     $sharedUser = User::factory()->create(['name' => 'Shared User']);
-    $outsideUser = User::factory()->create(['name' => 'Outside User']);
     $account = Account::factory()->create(['user_id' => $owner->id]);
     $account->users()->attach([
         $owner->id => ['percentage' => 0],
         $sharedUser->id => ['percentage' => 50],
     ]);
 
-    Transaction::factory()->income()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $owner->id,
-        'amount' => 100.25,
-    ]);
-    Transaction::factory()->income()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $owner->id,
-        'amount' => 49.75,
-    ]);
-    Transaction::factory()->income()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $sharedUser->id,
-        'amount' => 75.5,
-    ]);
-    Transaction::factory()->outcome()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $sharedUser->id,
-        'amount' => 900,
-    ]);
     Transaction::factory()->income()->completed()->create([
         'account_id' => $account->id,
         'user_id' => $owner->id,
         'amount' => 300,
-    ]);
-    Transaction::factory()->income()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $outsideUser->id,
-        'amount' => 600,
+        'custodian_user_id' => $owner->id,
     ]);
 
     $this->withHeaders(apiHeaders($owner))
         ->getJson("/api/accounts/{$account->id}")
         ->assertOk()
-        ->assertJsonPath('data.pending_by_user.0.user_id', $owner->id)
-        ->assertJsonPath('data.pending_by_user.0.user_name', 'Account Owner')
-        ->assertJsonPath('data.pending_by_user.0.amount', 150.0)
-        ->assertJsonPath('data.pending_by_user.1.user_id', $sharedUser->id)
-        ->assertJsonPath('data.pending_by_user.1.user_name', 'Shared User')
-        ->assertJsonPath('data.pending_by_user.1.amount', 75.5)
-        ->assertJsonCount(2, 'data.pending_by_user');
+        ->assertJsonPath('data.custody_by_user.0.user_id', $owner->id)
+        ->assertJsonPath('data.custody_by_user.0.user_name', 'Account Owner')
+        ->assertJsonPath('data.custody_by_user.1.user_id', $sharedUser->id)
+        ->assertJsonPath('data.custody_by_user.1.user_name', 'Shared User')
+        ->assertJsonCount(2, 'data.custody_by_user')
+        ->assertJsonCount(2, 'data.settlements_by_user')
+        ->assertJsonPath('data.pending_reimbursements', []);
 });
 
-it('returns a single pending income total for accounts without shared users', function () {
+it('returns member summaries for accounts without shared users', function () {
     $owner = User::factory()->create(['name' => 'Single Owner']);
     $account = Account::factory()->create(['user_id' => $owner->id]);
     $account->users()->attach($owner->id);
 
-    Transaction::factory()->income()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $owner->id,
-        'amount' => 45.25,
-    ]);
-
     $this->withHeaders(apiHeaders($owner))
         ->getJson("/api/accounts/{$account->id}")
         ->assertOk()
-        ->assertJsonPath('data.pending_by_user.0.user_id', $owner->id)
-        ->assertJsonPath('data.pending_by_user.0.user_name', 'Single Owner')
-        ->assertJsonPath('data.pending_by_user.0.amount', 45.25)
-        ->assertJsonCount(1, 'data.pending_by_user');
+        ->assertJsonPath('data.custody_by_user.0.user_id', $owner->id)
+        ->assertJsonPath('data.custody_by_user.0.user_name', 'Single Owner')
+        ->assertJsonPath('data.custody_by_user.0.amount', 0.0)
+        ->assertJsonCount(1, 'data.custody_by_user')
+        ->assertJsonPath('data.pending_reimbursements', []);
 });
 
 it('creates account invites and lets the invited user accept them', function () {
@@ -1082,14 +1070,6 @@ it('returns the created transaction with allocations when storing a split accoun
         ->assertJsonPath('data.paid_by_user_id', $owner->id)
         ->assertJsonCount(3, 'data.allocations')
         ->assertJsonPath('meta.account.id', $account->id)
-        ->assertJsonPath('meta.pending_by_user.0.user_id', $owner->id)
-        ->assertJsonPath('meta.pending_by_user.0.amount', 0.0)
-        ->assertJsonPath('meta.pending_by_user.1.user_id', $memberOne->id)
-        ->assertJsonPath('meta.pending_by_user.1.amount', 0.0)
-        ->assertJsonPath('meta.pending_by_user.2.user_id', $memberTwo->id)
-        ->assertJsonPath('meta.pending_by_user.2.amount', 0.0)
-        ->assertJsonPath('meta.pending_by_user.3.user_id', $memberThree->id)
-        ->assertJsonPath('meta.pending_by_user.3.amount', 0.0)
         ->assertJsonPath('meta.settlements_by_user.0.user_id', $owner->id)
         ->assertJsonPath('meta.settlements_by_user.0.amount', 0.0)
         ->assertJsonPath('meta.pending_reimbursements', []);
@@ -1110,10 +1090,7 @@ it('returns the created transaction with allocations when storing a split accoun
         ->assertOk()
         ->assertJsonPath('meta.account.id', $account->id)
         ->assertJsonPath('meta.subtransactions', [])
-        ->assertJsonPath('meta.pending_by_user.0.amount', 0.0)
-        ->assertJsonPath('meta.pending_by_user.1.amount', 0.0)
-        ->assertJsonPath('meta.pending_by_user.2.amount', 0.0)
-        ->assertJsonPath('meta.pending_by_user.3.amount', 0.0);
+        ->assertJsonPath('meta.pending_reimbursements', []);
 });
 
 it('lists split transactions as single movements with allocations', function () {
@@ -1221,10 +1198,7 @@ it('updates split allocations when editing a shared transaction through the api'
         ->assertOk()
         ->assertJsonPath('data.concept', 'Updated dinner')
         ->assertJsonCount(2, 'data.allocations')
-        ->assertJsonPath('meta.pending_by_user.0.user_id', $owner->id)
-        ->assertJsonPath('meta.pending_by_user.0.amount', 0.0)
-        ->assertJsonPath('meta.pending_by_user.1.user_id', $member->id)
-        ->assertJsonPath('meta.pending_by_user.1.amount', 0.0);
+        ->assertJsonPath('meta.pending_reimbursements', []);
 
     expect(collect($updateResponse->json('data.allocations'))->pluck('amount')->all())->toBe([50.0, 150.0])
         ->and(collect($updateResponse->json('data.allocations'))->pluck('percentage')->all())->toBe([25.0, 75.0])

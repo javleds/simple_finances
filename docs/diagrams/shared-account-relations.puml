@@ -82,7 +82,7 @@ users ||--o{ account_member_ledger_entries : related member
 
 note right of transactions
 type: income | outcome
-status: pending | completed
+status: completed for active writes
 payment_source: account_fund | member_out_of_pocket
 legacy_migrated_at excludes old child rows
 end note

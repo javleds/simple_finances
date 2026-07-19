@@ -158,7 +158,6 @@ class AccountTransactionController extends ApiController
         return $this->buildTransactionAccountMeta->execute(
             accountId: $accountId,
             previousAccountId: $previousAccountId,
-            includePendingByUser: true,
         );
     }
 

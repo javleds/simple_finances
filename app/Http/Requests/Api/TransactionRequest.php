@@ -15,7 +15,7 @@ class TransactionRequest extends FormRequest
     {
         return [
             'type' => ['required', 'in:income,outcome'],
-            'status' => ['required', 'in:pending,completed'],
+            'status' => ['required', 'in:completed'],
             'concept' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'account_id' => ['required', 'integer', 'exists:accounts,id'],

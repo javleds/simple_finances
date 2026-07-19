@@ -2,7 +2,6 @@
 
 use App\Enums\Frequency;
 use App\Enums\SharedTransactionNotificationBatchStatus;
-use App\Enums\TransactionStatus;
 use App\Models\NotificationType;
 use App\Models\Account;
 use App\Models\SharedTransactionNotificationBatch;
@@ -26,7 +25,7 @@ function dashboardApiHeaders(User $user): array
     ];
 }
 
-it('serves the dashboard endpoints and completes pending transactions through the api', function () {
+it('serves the dashboard endpoints without transaction pending actions', function () {
     $user = User::factory()->create();
     $account = Account::factory()->create([
         'name' => 'Nomina',
@@ -43,7 +42,7 @@ it('serves the dashboard endpoints and completes pending transactions through th
     $account->users()->attach($user->id);
     $virtualAccount->users()->attach($user->id);
 
-    $transaction = Transaction::factory()->income()->pending()->create([
+    Transaction::factory()->income()->pending()->create([
         'concept' => 'Pending reimbursement',
         'amount' => 450.5,
         'account_id' => $account->id,
@@ -75,9 +74,8 @@ it('serves the dashboard endpoints and completes pending transactions through th
         ->assertJsonPath('data.summary.active_accounts', 1)
         ->assertJsonPath('data.summary.virtual_accounts', 1)
         ->assertJsonPath('data.summary.shared_accounts', 0)
-        ->assertJsonPath('data.summary.pending_total', 450.5)
-        ->assertJsonPath('data.pending_actions.0.id', 'tx-'.$transaction->id)
-        ->assertJsonPath('data.pending_actions.0.date', '2026-06-06');
+        ->assertJsonPath('data.summary.pending_total', 0.0)
+        ->assertJsonPath('data.pending_actions', []);
 
     $this->withHeaders($headers)
         ->getJson('/api/dashboard/subscriptions')
@@ -88,14 +86,9 @@ it('serves the dashboard endpoints and completes pending transactions through th
     $this->withHeaders($headers)
         ->postJson('/api/batch/transactions', [
             'action' => 'complete',
-            'transaction_ids' => ['tx-'.$transaction->id],
+            'transaction_ids' => ['tx-1'],
         ])
-        ->assertOk()
-        ->assertJsonPath('data.processed', 1)
-        ->assertJsonPath('data.failed', [])
-        ->assertJsonPath('data.transaction_ids.0', 'tx-'.$transaction->id);
-
-    expect($transaction->fresh()->status)->toBe(TransactionStatus::Completed);
+        ->assertNotFound();
 });
 
 it('queues shared account movement notifications from api endpoints until the grouped debounce window expires', function () {
@@ -169,49 +162,4 @@ it('queues shared account movement notifications from api endpoints until the gr
     $batch->refresh();
     expect($batch->status)->toBe(SharedTransactionNotificationBatchStatus::Sent)
         ->and($batch->sent_at)->not->toBeNull();
-});
-
-it('queues shared account notifications when dashboard batch completes pending transactions', function () {
-    config()->set('notifications.shared_transactions.mode', 'grouped');
-    config()->set('notifications.shared_transactions.debounce_minutes', 5);
-    Notification::fake();
-
-    $recipient = User::factory()->create();
-    $modifier = User::factory()->create();
-    $notificationType = NotificationType::factory()->create([
-        'name' => NotificationType::MOVEMENTS_NOTIFICATION,
-    ]);
-    $account = Account::factory()->create([
-        'user_id' => $recipient->id,
-    ]);
-    $account->users()->attach([$recipient->id, $modifier->id]);
-    $recipient->notificationTypes()->attach($notificationType->id);
-    $recipient->notificableAccounts()->attach($account->id);
-
-    $transaction = Transaction::factory()->income()->pending()->create([
-        'concept' => 'Pending reimbursement',
-        'amount' => 125,
-        'account_id' => $account->id,
-        'user_id' => $modifier->id,
-        'scheduled_at' => '2026-06-06',
-    ]);
-
-    $this->withHeaders(dashboardApiHeaders($modifier))
-        ->postJson('/api/batch/transactions', [
-            'action' => 'complete',
-            'transaction_ids' => ['tx-'.$transaction->id],
-        ])
-        ->assertOk()
-        ->assertJsonPath('data.processed', 1);
-
-    Notification::assertNotSentTo($recipient, SharedTransactionChangedEmail::class);
-    Notification::assertNotSentTo($recipient, SharedTransactionBatchChangedEmail::class);
-
-    $batch = SharedTransactionNotificationBatch::firstOrFail();
-
-    expect($transaction->fresh()->status)->toBe(TransactionStatus::Completed)
-        ->and($batch->status)->toBe(SharedTransactionNotificationBatchStatus::Pending)
-        ->and($batch->user_id)->toBe($recipient->id)
-        ->and($batch->account_id)->toBe($account->id)
-        ->and(SharedTransactionNotificationItem::count())->toBe(1);
 });
