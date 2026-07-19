@@ -93,6 +93,67 @@ it('converts pending out of pocket outcomes into completed settlement entries', 
         ->and((float) $account->fresh()->balance)->toBe(-1000.0);
 });
 
+it('converts pending legacy split outcomes without turning child pending incomes into account income', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $account = Account::factory()->create([
+        'balance' => 0,
+        'user_id' => $owner->id,
+    ]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $partner->id => ['percentage' => 50],
+    ]);
+
+    $parentTransaction = Transaction::factory()->outcome()->pending()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'amount' => 1000.0,
+        'paid_by_user_id' => null,
+        'payment_source' => null,
+    ]);
+    $ownerShare = Transaction::factory()->income()->completed()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'parent_transaction_id' => $parentTransaction->id,
+        'amount' => 500.0,
+        'percentage' => 50,
+    ]);
+    $partnerShare = Transaction::factory()->income()->pending()->create([
+        'account_id' => $account->id,
+        'user_id' => $partner->id,
+        'parent_transaction_id' => $parentTransaction->id,
+        'amount' => 500.0,
+        'percentage' => 50,
+    ]);
+
+    runCompleteActivePendingTransactionsMigration();
+
+    $ledgerEntries = AccountMemberLedgerEntry::query()
+        ->where('transaction_id', $parentTransaction->id)
+        ->orderBy('id')
+        ->get();
+    $allocations = TransactionAllocation::query()
+        ->where('transaction_id', $parentTransaction->id)
+        ->orderBy('user_id')
+        ->get();
+
+    expect($parentTransaction->fresh()->status)->toBe(TransactionStatus::Completed)
+        ->and($parentTransaction->fresh()->payment_source)->toBe(TransactionPaymentSource::MemberOutOfPocket)
+        ->and($ownerShare->fresh()->legacy_migrated_at)->not->toBeNull()
+        ->and($partnerShare->fresh()->legacy_migrated_at)->not->toBeNull()
+        ->and($partnerShare->fresh()->status)->toBe(TransactionStatus::Pending)
+        ->and($allocations->pluck('amount')->all())->toBe([500.0, 500.0])
+        ->and($ledgerEntries->pluck('type')->all())->toBe([
+            AccountMemberLedgerEntryType::ExpensePaid,
+            AccountMemberLedgerEntryType::ExpenseShare,
+            AccountMemberLedgerEntryType::SettlementTransfer,
+            AccountMemberLedgerEntryType::SettlementTransfer,
+            AccountMemberLedgerEntryType::ExpenseShare,
+        ])
+        ->and((float) $account->fresh()->balance)->toBe(-1000.0);
+});
+
 it('recalculates credit card account fields after completing pending transactions', function () {
     $user = User::factory()->create();
     $account = Account::factory()->create([

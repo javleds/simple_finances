@@ -20,11 +20,23 @@ return new class extends Migration
             ->orderBy('id')
             ->chunkById(100, function ($transactions) use ($now, &$accountIds): void {
                 foreach ($transactions as $transaction) {
+                    if ($transaction->parent_transaction_id !== null) {
+                        continue;
+                    }
+
                     $accountIds[] = (int) $transaction->account_id;
 
                     DB::table('account_member_ledger_entries')
                         ->where('transaction_id', $transaction->id)
                         ->delete();
+
+                    $children = $this->legacyChildren($transaction);
+
+                    if ($transaction->type === 'outcome' && $children->isNotEmpty()) {
+                        $this->completeLegacySplitOutcome($transaction, $children, $now);
+
+                        continue;
+                    }
 
                     DB::table('transactions')
                         ->where('id', $transaction->id)
@@ -79,6 +91,62 @@ return new class extends Migration
         return $payload;
     }
 
+    private function completeLegacySplitOutcome(object $transaction, iterable $children, Carbon $now): void
+    {
+        DB::table('transactions')
+            ->where('id', $transaction->id)
+            ->update([
+                'status' => 'completed',
+                'paid_by_user_id' => $transaction->paid_by_user_id ?? $transaction->user_id,
+                'payment_source' => 'member_out_of_pocket',
+                'updated_at' => $now,
+            ]);
+
+        $completedTransaction = DB::table('transactions')
+            ->where('id', $transaction->id)
+            ->first();
+
+        if ($completedTransaction === null) {
+            return;
+        }
+
+        $paidByUserId = (int) ($completedTransaction->paid_by_user_id ?? $completedTransaction->user_id);
+
+        $this->insertLedgerEntry($completedTransaction, $paidByUserId, 'expense_paid', (float) $completedTransaction->amount, $now);
+
+        foreach ($children as $child) {
+            $this->insertAllocation(
+                transaction: $completedTransaction,
+                userId: (int) $child->user_id,
+                percentage: (float) $child->percentage,
+                amount: (float) $child->amount,
+                now: $now,
+            );
+
+            $this->insertLedgerEntry(
+                transaction: $completedTransaction,
+                userId: (int) $child->user_id,
+                type: 'expense_share',
+                amount: ((float) $child->amount) * -1,
+                now: $now,
+                relatedUserId: $paidByUserId,
+            );
+
+            if ($child->status !== 'completed') {
+                continue;
+            }
+
+            $this->insertSettlementTransfer($completedTransaction, (int) $child->user_id, $paidByUserId, (float) $child->amount, $now);
+        }
+
+        DB::table('transactions')
+            ->where('parent_transaction_id', $transaction->id)
+            ->update([
+                'legacy_migrated_at' => $now,
+                'updated_at' => $now,
+            ]);
+    }
+
     private function ensureOutcomeAllocations(object $transaction, Carbon $now): void
     {
         if ($transaction->type !== 'outcome') {
@@ -105,6 +173,22 @@ return new class extends Migration
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+    }
+
+    private function insertAllocation(object $transaction, int $userId, float $percentage, float $amount, Carbon $now): void
+    {
+        DB::table('transaction_allocations')->updateOrInsert(
+            [
+                'transaction_id' => $transaction->id,
+                'user_id' => $userId,
+            ],
+            [
+                'percentage' => round($percentage, 2),
+                'amount' => round($amount, 2),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        );
     }
 
     private function insertLedgerEntries(object $transaction, Carbon $now): void
@@ -169,6 +253,26 @@ return new class extends Migration
         ]);
     }
 
+    private function insertSettlementTransfer(object $transaction, int $fromUserId, int $toUserId, float $amount, Carbon $now): void
+    {
+        $this->insertLedgerEntry(
+            transaction: $transaction,
+            userId: $fromUserId,
+            type: 'settlement_transfer',
+            amount: $amount,
+            now: $now,
+            relatedUserId: $toUserId,
+        );
+        $this->insertLedgerEntry(
+            transaction: $transaction,
+            userId: $toUserId,
+            type: 'settlement_transfer',
+            amount: $amount * -1,
+            now: $now,
+            relatedUserId: $fromUserId,
+        );
+    }
+
     private function recalculateAccountBalances(array $accountIds): void
     {
         if ($accountIds === []) {
@@ -221,5 +325,14 @@ return new class extends Migration
         }
 
         return (float) $query->sum('amount');
+    }
+
+    private function legacyChildren(object $transaction): \Illuminate\Support\Collection
+    {
+        return DB::table('transactions')
+            ->where('parent_transaction_id', $transaction->id)
+            ->whereNull('legacy_migrated_at')
+            ->orderBy('id')
+            ->get();
     }
 };
