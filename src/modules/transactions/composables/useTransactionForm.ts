@@ -70,6 +70,22 @@ export function useTransactionForm(options: UseTransactionFormOptions = {}) {
     set: (value: string | null) => setFieldValue('accountId', value, true),
   });
 
+  const paidByUserId = computed({
+    get: () => values.paidByUserId,
+    set: (value: string | null) => setFieldValue('paidByUserId', value, true),
+  });
+
+  const custodianUserId = computed({
+    get: () => values.custodianUserId,
+    set: (value: string | null) => setFieldValue('custodianUserId', value, true),
+  });
+
+  const paymentSource = computed({
+    get: () => values.paymentSource,
+    set: (value: TransactionFormValues['paymentSource']) =>
+      setFieldValue('paymentSource', value, true),
+  });
+
   const splitBetweenUsers = computed({
     get: () => values.splitBetweenUsers,
     set: (value: boolean) => setFieldValue('splitBetweenUsers', value, true),
@@ -102,6 +118,9 @@ export function useTransactionForm(options: UseTransactionFormOptions = {}) {
     concept,
     amount,
     accountId,
+    paidByUserId,
+    custodianUserId,
+    paymentSource,
     splitBetweenUsers,
     date,
     financialGoalId,

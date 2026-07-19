@@ -176,6 +176,7 @@ watch(listMeta, (nextMeta) => {
       :current-user-id="currentUserId"
       :is-completing-pending-by-user="isCompletingPendingByUser"
       :is-shared-account="isSharedAccount"
+      :pending-reimbursements="account?.pendingReimbursements ?? []"
       :pending-users="usersWithPendingExpenses"
       @complete-pending-user="openCompletePendingByUser"
     />

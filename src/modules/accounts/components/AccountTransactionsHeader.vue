@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowPathIcon, CheckIcon } from '@heroicons/vue/24/outline';
 
-import type { AccountPendingByUser } from '@/modules/accounts/types';
+import type { AccountPendingByUser, AccountPendingReimbursement } from '@/modules/accounts/types';
 import {
   AppAvatarValueRow,
   AppCard,
@@ -16,6 +16,7 @@ const props = defineProps<{
   isCompletingPendingByUser: boolean;
   isSharedAccount: boolean;
   pendingUsers: AccountPendingByUser[];
+  pendingReimbursements?: AccountPendingReimbursement[];
 }>();
 
 const emit = defineEmits<{
@@ -50,7 +51,24 @@ function formatCurrency(value: number): string {
         <div class="border-t" :style="{ borderColor: 'var(--app-color-border)' }"></div>
 
         <div class="space-y-3">
-          <AppText size="sm" tone="subtle">Pendientes por usuario</AppText>
+          <AppText size="sm" tone="subtle">Reembolsos sugeridos</AppText>
+
+          <div v-if="(props.pendingReimbursements ?? []).length > 0" class="space-y-2">
+            <AppAvatarValueRow
+              v-for="item in props.pendingReimbursements"
+              :key="`${item.fromUserId}-${item.toUserId}`"
+              :name="`${item.fromUserName} debe a ${item.toUserName}`"
+              :value="formatCurrency(item.amount)"
+            />
+          </div>
+
+          <div v-else class="rounded-2xl bg-(--app-color-surface-muted) px-3 py-3">
+            <AppText size="sm" tone="subtle">No hay reembolsos sugeridos.</AppText>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <AppText size="sm" tone="subtle">Pendientes anteriores por usuario</AppText>
 
           <div v-if="props.pendingUsers.length > 0" class="space-y-2">
             <AppAvatarValueRow

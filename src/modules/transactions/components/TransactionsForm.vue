@@ -73,6 +73,9 @@ const {
   status,
   concept,
   amount,
+  paidByUserId,
+  custodianUserId,
+  paymentSource,
   splitBetweenUsers,
   date,
   financialGoalId,
@@ -91,6 +94,17 @@ const {
 const hasSharedAccount = computed(() => props.accountUsers.length > 1);
 const showUserSplitToggle = computed(() => isExpense.value && hasSharedAccount.value);
 const showUserSplitInputs = computed(() => showUserSplitToggle.value && splitBetweenUsers.value);
+const accountUserOptions = computed(() =>
+  props.accountUsers.map((user) => ({
+    value: user.id,
+    label: user.name,
+    description: user.email,
+  })),
+);
+const paymentSourceOptions = [
+  { value: 'account_fund', label: 'Fondo' },
+  { value: 'member_out_of_pocket', label: 'Bolsillo' },
+] as const;
 const createAndAddAnother = ref(false);
 const { error: conceptError, touch: touchConcept } = useFormFieldInteraction('concept');
 const { error: amountError, touch: touchAmount } = useFormFieldInteraction('amount');
@@ -132,6 +146,16 @@ watch(
 watch(
   () => props.accountUsers,
   (nextUsers) => {
+    const firstUserId = nextUsers[0]?.id ?? null;
+
+    if (!paidByUserId.value && firstUserId) {
+      paidByUserId.value = firstUserId;
+    }
+
+    if (!custodianUserId.value && firstUserId) {
+      custodianUserId.value = firstUserId;
+    }
+
     if (Object.keys(userPayments.value).length > 0) {
       return;
     }
@@ -219,6 +243,38 @@ async function handleSubmit(): Promise<void> {
 
       <div class="grid gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <div class="space-y-4">
+          <AppSearchSelect
+            v-if="isExpense"
+            id="transaction-paid-by"
+            v-model="paidByUserId"
+            label="Pagado por"
+            :options="accountUserOptions"
+            placeholder="Selecciona usuario"
+            search-placeholder="Buscar usuario"
+            empty-message="No hay usuarios disponibles."
+            required
+          />
+
+          <section
+            v-if="isExpense"
+            class="space-y-3 rounded-xl border px-4 py-4"
+            :style="{ borderColor: 'var(--app-color-border)' }"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <div class="space-y-1">
+                <label for="transaction-payment-source" class="text-sm font-medium text-(--app-color-label)">
+                  Fuente del pago
+                </label>
+              </div>
+              <AppToggleButton
+                id="transaction-payment-source"
+                :model-value="paymentSource"
+                :options="paymentSourceOptions"
+                @update:model-value="paymentSource = $event"
+              />
+            </div>
+          </section>
+
           <AppInput
             id="transaction-amount"
             v-model="amount"
@@ -286,6 +342,17 @@ async function handleSubmit(): Promise<void> {
     </section>
 
     <section v-if="isIncome" class="space-y-3">
+      <AppSearchSelect
+        id="transaction-custodian"
+        v-model="custodianUserId"
+        label="Custodiado por"
+        :options="accountUserOptions"
+        placeholder="Selecciona usuario"
+        search-placeholder="Buscar usuario"
+        empty-message="No hay usuarios disponibles."
+        required
+      />
+
       <AppSearchSelect
         id="transaction-financial-goal"
         v-model="financialGoalId"

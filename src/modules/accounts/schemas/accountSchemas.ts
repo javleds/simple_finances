@@ -12,6 +12,8 @@ import type {
   AccountStatus,
   AccountMember,
   AccountPendingByUser,
+  AccountMemberAmount,
+  AccountPendingReimbursement,
 } from '../types';
 
 const colorPattern = /^#([0-9a-fA-F]{6})$/;
@@ -48,6 +50,34 @@ const accountPendingByUserApiSchema = z
     userName: payload.user_name,
     amount: payload.amount,
     transactionIds: payload.transaction_ids,
+  }));
+
+const accountMemberAmountApiSchema = z
+  .object({
+    user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    user_name: z.string().catch('Usuario no disponible'),
+    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  })
+  .transform<AccountMemberAmount>((payload) => ({
+    userId: payload.user_id,
+    userName: payload.user_name,
+    amount: payload.amount,
+  }));
+
+const accountPendingReimbursementApiSchema = z
+  .object({
+    from_user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    from_user_name: z.string().catch('Usuario no disponible'),
+    to_user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    to_user_name: z.string().catch('Usuario no disponible'),
+    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  })
+  .transform<AccountPendingReimbursement>((payload) => ({
+    fromUserId: payload.from_user_id,
+    fromUserName: payload.from_user_name,
+    toUserId: payload.to_user_id,
+    toUserName: payload.to_user_name,
+    amount: payload.amount,
   }));
 
 export const accountFormSchema = z
@@ -135,6 +165,18 @@ export const accountApiSchema = z.object({
     .array(accountPendingByUserApiSchema)
     .optional()
     .transform((value) => value ?? []),
+  custody_by_user: z
+    .array(accountMemberAmountApiSchema)
+    .optional()
+    .transform((value) => value ?? []),
+  settlements_by_user: z
+    .array(accountMemberAmountApiSchema)
+    .optional()
+    .transform((value) => value ?? []),
+  pending_reimbursements: z
+    .array(accountPendingReimbursementApiSchema)
+    .optional()
+    .transform((value) => value ?? []),
   users: z
     .array(
       z
@@ -167,6 +209,14 @@ export const accountApiSchema = z.object({
                 .unknown()
                 .optional()
                 .transform((value) => parseNullableNumber(value) ?? 0),
+              custody_amount: z
+                .unknown()
+                .optional()
+                .transform((value) => parseNullableNumber(value) ?? 0),
+              settlement_amount: z
+                .unknown()
+                .optional()
+                .transform((value) => parseNullableNumber(value) ?? 0),
             })
             .transform((value) => ({
               id: resolveAccountUserId(value),
@@ -174,6 +224,8 @@ export const accountApiSchema = z.object({
               email: value.email,
               percentage: value.percentage,
               pending_expenses: value.pending_expenses,
+              custody_amount: value.custody_amount,
+              settlement_amount: value.settlement_amount,
             })),
           z
             .object({
@@ -212,6 +264,14 @@ export const accountApiSchema = z.object({
                 .unknown()
                 .optional()
                 .transform((value) => parseNullableNumber(value) ?? 0),
+              custody_amount: z
+                .unknown()
+                .optional()
+                .transform((value) => parseNullableNumber(value) ?? 0),
+              settlement_amount: z
+                .unknown()
+                .optional()
+                .transform((value) => parseNullableNumber(value) ?? 0),
             })
             .transform((value) => ({
               id: resolveAccountUserId(value),
@@ -219,6 +279,8 @@ export const accountApiSchema = z.object({
               email: value.email,
               pivot: value.pivot,
               pending_expenses: value.pending_expenses,
+              custody_amount: value.custody_amount,
+              settlement_amount: value.settlement_amount,
             })),
         ])
         .transform((value) => {
@@ -232,6 +294,8 @@ export const accountApiSchema = z.object({
             email: value.email,
             percentage: value.pivot.percentage,
             pending_expenses: value.pending_expenses,
+            custody_amount: value.custody_amount,
+            settlement_amount: value.settlement_amount,
           };
         }),
     )
@@ -265,6 +329,14 @@ export const accountUserApiSchema = z
       .unknown()
       .optional()
       .transform((value) => parseNullableNumber(value) ?? 0),
+    custody_amount: z
+      .unknown()
+      .optional()
+      .transform((value) => parseNullableNumber(value) ?? 0),
+    settlement_amount: z
+      .unknown()
+      .optional()
+      .transform((value) => parseNullableNumber(value) ?? 0),
     pivot: z
       .object({
         percentage: z
@@ -284,6 +356,8 @@ export const accountUserApiSchema = z
     name: value.name,
     email: value.email,
     pending_expenses: value.pending_expenses,
+    custody_amount: value.custody_amount,
+    settlement_amount: value.settlement_amount,
     pivot: {
       percentage: value.pivot.percentage || value.percentage,
       user_id: value.pivot.user_id,
@@ -331,8 +405,13 @@ export function mapAccountApiToDomain(payload: z.infer<typeof accountApiSchema>)
       email: user.email,
       allocationPercentage: user.percentage,
       pendingExpenses: user.pending_expenses,
+      custodyAmount: user.custody_amount,
+      settlementAmount: user.settlement_amount,
     })),
     pendingByUser: payload.pending_by_user,
+    custodyByUser: payload.custody_by_user,
+    settlementsByUser: payload.settlements_by_user,
+    pendingReimbursements: payload.pending_reimbursements,
   };
 }
 
@@ -345,6 +424,8 @@ export function mapAccountUserApiToDomain(
     email: payload.email,
     allocationPercentage: payload.pivot.percentage,
     pendingExpenses: payload.pending_expenses,
+    custodyAmount: payload.custody_amount,
+    settlementAmount: payload.settlement_amount,
   };
 }
 

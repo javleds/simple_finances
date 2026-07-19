@@ -16,8 +16,10 @@ import type {
   TransactionFacilitySummary,
   TransactionListFilters,
   TransactionListResult,
+  TransactionMemberAmount,
   TransactionMutationMeta,
   TransactionPendingByUser,
+  TransactionPendingReimbursement,
   TransactionWritePayload,
 } from '../types';
 
@@ -88,6 +90,34 @@ const pendingByUserApiSchema = z
     transactionIds: payload.transaction_ids,
   }));
 
+const memberAmountApiSchema = z
+  .object({
+    user_id: transactionIdSchema,
+    user_name: z.string().catch('Usuario no disponible'),
+    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  })
+  .transform<TransactionMemberAmount>((payload) => ({
+    userId: payload.user_id,
+    userName: payload.user_name,
+    amount: payload.amount,
+  }));
+
+const pendingReimbursementApiSchema = z
+  .object({
+    from_user_id: transactionIdSchema,
+    from_user_name: z.string().catch('Usuario no disponible'),
+    to_user_id: transactionIdSchema,
+    to_user_name: z.string().catch('Usuario no disponible'),
+    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  })
+  .transform<TransactionPendingReimbursement>((payload) => ({
+    fromUserId: payload.from_user_id,
+    fromUserName: payload.from_user_name,
+    toUserId: payload.to_user_id,
+    toUserName: payload.to_user_name,
+    amount: payload.amount,
+  }));
+
 const transactionMutationMetaPayloadSchema = z
   .object({
     account: z
@@ -102,6 +132,9 @@ const transactionMutationMetaPayloadSchema = z
       })
       .optional(),
     pending_by_user: z.array(pendingByUserApiSchema).optional(),
+    custody_by_user: z.array(memberAmountApiSchema).optional(),
+    settlements_by_user: z.array(memberAmountApiSchema).optional(),
+    pending_reimbursements: z.array(pendingReimbursementApiSchema).optional(),
     subtransactions: z.array(transactionIdSchema).optional().default([]),
   })
   .optional()
@@ -109,6 +142,9 @@ const transactionMutationMetaPayloadSchema = z
     accountBalance: payload?.account?.balance ?? null,
     previousAccountBalance: payload?.previous_account?.balance ?? null,
     pendingByUser: payload?.pending_by_user ?? payload?.account?.pending_by_user ?? null,
+    custodyByUser: payload?.custody_by_user ?? null,
+    settlementsByUser: payload?.settlements_by_user ?? null,
+    pendingReimbursements: payload?.pending_reimbursements ?? null,
     subtransactionIds: payload?.subtransactions ?? [],
   }));
 
@@ -128,6 +164,9 @@ export const transactionListMetaSchema = z
       accountBalance: null,
       previousAccountBalance: null,
       pendingByUser: null,
+      custodyByUser: null,
+      settlementsByUser: null,
+      pendingReimbursements: null,
       subtransactionIds: [],
     },
   })
@@ -206,6 +245,9 @@ export const createdTransactionResponseSchema = z
         accountBalance: null,
         previousAccountBalance: null,
         pendingByUser: null,
+        custodyByUser: null,
+        settlementsByUser: null,
+        pendingReimbursements: null,
         subtransactionIds: [],
       },
     })),

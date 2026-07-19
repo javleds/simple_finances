@@ -9,12 +9,28 @@ export type AccountPendingByUser = {
   transactionIds: string[];
 };
 
+export type AccountMemberAmount = {
+  userId: string;
+  userName: string;
+  amount: number;
+};
+
+export type AccountPendingReimbursement = {
+  fromUserId: string;
+  fromUserName: string;
+  toUserId: string;
+  toUserName: string;
+  amount: number;
+};
+
 export type AccountMember = {
   id: string;
   name: string;
   email: string;
   allocationPercentage: number;
   pendingExpenses: number;
+  custodyAmount: number;
+  settlementAmount: number;
 };
 
 export type Account = {
@@ -33,6 +49,9 @@ export type Account = {
   fundingAccountId: string | null;
   users: AccountMember[];
   pendingByUser: AccountPendingByUser[];
+  custodyByUser: AccountMemberAmount[];
+  settlementsByUser: AccountMemberAmount[];
+  pendingReimbursements: AccountPendingReimbursement[];
 };
 
 export type AccountFormValues = {

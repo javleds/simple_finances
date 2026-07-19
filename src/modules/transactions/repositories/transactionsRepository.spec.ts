@@ -53,6 +53,9 @@ describe('transactions repository schemas', () => {
       accountBalance: null,
       previousAccountBalance: null,
       subtransactionIds: [],
+      custodyByUser: null,
+      settlementsByUser: null,
+      pendingReimbursements: null,
       pendingByUser: [
         {
           userId: '7',
@@ -92,6 +95,9 @@ describe('transactions repository schemas', () => {
       accountBalance: 10000,
       previousAccountBalance: null,
       subtransactionIds: [],
+      custodyByUser: null,
+      settlementsByUser: null,
+      pendingReimbursements: null,
       pendingByUser: [
         {
           userId: '7',
@@ -120,6 +126,9 @@ describe('transactions repository schemas', () => {
       accountBalance: null,
       previousAccountBalance: null,
       subtransactionIds: [],
+      custodyByUser: null,
+      settlementsByUser: null,
+      pendingReimbursements: null,
       pendingByUser: [
         {
           userId: '8',
@@ -193,6 +202,11 @@ describe('transactions repository schemas', () => {
         creatorName: 'María López',
         financialGoalId: null,
         financialGoalName: null,
+        paidByUserId: null,
+        paidByUserName: null,
+        custodianUserId: null,
+        custodianUserName: null,
+        paymentSource: null,
         userPayments: {},
       },
       transactions: [
@@ -210,6 +224,11 @@ describe('transactions repository schemas', () => {
           creatorName: 'María López',
           financialGoalId: null,
           financialGoalName: null,
+          paidByUserId: null,
+          paidByUserName: null,
+          custodianUserId: null,
+          custodianUserName: null,
+          paymentSource: null,
           userPayments: {},
         },
         {
@@ -226,6 +245,11 @@ describe('transactions repository schemas', () => {
           creatorName: 'María López',
           financialGoalId: null,
           financialGoalName: null,
+          paidByUserId: null,
+          paidByUserName: null,
+          custodianUserId: null,
+          custodianUserName: null,
+          paymentSource: null,
           userPayments: {
             '7': 60,
             '8': 40,
@@ -236,6 +260,9 @@ describe('transactions repository schemas', () => {
         accountBalance: 2400,
         previousAccountBalance: null,
         subtransactionIds: [],
+        custodyByUser: null,
+        settlementsByUser: null,
+        pendingReimbursements: null,
         pendingByUser: [
           {
             userId: '7',

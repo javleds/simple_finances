@@ -6,6 +6,9 @@ export function buildTransactionWritePayload(payload: TransactionWritePayload) {
     status: payload.status ?? 'completed',
     concept: payload.concept,
     amount: payload.amount,
+    paid_by_user_id: payload.paidByUserId ? Number(payload.paidByUserId) : null,
+    custodian_user_id: payload.custodianUserId ? Number(payload.custodianUserId) : null,
+    payment_source: payload.paymentSource,
     split_between_users: payload.splitBetweenUsers,
     user_payments: Object.entries(payload.userPayments).map(([userId, percentage]) => ({
       user_id: Number(userId),

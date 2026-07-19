@@ -11,6 +11,9 @@ describe('transaction payload builders', () => {
         concept: 'Renta',
         amount: 1200,
         accountId: '10',
+        paidByUserId: '7',
+        custodianUserId: null,
+        paymentSource: 'member_out_of_pocket',
         splitBetweenUsers: true,
         date: '2026-06-15',
         financialGoalId: null,
@@ -24,6 +27,9 @@ describe('transaction payload builders', () => {
       status: 'completed',
       concept: 'Renta',
       amount: 1200,
+      paid_by_user_id: 7,
+      custodian_user_id: null,
+      payment_source: 'member_out_of_pocket',
       split_between_users: true,
       user_payments: [
         {

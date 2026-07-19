@@ -21,6 +21,9 @@ function createAccount(overrides: Partial<Account> = {}): Account {
     closingDay: null,
     fundingAccountId: null,
     users: [],
+    custodyByUser: [],
+    settlementsByUser: [],
+    pendingReimbursements: [],
     pendingByUser: [
       {
         userId: 'user-1',

@@ -4,6 +4,7 @@ import { parseEntityId, parseNullableNumber } from '@/modules/shared/lib/apiPars
 import type {
   Transaction,
   TransactionFormValues,
+  TransactionPaymentSource,
   TransactionStatus,
   TransactionType,
   TransactionWritePayload,
@@ -23,6 +24,14 @@ function parseType(value: unknown): TransactionType {
 
 function parseStatus(value: unknown): TransactionStatus | null {
   if (value === 'pending' || value === 'completed') {
+    return value;
+  }
+
+  return null;
+}
+
+function parsePaymentSource(value: unknown): TransactionPaymentSource | null {
+  if (value === 'account_fund' || value === 'member_out_of_pocket') {
     return value;
   }
 
@@ -56,6 +65,9 @@ export const transactionFormSchema = z
         return amount !== null && amount >= 0;
       }, 'La cantidad debe ser mayor o igual a 0.'),
     accountId: z.string().nullable(),
+    paidByUserId: z.string().nullable(),
+    custodianUserId: z.string().nullable(),
+    paymentSource: z.enum(['account_fund', 'member_out_of_pocket']),
     splitBetweenUsers: z.boolean(),
     date: z.string().trim().min(1, 'La fecha es obligatoria.'),
     financialGoalId: z.string().nullable(),
@@ -75,6 +87,22 @@ export const transactionFormSchema = z
         code: z.ZodIssueCode.custom,
         path: ['financialGoalId'],
         message: 'La meta financiera sólo aplica a ingresos.',
+      });
+    }
+
+    if (values.type === 'expense' && !values.paidByUserId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['paidByUserId'],
+        message: 'Selecciona quién pagó el gasto.',
+      });
+    }
+
+    if (values.type === 'income' && !values.custodianUserId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['custodianUserId'],
+        message: 'Selecciona quién custodia el ingreso.',
       });
     }
 
@@ -127,6 +155,44 @@ export const transactionApiSchema = z.object({
     .union([z.string(), z.number(), z.null(), z.undefined()])
     .optional()
     .transform(parseEntityId),
+  paid_by_user_id: z
+    .union([z.string(), z.number(), z.null(), z.undefined()])
+    .optional()
+    .transform(parseEntityId),
+  paid_by_user: z
+    .object({
+      id: z
+        .union([z.string(), z.number(), z.null(), z.undefined()])
+        .optional()
+        .transform(parseEntityId),
+      name: z
+        .string()
+        .nullable()
+        .optional()
+        .transform((value) => value ?? null),
+    })
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
+  custodian_user_id: z
+    .union([z.string(), z.number(), z.null(), z.undefined()])
+    .optional()
+    .transform(parseEntityId),
+  custodian_user: z
+    .object({
+      id: z
+        .union([z.string(), z.number(), z.null(), z.undefined()])
+        .optional()
+        .transform(parseEntityId),
+      name: z
+        .string()
+        .nullable()
+        .optional()
+        .transform((value) => value ?? null),
+    })
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   created_by: z
     .object({
       id: z
@@ -161,6 +227,7 @@ export const transactionApiSchema = z.object({
   amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   type: z.unknown().transform(parseType),
   status: z.unknown().transform(parseStatus),
+  payment_source: z.unknown().optional().transform(parsePaymentSource),
   scheduled_at: z.string(),
   created_at: z
     .string()
@@ -203,6 +270,32 @@ export const transactionApiSchema = z.object({
     )
     .optional()
     .transform((value) => value ?? []),
+  allocations: z
+    .array(
+      z
+        .object({
+          user_id: z
+            .union([z.string(), z.number(), z.null(), z.undefined()])
+            .optional()
+            .transform(parseEntityId),
+          user: z
+            .object({
+              id: z
+                .union([z.string(), z.number(), z.null(), z.undefined()])
+                .optional()
+                .transform(parseEntityId),
+            })
+            .optional()
+            .nullable(),
+          percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+        })
+        .transform((value) => ({
+          user_id: value.user_id ?? value.user?.id ?? '',
+          percentage: value.percentage,
+        })),
+    )
+    .optional()
+    .transform((value) => value ?? []),
 });
 
 export function createDefaultTransactionFormValues(
@@ -218,6 +311,9 @@ export function createDefaultTransactionFormValues(
         ? ''
         : String(transaction.amount),
     accountId: transaction?.accountId ?? lockedAccountId ?? null,
+    paidByUserId: transaction?.paidByUserId ?? transaction?.creatorId ?? null,
+    custodianUserId: transaction?.custodianUserId ?? transaction?.creatorId ?? null,
+    paymentSource: transaction?.paymentSource ?? 'account_fund',
     splitBetweenUsers: Object.keys(transaction?.userPayments ?? {}).length > 0,
     date: transaction?.date ?? new Date().toISOString().slice(0, 10),
     financialGoalId: transaction?.financialGoalId ?? null,
@@ -241,9 +337,14 @@ export function mapTransactionApiToDomain(
     creatorId:
       payload.user_id ?? payload.user?.id ?? payload.created_by?.id ?? payload.creator?.id ?? null,
     creatorName: payload.user?.name ?? payload.created_by?.name ?? payload.creator?.name ?? null,
+    paidByUserId: payload.paid_by_user_id ?? payload.paid_by_user?.id ?? null,
+    paidByUserName: payload.paid_by_user?.name ?? null,
+    custodianUserId: payload.custodian_user_id ?? payload.custodian_user?.id ?? null,
+    custodianUserName: payload.custodian_user?.name ?? null,
+    paymentSource: payload.payment_source,
     financialGoalId: payload.financial_goal_id,
     financialGoalName: payload.financial_goal?.name ?? null,
-    userPayments: payload.user_payments.reduce<Record<string, number>>((accumulator, payment) => {
+    userPayments: (payload.allocations.length > 0 ? payload.allocations : payload.user_payments).reduce<Record<string, number>>((accumulator, payment) => {
       if (!payment.user_id) {
         return accumulator;
       }
@@ -263,6 +364,9 @@ export function mapTransactionFormToWritePayload(
     concept: values.concept.trim(),
     amount: parseNullableNumber(values.amount) ?? 0,
     accountId: values.accountId ?? '',
+    paidByUserId: values.type === 'expense' ? values.paidByUserId : null,
+    custodianUserId: values.type === 'income' ? values.custodianUserId : null,
+    paymentSource: values.type === 'expense' ? values.paymentSource : null,
     splitBetweenUsers: values.type === 'expense' && values.splitBetweenUsers,
     date: values.date,
     financialGoalId: values.type === 'income' ? values.financialGoalId : null,

@@ -2,6 +2,7 @@ import type { PaginatedCollection } from '@/modules/shared/lib/pagination';
 
 export type TransactionType = 'income' | 'expense';
 export type TransactionStatus = 'pending' | 'completed';
+export type TransactionPaymentSource = 'account_fund' | 'member_out_of_pocket';
 export type TransactionListFilters = {
   search?: string;
   status?: TransactionStatus[];
@@ -40,6 +41,11 @@ export type Transaction = {
   createdAt: string | null;
   creatorId: string | null;
   creatorName: string | null;
+  paidByUserId: string | null;
+  paidByUserName: string | null;
+  custodianUserId: string | null;
+  custodianUserName: string | null;
+  paymentSource: TransactionPaymentSource | null;
   financialGoalId: string | null;
   financialGoalName: string | null;
   userPayments: Record<string, number>;
@@ -51,6 +57,9 @@ export type TransactionFormValues = {
   concept: string;
   amount: string;
   accountId: string | null;
+  paidByUserId: string | null;
+  custodianUserId: string | null;
+  paymentSource: TransactionPaymentSource;
   splitBetweenUsers: boolean;
   date: string;
   financialGoalId: string | null;
@@ -63,6 +72,9 @@ export type TransactionWritePayload = {
   concept: string;
   amount: number;
   accountId: string;
+  paidByUserId: string | null;
+  custodianUserId: string | null;
+  paymentSource: TransactionPaymentSource | null;
   splitBetweenUsers: boolean;
   date: string;
   financialGoalId: string | null;
@@ -77,7 +89,24 @@ export type TransactionMutationMeta = {
   accountBalance: number | null;
   previousAccountBalance: number | null;
   pendingByUser: TransactionPendingByUser[] | null;
+  custodyByUser: TransactionMemberAmount[] | null;
+  settlementsByUser: TransactionMemberAmount[] | null;
+  pendingReimbursements: TransactionPendingReimbursement[] | null;
   subtransactionIds: string[];
+};
+
+export type TransactionMemberAmount = {
+  userId: string;
+  userName: string;
+  amount: number;
+};
+
+export type TransactionPendingReimbursement = {
+  fromUserId: string;
+  fromUserName: string;
+  toUserId: string;
+  toUserName: string;
+  amount: number;
 };
 
 export type TransactionPendingByUser = {

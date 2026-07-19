@@ -10,7 +10,8 @@ const props = defineProps<{
   roleLabel: string;
   accessLabel: string;
   allocationPercentage: number;
-  pendingExpenses: string;
+  custodyAmount: number;
+  settlementAmount: number;
   status: UserAccessStatus;
 }>();
 
@@ -49,6 +50,27 @@ function handleEdit(): void {
 
 function handleDelete(): void {
   emit('delete', props.itemId);
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function settlementLabel(value: number): string {
+  if (value > 0) {
+    return `Recibe ${formatCurrency(value)}`;
+  }
+
+  if (value < 0) {
+    return `Debe ${formatCurrency(Math.abs(value))}`;
+  }
+
+  return 'Sin deuda';
 }
 </script>
 
@@ -103,11 +125,14 @@ function handleDelete(): void {
           </p>
         </div>
 
-        <p
-          class="shrink-0 text-[11px] font-semibold tracking-[0.04em] text-(--app-color-text) uppercase"
-        >
-          {{ props.pendingExpenses }}
-        </p>
+        <div class="shrink-0 text-right">
+          <p class="text-[11px] font-semibold tracking-[0.04em] text-(--app-color-text) uppercase">
+            {{ settlementLabel(props.settlementAmount) }}
+          </p>
+          <p class="text-[11px] font-medium text-(--app-color-text-subtle)">
+            Custodia {{ formatCurrency(props.custodyAmount) }}
+          </p>
+        </div>
       </div>
     </div>
   </AppCard>

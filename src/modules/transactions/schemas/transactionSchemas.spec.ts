@@ -25,6 +25,11 @@ const baseTransactionPayload = {
   created_at: '2026-06-09T12:00:00.000000Z',
   financial_goal_id: null,
   financial_goal: null,
+  paid_by_user_id: null,
+  paid_by_user: null,
+  custodian_user_id: null,
+  custodian_user: null,
+  payment_source: null,
 };
 
 describe('transaction schemas', () => {
@@ -45,6 +50,11 @@ describe('transaction schemas', () => {
       creatorName: 'María López',
       financialGoalId: null,
       financialGoalName: null,
+      paidByUserId: null,
+      paidByUserName: null,
+      custodianUserId: null,
+      custodianUserName: null,
+      paymentSource: null,
       userPayments: {},
     });
   });
@@ -84,6 +94,9 @@ describe('transaction schemas', () => {
         concept: 'Depósito',
         amount: '500',
         accountId: '20',
+        paidByUserId: null,
+        custodianUserId: '9',
+        paymentSource: 'account_fund',
         splitBetweenUsers: false,
         date: '2026-06-20',
         financialGoalId: 'goal-1',
@@ -98,6 +111,9 @@ describe('transaction schemas', () => {
         concept: 'Ahorro para viaje',
         amount: '500',
         accountId: '20',
+        paidByUserId: '9',
+        custodianUserId: null,
+        paymentSource: 'account_fund',
         splitBetweenUsers: false,
         date: '2026-06-20',
         financialGoalId: 'goal-1',
