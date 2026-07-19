@@ -1,0 +1,27 @@
+@startuml
+title Member Transfer Lifecycle
+
+start
+:User records member transfer;
+:Validate both users belong to account;
+:Create custody entries;
+
+fork
+  :from_user internal_transfer -amount;
+fork again
+  :to_user internal_transfer +amount;
+end fork
+
+:Create settlement entries;
+
+fork
+  :from_user settlement_transfer +amount;
+fork again
+  :to_user settlement_transfer -amount;
+end fork
+
+:Rebuild member summary;
+:Return custody, settlements, pending reimbursements;
+stop
+
+@enduml

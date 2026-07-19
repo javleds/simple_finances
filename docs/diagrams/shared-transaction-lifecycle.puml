@@ -1,0 +1,42 @@
+@startuml
+title Shared Transaction Lifecycle
+
+start
+:Receive transaction form;
+
+if (type is income?) then (yes)
+  if (status is completed?) then (yes)
+    :Save one income transaction;
+    :Set custodian_user_id;
+    :Create income_custody ledger entry;
+    :Increase account balance;
+  else (no)
+    :Reject request;
+  endif
+else (outcome)
+  :Save one outcome transaction;
+  :Set paid_by_user_id;
+  :Sync transaction_allocations;
+
+  if (status is completed?) then (yes)
+    if (payment_source is account_fund?) then (yes)
+      :Create account_fund_expense ledger entry;
+      :Decrease account balance;
+      :No reimbursement suggestion by default;
+    else (member_out_of_pocket)
+      :Create expense_paid entry for payer;
+      :Create expense_share entries for allocations;
+      :Decrease account balance;
+      :Build reimbursement suggestions;
+    endif
+  else (pending)
+    :Keep transaction pending;
+    :Do not create final ledger entries;
+    :Do not affect balance;
+  endif
+endif
+
+:Return transaction with account meta;
+stop
+
+@enduml

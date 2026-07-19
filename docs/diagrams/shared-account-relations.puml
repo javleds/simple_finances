@@ -1,0 +1,90 @@
+@startuml
+title Shared Account Relational Model
+
+hide circle
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+
+entity users {
+  * id
+  --
+  name
+  email
+}
+
+entity accounts {
+  * id
+  --
+  user_id
+  balance
+  credit_card
+}
+
+entity account_user {
+  * account_id
+  * user_id
+  --
+  percentage
+}
+
+entity transactions {
+  * id
+  --
+  account_id
+  user_id
+  paid_by_user_id
+  custodian_user_id
+  parent_transaction_id
+  type
+  status
+  payment_source
+  amount
+  percentage
+  scheduled_at
+  legacy_migrated_at
+}
+
+entity transaction_allocations {
+  * id
+  --
+  transaction_id
+  user_id
+  percentage
+  amount
+}
+
+entity account_member_ledger_entries {
+  * id
+  --
+  account_id
+  user_id
+  transaction_id
+  related_user_id
+  type
+  amount
+  occurred_at
+}
+
+users ||--o{ accounts : owns
+accounts ||--o{ account_user : has members
+users ||--o{ account_user : joins
+accounts ||--o{ transactions : records
+users ||--o{ transactions : created by
+users ||--o{ transactions : paid by
+users ||--o{ transactions : custodian
+transactions ||--o{ transactions : legacy children
+transactions ||--o{ transaction_allocations : allocates
+users ||--o{ transaction_allocations : responsible
+accounts ||--o{ account_member_ledger_entries : summarizes
+transactions ||--o{ account_member_ledger_entries : generates
+users ||--o{ account_member_ledger_entries : member
+users ||--o{ account_member_ledger_entries : related member
+
+note right of transactions
+type: income | outcome
+status: pending | completed
+payment_source: account_fund | member_out_of_pocket
+legacy_migrated_at excludes old child rows
+end note
+
+@enduml

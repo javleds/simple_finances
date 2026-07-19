@@ -1,0 +1,40 @@
+@startuml
+title Legacy Split Migration
+
+start
+:Read parent transactions where parent_transaction_id is null and payment_source is null;
+
+if (completed income?) then (yes)
+  :Set custodian_user_id = user_id;
+  :Insert income_custody +amount;
+elseif (completed outcome?) then (yes)
+  :Load child transactions;
+
+  if (has children?) then (no)
+    :Set paid_by_user_id = user_id;
+    :Set payment_source = account_fund;
+    :Insert 100% allocation;
+    :Insert account_fund_expense -amount;
+  else (yes)
+    :Set paid_by_user_id = user_id;
+    :Set payment_source = member_out_of_pocket;
+    :Insert expense_paid +parent amount;
+
+    repeat
+      :Create allocation from child user, percentage, amount;
+      :Insert expense_share -child amount;
+
+      if (child status is completed?) then (yes)
+        :Insert settlement_transfer +amount for child user;
+        :Insert settlement_transfer -amount for payer;
+      endif
+    repeat while (more children?)
+
+    :Mark children with legacy_migrated_at;
+  endif
+endif
+
+:Recalculate non-credit account balances excluding legacy_migrated_at;
+stop
+
+@enduml
