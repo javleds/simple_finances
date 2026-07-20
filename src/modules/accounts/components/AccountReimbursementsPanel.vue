@@ -39,7 +39,19 @@ type SelectedReimbursement = {
   reimbursement: AccountPendingReimbursement;
 };
 
+type PendingBulkAction =
+  | {
+      kind: 'all';
+      accounts: Account[];
+    }
+  | {
+      kind: 'account';
+      account: Account;
+      reimbursements: AccountPendingReimbursement[];
+    };
+
 const selectedReimbursement = ref<SelectedReimbursement | null>(null);
+const pendingBulkAction = ref<PendingBulkAction | null>(null);
 
 const accountsWithReimbursements = computed(() =>
   props.accounts.filter((account) => account.pendingReimbursements.length > 0),
@@ -86,6 +98,46 @@ function accountDebtTotal(account: Account): number {
     (sum, item) => sum + item.amount,
     0,
   );
+}
+
+function bulkActionTotal(action: PendingBulkAction | null): number {
+  if (!action) {
+    return 0;
+  }
+
+  if (action.kind === 'account') {
+    return action.reimbursements.reduce((sum, item) => sum + item.amount, 0);
+  }
+
+  return action.accounts.reduce(
+    (sum, account) =>
+      sum + account.pendingReimbursements.reduce((accountSum, item) => accountSum + item.amount, 0),
+    0,
+  );
+}
+
+function bulkActionCount(action: PendingBulkAction | null): number {
+  if (!action) {
+    return 0;
+  }
+
+  if (action.kind === 'account') {
+    return action.reimbursements.length;
+  }
+
+  return action.accounts.reduce((sum, account) => sum + account.pendingReimbursements.length, 0);
+}
+
+function bulkActionTitle(action: PendingBulkAction | null): string {
+  if (!action) {
+    return 'Confirmar pago';
+  }
+
+  if (action.kind === 'account') {
+    return `Pagar pendientes de ${action.account.name}`;
+  }
+
+  return 'Pagar todos mis pendientes';
 }
 
 function reimbursementRole(
@@ -146,6 +198,41 @@ function closeDetails(): void {
   selectedReimbursement.value = null;
 }
 
+function openAllConfirmation(): void {
+  pendingBulkAction.value = {
+    kind: 'all',
+    accounts: accountsWithCurrentUserDebts.value,
+  };
+}
+
+function openAccountConfirmation(account: Account): void {
+  pendingBulkAction.value = {
+    kind: 'account',
+    account,
+    reimbursements: currentUserDebts(account.pendingReimbursements),
+  };
+}
+
+function closeBulkConfirmation(): void {
+  pendingBulkAction.value = null;
+}
+
+function confirmBulkAction(): void {
+  const action = pendingBulkAction.value;
+
+  if (!action) {
+    return;
+  }
+
+  if (action.kind === 'account') {
+    emit('settleAccount', action.account.id, action.reimbursements);
+  } else {
+    emit('settleAll', action.accounts);
+  }
+
+  closeBulkConfirmation();
+}
+
 function itemDateLabel(date: string | null): string {
   if (!date) {
     return 'Sin fecha';
@@ -176,7 +263,7 @@ function itemDateLabel(date: string | null): string {
             variant="secondary"
             :disabled="props.isTransferring"
             :loading="props.isTransferring"
-            @click="emit('settleAll', accountsWithCurrentUserDebts)"
+            @click="openAllConfirmation"
           >
             Pagar todo
           </AppButton>
@@ -210,9 +297,7 @@ function itemDateLabel(date: string | null): string {
               variant="outline"
               :disabled="props.isTransferring"
               :loading="props.isTransferring"
-              @click="
-                emit('settleAccount', account.id, currentUserDebts(account.pendingReimbursements))
-              "
+              @click="openAccountConfirmation(account)"
             >
               Pagar {{ formatCurrency(accountDebtTotal(account)) }}
             </AppButton>
@@ -304,6 +389,40 @@ function itemDateLabel(date: string | null): string {
           No hay movimientos individuales disponibles para este ajuste.
         </p>
       </div>
+    </div>
+  </AppModal>
+
+  <AppModal
+    :open="pendingBulkAction !== null"
+    :title="bulkActionTitle(pendingBulkAction)"
+    variant="warning"
+    :actions="[
+      { key: 'cancel', label: 'Cancelar', tone: 'neutral', autoClose: true },
+      {
+        key: 'confirm',
+        label: 'Confirmar pago',
+        tone: 'primary',
+        loading: props.isTransferring,
+      },
+    ]"
+    @action="
+      ($event) => {
+        if ($event === 'confirm') confirmBulkAction();
+      }
+    "
+    @close="closeBulkConfirmation"
+  >
+    <div class="space-y-3">
+      <p class="text-sm text-(--app-color-text)">
+        Esta acción registrará el pago de
+        <strong>{{ bulkActionCount(pendingBulkAction) }}</strong>
+        pendiente(s) del usuario activo por
+        <strong>{{ formatCurrency(bulkActionTotal(pendingBulkAction)) }}</strong
+        >.
+      </p>
+      <p class="text-sm text-(--app-color-text-subtle)">
+        No se liquidarán pendientes de otros usuarios ni cobros marcados como recibidos.
+      </p>
     </div>
   </AppModal>
 </template>
