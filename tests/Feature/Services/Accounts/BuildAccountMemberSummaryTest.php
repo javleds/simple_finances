@@ -144,6 +144,104 @@ it('settles reimbursements and updates custody with an internal member transfer'
         ->and($summary['pending_reimbursements'])->toBe([]);
 });
 
+it('closes transaction reimbursement badges when the account total has a rounding residual', function () {
+    $javier = User::factory()->create(['name' => 'Javier']);
+    $divanny = User::factory()->create(['name' => 'Divanny']);
+    $account = Account::factory()->create(['user_id' => $javier->id]);
+    $account->users()->sync([
+        $javier->id => ['percentage' => 50],
+        $divanny->id => ['percentage' => 50],
+    ]);
+
+    $fruteria = Transaction::factory()
+        ->outcome()
+        ->completed()
+        ->create([
+            'account_id' => $account->id,
+            'user_id' => $javier->id,
+            'concept' => 'Fruteria',
+            'amount' => 433.0,
+            'scheduled_at' => CarbonImmutable::parse('2026-07-05'),
+        ]);
+    $tombola = Transaction::factory()
+        ->outcome()
+        ->completed()
+        ->create([
+            'account_id' => $account->id,
+            'user_id' => $javier->id,
+            'concept' => 'La tombola',
+            'amount' => 870.0,
+            'scheduled_at' => CarbonImmutable::parse('2026-07-05'),
+        ]);
+
+    foreach ([[$fruteria, 216.5], [$tombola, 435.0]] as [$transaction, $amount]) {
+        AccountMemberLedgerEntry::query()->create([
+            'account_id' => $account->id,
+            'user_id' => $javier->id,
+            'transaction_id' => $transaction->id,
+            'type' => AccountMemberLedgerEntryType::ExpensePaid,
+            'amount' => $amount * 2,
+            'description' => $transaction->concept,
+            'occurred_at' => $transaction->scheduled_at,
+        ]);
+        AccountMemberLedgerEntry::query()->create([
+            'account_id' => $account->id,
+            'user_id' => $divanny->id,
+            'transaction_id' => $transaction->id,
+            'related_user_id' => $javier->id,
+            'type' => AccountMemberLedgerEntryType::ExpenseShare,
+            'amount' => $amount * -1,
+            'description' => $transaction->concept,
+            'occurred_at' => $transaction->scheduled_at,
+        ]);
+    }
+
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $javier->id,
+        'related_user_id' => $divanny->id,
+        'type' => AccountMemberLedgerEntryType::LegacySettlement,
+        'amount' => -0.04,
+        'description' => 'Legacy rounding',
+        'occurred_at' => CarbonImmutable::parse('2026-07-06'),
+    ]);
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $divanny->id,
+        'related_user_id' => $javier->id,
+        'type' => AccountMemberLedgerEntryType::LegacySettlement,
+        'amount' => 0.04,
+        'description' => 'Legacy rounding',
+        'occurred_at' => CarbonImmutable::parse('2026-07-06'),
+    ]);
+
+    $pendingReimbursement = app(BuildAccountMemberSummary::class)->execute($account)['pending_reimbursements'][0];
+
+    app(RegisterAccountMemberTransfer::class)->execute($account, [
+        'from_user_id' => $divanny->id,
+        'to_user_id' => $javier->id,
+        'amount' => $pendingReimbursement['amount'],
+        'description' => 'Reembolso de Divanny a Javier',
+        'occurred_at' => CarbonImmutable::parse('2026-07-06'),
+    ]);
+
+    app(HydrateCurrentUserPendingReimbursements::class)->execute([$fruteria, $tombola], $divanny->id);
+    $summary = app(BuildAccountMemberSummary::class)->execute($account);
+    $roundingAdjustment = AccountMemberLedgerEntry::query()
+        ->where('account_id', $account->id)
+        ->where('user_id', $divanny->id)
+        ->whereNull('transaction_id')
+        ->where('type', AccountMemberLedgerEntryType::SettlementTransfer)
+        ->latest('id')
+        ->first();
+
+    expect($pendingReimbursement['amount'])->toBe(651.46)
+        ->and($fruteria->getAttribute('current_user_pending_reimbursement_amount'))->toBe(0.0)
+        ->and($tombola->getAttribute('current_user_pending_reimbursement_amount'))->toBe(0.0)
+        ->and($summary['pending_reimbursements'])->toBe([])
+        ->and((float) $roundingAdjustment->amount)->toBe(-0.04);
+});
+
 it('uses debtor open transaction balances for reimbursement detail items', function () {
     $javier = User::factory()->create(['name' => 'Javier']);
     $divanny = User::factory()->create(['name' => 'Divanny']);

@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class RegisterAccountMemberTransfer
 {
+    private const ROUNDING_SETTLEMENT_TOLERANCE = 0.10;
+
     public function execute(Account $account, array $payload): array
     {
         $amount = round((float) $payload['amount'], 2);
@@ -85,9 +87,13 @@ class RegisterAccountMemberTransfer
 
         $entries = [];
         $runningTotal = 0.0;
+        $transactionDebtTotal = round((float) $items->sum('open_amount'), 2);
+        $amountToAllocate = $this->shouldCloseAllTransactionDebts($amount, $transactionDebtTotal)
+            ? $transactionDebtTotal
+            : $amount;
 
         foreach ($items as $item) {
-            $remaining = round($amount - $runningTotal, 2);
+            $remaining = round($amountToAllocate - $runningTotal, 2);
 
             if ($remaining <= 0.0) {
                 break;
@@ -123,7 +129,7 @@ class RegisterAccountMemberTransfer
 
         $unallocatedAmount = round($amount - $runningTotal, 2);
 
-        if ($unallocatedAmount > 0.0) {
+        if (abs($unallocatedAmount) > 0.001) {
             $entries[] = $this->createSettlementEntry($account, $fromUserId, $toUserId, $unallocatedAmount, $description, $occurredAt);
             $entries[] = $this->createSettlementEntry($account, $toUserId, $fromUserId, $unallocatedAmount * -1, $description, $occurredAt);
         }
@@ -149,6 +155,15 @@ class RegisterAccountMemberTransfer
             ->havingRaw('sum(amount) < -0.001')
             ->orderByDesc('transaction_id')
             ->get();
+    }
+
+    private function shouldCloseAllTransactionDebts(float $amount, float $transactionDebtTotal): bool
+    {
+        if ($transactionDebtTotal <= 0.0) {
+            return false;
+        }
+
+        return abs(round($transactionDebtTotal - $amount, 2)) <= self::ROUNDING_SETTLEMENT_TOLERANCE;
     }
 
     private function createSettlementEntry(
