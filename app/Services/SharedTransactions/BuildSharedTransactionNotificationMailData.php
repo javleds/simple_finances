@@ -2,6 +2,7 @@
 
 namespace App\Services\SharedTransactions;
 
+use App\Enums\SharedTransactionNotificationAction;
 use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\SharedTransactionNotificationItem;
@@ -82,6 +83,7 @@ class BuildSharedTransactionNotificationMailData
     private function movementTotal(Collection $items, TransactionType $type): float
     {
         return round((float) $items
+            ->filter(fn (SharedTransactionNotificationItem $item): bool => $item->action !== SharedTransactionNotificationAction::Settled)
             ->filter(fn (SharedTransactionNotificationItem $item): bool => $item->type === $type)
             ->sum('amount'), 2);
     }

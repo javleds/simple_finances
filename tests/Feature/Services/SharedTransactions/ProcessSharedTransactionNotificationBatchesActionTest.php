@@ -131,6 +131,17 @@ it('sends grouped notifications and marks batch as sent', function () {
         'amount' => $otherTransaction->amount,
         'scheduled_at' => $otherTransaction->scheduled_at,
     ]);
+    SharedTransactionNotificationItem::create([
+        'batch_id' => $batch->id,
+        'account_id' => $account->id,
+        'transaction_id' => null,
+        'modifier_id' => $modifier->id,
+        'action' => SharedTransactionNotificationAction::Settled,
+        'concept' => 'Pago de pendientes',
+        'type' => TransactionType::Income,
+        'amount' => 25.0,
+        'scheduled_at' => now()->subDay(),
+    ]);
 
     app(ProcessSharedTransactionNotificationBatchesAction::class)->execute();
 
@@ -142,8 +153,9 @@ it('sends grouped notifications and marks batch as sent', function () {
 
             return $mail->viewData['link'] === 'https://spa.example.test/accounts'
                 && str_contains($mail->render(), 'Resumen general')
+                && str_contains($mail->render(), 'Reembolso')
                 && $mail->viewData['globalSummary']['accounts_count'] === 2
-                && $mail->viewData['globalSummary']['movements_count'] === 2
+                && $mail->viewData['globalSummary']['movements_count'] === 3
                 && $mail->viewData['globalSummary']['income_total'] === 40.0
                 && $mail->viewData['globalSummary']['outcome_total'] === 90.0
                 && collect($mail->viewData['accountsSummary'])->pluck('account_name')->sort()->values()->all() === ['Home', 'Trip']

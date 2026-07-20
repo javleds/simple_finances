@@ -7,6 +7,7 @@ enum SharedTransactionNotificationAction: string
     case Created = 'created';
     case Updated = 'updated';
     case Deleted = 'deleted';
+    case Settled = 'settled';
 
     public static function fromAction(Action $action): self
     {
@@ -23,6 +24,7 @@ enum SharedTransactionNotificationAction: string
             self::Created => 'creado',
             self::Updated => 'modificado',
             self::Deleted => 'eliminado',
+            self::Settled => 'pagado',
         };
     }
 }

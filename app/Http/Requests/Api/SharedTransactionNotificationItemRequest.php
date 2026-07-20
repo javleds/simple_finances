@@ -18,7 +18,7 @@ class SharedTransactionNotificationItemRequest extends FormRequest
             'account_id' => ['nullable', 'integer', 'exists:accounts,id'],
             'transaction_id' => ['nullable', 'integer', 'exists:transactions,id'],
             'modifier_id' => ['required', 'integer', 'exists:users,id'],
-            'action' => ['required', 'in:created,updated,deleted'],
+            'action' => ['required', 'in:created,updated,deleted,settled'],
             'concept' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:income,outcome'],
             'amount' => ['required', 'numeric', 'min:0'],

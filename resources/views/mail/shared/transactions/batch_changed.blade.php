@@ -25,7 +25,7 @@ Se registraron {{ $globalSummary['movements_count'] }} movimientos en {{ $global
 | Acción | Tipo | Concepto | Monto | Fecha | Registrado por |
 | --- | --- | --- | ---: | --- | --- |
 @foreach ($group['items'] as $item)
-| {{ ucfirst($item->action->getLabel()) }} | {{ $item->type->getLabel() }} | {{ $item->concept }} | {{ as_money($item->amount) }} | {{ $item->scheduled_at->translatedFormat('M d, Y') }} | {{ $item->modifier?->name ?? 'Usuario no disponible' }} |
+| {{ ucfirst($item->action->getLabel()) }} | {{ $item->action === \App\Enums\SharedTransactionNotificationAction::Settled ? 'Reembolso' : $item->type->getLabel() }} | {{ $item->concept }} | {{ as_money($item->amount) }} | {{ $item->scheduled_at->translatedFormat('M d, Y') }} | {{ $item->modifier?->name ?? 'Usuario no disponible' }} |
 @endforeach
 
 @endforeach
