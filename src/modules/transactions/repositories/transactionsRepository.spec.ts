@@ -178,6 +178,7 @@ describe('transactions repository schemas', () => {
         custodianUserName: null,
         paymentSource: null,
         currentUserPendingReimbursementAmount: 0,
+        currentUserReceivableReimbursementAmount: 0,
         userPayments: {},
       },
       transactions: [
@@ -201,6 +202,7 @@ describe('transactions repository schemas', () => {
           custodianUserName: null,
           paymentSource: null,
           currentUserPendingReimbursementAmount: 0,
+          currentUserReceivableReimbursementAmount: 0,
           userPayments: {},
         },
         {
@@ -223,6 +225,7 @@ describe('transactions repository schemas', () => {
           custodianUserName: null,
           paymentSource: null,
           currentUserPendingReimbursementAmount: 0,
+          currentUserReceivableReimbursementAmount: 0,
           userPayments: {
             '7': 60,
             '8': 40,

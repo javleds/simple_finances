@@ -17,6 +17,7 @@ const props = defineProps<{
   metaLabel?: string | null;
   showActions?: boolean;
   pendingReimbursementAmount?: number;
+  receivableReimbursementAmount?: number;
 }>();
 
 const emit = defineEmits<{
@@ -88,6 +89,14 @@ function secondaryLabel(): string {
   return creatorLabel();
 }
 
+function hasPendingReimbursement(): boolean {
+  return Boolean(props.pendingReimbursementAmount && props.pendingReimbursementAmount > 0);
+}
+
+function hasReceivableReimbursement(): boolean {
+  return Boolean(props.receivableReimbursementAmount && props.receivableReimbursementAmount > 0);
+}
+
 function handleEdit(): void {
   emit('edit', props.itemId);
 }
@@ -118,12 +127,21 @@ function handleDelete(): void {
         >
           {{ props.concept }}
         </p>
-        <p
-          v-if="props.pendingReimbursementAmount && props.pendingReimbursementAmount > 0"
-          class="mt-1 inline-flex rounded-full bg-[color-mix(in_srgb,var(--app-color-warning)_14%,transparent)] px-2 py-0.5 text-[11px] font-semibold text-(--app-color-warning)"
-        >
-          Pendiente por pagar {{ formattedAmount(props.pendingReimbursementAmount) }}
-        </p>
+        <div v-if="hasPendingReimbursement() || hasReceivableReimbursement()" class="mt-1 flex flex-wrap gap-1.5">
+          <p
+            v-if="hasPendingReimbursement()"
+            class="inline-flex rounded-full bg-[color-mix(in_srgb,var(--app-color-warning)_14%,transparent)] px-2 py-0.5 text-[11px] font-semibold text-(--app-color-warning)"
+          >
+            Debes {{ formattedAmount(props.pendingReimbursementAmount ?? 0) }}
+          </p>
+
+          <p
+            v-if="hasReceivableReimbursement()"
+            class="inline-flex rounded-full bg-[color-mix(in_srgb,#10b981_14%,transparent)] px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300"
+          >
+            Te deben {{ formattedAmount(props.receivableReimbursementAmount ?? 0) }}
+          </p>
+        </div>
       </div>
 
       <div class="flex flex-col items-end gap-1">

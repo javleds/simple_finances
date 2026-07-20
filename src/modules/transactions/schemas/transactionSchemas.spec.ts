@@ -56,7 +56,20 @@ describe('transaction schemas', () => {
       custodianUserName: null,
       paymentSource: null,
       currentUserPendingReimbursementAmount: 0,
+      currentUserReceivableReimbursementAmount: 0,
       userPayments: {},
+    });
+  });
+
+  it('maps current user receivable reimbursement amount', () => {
+    const parsedTransaction = transactionApiSchema.parse({
+      ...baseTransactionPayload,
+      current_user_receivable_reimbursement_amount: '400.00',
+    });
+
+    expect(mapTransactionApiToDomain(parsedTransaction)).toMatchObject({
+      currentUserPendingReimbursementAmount: 0,
+      currentUserReceivableReimbursementAmount: 400,
     });
   });
 

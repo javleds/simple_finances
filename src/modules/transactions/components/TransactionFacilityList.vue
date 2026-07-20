@@ -36,6 +36,8 @@ function formatDateLabel(date: string): string {
         :date-label="formatDateLabel(transaction.date)"
         :item-id="transaction.id"
         :meta-label="transaction.accountName ?? 'Cuenta no disponible'"
+        :pending-reimbursement-amount="transaction.currentUserPendingReimbursementAmount"
+        :receivable-reimbursement-amount="transaction.currentUserReceivableReimbursementAmount"
         :show-actions="false"
         :type="transaction.type"
       />

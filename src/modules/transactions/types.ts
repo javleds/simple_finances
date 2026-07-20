@@ -49,6 +49,7 @@ export type Transaction = {
   financialGoalName: string | null;
   userPayments: Record<string, number>;
   currentUserPendingReimbursementAmount: number;
+  currentUserReceivableReimbursementAmount: number;
 };
 
 export type TransactionFormValues = {
