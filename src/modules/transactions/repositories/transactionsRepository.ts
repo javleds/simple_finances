@@ -84,6 +84,24 @@ const memberAmountApiSchema = z
     amount: payload.amount,
   }));
 
+const pendingReimbursementItemApiSchema = z
+  .object({
+    transaction_id: transactionIdSchema,
+    concept: z.string().catch('Movimiento no disponible'),
+    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    occurred_at: z
+      .string()
+      .nullable()
+      .optional()
+      .transform((value) => value ?? null),
+  })
+  .transform((payload) => ({
+    transactionId: payload.transaction_id,
+    concept: payload.concept,
+    amount: payload.amount,
+    occurredAt: payload.occurred_at,
+  }));
+
 const pendingReimbursementApiSchema = z
   .object({
     from_user_id: transactionIdSchema,
@@ -91,6 +109,7 @@ const pendingReimbursementApiSchema = z
     to_user_id: transactionIdSchema,
     to_user_name: z.string().catch('Usuario no disponible'),
     amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    items: z.array(pendingReimbursementItemApiSchema).optional().default([]),
   })
   .transform<TransactionPendingReimbursement>((payload) => ({
     fromUserId: payload.from_user_id,
@@ -98,6 +117,7 @@ const pendingReimbursementApiSchema = z
     toUserId: payload.to_user_id,
     toUserName: payload.to_user_name,
     amount: payload.amount,
+    items: payload.items,
   }));
 
 const transactionMutationMetaPayloadSchema = z
@@ -267,13 +287,11 @@ export function createTransactionsRepository() {
         meta: transactionListMetaSchema.parse(response),
       };
     },
-    async listFacility(
-      options: {
-        page?: number;
-        perPage?: number;
-        filters: TransactionFacilityFilters;
-      },
-    ): Promise<TransactionFacilityListResult> {
+    async listFacility(options: {
+      page?: number;
+      perPage?: number;
+      filters: TransactionFacilityFilters;
+    }): Promise<TransactionFacilityListResult> {
       const searchParams = buildQueryParams({
         page: options.page,
         per_page: options.perPage,

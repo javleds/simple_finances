@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { BanknotesIcon } from '@heroicons/vue/24/outline';
+import { computed, ref } from 'vue';
+import { BanknotesIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/vue/24/outline';
 
 import type { Account, AccountPendingReimbursement } from '@/modules/accounts/types';
-import { AppButton, AppCard, AppText, AppTitle } from '@/modules/shared/components';
+import {
+  AppButton,
+  AppCard,
+  AppIconButton,
+  AppModal,
+  AppText,
+  AppTitle,
+} from '@/modules/shared/components';
 
 const props = withDefaults(
   defineProps<{
@@ -27,8 +34,24 @@ const emit = defineEmits<{
   settleAll: [accounts: Account[]];
 }>();
 
+type SelectedReimbursement = {
+  account: Account;
+  reimbursement: AccountPendingReimbursement;
+};
+
+const selectedReimbursement = ref<SelectedReimbursement | null>(null);
+
 const accountsWithReimbursements = computed(() =>
   props.accounts.filter((account) => account.pendingReimbursements.length > 0),
+);
+
+const accountsWithCurrentUserDebts = computed(() =>
+  accountsWithReimbursements.value
+    .map((account) => ({
+      ...account,
+      pendingReimbursements: currentUserDebts(account.pendingReimbursements),
+    }))
+    .filter((account) => account.pendingReimbursements.length > 0),
 );
 
 const totalAmount = computed(() =>
@@ -52,6 +75,19 @@ function transferKey(accountId: string, reimbursement: AccountPendingReimburseme
   return `${accountId}:${reimbursement.fromUserId}:${reimbursement.toUserId}:${reimbursement.amount}`;
 }
 
+function currentUserDebts(
+  reimbursements: AccountPendingReimbursement[],
+): AccountPendingReimbursement[] {
+  return reimbursements.filter((item) => reimbursementRole(item) === 'debtor');
+}
+
+function accountDebtTotal(account: Account): number {
+  return currentUserDebts(account.pendingReimbursements).reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
+}
+
 function reimbursementRole(
   reimbursement: AccountPendingReimbursement,
 ): 'debtor' | 'creditor' | 'other' {
@@ -70,40 +106,56 @@ function reimbursementLabel(reimbursement: AccountPendingReimbursement): string 
   const role = reimbursementRole(reimbursement);
 
   if (role === 'debtor') {
-    return `Debes a ${reimbursement.toUserName}`;
+    return `Debes ${formatCurrency(reimbursement.amount)}`;
   }
 
   if (role === 'creditor') {
-    return `${reimbursement.fromUserName} te debe`;
+    return `Te deben ${formatCurrency(reimbursement.amount)}`;
   }
 
-  return `${reimbursement.fromUserName} debe a ${reimbursement.toUserName}`;
+  return `${formatCurrency(reimbursement.amount)} pendiente`;
 }
 
-function reimbursementActionLabel(reimbursement: AccountPendingReimbursement): string {
+function reimbursementActionLabel(reimbursement: AccountPendingReimbursement): string | null {
   const role = reimbursementRole(reimbursement);
 
   if (role === 'debtor') {
-    return 'Pagar';
+    return 'Pagar reembolso';
   }
 
   if (role === 'creditor') {
-    return 'Marcar recibido';
+    return 'Marcar reembolso recibido';
   }
 
-  return 'Liquidar';
+  return null;
 }
 
-function bulkActionLabel(reimbursements: AccountPendingReimbursement[]): string {
-  if (reimbursements.every((item) => reimbursementRole(item) === 'debtor')) {
-    return 'Pagar todos';
+function canSettle(reimbursement: AccountPendingReimbursement): boolean {
+  return reimbursementRole(reimbursement) !== 'other';
+}
+
+function detailsLabel(reimbursement: AccountPendingReimbursement): string {
+  return `${reimbursement.fromUserName} debe a ${reimbursement.toUserName}`;
+}
+
+function openDetails(account: Account, reimbursement: AccountPendingReimbursement): void {
+  selectedReimbursement.value = { account, reimbursement };
+}
+
+function closeDetails(): void {
+  selectedReimbursement.value = null;
+}
+
+function itemDateLabel(date: string | null): string {
+  if (!date) {
+    return 'Sin fecha';
   }
 
-  if (reimbursements.every((item) => reimbursementRole(item) === 'creditor')) {
-    return 'Marcar recibidos';
-  }
-
-  return 'Liquidar todos';
+  return new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(`${date}T00:00:00`));
 }
 </script>
 
@@ -120,17 +172,13 @@ function bulkActionLabel(reimbursements: AccountPendingReimbursement[]): string 
 
         <div class="flex shrink-0 items-center gap-2">
           <AppButton
-            v-if="accountsWithReimbursements.length > 1"
+            v-if="accountsWithCurrentUserDebts.length > 0"
             variant="secondary"
             :disabled="props.isTransferring"
             :loading="props.isTransferring"
-            @click="emit('settleAll', accountsWithReimbursements)"
+            @click="emit('settleAll', accountsWithCurrentUserDebts)"
           >
-            {{
-              bulkActionLabel(
-                accountsWithReimbursements.flatMap((account) => account.pendingReimbursements),
-              )
-            }}
+            Pagar todo
           </AppButton>
 
           <div
@@ -158,12 +206,15 @@ function bulkActionLabel(reimbursements: AccountPendingReimbursement[]): string 
             </div>
 
             <AppButton
+              v-if="currentUserDebts(account.pendingReimbursements).length > 0"
               variant="outline"
               :disabled="props.isTransferring"
               :loading="props.isTransferring"
-              @click="emit('settleAccount', account.id, account.pendingReimbursements)"
+              @click="
+                emit('settleAccount', account.id, currentUserDebts(account.pendingReimbursements))
+              "
             >
-              {{ bulkActionLabel(account.pendingReimbursements) }}
+              Pagar {{ formatCurrency(accountDebtTotal(account)) }}
             </AppButton>
           </div>
 
@@ -173,27 +224,86 @@ function bulkActionLabel(reimbursements: AccountPendingReimbursement[]): string 
               :key="transferKey(account.id, item)"
               class="flex items-center justify-between gap-3 rounded-xl bg-(--app-color-surface) px-3 py-2"
             >
-              <div class="min-w-0">
+              <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-medium text-(--app-color-text)">
                   {{ reimbursementLabel(item) }}
                 </p>
                 <p class="text-xs text-(--app-color-text-subtle)">
-                  {{ formatCurrency(item.amount) }}
+                  {{ detailsLabel(item) }}
                 </p>
               </div>
 
-              <AppButton
-                variant="secondary"
-                :disabled="props.isTransferring"
-                :loading="props.activeTransferKey === transferKey(account.id, item)"
-                @click="emit('settle', account.id, item)"
-              >
-                {{ reimbursementActionLabel(item) }}
-              </AppButton>
+              <div class="flex shrink-0 items-center gap-1">
+                <AppIconButton
+                  :ariaLabel="`Ver detalle de ${detailsLabel(item)}`"
+                  @click="openDetails(account, item)"
+                >
+                  <InformationCircleIcon class="h-5 w-5" />
+                </AppIconButton>
+
+                <AppIconButton
+                  v-if="canSettle(item)"
+                  :ariaLabel="reimbursementActionLabel(item) ?? 'Liquidar reembolso'"
+                  :disabled="props.isTransferring"
+                  :loading="props.activeTransferKey === transferKey(account.id, item)"
+                  @click="emit('settle', account.id, item)"
+                >
+                  <BanknotesIcon v-if="reimbursementRole(item) === 'debtor'" class="h-5 w-5" />
+                  <CheckCircleIcon v-else class="h-5 w-5" />
+                </AppIconButton>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   </AppCard>
+
+  <AppModal
+    :open="selectedReimbursement !== null"
+    title="Detalle del reembolso"
+    close-label="Cerrar"
+    @close="closeDetails"
+  >
+    <div v-if="selectedReimbursement" class="space-y-4">
+      <div class="space-y-1">
+        <p class="text-sm font-semibold text-(--app-color-text)">
+          {{ selectedReimbursement.account.name }}
+        </p>
+        <p class="text-sm text-(--app-color-text-subtle)">
+          {{ detailsLabel(selectedReimbursement.reimbursement) }}
+        </p>
+        <p class="text-lg font-semibold text-(--app-color-text) tabular-nums">
+          {{ formatCurrency(selectedReimbursement.reimbursement.amount) }}
+        </p>
+      </div>
+
+      <div class="space-y-2">
+        <div
+          v-for="item in selectedReimbursement.reimbursement.items"
+          :key="item.transactionId"
+          class="rounded-xl bg-(--app-color-surface-muted) px-3 py-2"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <p class="min-w-0 text-sm font-medium text-(--app-color-text)">
+              {{ item.concept }}
+            </p>
+            <p class="shrink-0 text-sm font-semibold text-(--app-color-text) tabular-nums">
+              {{ formatCurrency(item.amount) }}
+            </p>
+          </div>
+          <p class="mt-1 text-xs text-(--app-color-text-subtle)">
+            {{ itemDateLabel(item.occurredAt) }}
+          </p>
+        </div>
+
+        <p
+          v-if="selectedReimbursement.reimbursement.items.length === 0"
+          class="text-sm text-(--app-color-text-subtle)"
+        >
+          No hay movimientos individuales disponibles para este ajuste.
+        </p>
+      </div>
+    </div>
+  </AppModal>
 </template>

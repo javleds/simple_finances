@@ -296,6 +296,10 @@ export const transactionApiSchema = z.object({
     )
     .optional()
     .transform((value) => value ?? []),
+  current_user_pending_reimbursement_amount: z
+    .unknown()
+    .optional()
+    .transform((value) => parseNullableNumber(value) ?? 0),
 });
 
 export function createDefaultTransactionFormValues(
@@ -344,7 +348,11 @@ export function mapTransactionApiToDomain(
     paymentSource: payload.payment_source,
     financialGoalId: payload.financial_goal_id,
     financialGoalName: payload.financial_goal?.name ?? null,
-    userPayments: (payload.allocations.length > 0 ? payload.allocations : payload.user_payments).reduce<Record<string, number>>((accumulator, payment) => {
+    currentUserPendingReimbursementAmount: payload.current_user_pending_reimbursement_amount,
+    userPayments: (payload.allocations.length > 0
+      ? payload.allocations
+      : payload.user_payments
+    ).reduce<Record<string, number>>((accumulator, payment) => {
       if (!payment.user_id) {
         return accumulator;
       }

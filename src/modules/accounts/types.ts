@@ -8,12 +8,20 @@ export type AccountMemberAmount = {
   amount: number;
 };
 
+export type AccountPendingReimbursementItem = {
+  transactionId: string;
+  concept: string;
+  amount: number;
+  occurredAt: string | null;
+};
+
 export type AccountPendingReimbursement = {
   fromUserId: string;
   fromUserName: string;
   toUserId: string;
   toUserName: string;
   amount: number;
+  items: AccountPendingReimbursementItem[];
 };
 
 export type AccountMemberTransferPayload = {

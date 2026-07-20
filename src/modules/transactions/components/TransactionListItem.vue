@@ -16,6 +16,7 @@ const props = defineProps<{
   accountName?: string | null;
   metaLabel?: string | null;
   showActions?: boolean;
+  pendingReimbursementAmount?: number;
 }>();
 
 const emit = defineEmits<{
@@ -94,7 +95,6 @@ function handleEdit(): void {
 function handleDelete(): void {
   emit('delete', props.itemId);
 }
-
 </script>
 
 <template>
@@ -117,6 +117,12 @@ function handleDelete(): void {
           class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
         >
           {{ props.concept }}
+        </p>
+        <p
+          v-if="props.pendingReimbursementAmount && props.pendingReimbursementAmount > 0"
+          class="mt-1 inline-flex rounded-full bg-[color-mix(in_srgb,var(--app-color-warning)_14%,transparent)] px-2 py-0.5 text-[11px] font-semibold text-(--app-color-warning)"
+        >
+          Pendiente por pagar {{ formattedAmount(props.pendingReimbursementAmount) }}
         </p>
       </div>
 

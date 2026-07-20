@@ -2,15 +2,11 @@
 import { ArrowPathIcon } from '@heroicons/vue/24/outline';
 
 import type { AccountPendingReimbursement } from '@/modules/accounts/types';
-import {
-  AppAvatarValueRow,
-  AppCard,
-  AppHeroMetric,
-  AppText,
-} from '@/modules/shared/components';
+import { AppAvatarValueRow, AppCard, AppHeroMetric, AppText } from '@/modules/shared/components';
 
 const props = defineProps<{
   balance: number;
+  currentUserId: string | null;
   isSharedAccount: boolean;
   pendingReimbursements?: AccountPendingReimbursement[];
 }>();
@@ -22,6 +18,22 @@ function formatCurrency(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function reimbursementLabel(item: AccountPendingReimbursement): string {
+  if (props.currentUserId === item.fromUserId) {
+    return `Debes ${formatCurrency(item.amount)}`;
+  }
+
+  if (props.currentUserId === item.toUserId) {
+    return `Te deben ${formatCurrency(item.amount)}`;
+  }
+
+  return `${formatCurrency(item.amount)} pendiente`;
+}
+
+function reimbursementDetail(item: AccountPendingReimbursement): string {
+  return `${item.fromUserName} debe a ${item.toUserName}`;
 }
 </script>
 
@@ -49,8 +61,8 @@ function formatCurrency(value: number): string {
             <AppAvatarValueRow
               v-for="item in props.pendingReimbursements"
               :key="`${item.fromUserId}-${item.toUserId}`"
-              :name="`${item.fromUserName} debe a ${item.toUserName}`"
-              :value="formatCurrency(item.amount)"
+              :name="reimbursementLabel(item)"
+              :value="reimbursementDetail(item)"
             />
           </div>
 
@@ -58,7 +70,6 @@ function formatCurrency(value: number): string {
             <AppText size="sm" tone="subtle">No hay reembolsos sugeridos.</AppText>
           </div>
         </div>
-
       </template>
     </div>
   </AppCard>

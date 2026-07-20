@@ -160,6 +160,7 @@ function applyMutationMeta(meta: TransactionMutationMeta): void {
   <section class="space-y-4">
     <AccountTransactionsHeader
       :balance="accountBalance"
+      :current-user-id="currentUserId"
       :is-shared-account="isSharedAccount"
       :pending-reimbursements="account?.pendingReimbursements ?? []"
     />

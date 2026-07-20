@@ -46,6 +46,24 @@ const accountMemberAmountApiSchema = z
     amount: payload.amount,
   }));
 
+const accountPendingReimbursementItemApiSchema = z
+  .object({
+    transaction_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    concept: z.string().catch('Movimiento no disponible'),
+    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    occurred_at: z
+      .string()
+      .nullable()
+      .optional()
+      .transform((value) => value ?? null),
+  })
+  .transform((payload) => ({
+    transactionId: payload.transaction_id,
+    concept: payload.concept,
+    amount: payload.amount,
+    occurredAt: payload.occurred_at,
+  }));
+
 const accountPendingReimbursementApiSchema = z
   .object({
     from_user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
@@ -53,6 +71,7 @@ const accountPendingReimbursementApiSchema = z
     to_user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
     to_user_name: z.string().catch('Usuario no disponible'),
     amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    items: z.array(accountPendingReimbursementItemApiSchema).optional().default([]),
   })
   .transform<AccountPendingReimbursement>((payload) => ({
     fromUserId: payload.from_user_id,
@@ -60,6 +79,7 @@ const accountPendingReimbursementApiSchema = z
     toUserId: payload.to_user_id,
     toUserName: payload.to_user_name,
     amount: payload.amount,
+    items: payload.items,
   }));
 
 export const accountFormSchema = z

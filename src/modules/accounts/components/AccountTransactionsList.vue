@@ -41,6 +41,7 @@ function formatDateLabel(date: string): string {
         :creator-name="transaction.creatorName"
         :date-label="formatDateLabel(transaction.date)"
         :item-id="transaction.id"
+        :pending-reimbursement-amount="transaction.currentUserPendingReimbursementAmount"
         :show-actions="canManageTransaction(transaction, props.currentUserId)"
         :type="transaction.type"
         @delete="emit('delete', $event)"

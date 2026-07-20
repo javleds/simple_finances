@@ -54,6 +54,14 @@ describe('transactions repository schemas', () => {
               to_user_id: 8,
               to_user_name: 'Notradame',
               amount: '125.50',
+              items: [
+                {
+                  transaction_id: 99,
+                  concept: 'Consulta',
+                  amount: '125.50',
+                  occurred_at: '2026-07-02',
+                },
+              ],
             },
           ],
         },
@@ -83,6 +91,14 @@ describe('transactions repository schemas', () => {
           toUserId: '8',
           toUserName: 'Notradame',
           amount: 125.5,
+          items: [
+            {
+              transactionId: '99',
+              concept: 'Consulta',
+              amount: 125.5,
+              occurredAt: '2026-07-02',
+            },
+          ],
         },
       ],
     });
@@ -161,6 +177,7 @@ describe('transactions repository schemas', () => {
         custodianUserId: null,
         custodianUserName: null,
         paymentSource: null,
+        currentUserPendingReimbursementAmount: 0,
         userPayments: {},
       },
       transactions: [
@@ -183,6 +200,7 @@ describe('transactions repository schemas', () => {
           custodianUserId: null,
           custodianUserName: null,
           paymentSource: null,
+          currentUserPendingReimbursementAmount: 0,
           userPayments: {},
         },
         {
@@ -204,6 +222,7 @@ describe('transactions repository schemas', () => {
           custodianUserId: null,
           custodianUserName: null,
           paymentSource: null,
+          currentUserPendingReimbursementAmount: 0,
           userPayments: {
             '7': 60,
             '8': 40,

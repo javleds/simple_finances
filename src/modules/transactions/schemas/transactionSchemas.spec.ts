@@ -55,6 +55,7 @@ describe('transaction schemas', () => {
       custodianUserId: null,
       custodianUserName: null,
       paymentSource: null,
+      currentUserPendingReimbursementAmount: 0,
       userPayments: {},
     });
   });

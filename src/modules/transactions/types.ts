@@ -48,6 +48,7 @@ export type Transaction = {
   financialGoalId: string | null;
   financialGoalName: string | null;
   userPayments: Record<string, number>;
+  currentUserPendingReimbursementAmount: number;
 };
 
 export type TransactionFormValues = {
@@ -105,6 +106,14 @@ export type TransactionPendingReimbursement = {
   toUserId: string;
   toUserName: string;
   amount: number;
+  items: TransactionPendingReimbursementItem[];
+};
+
+export type TransactionPendingReimbursementItem = {
+  transactionId: string;
+  concept: string;
+  amount: number;
+  occurredAt: string | null;
 };
 
 export type CreatedTransactionResult = {
