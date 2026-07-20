@@ -117,12 +117,15 @@ return new class extends Migration
             now: $now,
         );
 
-        foreach ($children as $child) {
+        foreach ($this->normalizedChildAllocations($children, (float) $transaction->amount) as $allocation) {
+            $child = $allocation['child'];
+            $amount = $allocation['amount'];
+
             $this->insertAllocation(
                 transaction: $transaction,
                 userId: (int) $child->user_id,
-                percentage: (float) $child->percentage,
-                amount: (float) $child->amount,
+                percentage: $allocation['percentage'],
+                amount: $amount,
                 now: $now,
             );
 
@@ -130,7 +133,7 @@ return new class extends Migration
                 transaction: $transaction,
                 userId: (int) $child->user_id,
                 type: 'expense_share',
-                amount: ((float) $child->amount) * -1,
+                amount: $amount * -1,
                 now: $now,
                 relatedUserId: (int) $transaction->user_id,
             );
@@ -140,7 +143,7 @@ return new class extends Migration
                     transaction: $transaction,
                     userId: (int) $child->user_id,
                     type: 'settlement_transfer',
-                    amount: (float) $child->amount,
+                    amount: $amount,
                     now: $now,
                     relatedUserId: (int) $transaction->user_id,
                 );
@@ -148,7 +151,7 @@ return new class extends Migration
                     transaction: $transaction,
                     userId: (int) $transaction->user_id,
                     type: 'settlement_transfer',
-                    amount: ((float) $child->amount) * -1,
+                    amount: $amount * -1,
                     now: $now,
                     relatedUserId: (int) $child->user_id,
                 );
@@ -161,6 +164,67 @@ return new class extends Migration
                 'legacy_migrated_at' => $now,
                 'updated_at' => $now,
             ]);
+    }
+
+    private function normalizedChildAllocations(iterable $children, float $transactionAmount): array
+    {
+        $children = collect($children)->values();
+
+        if ($children->isEmpty()) {
+            return [];
+        }
+
+        $amounts = $this->normalizedChildAmounts($children, $transactionAmount);
+
+        return $children
+            ->map(fn (object $child, int $index): array => [
+                'child' => $child,
+                'amount' => $amounts[$index],
+                'percentage' => $transactionAmount > 0
+                    ? round(($amounts[$index] / $transactionAmount) * 100, 2)
+                    : round((float) $child->percentage, 2),
+            ])
+            ->all();
+    }
+
+    private function normalizedChildAmounts(\Illuminate\Support\Collection $children, float $transactionAmount): array
+    {
+        $amounts = $children
+            ->map(fn (object $child): float => round((float) $child->amount, 2))
+            ->all();
+        $amountTotal = round(array_sum($amounts), 2);
+
+        if ($amountTotal > 0.0) {
+            return $this->adjustLastAmount($amounts, $transactionAmount);
+        }
+
+        $percentageTotal = round($children->sum(fn (object $child): float => (float) $child->percentage), 2);
+
+        if ($percentageTotal > 0.0) {
+            $amounts = $children
+                ->map(fn (object $child): float => round($transactionAmount * ((float) $child->percentage / $percentageTotal), 2))
+                ->all();
+
+            return $this->adjustLastAmount($amounts, $transactionAmount);
+        }
+
+        $equalAmount = round($transactionAmount / $children->count(), 2);
+
+        return $this->adjustLastAmount(array_fill(0, $children->count(), $equalAmount), $transactionAmount);
+    }
+
+    private function adjustLastAmount(array $amounts, float $transactionAmount): array
+    {
+        $lastIndex = array_key_last($amounts);
+
+        if ($lastIndex === null) {
+            return [];
+        }
+
+        $delta = round($transactionAmount - array_sum($amounts), 2);
+        $amounts[$lastIndex] = round($amounts[$lastIndex] + $delta, 2);
+
+        return $amounts;
     }
 
     private function insertAllocation(object $transaction, int $userId, float $percentage, float $amount, Carbon $now): void

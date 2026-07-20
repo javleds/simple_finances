@@ -154,6 +154,43 @@ it('converts pending legacy split outcomes without turning child pending incomes
         ->and((float) $account->fresh()->balance)->toBe(-1000.0);
 });
 
+it('normalizes pending legacy split allocations when child amounts do not match the parent outcome amount', function () {
+    $owner = User::factory()->create();
+    $account = Account::factory()->create([
+        'balance' => 0,
+        'user_id' => $owner->id,
+    ]);
+    $account->users()->attach($owner->id);
+
+    $parentTransaction = Transaction::factory()->outcome()->pending()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'amount' => 350.0,
+        'paid_by_user_id' => null,
+        'payment_source' => null,
+    ]);
+    $childTransaction = Transaction::factory()->income()->completed()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'parent_transaction_id' => $parentTransaction->id,
+        'amount' => 0.0,
+        'percentage' => 100.0,
+    ]);
+
+    runCompleteActivePendingTransactionsMigration();
+
+    $allocation = TransactionAllocation::query()
+        ->where('transaction_id', $parentTransaction->id)
+        ->firstOrFail();
+
+    expect($parentTransaction->fresh()->status)->toBe(TransactionStatus::Completed)
+        ->and($childTransaction->fresh()->legacy_migrated_at)->not->toBeNull()
+        ->and((float) $allocation->amount)->toBe(350.0)
+        ->and((float) $allocation->percentage)->toBe(100.0)
+        ->and(round(TransactionAllocation::query()->where('transaction_id', $parentTransaction->id)->sum('amount'), 2))->toBe(350.0)
+        ->and((float) $account->fresh()->balance)->toBe(-350.0);
+});
+
 it('recalculates credit card account fields after completing pending transactions', function () {
     $user = User::factory()->create();
     $account = Account::factory()->create([
