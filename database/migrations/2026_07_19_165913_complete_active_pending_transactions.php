@@ -380,9 +380,18 @@ return new class extends Migration
     {
         $query = DB::table('transactions')
             ->where('account_id', $accountId)
-            ->whereNull('legacy_migrated_at')
             ->where('type', $type)
             ->where('status', 'completed');
+
+        if ($type === 'income') {
+            $query->where(function ($query): void {
+                $query
+                    ->whereNull('legacy_migrated_at')
+                    ->orWhereNotNull('parent_transaction_id');
+            });
+        } else {
+            $query->whereNull('legacy_migrated_at');
+        }
 
         if ($until !== null) {
             $query->where('scheduled_at', '<=', $until);

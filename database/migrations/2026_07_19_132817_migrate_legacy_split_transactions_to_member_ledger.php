@@ -274,9 +274,13 @@ return new class extends Migration
                 foreach ($accounts as $account) {
                     $income = (float) DB::table('transactions')
                         ->where('account_id', $account->id)
-                        ->whereNull('legacy_migrated_at')
                         ->where('type', 'income')
                         ->where('status', 'completed')
+                        ->where(function ($query): void {
+                            $query
+                                ->whereNull('legacy_migrated_at')
+                                ->orWhereNotNull('parent_transaction_id');
+                        })
                         ->sum('amount');
                     $outcome = (float) DB::table('transactions')
                         ->where('account_id', $account->id)

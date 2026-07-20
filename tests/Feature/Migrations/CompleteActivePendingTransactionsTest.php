@@ -151,7 +151,7 @@ it('converts pending legacy split outcomes without turning child pending incomes
             AccountMemberLedgerEntryType::SettlementTransfer,
             AccountMemberLedgerEntryType::ExpenseShare,
         ])
-        ->and((float) $account->fresh()->balance)->toBe(-1000.0);
+        ->and((float) $account->fresh()->balance)->toBe(-500.0);
 });
 
 it('normalizes pending legacy split allocations when child amounts do not match the parent outcome amount', function () {

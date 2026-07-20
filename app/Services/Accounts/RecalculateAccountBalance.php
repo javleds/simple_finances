@@ -49,9 +49,13 @@ class RecalculateAccountBalance
     {
         $query = $account->transactions()
             ->withoutGlobalScopes()
-            ->whereNull('legacy_migrated_at')
             ->completed()
-            ->income();
+            ->income()
+            ->where(function ($query): void {
+                $query
+                    ->whereNull('legacy_migrated_at')
+                    ->orWhereNotNull('parent_transaction_id');
+            });
 
         if ($untilCutoff) {
             $query->beforeOrEqualsTo($account->next_cutoff_date);
