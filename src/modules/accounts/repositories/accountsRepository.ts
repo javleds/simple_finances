@@ -17,6 +17,8 @@ import type {
   Account,
   AccountListFilters,
   AccountMember,
+  AccountMemberTransferPayload,
+  AccountMemberTransferResult,
   AccountUsersListFilters,
   AccountWritePayload,
 } from '../types';
@@ -26,6 +28,48 @@ const accountsPath = '/accounts';
 
 const accountCollectionSchema = createPaginatedCollectionSchema(accountApiSchema);
 const accountUserCollectionSchema = createPaginatedCollectionSchema(accountUserApiSchema);
+
+const accountMemberAmountApiSchema = z
+  .object({
+    user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    user_name: z.string().catch('Usuario no disponible'),
+    amount: z.unknown().transform((value) => Number(value) || 0),
+  })
+  .transform((payload) => ({
+    userId: payload.user_id,
+    userName: payload.user_name,
+    amount: payload.amount,
+  }));
+
+const accountPendingReimbursementApiSchema = z
+  .object({
+    from_user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    from_user_name: z.string().catch('Usuario no disponible'),
+    to_user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    to_user_name: z.string().catch('Usuario no disponible'),
+    amount: z.unknown().transform((value) => Number(value) || 0),
+  })
+  .transform((payload) => ({
+    fromUserId: payload.from_user_id,
+    fromUserName: payload.from_user_name,
+    toUserId: payload.to_user_id,
+    toUserName: payload.to_user_name,
+    amount: payload.amount,
+  }));
+
+const accountMemberTransferResponseSchema = z
+  .object({
+    meta: z.object({
+      custody_by_user: z.array(accountMemberAmountApiSchema).default([]),
+      settlements_by_user: z.array(accountMemberAmountApiSchema).default([]),
+      pending_reimbursements: z.array(accountPendingReimbursementApiSchema).default([]),
+    }),
+  })
+  .transform<AccountMemberTransferResult>((payload) => ({
+    custodyByUser: payload.meta.custody_by_user,
+    settlementsByUser: payload.meta.settlements_by_user,
+    pendingReimbursements: payload.meta.pending_reimbursements,
+  }));
 
 const singleAccountSchema = z
   .union([
@@ -140,6 +184,20 @@ export function createAccountsRepository() {
     },
     async removeUser(accountId: string, userId: string): Promise<void> {
       await apiClient.delete(`${accountsPath}/${accountId}/users/${userId}`);
+    },
+    async createMemberTransfer(
+      accountId: string,
+      payload: AccountMemberTransferPayload,
+    ): Promise<AccountMemberTransferResult> {
+      const response = await apiClient.post<unknown>(`${accountsPath}/${accountId}/member-transfers`, {
+        from_user_id: payload.fromUserId,
+        to_user_id: payload.toUserId,
+        amount: payload.amount,
+        description: payload.description,
+        occurred_at: payload.occurredAt,
+      });
+
+      return accountMemberTransferResponseSchema.parse(response);
     },
     async create(payload: AccountWritePayload): Promise<Account> {
       const response = await apiClient.post<unknown>(accountsPath, mapWritePayloadToApi(payload));

@@ -5,8 +5,11 @@ import DashboardBalanceSection from '@/modules/admin/components/DashboardBalance
 import DashboardPeriodSummary from '@/modules/admin/components/DashboardPeriodSummary.vue';
 import DashboardSubscriptionsPlanning from '@/modules/admin/components/DashboardSubscriptionsPlanning.vue';
 import DashboardSummaryCards from '@/modules/admin/components/DashboardSummaryCards.vue';
+import AccountReimbursementsPanel from '@/modules/accounts/components/AccountReimbursementsPanel.vue';
 import { useDashboard } from '@/modules/admin/composables/useDashboard';
 import { useDashboardPeriodSummary } from '@/modules/admin/composables/useDashboardPeriodSummary';
+import { useAccountMemberTransfers } from '@/modules/accounts/composables/useAccountMemberTransfers';
+import { useSharedAccountReimbursements } from '@/modules/accounts/composables/useSharedAccountReimbursements';
 import { AppButton, AppText } from '@/modules/shared/components';
 
 type SavingsCadence = 'monthly' | 'biweekly';
@@ -32,6 +35,15 @@ const {
   resetToCurrentMonth,
   loadPeriodSummary,
 } = useDashboardPeriodSummary();
+const { accountsWithReimbursements } = useSharedAccountReimbursements();
+const {
+  activeTransferKey,
+  isTransferring,
+  settleAllAccountReimbursements,
+  settleAccountReimbursements,
+  settleReimbursement,
+  transferError,
+} = useAccountMemberTransfers();
 
 const annualSubscriptionsSpend = computed(() => dashboard.value.subscriptionsSummary.annualTotal);
 
@@ -84,6 +96,20 @@ const filteredGraphAccounts = computed(() =>
     />
 
     <DashboardSummaryCards :summary="dashboard.accountsSummary" />
+
+    <section v-if="transferError" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+      <AppText class="text-(--app-color-danger)!">{{ transferError }}</AppText>
+    </section>
+
+    <AccountReimbursementsPanel
+      :accounts="accountsWithReimbursements"
+      :active-transfer-key="activeTransferKey"
+      :is-transferring="isTransferring"
+      title="Pagar pendientes"
+      @settle="settleReimbursement"
+      @settle-all="settleAllAccountReimbursements"
+      @settle-account="settleAccountReimbursements"
+    />
 
     <DashboardSubscriptionsPlanning
       v-model:savings-cadence="savingsCadence"

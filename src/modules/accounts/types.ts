@@ -16,6 +16,20 @@ export type AccountPendingReimbursement = {
   amount: number;
 };
 
+export type AccountMemberTransferPayload = {
+  fromUserId: string;
+  toUserId: string;
+  amount: number;
+  description?: string;
+  occurredAt?: string;
+};
+
+export type AccountMemberTransferResult = {
+  custodyByUser: AccountMemberAmount[];
+  settlementsByUser: AccountMemberAmount[];
+  pendingReimbursements: AccountPendingReimbursement[];
+};
+
 export type AccountMember = {
   id: string;
   name: string;

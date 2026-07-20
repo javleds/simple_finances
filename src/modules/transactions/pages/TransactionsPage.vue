@@ -5,9 +5,13 @@ import { useRoute } from 'vue-router';
 import TransactionFacilityActivity from '@/modules/transactions/components/TransactionFacilityActivity.vue';
 import TransactionFacilityFiltersModal from '@/modules/transactions/components/TransactionFacilityFiltersModal.vue';
 import TransactionFacilitySummaryHeader from '@/modules/transactions/components/TransactionFacilitySummaryHeader.vue';
+import AccountReimbursementsPanel from '@/modules/accounts/components/AccountReimbursementsPanel.vue';
 import { useTransactionFacility } from '@/modules/transactions/composables/useTransactionFacility';
 import { useTransactionFacilityFilters } from '@/modules/transactions/composables/useTransactionFacilityFilters';
+import { useAccountMemberTransfers } from '@/modules/accounts/composables/useAccountMemberTransfers';
+import { useSharedAccountReimbursements } from '@/modules/accounts/composables/useSharedAccountReimbursements';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
+import { AppText } from '@/modules/shared/components';
 
 const route = useRoute();
 const isFiltersModalOpen = ref(false);
@@ -31,6 +35,15 @@ const {
   loadTransactions,
   loadMoreTransactions,
 } = useTransactionFacility();
+const { accountsWithReimbursements } = useSharedAccountReimbursements();
+const {
+  activeTransferKey,
+  isTransferring,
+  settleAllAccountReimbursements,
+  settleAccountReimbursements,
+  settleReimbursement,
+  transferError,
+} = useAccountMemberTransfers();
 
 const transactionsPerPage = computed(() => {
   const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
@@ -103,6 +116,20 @@ function infiniteStatusLabel(): string {
 <template>
   <div class="space-y-5">
     <TransactionFacilitySummaryHeader :summary="summary" />
+
+    <section v-if="transferError" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+      <AppText class="text-(--app-color-danger)!">{{ transferError }}</AppText>
+    </section>
+
+    <AccountReimbursementsPanel
+      :accounts="accountsWithReimbursements"
+      :active-transfer-key="activeTransferKey"
+      :is-transferring="isTransferring"
+      title="Pagar pendientes por cuenta"
+      @settle="settleReimbursement"
+      @settle-all="settleAllAccountReimbursements"
+      @settle-account="settleAccountReimbursements"
+    />
 
     <TransactionFacilityActivity
       v-model:search-term="searchTerm"

@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 
 import type { Account } from '@/modules/accounts/types';
+import AccountReimbursementsPanel from '@/modules/accounts/components/AccountReimbursementsPanel.vue';
 import AccountTransactionsActivity from '@/modules/accounts/components/AccountTransactionsActivity.vue';
 import AccountTransactionsFilters from '@/modules/accounts/components/AccountTransactionsFilters.vue';
 import AccountTransactionsHeader from '@/modules/accounts/components/AccountTransactionsHeader.vue';
@@ -13,6 +14,7 @@ import { useAccountTransactionModalActions } from '@/modules/accounts/composable
 import { useAccountTransactionModals } from '@/modules/accounts/composables/useAccountTransactionModals';
 import { useAccountTransactionsContext } from '@/modules/accounts/composables/useAccountTransactionsContext';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
+import { useAccountMemberTransfers } from '@/modules/accounts/composables/useAccountMemberTransfers';
 import { useTransactionsCrud } from '@/modules/transactions/composables/useTransactionsCrud';
 import type { TransactionMutationMeta } from '@/modules/transactions/types';
 
@@ -27,6 +29,7 @@ const {
 } = useAccountTransactionFilters();
 
 const account = computed(() => props.account);
+const reimbursementAccounts = computed(() => (account.value ? [account.value] : []));
 const accountBalance = ref(account.value?.balance ?? 0);
 const { accountId, accountUsers, currentUserId, isSharedAccount } =
   useAccountTransactionsContext(account);
@@ -130,6 +133,15 @@ const {
   updateTransaction,
 });
 
+const {
+  activeTransferKey,
+  isTransferring,
+  settleAllAccountReimbursements,
+  settleAccountReimbursements,
+  settleReimbursement,
+  transferError,
+} = useAccountMemberTransfers();
+
 watch(
   () => account.value?.balance,
   (nextBalance) => {
@@ -161,6 +173,20 @@ function applyMutationMeta(meta: TransactionMutationMeta): void {
       :balance="accountBalance"
       :is-shared-account="isSharedAccount"
       :pending-reimbursements="account?.pendingReimbursements ?? []"
+    />
+
+    <section v-if="transferError" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
+      <p class="text-sm font-medium text-(--app-color-danger)">{{ transferError }}</p>
+    </section>
+
+    <AccountReimbursementsPanel
+      :accounts="reimbursementAccounts"
+      :active-transfer-key="activeTransferKey"
+      :is-transferring="isTransferring"
+      title="Pagar pendientes de esta cuenta"
+      @settle="settleReimbursement"
+      @settle-all="settleAllAccountReimbursements"
+      @settle-account="settleAccountReimbursements"
     />
 
     <AccountTransactionsActivity
