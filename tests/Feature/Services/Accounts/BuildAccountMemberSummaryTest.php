@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Accounts\BuildAccountMemberSummary;
 use App\Services\Accounts\RegisterAccountMemberTransfer;
+use App\Services\Transaction\HydrateCurrentUserPendingReimbursements;
 use App\Services\Transaction\TransactionCreator;
 use Carbon\CarbonImmutable;
 
@@ -76,7 +77,7 @@ it('settles reimbursements and updates custody with an internal member transfer'
     ]);
     $this->actingAs($partner);
 
-    app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+    $transaction = app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
         'type' => TransactionType::Outcome,
         'status' => TransactionStatus::Completed,
         'concept' => 'Travel dinner',
@@ -102,6 +103,24 @@ it('settles reimbursements and updates custody with an internal member transfer'
     ]);
 
     $summary = app(BuildAccountMemberSummary::class)->execute($account);
+    $settlementTransactionEntries = AccountMemberLedgerEntry::query()
+        ->where('transaction_id', $transaction->id)
+        ->where('type', AccountMemberLedgerEntryType::SettlementTransfer)
+        ->orderBy('user_id')
+        ->get();
+    $recoveryTransaction = Transaction::query()
+        ->where('account_id', $account->id)
+        ->where('type', TransactionType::Income)
+        ->where('concept', 'Dinner reimbursement')
+        ->first();
+
+    app(HydrateCurrentUserPendingReimbursements::class)->execute([$transaction], $owner->id);
+    $ownerPendingAmount = $transaction->getAttribute('current_user_pending_reimbursement_amount');
+    $ownerReceivableAmount = $transaction->getAttribute('current_user_receivable_reimbursement_amount');
+
+    app(HydrateCurrentUserPendingReimbursements::class)->execute([$transaction], $partner->id);
+    $partnerPendingAmount = $transaction->getAttribute('current_user_pending_reimbursement_amount');
+    $partnerReceivableAmount = $transaction->getAttribute('current_user_receivable_reimbursement_amount');
 
     expect($summary['settlements_by_user'])->toMatchArray([
         ['user_id' => $owner->id, 'user_name' => 'Owner', 'amount' => 0.0],
@@ -111,6 +130,17 @@ it('settles reimbursements and updates custody with an internal member transfer'
             ['user_id' => $owner->id, 'user_name' => 'Owner', 'amount' => -500.0],
             ['user_id' => $partner->id, 'user_name' => 'Partner', 'amount' => 500.0],
         ])
+        ->and($settlementTransactionEntries)->toHaveCount(2)
+        ->and($settlementTransactionEntries->pluck('amount')->all())->toBe([500.0, -500.0])
+        ->and($ownerPendingAmount)->toBe(0.0)
+        ->and($ownerReceivableAmount)->toBe(0.0)
+        ->and($partnerPendingAmount)->toBe(0.0)
+        ->and($partnerReceivableAmount)->toBe(0.0)
+        ->and($recoveryTransaction)->not->toBeNull()
+        ->and((float) $recoveryTransaction->amount)->toBe(500.0)
+        ->and($recoveryTransaction->user_id)->toBe($owner->id)
+        ->and($recoveryTransaction->custodian_user_id)->toBe($partner->id)
+        ->and((float) $account->fresh()->balance)->toBe(-500.0)
         ->and($summary['pending_reimbursements'])->toBe([]);
 });
 

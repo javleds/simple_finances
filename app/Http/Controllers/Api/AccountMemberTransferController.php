@@ -27,10 +27,15 @@ class AccountMemberTransferController extends ApiController
         $this->ensureAccountUser($account, $request->integer('to_user_id'));
 
         $entries = $registerAccountMemberTransfer->execute($account, $request->validated());
+        $freshAccount = $account->fresh();
+        $meta = $this->buildAccountMemberSummary->execute($freshAccount);
+        $meta['account'] = [
+            'balance' => (float) $freshAccount->balance,
+        ];
 
         return $this->respond([
             'data' => $entries,
-            'meta' => $this->buildAccountMemberSummary->execute($account),
+            'meta' => $meta,
         ], 201);
     }
 
