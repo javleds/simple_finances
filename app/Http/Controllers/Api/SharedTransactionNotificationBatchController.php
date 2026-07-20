@@ -23,7 +23,7 @@ class SharedTransactionNotificationBatchController extends ApiController
             ->where('user_id', auth()->id())
             ->latest(),
             $request,
-            filterColumns: ['account_id', 'status'],
+            filterColumns: ['account_id', 'group_key', 'status'],
         );
     }
 

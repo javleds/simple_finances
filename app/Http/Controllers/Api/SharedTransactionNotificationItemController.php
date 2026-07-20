@@ -16,10 +16,10 @@ class SharedTransactionNotificationItemController extends ApiController
         return $this->respondPaginated(
             SharedTransactionNotificationItem::query()
             ->whereHas('batch', fn ($query) => $query->where('user_id', auth()->id()))
-            ->with(['batch', 'transaction', 'modifier'])
+            ->with(['batch', 'account', 'transaction', 'modifier'])
             ->latest(),
             $request,
-            filterColumns: ['batch_id', 'transaction_id', 'modifier_id', 'action', 'type'],
+            filterColumns: ['batch_id', 'account_id', 'transaction_id', 'modifier_id', 'action', 'type'],
         );
     }
 
@@ -27,18 +27,19 @@ class SharedTransactionNotificationItemController extends ApiController
     {
         $batch = SharedTransactionNotificationBatch::query()->findOrFail($request->integer('batch_id'));
         abort_unless($batch->user_id === $request->user()->id, 403);
-        $this->ensureTransactionBelongsToBatch($request, $batch);
+        $payload = $request->validated();
+        $payload['account_id'] = $this->resolveAccountId($request, $batch);
 
-        $record = SharedTransactionNotificationItem::create($request->validated());
+        $record = SharedTransactionNotificationItem::create($payload);
 
-        return $this->respondModel($record, ['batch', 'transaction', 'modifier'], 201);
+        return $this->respondModel($record, ['batch', 'account', 'transaction', 'modifier'], 201);
     }
 
     public function show(SharedTransactionNotificationItem $item): JsonResponse
     {
         abort_unless($item->batch->user_id === auth()->id(), 403);
 
-        return $this->respondModel($item, ['batch', 'transaction', 'modifier']);
+        return $this->respondModel($item, ['batch', 'account', 'transaction', 'modifier']);
     }
 
     public function update(
@@ -46,11 +47,12 @@ class SharedTransactionNotificationItemController extends ApiController
         SharedTransactionNotificationItem $item,
     ): JsonResponse {
         abort_unless($item->batch->user_id === auth()->id(), 403);
-        $this->ensureTransactionBelongsToBatch($request, $item->batch);
+        $payload = $request->validated();
+        $payload['account_id'] = $this->resolveAccountId($request, $item->batch);
 
-        $item->update($request->validated());
+        $item->update($payload);
 
-        return $this->respondModel($item->fresh(), ['batch', 'transaction', 'modifier']);
+        return $this->respondModel($item->fresh(), ['batch', 'account', 'transaction', 'modifier']);
     }
 
     public function delete(SharedTransactionNotificationItem $item): JsonResponse
@@ -62,17 +64,16 @@ class SharedTransactionNotificationItemController extends ApiController
         return $this->respondDeleted('Shared transaction notification item deleted successfully.');
     }
 
-    private function ensureTransactionBelongsToBatch(
+    private function resolveAccountId(
         SharedTransactionNotificationItemRequest $request,
         SharedTransactionNotificationBatch $batch,
-    ): void {
+    ): int {
         $transactionId = $request->integer('transaction_id');
 
-        if ($transactionId === 0) {
-            return;
+        if ($transactionId !== 0) {
+            return Transaction::withoutGlobalScopes()->findOrFail($transactionId)->account_id;
         }
 
-        $transaction = Transaction::withoutGlobalScopes()->findOrFail($transactionId);
-        abort_unless($transaction->account_id === $batch->account_id, 404);
+        return $request->integer('account_id') ?: $batch->account_id;
     }
 }

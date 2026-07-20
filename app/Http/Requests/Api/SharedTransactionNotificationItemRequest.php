@@ -15,6 +15,7 @@ class SharedTransactionNotificationItemRequest extends FormRequest
     {
         return [
             'batch_id' => ['required', 'integer', 'exists:shared_transaction_notification_batches,id'],
+            'account_id' => ['nullable', 'integer', 'exists:accounts,id'],
             'transaction_id' => ['nullable', 'integer', 'exists:transactions,id'],
             'modifier_id' => ['required', 'integer', 'exists:users,id'],
             'action' => ['required', 'in:created,updated,deleted'],

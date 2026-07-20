@@ -15,6 +15,7 @@ class SharedTransactionNotificationBatchRequest extends FormRequest
     {
         return [
             'account_id' => ['required', 'integer', 'exists:accounts,id'],
+            'group_key' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'in:pending,processing,sent'],
             'window_started_at' => ['required', 'date'],
             'last_activity_at' => ['required', 'date'],

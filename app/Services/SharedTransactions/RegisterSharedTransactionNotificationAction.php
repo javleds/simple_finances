@@ -14,10 +14,10 @@ class RegisterSharedTransactionNotificationAction
     public function execute(SharedTransactionNotificationDto $dto): SharedTransactionNotificationBatch
     {
         $now = now();
+        $groupKey = $this->groupKey($dto->recipient->id);
 
         $batch = SharedTransactionNotificationBatch::query()
-            ->where('user_id', $dto->recipient->id)
-            ->where('account_id', $dto->transaction->account_id)
+            ->where('group_key', $groupKey)
             ->where('status', SharedTransactionNotificationBatchStatus::Pending)
             ->first();
 
@@ -26,14 +26,14 @@ class RegisterSharedTransactionNotificationAction
                 $batch = SharedTransactionNotificationBatch::create([
                     'user_id' => $dto->recipient->id,
                     'account_id' => $dto->transaction->account_id,
+                    'group_key' => $groupKey,
                     'status' => SharedTransactionNotificationBatchStatus::Pending,
                     'window_started_at' => $now,
                     'last_activity_at' => $now,
                 ]);
             } catch (QueryException $exception) {
                 $batch = SharedTransactionNotificationBatch::query()
-                    ->where('user_id', $dto->recipient->id)
-                    ->where('account_id', $dto->transaction->account_id)
+                    ->where('group_key', $groupKey)
                     ->where('status', SharedTransactionNotificationBatchStatus::Pending)
                     ->first();
 
@@ -48,6 +48,7 @@ class RegisterSharedTransactionNotificationAction
 
         SharedTransactionNotificationItem::create([
             'batch_id' => $batch->id,
+            'account_id' => $dto->transaction->account_id,
             'transaction_id' => $dto->transaction->id,
             'modifier_id' => $dto->modifier->id,
             'action' => SharedTransactionNotificationAction::fromAction($dto->action),
@@ -58,5 +59,10 @@ class RegisterSharedTransactionNotificationAction
         ]);
 
         return $batch;
+    }
+
+    private function groupKey(int $recipientId): string
+    {
+        return "shared-movements:user:{$recipientId}";
     }
 }

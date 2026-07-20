@@ -50,6 +50,7 @@ class ProcessSharedTransactionNotificationBatchesAction
         $batch = SharedTransactionNotificationBatch::query()
             ->with([
                 'items' => fn ($query) => $query->orderBy('id'),
+                'items.account',
                 'items.modifier',
                 'account',
                 'user',
@@ -66,29 +67,31 @@ class ProcessSharedTransactionNotificationBatchesAction
             return;
         }
 
-        $account = $batch->account;
-        if (! $account) {
-            $this->markAsSent($batch);
-            return;
-        }
-
         if (! $user->canReceiveNotification(NotificationType::MOVEMENTS_NOTIFICATION)) {
             $this->markAsSent($batch);
             return;
         }
 
         $notificableAccounts = $user->notificableAccounts()->get();
-        if (! $notificableAccounts->contains($account)) {
+        $items = $batch->items
+            ->map(function ($item) use ($batch) {
+                if ($item->account === null && $batch->account !== null) {
+                    $item->account_id = $batch->account->id;
+                    $item->setRelation('account', $batch->account);
+                }
+
+                return $item;
+            })
+            ->filter(fn ($item): bool => $item->account !== null)
+            ->filter(fn ($item): bool => $notificableAccounts->contains($item->account))
+            ->values();
+
+        if ($items->isEmpty()) {
             $this->markAsSent($batch);
             return;
         }
 
-        if ($batch->items->isEmpty()) {
-            $this->markAsSent($batch);
-            return;
-        }
-
-        $user->notify(new SharedTransactionBatchChangedEmail($user, $account, $batch->items));
+        $user->notify(new SharedTransactionBatchChangedEmail($user, $items));
 
         $this->markAsSent($batch);
     }
@@ -96,6 +99,7 @@ class ProcessSharedTransactionNotificationBatchesAction
     private function markAsSent(SharedTransactionNotificationBatch $batch): void
     {
         $batch->status = SharedTransactionNotificationBatchStatus::Sent;
+        $batch->group_key = null;
         $batch->sent_at = now();
         $batch->save();
     }

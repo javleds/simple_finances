@@ -16,6 +16,7 @@ class SharedTransactionNotificationItem extends Model
     {
         return [
             'batch_id' => 'integer',
+            'account_id' => 'integer',
             'transaction_id' => 'integer',
             'modifier_id' => 'integer',
             'action' => SharedTransactionNotificationAction::class,
@@ -33,6 +34,11 @@ class SharedTransactionNotificationItem extends Model
     public function modifier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'modifier_id');
+    }
+
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(Account::class);
     }
 
     public function transaction(): BelongsTo

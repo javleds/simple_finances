@@ -43,16 +43,19 @@ it('creates a notification batch and item for shared transactions', function () 
         ->and($batch->status)->toBe(SharedTransactionNotificationBatchStatus::Pending)
         ->and($batch->user_id)->toBe($recipient->id)
         ->and($batch->account_id)->toBe($account->id)
+        ->and($batch->group_key)->toBe("shared-movements:user:{$recipient->id}")
         ->and($item)->not->toBeNull()
         ->and($item->batch_id)->toBe($batch->id)
+        ->and($item->account_id)->toBe($account->id)
         ->and($item->modifier_id)->toBe($modifier->id)
         ->and($item->action)->toBe(SharedTransactionNotificationAction::Created);
 });
 
-it('reuses a pending batch and updates last activity', function () {
+it('reuses a pending recipient batch across shared accounts and updates last activity', function () {
     $recipient = User::factory()->create();
     $modifier = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $modifier->id]);
+    $otherAccount = Account::factory()->create(['user_id' => $modifier->id]);
 
     $firstTransaction = Transaction::factory()->create([
         'user_id' => $modifier->id,
@@ -76,7 +79,7 @@ it('reuses a pending batch and updates last activity', function () {
 
     $secondTransaction = Transaction::factory()->create([
         'user_id' => $modifier->id,
-        'account_id' => $account->id,
+        'account_id' => $otherAccount->id,
         'type' => TransactionType::Outcome,
         'status' => TransactionStatus::Completed,
         'concept' => 'Lunch',
@@ -96,5 +99,9 @@ it('reuses a pending batch and updates last activity', function () {
     expect(SharedTransactionNotificationBatch::count())->toBe(1)
         ->and(SharedTransactionNotificationItem::count())->toBe(2)
         ->and($updatedBatch->id)->toBe($batch->id)
-        ->and($updatedBatch->last_activity_at->greaterThanOrEqualTo($firstLastActivity))->toBeTrue();
+        ->and($updatedBatch->last_activity_at->greaterThanOrEqualTo($firstLastActivity))->toBeTrue()
+        ->and(SharedTransactionNotificationItem::query()->pluck('account_id')->sort()->values()->all())->toBe([
+            $account->id,
+            $otherAccount->id,
+        ]);
 });

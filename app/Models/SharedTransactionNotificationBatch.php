@@ -17,6 +17,7 @@ class SharedTransactionNotificationBatch extends Model
         return [
             'user_id' => 'integer',
             'account_id' => 'integer',
+            'group_key' => 'string',
             'status' => SharedTransactionNotificationBatchStatus::class,
             'window_started_at' => 'immutable_datetime',
             'last_activity_at' => 'immutable_datetime',

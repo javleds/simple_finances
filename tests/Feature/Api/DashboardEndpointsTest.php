@@ -104,9 +104,13 @@ it('queues shared account movement notifications from api endpoints until the gr
     $account = Account::factory()->create([
         'user_id' => $modifier->id,
     ]);
+    $otherAccount = Account::factory()->create([
+        'user_id' => $modifier->id,
+    ]);
     $account->users()->attach([$modifier->id, $recipient->id]);
+    $otherAccount->users()->attach([$modifier->id, $recipient->id]);
     $recipient->notificationTypes()->attach($notificationType->id);
-    $recipient->notificableAccounts()->attach($account->id);
+    $recipient->notificableAccounts()->attach([$account->id, $otherAccount->id]);
 
     $headers = dashboardApiHeaders($modifier);
 
@@ -137,10 +141,22 @@ it('queues shared account movement notifications from api endpoints until the gr
         ])
         ->assertOk();
 
+    $this->withHeaders($headers)
+        ->postJson("/api/accounts/{$otherAccount->id}/transactions", [
+            'type' => 'outcome',
+            'status' => 'completed',
+            'concept' => 'Shared pharmacy',
+            'amount' => 120,
+            'split_between_users' => false,
+            'scheduled_at' => '2026-06-07',
+        ])
+        ->assertCreated();
+
     Notification::assertNotSentTo($recipient, SharedTransactionChangedEmail::class);
 
     expect(SharedTransactionNotificationBatch::count())->toBe(1)
-        ->and(SharedTransactionNotificationItem::count())->toBe(2);
+        ->and(SharedTransactionNotificationItem::count())->toBe(3)
+        ->and(SharedTransactionNotificationItem::query()->pluck('account_id')->unique()->count())->toBe(2);
 
     $batch->refresh();
 

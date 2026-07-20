@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\Account;
 use App\Models\User;
+use App\Services\SharedTransactions\BuildSharedTransactionNotificationMailData;
 use App\Support\SpaUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -16,7 +16,6 @@ class SharedTransactionBatchChangedEmail extends Notification
 
     public function __construct(
         public readonly User $user,
-        public readonly Account $account,
         public readonly Collection $items,
     ) {}
 
@@ -27,12 +26,15 @@ class SharedTransactionBatchChangedEmail extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
+        $mailData = app(BuildSharedTransactionNotificationMailData::class)->execute($this->user, $this->items);
+
         return (new MailMessage)->markdown('mail.shared.transactions.batch_changed', [
             'user' => $this->user,
-            'account' => $this->account,
-            'items' => $this->items,
-            'link' => app(SpaUrl::class)->to('accounts/'.$this->account->id),
-        ])->subject(sprintf('%s - Movimientos en cuenta compartida', config('app.name')));
+            'globalSummary' => $mailData['globalSummary'],
+            'accountsSummary' => $mailData['accountsSummary'],
+            'itemsByAccount' => $mailData['itemsByAccount'],
+            'link' => app(SpaUrl::class)->to('accounts'),
+        ])->subject(sprintf('%s - Movimientos en cuentas compartidas', config('app.name')));
     }
 
     public function toArray(object $notifiable): array
