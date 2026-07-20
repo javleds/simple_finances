@@ -51,6 +51,7 @@ type PendingBulkAction =
     };
 
 const selectedReimbursement = ref<SelectedReimbursement | null>(null);
+const pendingRowAction = ref<SelectedReimbursement | null>(null);
 const pendingBulkAction = ref<PendingBulkAction | null>(null);
 
 const accountsWithReimbursements = computed(() =>
@@ -198,6 +199,30 @@ function closeDetails(): void {
   selectedReimbursement.value = null;
 }
 
+function confirmOrSettleRow(account: Account, reimbursement: AccountPendingReimbursement): void {
+  if (reimbursement.items.length <= 1) {
+    emit('settle', account.id, reimbursement);
+    return;
+  }
+
+  pendingRowAction.value = { account, reimbursement };
+}
+
+function closeRowConfirmation(): void {
+  pendingRowAction.value = null;
+}
+
+function confirmRowAction(): void {
+  const action = pendingRowAction.value;
+
+  if (!action) {
+    return;
+  }
+
+  emit('settle', action.account.id, action.reimbursement);
+  closeRowConfirmation();
+}
+
 function openAllConfirmation(): void {
   pendingBulkAction.value = {
     kind: 'all',
@@ -331,7 +356,7 @@ function itemDateLabel(date: string | null): string {
                   :ariaLabel="reimbursementActionLabel(item) ?? 'Liquidar reembolso'"
                   :disabled="props.isTransferring"
                   :loading="props.activeTransferKey === transferKey(account.id, item)"
-                  @click="emit('settle', account.id, item)"
+                  @click="confirmOrSettleRow(account, item)"
                 >
                   <BanknotesIcon v-if="reimbursementRole(item) === 'debtor'" class="h-5 w-5" />
                   <CheckCircleIcon v-else class="h-5 w-5" />
@@ -389,6 +414,40 @@ function itemDateLabel(date: string | null): string {
           No hay movimientos individuales disponibles para este ajuste.
         </p>
       </div>
+    </div>
+  </AppModal>
+
+  <AppModal
+    :open="pendingRowAction !== null"
+    title="Confirmar pago"
+    variant="warning"
+    :actions="[
+      { key: 'cancel', label: 'Cancelar', tone: 'neutral', autoClose: true },
+      {
+        key: 'confirm',
+        label: 'Confirmar pago',
+        tone: 'primary',
+        loading: props.isTransferring,
+      },
+    ]"
+    @action="
+      ($event) => {
+        if ($event === 'confirm') confirmRowAction();
+      }
+    "
+    @close="closeRowConfirmation"
+  >
+    <div v-if="pendingRowAction" class="space-y-3">
+      <p class="text-sm text-(--app-color-text)">
+        Esta acción registrará el pago de
+        <strong>{{ pendingRowAction.reimbursement.items.length }}</strong>
+        movimiento(s) por
+        <strong>{{ formatCurrency(pendingRowAction.reimbursement.amount) }}</strong
+        >.
+      </p>
+      <p class="text-sm text-(--app-color-text-subtle)">
+        {{ detailsLabel(pendingRowAction.reimbursement) }} en {{ pendingRowAction.account.name }}.
+      </p>
     </div>
   </AppModal>
 
