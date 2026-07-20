@@ -273,21 +273,23 @@ function itemDateLabel(date: string | null): string {
 
 <template>
   <AppCard v-if="accountsWithReimbursements.length > 0" class="rounded-3xl">
-    <div class="space-y-4">
-      <div class="flex items-start justify-between gap-3">
-        <div class="space-y-1">
+    <div class="space-y-5">
+      <div class="flex items-start gap-3">
+        <div class="min-w-0 flex-1 space-y-1">
           <AppTitle as="h2" size="sm">{{ props.title }}</AppTitle>
-          <AppText
-            >{{ formatCurrency(totalAmount) }} por liquidar entre cuentas compartidas.</AppText
-          >
+          <AppText>
+            {{ formatCurrency(totalAmount) }} entre {{ accountsWithReimbursements.length }}
+            cuenta(s).
+          </AppText>
         </div>
 
-        <div class="flex shrink-0 items-center gap-2">
+        <div class="flex shrink-0 items-center gap-1.5">
           <AppButton
             v-if="accountsWithCurrentUserDebts.length > 0"
             variant="secondary"
             :disabled="props.isTransferring"
             :loading="props.isTransferring"
+            class="px-3!"
             @click="openAllConfirmation"
           >
             Pagar todo
@@ -301,44 +303,51 @@ function itemDateLabel(date: string | null): string {
         </div>
       </div>
 
-      <div class="space-y-3">
+      <div
+        class="divide-y divide-(--app-color-border) overflow-hidden rounded-2xl border border-(--app-color-border)"
+      >
         <div
           v-for="account in accountsWithReimbursements"
           :key="account.id"
-          class="space-y-3 rounded-2xl bg-(--app-color-surface-muted) p-3"
+          class="bg-(--app-color-surface)"
         >
-          <div class="flex items-center justify-between gap-3">
-            <div class="min-w-0">
-              <p class="truncate text-sm font-semibold text-(--app-color-text)">
-                {{ account.name }}
-              </p>
-              <p class="text-xs text-(--app-color-text-subtle)">
-                {{ account.pendingReimbursements.length }} reembolso(s)
-              </p>
-            </div>
+          <div class="px-3 py-3">
+            <div class="flex items-center gap-3">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-(--app-color-text)">
+                  {{ account.name }}
+                </p>
+                <p class="text-xs text-(--app-color-text-subtle)">
+                  {{ account.pendingReimbursements.length }} reembolso(s)
+                  <template v-if="accountDebtTotal(account) > 0">
+                    · Debes {{ formatCurrency(accountDebtTotal(account)) }}
+                  </template>
+                </p>
+              </div>
 
-            <AppButton
-              v-if="currentUserDebts(account.pendingReimbursements).length > 0"
-              variant="outline"
-              :disabled="props.isTransferring"
-              :loading="props.isTransferring"
-              @click="openAccountConfirmation(account)"
-            >
-              Pagar {{ formatCurrency(accountDebtTotal(account)) }}
-            </AppButton>
+              <AppIconButton
+                v-if="currentUserDebts(account.pendingReimbursements).length > 0"
+                :ariaLabel="`Pagar pendientes de ${account.name} por ${formatCurrency(accountDebtTotal(account))}`"
+                :disabled="props.isTransferring"
+                :loading="props.isTransferring"
+                @click="openAccountConfirmation(account)"
+              >
+                <BanknotesIcon class="h-5 w-5" />
+              </AppIconButton>
+            </div>
           </div>
 
-          <div class="space-y-2">
+          <div class="divide-y divide-(--app-color-border)">
             <div
               v-for="item in account.pendingReimbursements"
               :key="transferKey(account.id, item)"
-              class="flex items-center justify-between gap-3 rounded-xl bg-(--app-color-surface) px-3 py-2"
+              class="flex items-center gap-3 px-3 py-3"
             >
               <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-medium text-(--app-color-text)">
+                <p class="truncate text-base font-semibold text-(--app-color-text) tabular-nums">
                   {{ reimbursementLabel(item) }}
                 </p>
-                <p class="text-xs text-(--app-color-text-subtle)">
+                <p class="truncate text-xs text-(--app-color-text-subtle)">
                   {{ detailsLabel(item) }}
                 </p>
               </div>
@@ -388,11 +397,14 @@ function itemDateLabel(date: string | null): string {
         </p>
       </div>
 
-      <div class="space-y-2">
+      <div
+        v-if="selectedReimbursement.reimbursement.items.length > 0"
+        class="divide-y divide-(--app-color-border) overflow-hidden rounded-2xl bg-(--app-color-surface-muted)"
+      >
         <div
           v-for="item in selectedReimbursement.reimbursement.items"
           :key="item.transactionId"
-          class="rounded-xl bg-(--app-color-surface-muted) px-3 py-2"
+          class="px-3 py-3"
         >
           <div class="flex items-start justify-between gap-3">
             <p class="min-w-0 text-sm font-medium text-(--app-color-text)">
@@ -407,13 +419,14 @@ function itemDateLabel(date: string | null): string {
           </p>
         </div>
 
-        <p
-          v-if="selectedReimbursement.reimbursement.items.length === 0"
-          class="text-sm text-(--app-color-text-subtle)"
-        >
-          No hay movimientos individuales disponibles para este ajuste.
-        </p>
       </div>
+
+      <p
+        v-else
+        class="text-sm text-(--app-color-text-subtle)"
+      >
+        No hay movimientos individuales disponibles para este ajuste.
+      </p>
     </div>
   </AppModal>
 
