@@ -18,14 +18,15 @@ class BuildPendingReimbursementItems
             ->selectRaw('transaction_id, round(sum(amount), 2) as open_amount')
             ->where('account_id', $accountId)
             ->where('user_id', $fromUserId)
-            ->where('related_user_id', $toUserId)
             ->whereNotNull('transaction_id')
             ->whereIn('type', [
+                AccountMemberLedgerEntryType::ExpensePaid,
                 AccountMemberLedgerEntryType::ExpenseShare,
                 AccountMemberLedgerEntryType::SettlementTransfer,
             ])
             ->groupBy('transaction_id')
             ->havingRaw('open_amount < -0.001')
+            ->orderByDesc('transaction_id')
             ->with('transaction')
             ->get()
             ->map(fn (AccountMemberLedgerEntry $entry): array => $this->item($entry))

@@ -1,14 +1,18 @@
 <?php
 
 use App\Dto\TransactionFormDto;
+use App\Enums\AccountMemberLedgerEntryType;
 use App\Enums\TransactionPaymentSource;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Account;
+use App\Models\AccountMemberLedgerEntry;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Accounts\BuildAccountMemberSummary;
 use App\Services\Accounts\RegisterAccountMemberTransfer;
 use App\Services\Transaction\TransactionCreator;
+use Carbon\CarbonImmutable;
 
 it('summarizes out of pocket shared expenses as reimbursements between members', function () {
     $owner = User::factory()->create(['name' => 'Owner']);
@@ -108,4 +112,124 @@ it('settles reimbursements and updates custody with an internal member transfer'
             ['user_id' => $partner->id, 'user_name' => 'Partner', 'amount' => 500.0],
         ])
         ->and($summary['pending_reimbursements'])->toBe([]);
+});
+
+it('uses debtor open transaction balances for reimbursement detail items', function () {
+    $javier = User::factory()->create(['name' => 'Javier']);
+    $divanny = User::factory()->create(['name' => 'Divanny']);
+    $account = Account::factory()->create(['user_id' => $javier->id]);
+    $account->users()->sync([
+        $javier->id => ['percentage' => 50],
+        $divanny->id => ['percentage' => 50],
+    ]);
+
+    $legacyTransaction = Transaction::factory()
+        ->outcome()
+        ->completed()
+        ->create([
+            'account_id' => $account->id,
+            'user_id' => $javier->id,
+            'concept' => 'Legacy medicine',
+            'amount' => 777.0,
+            'scheduled_at' => CarbonImmutable::parse('2026-05-27'),
+        ]);
+    $juneDoctor = Transaction::factory()
+        ->outcome()
+        ->completed()
+        ->create([
+            'account_id' => $account->id,
+            'user_id' => $divanny->id,
+            'concept' => 'Dr. Abraham 2-junio',
+            'amount' => 1100.0,
+            'scheduled_at' => CarbonImmutable::parse('2026-07-15'),
+        ]);
+    $julyDoctor = Transaction::factory()
+        ->outcome()
+        ->completed()
+        ->create([
+            'account_id' => $account->id,
+            'user_id' => $divanny->id,
+            'concept' => 'Dr. Abraham 2-jul',
+            'amount' => 1500.0,
+            'scheduled_at' => CarbonImmutable::parse('2026-07-15'),
+        ]);
+
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $javier->id,
+        'transaction_id' => $legacyTransaction->id,
+        'related_user_id' => $divanny->id,
+        'type' => AccountMemberLedgerEntryType::SettlementTransfer,
+        'amount' => -777.0,
+        'description' => 'Legacy medicine',
+        'occurred_at' => $legacyTransaction->scheduled_at,
+    ]);
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $divanny->id,
+        'transaction_id' => $legacyTransaction->id,
+        'related_user_id' => $javier->id,
+        'type' => AccountMemberLedgerEntryType::SettlementTransfer,
+        'amount' => 777.0,
+        'description' => 'Legacy medicine',
+        'occurred_at' => $legacyTransaction->scheduled_at,
+    ]);
+
+    foreach ([[$juneDoctor, 1100.0], [$julyDoctor, 1500.0]] as [$transaction, $amount]) {
+        AccountMemberLedgerEntry::query()->create([
+            'account_id' => $account->id,
+            'user_id' => $javier->id,
+            'transaction_id' => $transaction->id,
+            'related_user_id' => $divanny->id,
+            'type' => AccountMemberLedgerEntryType::ExpenseShare,
+            'amount' => $amount * -1,
+            'description' => $transaction->concept,
+            'occurred_at' => $transaction->scheduled_at,
+        ]);
+        AccountMemberLedgerEntry::query()->create([
+            'account_id' => $account->id,
+            'user_id' => $divanny->id,
+            'transaction_id' => $transaction->id,
+            'type' => AccountMemberLedgerEntryType::ExpensePaid,
+            'amount' => $amount,
+            'description' => $transaction->concept,
+            'occurred_at' => $transaction->scheduled_at,
+        ]);
+    }
+
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $javier->id,
+        'type' => AccountMemberLedgerEntryType::LegacySettlement,
+        'amount' => 777.0,
+        'description' => 'Legacy offset',
+        'occurred_at' => CarbonImmutable::parse('2026-07-16'),
+    ]);
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $divanny->id,
+        'type' => AccountMemberLedgerEntryType::LegacySettlement,
+        'amount' => -777.0,
+        'description' => 'Legacy offset',
+        'occurred_at' => CarbonImmutable::parse('2026-07-16'),
+    ]);
+
+    $summary = app(BuildAccountMemberSummary::class)->execute($account);
+
+    expect($summary['pending_reimbursements'])->toHaveCount(1)
+        ->and($summary['pending_reimbursements'][0]['amount'])->toBe(2600.0)
+        ->and($summary['pending_reimbursements'][0]['items'])->toBe([
+            [
+                'transaction_id' => (string) $julyDoctor->id,
+                'concept' => 'Dr. Abraham 2-jul',
+                'amount' => 1500.0,
+                'occurred_at' => '2026-07-15',
+            ],
+            [
+                'transaction_id' => (string) $juneDoctor->id,
+                'concept' => 'Dr. Abraham 2-junio',
+                'amount' => 1100.0,
+                'occurred_at' => '2026-07-15',
+            ],
+        ]);
 });
