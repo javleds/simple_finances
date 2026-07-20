@@ -572,7 +572,7 @@ it('lists shared account reimbursements and settles them through the api', funct
     ]);
 
     $this->actingAs($sharedUser);
-    app(\App\Services\Transaction\TransactionCreator::class)->execute(\App\Dto\TransactionFormDto::fromFormArray([
+    $transaction = app(\App\Services\Transaction\TransactionCreator::class)->execute(\App\Dto\TransactionFormDto::fromFormArray([
         'type' => \App\Enums\TransactionType::Outcome,
         'status' => \App\Enums\TransactionStatus::Completed,
         'concept' => 'Shared dinner',
@@ -594,7 +594,10 @@ it('lists shared account reimbursements and settles them through the api', funct
         ->assertOk()
         ->assertJsonPath('data.0.pending_reimbursements.0.from_user_id', $owner->id)
         ->assertJsonPath('data.0.pending_reimbursements.0.to_user_id', $sharedUser->id)
-        ->assertJsonPath('data.0.pending_reimbursements.0.amount', 500.0);
+        ->assertJsonPath('data.0.pending_reimbursements.0.amount', 500.0)
+        ->assertJsonPath('data.0.pending_reimbursements.0.items.0.transaction_id', (string) $transaction->id)
+        ->assertJsonPath('data.0.pending_reimbursements.0.items.0.concept', 'Shared dinner')
+        ->assertJsonPath('data.0.pending_reimbursements.0.items.0.amount', 500.0);
 
     $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/member-transfers", [
@@ -1188,6 +1191,47 @@ it('lists split transactions as single movements with allocations', function () 
         ->and($transactions->first()['status'])->toBe('completed')
         ->and($transactions->first()['concept'])->toBe('Split order')
         ->and($transactions->first()['allocations'])->toHaveCount(3);
+});
+
+it('marks account transactions that the current user still needs to reimburse', function () {
+    $owner = User::factory()->create();
+    $sharedUser = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $sharedUser->id => ['percentage' => 50],
+    ]);
+
+    $this->actingAs($sharedUser);
+    app(\App\Services\Transaction\TransactionCreator::class)->execute(\App\Dto\TransactionFormDto::fromFormArray([
+        'type' => \App\Enums\TransactionType::Outcome,
+        'status' => \App\Enums\TransactionStatus::Completed,
+        'concept' => 'Shared supplies',
+        'amount' => 800,
+        'account_id' => $account->id,
+        'paid_by_user_id' => $sharedUser->id,
+        'payment_source' => \App\Enums\TransactionPaymentSource::MemberOutOfPocket,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 50],
+            ['user_id' => $sharedUser->id, 'percentage' => 50],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    $this->actingAs($owner)
+        ->withHeaders(apiHeaders($owner))
+        ->getJson("/api/accounts/{$account->id}/transactions")
+        ->assertOk()
+        ->assertJsonPath('data.0.concept', 'Shared supplies')
+        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', 400.0);
+
+    $this->actingAs($sharedUser)
+        ->withHeaders(apiHeaders($sharedUser))
+        ->getJson("/api/accounts/{$account->id}/transactions")
+        ->assertOk()
+        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', 0.0);
 });
 
 it('updates split allocations when editing a shared transaction through the api', function () {

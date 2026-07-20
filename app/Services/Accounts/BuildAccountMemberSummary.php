@@ -10,6 +10,8 @@ use Illuminate\Support\Collection;
 
 class BuildAccountMemberSummary
 {
+    public function __construct(private readonly BuildPendingReimbursementItems $buildPendingReimbursementItems) {}
+
     public function execute(Account $account): array
     {
         $users = $this->accountUsers($account);
@@ -33,7 +35,7 @@ class BuildAccountMemberSummary
                     'amount' => $item['settlement_amount'],
                 ])
                 ->all(),
-            'pending_reimbursements' => $this->pendingReimbursements($summary),
+            'pending_reimbursements' => $this->pendingReimbursements($account, $summary),
         ];
     }
 
@@ -73,7 +75,7 @@ class BuildAccountMemberSummary
             ->sum('amount');
     }
 
-    private function pendingReimbursements(Collection $summary): array
+    private function pendingReimbursements(Account $account, Collection $summary): array
     {
         $debtors = $summary
             ->filter(fn (array $item): bool => $item['settlement_amount'] < 0)
@@ -103,6 +105,12 @@ class BuildAccountMemberSummary
                     'to_user_id' => $creditor['user_id'],
                     'to_user_name' => $creditor['user_name'],
                     'amount' => $amount,
+                    'items' => $this->buildPendingReimbursementItems->execute(
+                        accountId: $account->id,
+                        fromUserId: (int) $debtor['user_id'],
+                        toUserId: (int) $creditor['user_id'],
+                        totalAmount: $amount,
+                    ),
                 ];
 
                 $debtor['open_amount'] = round($debtor['open_amount'] - $amount, 2);

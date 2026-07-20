@@ -20,7 +20,7 @@ it('summarizes out of pocket shared expenses as reimbursements between members',
     ]);
     $this->actingAs($partner);
 
-    app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+    $transaction = app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
         'type' => TransactionType::Outcome,
         'status' => TransactionStatus::Completed,
         'concept' => 'Travel dinner',
@@ -50,6 +50,14 @@ it('summarizes out of pocket shared expenses as reimbursements between members',
                 'to_user_id' => $partner->id,
                 'to_user_name' => 'Partner',
                 'amount' => 500.0,
+                'items' => [
+                    [
+                        'transaction_id' => (string) $transaction->id,
+                        'concept' => 'Travel dinner',
+                        'amount' => 500.0,
+                        'occurred_at' => $transaction->scheduled_at->toDateString(),
+                    ],
+                ],
             ],
         ]);
 });

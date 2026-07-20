@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Dto\TransactionFormDto;
+use App\Dto\ApiIndexCriteriaDto;
 use App\Http\Requests\Api\AccountTransactionRequest;
 use App\Models\Account;
 use App\Models\Transaction;
 use App\Services\Api\AuthorizeAccountAccess;
+use App\Services\Api\ModelIndexCriteria;
 use App\Services\Transaction\BuildTransactionAccountMeta;
+use App\Services\Transaction\HydrateCurrentUserPendingReimbursements;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
 use App\Services\Transaction\TransactionUpdater;
@@ -22,7 +25,12 @@ class AccountTransactionController extends ApiController
         private readonly BuildTransactionAccountMeta $buildTransactionAccountMeta,
     ) {}
 
-    public function index(Account $account, Request $request): JsonResponse
+    public function index(
+        Account $account,
+        Request $request,
+        HydrateCurrentUserPendingReimbursements $hydrateCurrentUserPendingReimbursements,
+        ModelIndexCriteria $modelIndexCriteria,
+    ): JsonResponse
     {
         $this->ensureAccountMember($account);
 
@@ -34,12 +42,29 @@ class AccountTransactionController extends ApiController
             ->orderByDesc('id')
             ->getQuery();
 
-        return $this->respondPaginated(
-            $query,
-            $request,
-            searchColumns: ['concept'],
-            filterColumns: ['type', 'status', 'financial_goal_id', 'user_id', 'parent_transaction_id'],
-        );
+        $perPage = min(100, max(1, (int) $request->integer('per_page', 20)));
+        $paginator = $modelIndexCriteria
+            ->apply($query, new ApiIndexCriteriaDto(
+                request: $request,
+                filterColumns: ['type', 'status', 'financial_goal_id', 'user_id', 'parent_transaction_id'],
+                searchColumns: ['concept'],
+            ))
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $hydrateCurrentUserPendingReimbursements->execute($paginator->items(), $request->user()->id);
+
+        return $this->respond([
+            'data' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'from' => $paginator->firstItem(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'to' => $paginator->lastItem(),
+                'total' => $paginator->total(),
+            ],
+        ]);
     }
 
     public function store(

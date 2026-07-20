@@ -12,6 +12,7 @@ use App\Services\Api\AuthorizeAccountAccess;
 use App\Services\Transaction\BuildTransactionAccountMeta;
 use App\Services\Transaction\BuildTransactionFacilityQuery;
 use App\Services\Transaction\BuildTransactionSummary;
+use App\Services\Transaction\HydrateCurrentUserPendingReimbursements;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
 use App\Services\Transaction\TransactionUpdater;
@@ -25,6 +26,7 @@ class TransactionController extends ApiController
         TransactionIndexRequest $request,
         BuildTransactionFacilityQuery $buildTransactionFacilityQuery,
         BuildTransactionSummary $buildTransactionSummary,
+        HydrateCurrentUserPendingReimbursements $hydrateCurrentUserPendingReimbursements,
     ): JsonResponse
     {
         $query = $buildTransactionFacilityQuery->execute(
@@ -34,6 +36,8 @@ class TransactionController extends ApiController
         $summary = $buildTransactionSummary->execute($query);
         $perPage = min(100, max(1, (int) $request->integer('per_page', 20)));
         $paginator = $query->paginate($perPage)->withQueryString();
+
+        $hydrateCurrentUserPendingReimbursements->execute($paginator->items(), $request->user()->id);
 
         return $this->respond([
             'data' => $paginator->items(),
