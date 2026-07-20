@@ -63,11 +63,11 @@ function formatCurrency(value: number): string {
 
 function settlementLabel(value: number): string {
   if (value > 0) {
-    return `Recibe ${formatCurrency(value)}`;
+    return `Por recibir ${formatCurrency(value)}`;
   }
 
   if (value < 0) {
-    return `Debe ${formatCurrency(Math.abs(value))}`;
+    return `Por pagar ${formatCurrency(Math.abs(value))}`;
   }
 
   return 'Sin deuda';

@@ -168,11 +168,11 @@ function reimbursementLabel(reimbursement: AccountPendingReimbursement): string 
   const role = reimbursementRole(reimbursement);
 
   if (role === 'debtor') {
-    return `Debes ${formatCurrency(reimbursement.amount)}`;
+    return `Por pagar ${formatCurrency(reimbursement.amount)}`;
   }
 
   if (role === 'creditor') {
-    return `Te deben ${formatCurrency(reimbursement.amount)}`;
+    return `Por recibir ${formatCurrency(reimbursement.amount)}`;
   }
 
   return `${formatCurrency(reimbursement.amount)} pendiente`;
@@ -197,7 +197,7 @@ function canSettle(reimbursement: AccountPendingReimbursement): boolean {
 }
 
 function detailsLabel(reimbursement: AccountPendingReimbursement): string {
-  return `${reimbursement.fromUserName} debe a ${reimbursement.toUserName}`;
+  return `${reimbursement.fromUserName} paga a ${reimbursement.toUserName}`;
 }
 
 function openDetails(account: Account, reimbursement: AccountPendingReimbursement): void {

@@ -146,14 +146,14 @@ function handleDelete(): void {
             v-if="hasPendingReimbursement()"
             class="inline-flex rounded-full bg-[color-mix(in_srgb,var(--app-color-warning)_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold whitespace-nowrap text-(--app-color-warning)"
           >
-            Debes {{ formattedAmount(props.pendingReimbursementAmount ?? 0) }}
+            Por pagar {{ formattedAmount(props.pendingReimbursementAmount ?? 0) }}
           </p>
 
           <p
             v-if="hasReceivableReimbursement()"
             class="inline-flex rounded-full bg-[color-mix(in_srgb,#10b981_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold whitespace-nowrap text-emerald-700 dark:text-emerald-300"
           >
-            Te deben {{ formattedAmount(props.receivableReimbursementAmount ?? 0) }}
+            Por recibir {{ formattedAmount(props.receivableReimbursementAmount ?? 0) }}
           </p>
         </div>
       </div>
