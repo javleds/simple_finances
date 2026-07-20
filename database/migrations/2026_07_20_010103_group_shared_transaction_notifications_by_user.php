@@ -109,15 +109,8 @@ return new class extends Migration
 
     private function dropIndexIfExists(string $table, string $index): void
     {
-        $driver = DB::connection()->getDriverName();
-
-        if ($driver === 'sqlite') {
-            $indexes = collect(DB::select("PRAGMA index_list('{$table}')"))
-                ->pluck('name');
-
-            if (! $indexes->contains($index)) {
-                return;
-            }
+        if (! $this->indexExists($table, $index)) {
+            return;
         }
 
         Schema::table($table, function (Blueprint $table) use ($index) {
@@ -145,7 +138,7 @@ return new class extends Migration
                 [$table, $index],
             );
 
-            return (int) $result->aggregate > 0;
+            return $result !== null && (int) $result->aggregate > 0;
         }
 
         return Schema::hasIndex($table, $index);
