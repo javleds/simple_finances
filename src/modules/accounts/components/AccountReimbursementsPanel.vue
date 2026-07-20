@@ -67,13 +67,14 @@ const accountsWithCurrentUserDebts = computed(() =>
     .filter((account) => account.pendingReimbursements.length > 0),
 );
 
-const totalAmount = computed(() =>
+const totalReimbursements = computed(() =>
   accountsWithReimbursements.value.reduce(
-    (sum, account) =>
-      sum + account.pendingReimbursements.reduce((accountSum, item) => accountSum + item.amount, 0),
+    (sum, account) => sum + account.pendingReimbursements.length,
     0,
   ),
 );
+
+const showAllSettlementAction = computed(() => accountsWithCurrentUserDebts.value.length > 1);
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-MX', {
@@ -99,6 +100,14 @@ function accountDebtTotal(account: Account): number {
     (sum, item) => sum + item.amount,
     0,
   );
+}
+
+function shouldShowAccountSettlementAction(account: Account): boolean {
+  return currentUserDebts(account.pendingReimbursements).length > 1;
+}
+
+function pluralize(value: number, singular: string, plural: string): string {
+  return value === 1 ? singular : plural;
 }
 
 function bulkActionTotal(action: PendingBulkAction | null): number {
@@ -278,14 +287,16 @@ function itemDateLabel(date: string | null): string {
         <div class="min-w-0 flex-1 space-y-1">
           <AppTitle as="h2" size="sm">{{ props.title }}</AppTitle>
           <AppText>
-            {{ formatCurrency(totalAmount) }} entre {{ accountsWithReimbursements.length }}
-            cuenta(s).
+            {{ totalReimbursements }}
+            {{ pluralize(totalReimbursements, 'reembolso', 'reembolsos') }} en
+            {{ accountsWithReimbursements.length }}
+            {{ pluralize(accountsWithReimbursements.length, 'cuenta', 'cuentas') }}.
           </AppText>
         </div>
 
         <div class="flex shrink-0 items-center gap-1.5">
           <AppButton
-            v-if="accountsWithCurrentUserDebts.length > 0"
+            v-if="showAllSettlementAction"
             variant="secondary"
             :disabled="props.isTransferring"
             :loading="props.isTransferring"
@@ -317,16 +328,16 @@ function itemDateLabel(date: string | null): string {
                 <p class="truncate text-sm font-semibold text-(--app-color-text)">
                   {{ account.name }}
                 </p>
-                <p class="text-xs text-(--app-color-text-subtle)">
-                  {{ account.pendingReimbursements.length }} reembolso(s)
-                  <template v-if="accountDebtTotal(account) > 0">
-                    · Debes {{ formatCurrency(accountDebtTotal(account)) }}
-                  </template>
+                <p
+                  v-if="account.pendingReimbursements.length > 1"
+                  class="text-xs text-(--app-color-text-subtle)"
+                >
+                  {{ account.pendingReimbursements.length }} reembolsos
                 </p>
               </div>
 
               <AppIconButton
-                v-if="currentUserDebts(account.pendingReimbursements).length > 0"
+                v-if="shouldShowAccountSettlementAction(account)"
                 :ariaLabel="`Pagar pendientes de ${account.name} por ${formatCurrency(accountDebtTotal(account))}`"
                 :disabled="props.isTransferring"
                 :loading="props.isTransferring"

@@ -26,8 +26,7 @@ const { activeFilters, clearFilters, searchTerm, selectedTypes, toggleType } =
 const account = computed(() => props.account);
 const reimbursementAccounts = computed(() => (account.value ? [account.value] : []));
 const accountBalance = ref(account.value?.balance ?? 0);
-const { accountId, accountUsers, currentUserId, isSharedAccount } =
-  useAccountTransactionsContext(account);
+const { accountId, accountUsers, currentUserId } = useAccountTransactionsContext(account);
 const {
   goals: financialGoals,
   isLoading: isLoadingFinancialGoals,
@@ -160,9 +159,6 @@ function applyMutationMeta(meta: TransactionMutationMeta): void {
   <section class="space-y-4">
     <AccountTransactionsHeader
       :balance="accountBalance"
-      :current-user-id="currentUserId"
-      :is-shared-account="isSharedAccount"
-      :pending-reimbursements="account?.pendingReimbursements ?? []"
     />
 
     <section v-if="transferError" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
