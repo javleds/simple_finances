@@ -25,14 +25,19 @@ class HydrateCurrentUserPendingReimbursements
             return;
         }
 
-        $pendingByTransactionId = $this->pendingAmounts($transactionIds, $userId);
+        $openAmountsByTransactionId = $this->openAmounts($transactionIds, $userId);
 
-        $transactions->each(function (Transaction $transaction) use ($pendingByTransactionId): void {
-            $amount = $pendingByTransactionId->get($transaction->id, 0.0);
+        $transactions->each(function (Transaction $transaction) use ($openAmountsByTransactionId): void {
+            $openAmount = round((float) $openAmountsByTransactionId->get($transaction->id, 0.0), 2);
 
             $transaction->setAttribute(
                 'current_user_pending_reimbursement_amount',
-                round((float) $amount, 2),
+                $openAmount < 0 ? abs($openAmount) : 0.0,
+            );
+
+            $transaction->setAttribute(
+                'current_user_receivable_reimbursement_amount',
+                $openAmount > 0 ? $openAmount : 0.0,
             );
         });
     }
@@ -41,7 +46,7 @@ class HydrateCurrentUserPendingReimbursements
      * @param Collection<int, int> $transactionIds
      * @return Collection<int, float>
      */
-    private function pendingAmounts(Collection $transactionIds, int $userId): Collection
+    private function openAmounts(Collection $transactionIds, int $userId): Collection
     {
         return AccountMemberLedgerEntry::query()
             ->selectRaw('transaction_id, round(sum(amount), 2) as open_amount')
@@ -53,10 +58,10 @@ class HydrateCurrentUserPendingReimbursements
                 AccountMemberLedgerEntryType::SettlementTransfer,
             ])
             ->groupBy('transaction_id')
-            ->havingRaw('open_amount < -0.001')
+            ->havingRaw('abs(open_amount) > 0.001')
             ->get()
             ->mapWithKeys(fn (AccountMemberLedgerEntry $entry): array => [
-                (int) $entry->transaction_id => round(abs((float) $entry->open_amount), 2),
+                (int) $entry->transaction_id => round((float) $entry->open_amount, 2),
             ]);
     }
 }

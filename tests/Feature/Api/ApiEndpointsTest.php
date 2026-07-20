@@ -1225,13 +1225,15 @@ it('marks account transactions that the current user still needs to reimburse', 
         ->getJson("/api/accounts/{$account->id}/transactions")
         ->assertOk()
         ->assertJsonPath('data.0.concept', 'Shared supplies')
-        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', 400.0);
+        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', 400.0)
+        ->assertJsonPath('data.0.current_user_receivable_reimbursement_amount', 0.0);
 
     $this->actingAs($sharedUser)
         ->withHeaders(apiHeaders($sharedUser))
         ->getJson("/api/accounts/{$account->id}/transactions")
         ->assertOk()
-        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', 0.0);
+        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', 0.0)
+        ->assertJsonPath('data.0.current_user_receivable_reimbursement_amount', 400.0);
 });
 
 it('updates split allocations when editing a shared transaction through the api', function () {
