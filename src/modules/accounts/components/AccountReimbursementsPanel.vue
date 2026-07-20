@@ -9,11 +9,13 @@ const props = withDefaults(
   defineProps<{
     accounts: Account[];
     activeTransferKey?: string | null;
+    currentUserId?: string | null;
     isTransferring?: boolean;
     title?: string;
   }>(),
   {
     activeTransferKey: null,
+    currentUserId: null,
     isTransferring: false,
     title: 'Reembolsos pendientes',
   },
@@ -49,6 +51,60 @@ function formatCurrency(value: number): string {
 function transferKey(accountId: string, reimbursement: AccountPendingReimbursement): string {
   return `${accountId}:${reimbursement.fromUserId}:${reimbursement.toUserId}:${reimbursement.amount}`;
 }
+
+function reimbursementRole(
+  reimbursement: AccountPendingReimbursement,
+): 'debtor' | 'creditor' | 'other' {
+  if (props.currentUserId === reimbursement.fromUserId) {
+    return 'debtor';
+  }
+
+  if (props.currentUserId === reimbursement.toUserId) {
+    return 'creditor';
+  }
+
+  return 'other';
+}
+
+function reimbursementLabel(reimbursement: AccountPendingReimbursement): string {
+  const role = reimbursementRole(reimbursement);
+
+  if (role === 'debtor') {
+    return `Debes a ${reimbursement.toUserName}`;
+  }
+
+  if (role === 'creditor') {
+    return `${reimbursement.fromUserName} te debe`;
+  }
+
+  return `${reimbursement.fromUserName} debe a ${reimbursement.toUserName}`;
+}
+
+function reimbursementActionLabel(reimbursement: AccountPendingReimbursement): string {
+  const role = reimbursementRole(reimbursement);
+
+  if (role === 'debtor') {
+    return 'Pagar';
+  }
+
+  if (role === 'creditor') {
+    return 'Marcar recibido';
+  }
+
+  return 'Liquidar';
+}
+
+function bulkActionLabel(reimbursements: AccountPendingReimbursement[]): string {
+  if (reimbursements.every((item) => reimbursementRole(item) === 'debtor')) {
+    return 'Pagar todos';
+  }
+
+  if (reimbursements.every((item) => reimbursementRole(item) === 'creditor')) {
+    return 'Marcar recibidos';
+  }
+
+  return 'Liquidar todos';
+}
 </script>
 
 <template>
@@ -57,7 +113,9 @@ function transferKey(accountId: string, reimbursement: AccountPendingReimburseme
       <div class="flex items-start justify-between gap-3">
         <div class="space-y-1">
           <AppTitle as="h2" size="sm">{{ props.title }}</AppTitle>
-          <AppText>{{ formatCurrency(totalAmount) }} por liquidar entre cuentas compartidas.</AppText>
+          <AppText
+            >{{ formatCurrency(totalAmount) }} por liquidar entre cuentas compartidas.</AppText
+          >
         </div>
 
         <div class="flex shrink-0 items-center gap-2">
@@ -68,7 +126,11 @@ function transferKey(accountId: string, reimbursement: AccountPendingReimburseme
             :loading="props.isTransferring"
             @click="emit('settleAll', accountsWithReimbursements)"
           >
-            Pagar todo
+            {{
+              bulkActionLabel(
+                accountsWithReimbursements.flatMap((account) => account.pendingReimbursements),
+              )
+            }}
           </AppButton>
 
           <div
@@ -101,7 +163,7 @@ function transferKey(accountId: string, reimbursement: AccountPendingReimburseme
               :loading="props.isTransferring"
               @click="emit('settleAccount', account.id, account.pendingReimbursements)"
             >
-              Pagar todos
+              {{ bulkActionLabel(account.pendingReimbursements) }}
             </AppButton>
           </div>
 
@@ -113,7 +175,7 @@ function transferKey(accountId: string, reimbursement: AccountPendingReimburseme
             >
               <div class="min-w-0">
                 <p class="truncate text-sm font-medium text-(--app-color-text)">
-                  {{ item.fromUserName }} debe a {{ item.toUserName }}
+                  {{ reimbursementLabel(item) }}
                 </p>
                 <p class="text-xs text-(--app-color-text-subtle)">
                   {{ formatCurrency(item.amount) }}
@@ -126,7 +188,7 @@ function transferKey(accountId: string, reimbursement: AccountPendingReimburseme
                 :loading="props.activeTransferKey === transferKey(account.id, item)"
                 @click="emit('settle', account.id, item)"
               >
-                Pagar
+                {{ reimbursementActionLabel(item) }}
               </AppButton>
             </div>
           </div>

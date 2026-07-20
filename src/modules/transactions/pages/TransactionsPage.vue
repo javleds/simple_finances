@@ -10,19 +10,14 @@ import { useTransactionFacility } from '@/modules/transactions/composables/useTr
 import { useTransactionFacilityFilters } from '@/modules/transactions/composables/useTransactionFacilityFilters';
 import { useAccountMemberTransfers } from '@/modules/accounts/composables/useAccountMemberTransfers';
 import { useSharedAccountReimbursements } from '@/modules/accounts/composables/useSharedAccountReimbursements';
+import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { AppText } from '@/modules/shared/components';
 
 const route = useRoute();
 const isFiltersModalOpen = ref(false);
-const {
-  activeFilters,
-  endDate,
-  resetPeriod,
-  searchTerm,
-  startDate,
-  validationError,
-} = useTransactionFacilityFilters();
+const { activeFilters, endDate, resetPeriod, searchTerm, startDate, validationError } =
+  useTransactionFacilityFilters();
 const {
   transactions,
   summary,
@@ -36,6 +31,7 @@ const {
   loadMoreTransactions,
 } = useTransactionFacility();
 const { accountsWithReimbursements } = useSharedAccountReimbursements();
+const currentUserId = computed(() => getStoredAuthSession()?.user.id ?? null);
 const {
   activeTransferKey,
   isTransferring,
@@ -46,7 +42,8 @@ const {
 } = useAccountMemberTransfers();
 
 const transactionsPerPage = computed(() => {
-  const rawValue = typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
+  const rawValue =
+    typeof route.query.perPage === 'string' ? Number(route.query.perPage) : Number.NaN;
 
   if (!Number.isInteger(rawValue) || rawValue <= 0) {
     return 20;
@@ -124,8 +121,9 @@ function infiniteStatusLabel(): string {
     <AccountReimbursementsPanel
       :accounts="accountsWithReimbursements"
       :active-transfer-key="activeTransferKey"
+      :current-user-id="currentUserId"
       :is-transferring="isTransferring"
-      title="Pagar pendientes por cuenta"
+      title="Reembolsos pendientes"
       @settle="settleReimbursement"
       @settle-all="settleAllAccountReimbursements"
       @settle-account="settleAccountReimbursements"

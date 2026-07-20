@@ -10,6 +10,7 @@ import { useDashboard } from '@/modules/admin/composables/useDashboard';
 import { useDashboardPeriodSummary } from '@/modules/admin/composables/useDashboardPeriodSummary';
 import { useAccountMemberTransfers } from '@/modules/accounts/composables/useAccountMemberTransfers';
 import { useSharedAccountReimbursements } from '@/modules/accounts/composables/useSharedAccountReimbursements';
+import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import { AppButton, AppText } from '@/modules/shared/components';
 
 type SavingsCadence = 'monthly' | 'biweekly';
@@ -17,13 +18,7 @@ type AccountGraphMode = 'physical' | 'virtual';
 
 const savingsCadence = ref<SavingsCadence>('monthly');
 const accountGraphMode = ref<AccountGraphMode>('physical');
-const {
-  dashboard,
-  hasDashboardData,
-  isLoading,
-  loadError,
-  loadDashboard,
-} = useDashboard();
+const { dashboard, hasDashboardData, isLoading, loadError, loadDashboard } = useDashboard();
 
 const {
   startDate: periodStartDate,
@@ -36,6 +31,7 @@ const {
   loadPeriodSummary,
 } = useDashboardPeriodSummary();
 const { accountsWithReimbursements } = useSharedAccountReimbursements();
+const currentUserId = computed(() => getStoredAuthSession()?.user.id ?? null);
 const {
   activeTransferKey,
   isTransferring,
@@ -57,7 +53,6 @@ const filteredGraphAccounts = computed(() =>
     (account) => account.isVirtual === (accountGraphMode.value === 'virtual'),
   ),
 );
-
 </script>
 
 <template>
@@ -104,8 +99,9 @@ const filteredGraphAccounts = computed(() =>
     <AccountReimbursementsPanel
       :accounts="accountsWithReimbursements"
       :active-transfer-key="activeTransferKey"
+      :current-user-id="currentUserId"
       :is-transferring="isTransferring"
-      title="Pagar pendientes"
+      title="Reembolsos pendientes"
       @settle="settleReimbursement"
       @settle-all="settleAllAccountReimbursements"
       @settle-account="settleAccountReimbursements"
@@ -128,6 +124,5 @@ const filteredGraphAccounts = computed(() =>
       @reset-period="resetToCurrentMonth"
       @retry="loadPeriodSummary"
     />
-
   </div>
 </template>

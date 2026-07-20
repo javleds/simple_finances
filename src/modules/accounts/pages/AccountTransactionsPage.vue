@@ -20,13 +20,8 @@ import type { TransactionMutationMeta } from '@/modules/transactions/types';
 
 const props = defineProps<{ account?: Account }>();
 
-const {
-  activeFilters,
-  clearFilters,
-  searchTerm,
-  selectedTypes,
-  toggleType,
-} = useAccountTransactionFilters();
+const { activeFilters, clearFilters, searchTerm, selectedTypes, toggleType } =
+  useAccountTransactionFilters();
 
 const account = computed(() => props.account);
 const reimbursementAccounts = computed(() => (account.value ? [account.value] : []));
@@ -104,34 +99,28 @@ const {
   transactions,
 });
 
-const {
-  createTransactionActions,
-  deleteTransactionActions,
-  editTransactionActions,
-} = useAccountTransactionModalActions({
-  createFormState,
-  editFormState,
-  isDeleting,
-  isSaving,
-  selectedTransaction,
-});
+const { createTransactionActions, deleteTransactionActions, editTransactionActions } =
+  useAccountTransactionModalActions({
+    createFormState,
+    editFormState,
+    isDeleting,
+    isSaving,
+    selectedTransaction,
+  });
 
-const {
-  confirmDeleteTransaction,
-  handleEditTransactionSubmit,
-  handleTransactionSubmit,
-} = useAccountTransactionActions({
-  accountId,
-  closeCreateTransactionModal,
-  closeDeleteTransactionModal,
-  closeEditTransactionModal,
-  createTransaction,
-  deleteTransaction,
-  onMutationMeta: applyMutationMeta,
-  prepareNextCreateTransaction,
-  selectedTransaction,
-  updateTransaction,
-});
+const { confirmDeleteTransaction, handleEditTransactionSubmit, handleTransactionSubmit } =
+  useAccountTransactionActions({
+    accountId,
+    closeCreateTransactionModal,
+    closeDeleteTransactionModal,
+    closeEditTransactionModal,
+    createTransaction,
+    deleteTransaction,
+    onMutationMeta: applyMutationMeta,
+    prepareNextCreateTransaction,
+    selectedTransaction,
+    updateTransaction,
+  });
 
 const {
   activeTransferKey,
@@ -182,8 +171,9 @@ function applyMutationMeta(meta: TransactionMutationMeta): void {
     <AccountReimbursementsPanel
       :accounts="reimbursementAccounts"
       :active-transfer-key="activeTransferKey"
+      :current-user-id="currentUserId"
       :is-transferring="isTransferring"
-      title="Pagar pendientes de esta cuenta"
+      title="Reembolsos pendientes"
       @settle="settleReimbursement"
       @settle-all="settleAllAccountReimbursements"
       @settle-account="settleAccountReimbursements"
