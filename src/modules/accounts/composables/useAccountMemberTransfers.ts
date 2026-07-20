@@ -40,14 +40,14 @@ export function useAccountMemberTransfers() {
   async function settleReimbursement(
     accountId: string,
     reimbursement: AccountPendingReimbursement,
-  ): Promise<void> {
+  ): Promise<AccountMemberTransferResult | null> {
     const key = transferKey(accountId, reimbursement);
 
     transferError.value = null;
     activeTransferKey.value = key;
 
     try {
-      await transferMutation.mutateAsync({
+      return await transferMutation.mutateAsync({
         accountId,
         transfer: {
           fromUserId: reimbursement.fromUserId,
@@ -58,6 +58,7 @@ export function useAccountMemberTransfers() {
       });
     } catch (error) {
       transferError.value = resolveApiErrorMessage(error, 'No fue posible registrar el reembolso.');
+      return null;
     } finally {
       activeTransferKey.value = null;
     }
@@ -66,18 +67,30 @@ export function useAccountMemberTransfers() {
   async function settleAccountReimbursements(
     accountId: string,
     reimbursements: AccountPendingReimbursement[],
-  ): Promise<void> {
+  ): Promise<AccountMemberTransferResult[]> {
+    const results: AccountMemberTransferResult[] = [];
+
     for (const reimbursement of reimbursements) {
-      await settleReimbursement(accountId, reimbursement);
+      const result = await settleReimbursement(accountId, reimbursement);
+
+      if (result) {
+        results.push(result);
+      }
     }
+
+    return results;
   }
 
   async function settleAllAccountReimbursements(
     accounts: Array<{ id: string; pendingReimbursements: AccountPendingReimbursement[] }>,
-  ): Promise<void> {
+  ): Promise<AccountMemberTransferResult[]> {
+    const results: AccountMemberTransferResult[] = [];
+
     for (const account of accounts) {
-      await settleAccountReimbursements(account.id, account.pendingReimbursements);
+      results.push(...(await settleAccountReimbursements(account.id, account.pendingReimbursements)));
     }
+
+    return results;
   }
 
   function updateAccountCache(accountId: string, result: AccountMemberTransferResult): void {

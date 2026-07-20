@@ -10,6 +10,7 @@ import { useTransactionFacility } from '@/modules/transactions/composables/useTr
 import { useTransactionFacilityFilters } from '@/modules/transactions/composables/useTransactionFacilityFilters';
 import { useAccountMemberTransfers } from '@/modules/accounts/composables/useAccountMemberTransfers';
 import { useSharedAccountReimbursements } from '@/modules/accounts/composables/useSharedAccountReimbursements';
+import type { AccountPendingReimbursement } from '@/modules/accounts/types';
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { AppText } from '@/modules/shared/components';
@@ -97,6 +98,29 @@ function handleLoadMoreRetry(): void {
   void loadMoreTransactions();
 }
 
+async function handleSettleReimbursement(
+  accountId: string,
+  reimbursement: AccountPendingReimbursement,
+): Promise<void> {
+  await settleReimbursement(accountId, reimbursement);
+  await reloadTransactions();
+}
+
+async function handleSettleAccountReimbursements(
+  accountId: string,
+  reimbursements: AccountPendingReimbursement[],
+): Promise<void> {
+  await settleAccountReimbursements(accountId, reimbursements);
+  await reloadTransactions();
+}
+
+async function handleSettleAllAccountReimbursements(
+  accounts: Array<{ id: string; pendingReimbursements: AccountPendingReimbursement[] }>,
+): Promise<void> {
+  await settleAllAccountReimbursements(accounts);
+  await reloadTransactions();
+}
+
 function infiniteStatusLabel(): string {
   if (isLoadingMore.value) {
     return 'Cargando más transacciones...';
@@ -124,9 +148,9 @@ function infiniteStatusLabel(): string {
       :current-user-id="currentUserId"
       :is-transferring="isTransferring"
       title="Reembolsos pendientes"
-      @settle="settleReimbursement"
-      @settle-all="settleAllAccountReimbursements"
-      @settle-account="settleAccountReimbursements"
+      @settle="handleSettleReimbursement"
+      @settle-all="handleSettleAllAccountReimbursements"
+      @settle-account="handleSettleAccountReimbursements"
     />
 
     <TransactionFacilityActivity

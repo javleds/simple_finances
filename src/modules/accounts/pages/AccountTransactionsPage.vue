@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-import type { Account } from '@/modules/accounts/types';
+import type {
+  Account,
+  AccountMemberTransferResult,
+  AccountPendingReimbursement,
+} from '@/modules/accounts/types';
 import AccountReimbursementsPanel from '@/modules/accounts/components/AccountReimbursementsPanel.vue';
 import AccountTransactionsActivity from '@/modules/accounts/components/AccountTransactionsActivity.vue';
 import AccountTransactionsFilters from '@/modules/accounts/components/AccountTransactionsFilters.vue';
@@ -153,6 +157,42 @@ function applyMutationMeta(meta: TransactionMutationMeta): void {
     accountBalance.value = meta.accountBalance;
   }
 }
+
+function applyTransferResults(results: AccountMemberTransferResult[]): void {
+  const latestResult = results[results.length - 1];
+
+  if (typeof latestResult?.accountBalance === 'number') {
+    accountBalance.value = latestResult.accountBalance;
+  }
+}
+
+async function handleSettleReimbursement(
+  accountId: string,
+  reimbursement: AccountPendingReimbursement,
+): Promise<void> {
+  const result = await settleReimbursement(accountId, reimbursement);
+
+  if (result) {
+    applyTransferResults([result]);
+  }
+
+  await reloadTransactions();
+}
+
+async function handleSettleAccountReimbursements(
+  accountId: string,
+  reimbursements: AccountPendingReimbursement[],
+): Promise<void> {
+  applyTransferResults(await settleAccountReimbursements(accountId, reimbursements));
+  await reloadTransactions();
+}
+
+async function handleSettleAllAccountReimbursements(
+  accounts: Array<{ id: string; pendingReimbursements: AccountPendingReimbursement[] }>,
+): Promise<void> {
+  applyTransferResults(await settleAllAccountReimbursements(accounts));
+  await reloadTransactions();
+}
 </script>
 
 <template>
@@ -171,9 +211,9 @@ function applyMutationMeta(meta: TransactionMutationMeta): void {
       :current-user-id="currentUserId"
       :is-transferring="isTransferring"
       title="Reembolsos pendientes"
-      @settle="settleReimbursement"
-      @settle-all="settleAllAccountReimbursements"
-      @settle-account="settleAccountReimbursements"
+      @settle="handleSettleReimbursement"
+      @settle-all="handleSettleAllAccountReimbursements"
+      @settle-account="handleSettleAccountReimbursements"
     />
 
     <AccountTransactionsActivity
