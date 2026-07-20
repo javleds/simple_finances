@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Dto\AccountDto;
+use App\Dto\ApiIndexCriteriaDto;
 use App\Handlers\Accounts\AccountCreator;
 use App\Handlers\Accounts\AccountEditor;
 use App\Http\Requests\Api\AccountRequest;
@@ -10,6 +11,7 @@ use App\Models\Account;
 use App\Services\Accounts\BuildAccountMemberSummary;
 use App\Services\Accounts\RecalculateAccountBalance;
 use App\Services\Accounts\VisibleAccountsForUser;
+use App\Services\Api\ModelIndexCriteria;
 use App\Services\Api\AuthorizeAccountAccess;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -22,21 +24,49 @@ class AccountController extends ApiController
         private readonly RecalculateAccountBalance $recalculateAccountBalance,
     ) {}
 
-    public function index(Request $request, VisibleAccountsForUser $visibleAccountsForUser): JsonResponse
+    public function index(
+        Request $request,
+        VisibleAccountsForUser $visibleAccountsForUser,
+        BuildAccountMemberSummary $buildAccountMemberSummary,
+        ModelIndexCriteria $modelIndexCriteria,
+    ): JsonResponse
     {
         $query = $request->query->has('deleted_at')
             ? $visibleAccountsForUser->queryIncludingDeleted($request->user()->id)
             : $visibleAccountsForUser->query($request->user()->id);
+        $perPage = min(100, max(1, (int) $request->integer('per_page', 20)));
+        $paginator = $modelIndexCriteria
+            ->apply(
+                $query
+                    ->with(['users', 'feedAccount'])
+                    ->orderBy('name'),
+                new ApiIndexCriteriaDto(
+                    request: $request,
+                    filterColumns: ['credit_card', 'virtual', 'feed_account_id', 'user_id'],
+                    nullableBooleanFilters: ['deleted_at' => 'deleted_at'],
+                    searchColumns: ['name'],
+                ),
+            )
+            ->paginate($perPage)
+            ->withQueryString();
 
-        return $this->respondPaginated(
-            $query
-            ->with(['users', 'feedAccount'])
-            ->orderBy('name'),
-            $request,
-            nullableBooleanFilters: ['deleted_at' => 'deleted_at'],
-            searchColumns: ['name'],
-            filterColumns: ['credit_card', 'virtual', 'feed_account_id', 'user_id'],
-        );
+        collect($paginator->items())->each(function (Account $account) use ($buildAccountMemberSummary): void {
+            foreach ($buildAccountMemberSummary->execute($account) as $key => $value) {
+                $account->setAttribute($key, $value);
+            }
+        });
+
+        return $this->respond([
+            'data' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'from' => $paginator->firstItem(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'to' => $paginator->lastItem(),
+                'total' => $paginator->total(),
+            ],
+        ]);
     }
 
     public function store(AccountRequest $request, AccountCreator $accountCreator): JsonResponse

@@ -562,6 +562,53 @@ it('returns member summaries for shared accounts', function () {
         ->assertJsonPath('data.pending_reimbursements', []);
 });
 
+it('lists shared account reimbursements and settles them through the api', function () {
+    $owner = User::factory()->create(['name' => 'Account Owner']);
+    $sharedUser = User::factory()->create(['name' => 'Shared User']);
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $sharedUser->id => ['percentage' => 50],
+    ]);
+
+    $this->actingAs($sharedUser);
+    app(\App\Services\Transaction\TransactionCreator::class)->execute(\App\Dto\TransactionFormDto::fromFormArray([
+        'type' => \App\Enums\TransactionType::Outcome,
+        'status' => \App\Enums\TransactionStatus::Completed,
+        'concept' => 'Shared dinner',
+        'amount' => 1000,
+        'account_id' => $account->id,
+        'paid_by_user_id' => $sharedUser->id,
+        'payment_source' => \App\Enums\TransactionPaymentSource::MemberOutOfPocket,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 50],
+            ['user_id' => $sharedUser->id, 'percentage' => 50],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    $this->withHeaders(apiHeaders($owner))
+        ->getJson('/api/accounts?per_page=100')
+        ->assertOk()
+        ->assertJsonPath('data.0.pending_reimbursements.0.from_user_id', $owner->id)
+        ->assertJsonPath('data.0.pending_reimbursements.0.to_user_id', $sharedUser->id)
+        ->assertJsonPath('data.0.pending_reimbursements.0.amount', 500.0);
+
+    $this->withHeaders(apiHeaders($owner))
+        ->postJson("/api/accounts/{$account->id}/member-transfers", [
+            'from_user_id' => $owner->id,
+            'to_user_id' => $sharedUser->id,
+            'amount' => 500,
+            'description' => 'Dinner reimbursement',
+        ])
+        ->assertCreated()
+        ->assertJsonPath('meta.pending_reimbursements', [])
+        ->assertJsonPath('meta.settlements_by_user.0.amount', 0.0)
+        ->assertJsonPath('meta.settlements_by_user.1.amount', 0.0);
+});
+
 it('returns member summaries for accounts without shared users', function () {
     $owner = User::factory()->create(['name' => 'Single Owner']);
     $account = Account::factory()->create(['user_id' => $owner->id]);
