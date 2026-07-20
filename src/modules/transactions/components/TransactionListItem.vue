@@ -167,17 +167,17 @@ function handleDelete(): void {
       />
       <div v-else class="h-6 w-7 shrink-0" aria-hidden="true" />
 
-      <div class="col-span-3 flex min-w-0 items-center justify-between gap-3">
-        <p class="min-w-0 truncate text-[11px] font-medium text-(--app-color-text-subtle)">
-          {{ secondaryLabel() }}
-        </p>
+      <p class="min-w-0 truncate text-[11px] font-medium text-(--app-color-text-subtle)">
+        {{ secondaryLabel() }}
+      </p>
 
-        <p
-          class="shrink-0 text-[11px] font-medium tracking-[0.04em] whitespace-nowrap text-(--app-color-text-subtle) uppercase"
-        >
-          {{ props.dateLabel }}
-        </p>
-      </div>
+      <p
+        class="justify-self-end text-[11px] font-medium tracking-[0.04em] whitespace-nowrap text-(--app-color-text-subtle) uppercase"
+      >
+        {{ props.dateLabel }}
+      </p>
+
+      <div class="h-1 w-7 shrink-0" aria-hidden="true" />
     </div>
   </AppCard>
 </template>
