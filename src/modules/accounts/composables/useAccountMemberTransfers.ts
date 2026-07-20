@@ -90,6 +90,7 @@ export function useAccountMemberTransfers() {
 
     queryClient.setQueryData<Account>(queryKey, {
       ...account,
+      balance: result.accountBalance ?? account.balance,
       custodyByUser: result.custodyByUser,
       settlementsByUser: result.settlementsByUser,
       pendingReimbursements: result.pendingReimbursements,

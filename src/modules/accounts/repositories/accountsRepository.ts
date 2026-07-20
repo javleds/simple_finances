@@ -5,6 +5,7 @@ import {
   createPaginatedCollectionSchema,
   type PaginatedCollection,
 } from '@/modules/shared/lib/pagination';
+import { parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import {
@@ -80,12 +81,18 @@ const accountPendingReimbursementApiSchema = z
 const accountMemberTransferResponseSchema = z
   .object({
     meta: z.object({
+      account: z
+        .object({
+          balance: z.unknown().transform(parseNullableNumber),
+        })
+        .optional(),
       custody_by_user: z.array(accountMemberAmountApiSchema).default([]),
       settlements_by_user: z.array(accountMemberAmountApiSchema).default([]),
       pending_reimbursements: z.array(accountPendingReimbursementApiSchema).default([]),
     }),
   })
   .transform<AccountMemberTransferResult>((payload) => ({
+    accountBalance: payload.meta.account?.balance ?? null,
     custodyByUser: payload.meta.custody_by_user,
     settlementsByUser: payload.meta.settlements_by_user,
     pendingReimbursements: payload.meta.pending_reimbursements,

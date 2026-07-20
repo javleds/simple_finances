@@ -33,6 +33,7 @@ export type AccountMemberTransferPayload = {
 };
 
 export type AccountMemberTransferResult = {
+  accountBalance: number | null;
   custodyByUser: AccountMemberAmount[];
   settlementsByUser: AccountMemberAmount[];
   pendingReimbursements: AccountPendingReimbursement[];
