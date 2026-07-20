@@ -127,24 +127,9 @@ function handleDelete(): void {
         >
           {{ props.concept }}
         </p>
-        <div v-if="hasPendingReimbursement() || hasReceivableReimbursement()" class="mt-1 flex flex-wrap gap-1.5">
-          <p
-            v-if="hasPendingReimbursement()"
-            class="inline-flex rounded-full bg-[color-mix(in_srgb,var(--app-color-warning)_14%,transparent)] px-2 py-0.5 text-[11px] font-semibold text-(--app-color-warning)"
-          >
-            Debes {{ formattedAmount(props.pendingReimbursementAmount ?? 0) }}
-          </p>
-
-          <p
-            v-if="hasReceivableReimbursement()"
-            class="inline-flex rounded-full bg-[color-mix(in_srgb,#10b981_14%,transparent)] px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300"
-          >
-            Te deben {{ formattedAmount(props.receivableReimbursementAmount ?? 0) }}
-          </p>
-        </div>
       </div>
 
-      <div class="flex flex-col items-end gap-1">
+      <div class="flex flex-col items-end gap-1.5">
         <p
           class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap tabular-nums sm:text-base"
           :class="amountClasses(props.type)"
@@ -152,6 +137,25 @@ function handleDelete(): void {
           <span class="mr-1">{{ signLabel(props.type) }}</span
           >{{ formattedAmount(props.amount) }}
         </p>
+
+        <div
+          v-if="hasPendingReimbursement() || hasReceivableReimbursement()"
+          class="flex max-w-34 flex-col items-end gap-1"
+        >
+          <p
+            v-if="hasPendingReimbursement()"
+            class="inline-flex rounded-full bg-[color-mix(in_srgb,var(--app-color-warning)_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold whitespace-nowrap text-(--app-color-warning)"
+          >
+            Debes {{ formattedAmount(props.pendingReimbursementAmount ?? 0) }}
+          </p>
+
+          <p
+            v-if="hasReceivableReimbursement()"
+            class="inline-flex rounded-full bg-[color-mix(in_srgb,#10b981_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold whitespace-nowrap text-emerald-700 dark:text-emerald-300"
+          >
+            Te deben {{ formattedAmount(props.receivableReimbursementAmount ?? 0) }}
+          </p>
+        </div>
       </div>
 
       <AppActionMenu
