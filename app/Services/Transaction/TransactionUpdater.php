@@ -7,6 +7,7 @@ use App\Enums\Action;
 use App\Enums\TransactionPaymentSource;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
+use App\Models\Account;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
@@ -19,6 +20,8 @@ class TransactionUpdater
         private Guard $auth,
         private SyncTransactionAllocations $syncTransactionAllocations,
         private SyncAccountMemberLedger $syncAccountMemberLedger,
+        private ResolveOutcomeUserPayments $resolveOutcomeUserPayments,
+        private SyncCoveredPayerRecoveryTransaction $syncCoveredPayerRecoveryTransaction,
         private ProcessTransactionSideEffects $processTransactionSideEffects,
     ) {}
 
@@ -29,11 +32,15 @@ class TransactionUpdater
         }
 
         $transaction = DB::transaction(function () use ($transaction, $dto) {
+            $this->syncCoveredPayerRecoveryTransaction->deleteExisting($transaction);
+            $transaction->ledgerEntries()->delete();
             $this->applyBaseData($transaction, $dto);
             $transaction->save();
             $this->syncTransactionAllocations->execute($transaction, $this->userPayments($transaction, $dto));
             $transaction->load('allocations');
             $this->syncAccountMemberLedger->execute($transaction);
+            $transaction->load('paidByUser');
+            $this->syncCoveredPayerRecoveryTransaction->execute($transaction);
 
             return $transaction;
         });
@@ -65,11 +72,15 @@ class TransactionUpdater
             return [];
         }
 
-        if ($dto->userPayments !== []) {
-            return $dto->userPayments;
-        }
+        $account = Account::withoutGlobalScopes()->findOrFail($transaction->account_id);
 
-        return $this->syncTransactionAllocations->defaultOutcomeAllocation($transaction);
+        return $this->resolveOutcomeUserPayments->execute(
+            account: $account,
+            amount: $transaction->amount,
+            paidByUserId: $transaction->paid_by_user_id ?? $transaction->user_id,
+            paymentSource: $transaction->payment_source ?? TransactionPaymentSource::AccountFund,
+            requestedUserPayments: $dto->userPayments,
+        );
     }
 
     private function resolveScheduleDate(string|CarbonInterface $scheduledAt): CarbonInterface

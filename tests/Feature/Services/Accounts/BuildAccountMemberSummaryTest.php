@@ -140,7 +140,7 @@ it('settles reimbursements and updates custody with an internal member transfer'
         ->and((float) $recoveryTransaction->amount)->toBe(500.0)
         ->and($recoveryTransaction->user_id)->toBe($owner->id)
         ->and($recoveryTransaction->custodian_user_id)->toBe($partner->id)
-        ->and((float) $account->fresh()->balance)->toBe(-500.0)
+        ->and((float) $account->fresh()->balance)->toBe(0.0)
         ->and($summary['pending_reimbursements'])->toBe([]);
 });
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AccountInviteController;
 use App\Http\Controllers\Api\AccountFinancialGoalController;
+use App\Http\Controllers\Api\AccountLedgerController;
 use App\Http\Controllers\Api\AccountMemberTransferController;
 use App\Http\Controllers\Api\AccountRelationInviteController;
 use App\Http\Controllers\Api\AccountTransactionController;
@@ -82,6 +83,7 @@ Route::middleware('api.auth')->group(function (): void {
     Route::put('accounts/{account}/users/{user}', [AccountUserController::class, 'update']);
     Route::delete('accounts/{account}/users/{user}', [AccountUserController::class, 'delete']);
     Route::post('accounts/{account}/member-transfers', [AccountMemberTransferController::class, 'store']);
+    Route::get('accounts/{account}/ledger', [AccountLedgerController::class, 'index']);
     Route::get('accounts/{account}/transactions', [AccountTransactionController::class, 'index']);
     Route::post('accounts/{account}/transactions', [AccountTransactionController::class, 'store']);
     Route::get('accounts/{account}/transactions/{transaction}', [AccountTransactionController::class, 'show']);

@@ -45,14 +45,20 @@ class SyncAccountMemberLedger
         $paidByUserId = $transaction->paid_by_user_id ?? $transaction->user_id;
 
         if ($source === TransactionPaymentSource::AccountFund) {
-            $transaction->ledgerEntries()->create([
-                'account_id' => $transaction->account_id,
-                'user_id' => $paidByUserId,
-                'type' => AccountMemberLedgerEntryType::AccountFundExpense,
-                'amount' => $transaction->amount * -1,
-                'description' => $transaction->concept,
-                'occurred_at' => $transaction->scheduled_at,
-            ]);
+            $allocations = $transaction->allocations->isNotEmpty()
+                ? $transaction->allocations
+                : collect([(object) ['user_id' => $paidByUserId, 'amount' => $transaction->amount]]);
+
+            foreach ($allocations as $allocation) {
+                $transaction->ledgerEntries()->create([
+                    'account_id' => $transaction->account_id,
+                    'user_id' => $allocation->user_id,
+                    'type' => AccountMemberLedgerEntryType::AccountFundExpense,
+                    'amount' => $allocation->amount * -1,
+                    'description' => $transaction->concept,
+                    'occurred_at' => $transaction->scheduled_at,
+                ]);
+            }
 
             return;
         }

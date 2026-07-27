@@ -15,7 +15,7 @@ use App\Services\Transaction\TransactionUpdater;
 it('creates allocations when enabling split on an existing outcome transaction', function () {
     $owner = User::factory()->create();
     $partner = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
     $account->users()->sync([
         $owner->id => ['percentage' => 50],
         $partner->id => ['percentage' => 50],
@@ -55,7 +55,7 @@ it('creates allocations when enabling split on an existing outcome transaction',
     $allocations = TransactionAllocation::where('transaction_id', $updatedTransaction->id)->orderBy('id')->get();
     $ledgerEntries = AccountMemberLedgerEntry::where('transaction_id', $updatedTransaction->id)->orderBy('id')->get();
 
-    expect(Transaction::count())->toBe(1)
+    expect(Transaction::count())->toBe(2)
         ->and($allocations)->toHaveCount(2)
         ->and($allocations->pluck('user_id')->all())->toBe([$owner->id, $partner->id])
         ->and($allocations->pluck('amount')->all())->toBe([72.0, 108.0])
@@ -70,7 +70,7 @@ it('creates allocations when enabling split on an existing outcome transaction',
 it('rebalances allocations and ledger when amount and percentages change', function () {
     $owner = User::factory()->create();
     $partner = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
     $account->users()->sync([
         $owner->id => ['percentage' => 50],
         $partner->id => ['percentage' => 50],
@@ -124,7 +124,7 @@ it('rebalances allocations and ledger when amount and percentages change', funct
 it('removes allocations and ledger when changing an outcome to income', function () {
     $owner = User::factory()->create();
     $partner = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
     $account->users()->sync([
         $owner->id => ['percentage' => 50],
         $partner->id => ['percentage' => 50],

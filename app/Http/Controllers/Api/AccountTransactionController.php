@@ -188,14 +188,18 @@ class AccountTransactionController extends ApiController
 
     private function createdTransactions(Transaction $transaction): ?EloquentCollection
     {
-        if (! $transaction->subTransactions()->exists()) {
+        if (! $transaction->subTransactions()->whereNull('legacy_migrated_at')->exists()) {
             return null;
         }
 
         return Transaction::query()
             ->with(['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'allocations.user'])
             ->where('id', $transaction->id)
-            ->orWhere('parent_transaction_id', $transaction->id)
+            ->orWhere(function ($query) use ($transaction): void {
+                $query
+                    ->where('parent_transaction_id', $transaction->id)
+                    ->whereNull('legacy_migrated_at');
+            })
             ->orderByRaw('case when id = ? then 0 else 1 end', [$transaction->id])
             ->orderBy('id')
             ->get();

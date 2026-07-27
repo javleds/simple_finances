@@ -12,7 +12,7 @@ use App\Services\Transaction\TransactionCreator;
 
 it('creates a single transaction when no user payments are provided', function () {
     $user = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $user->id]);
+    $account = Account::factory()->create(['user_id' => $user->id, 'balance' => 1000.0]);
     $account->users()->attach($user->id, ['percentage' => 100]);
     $this->actingAs($user);
 
@@ -39,7 +39,7 @@ it('creates a single transaction when no user payments are provided', function (
 it('creates allocations and member ledger entries for outcome type with user payments', function () {
     $owner = User::factory()->create();
     $partner = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
     $account->users()->sync([
         $owner->id => ['percentage' => 50],
         $partner->id => ['percentage' => 50],
@@ -74,15 +74,18 @@ it('creates allocations and member ledger entries for outcome type with user pay
         ->and($allocations->pluck('amount')->sort()->values()->all())->toBe([50.0, 150.0])
         ->and($allocations->pluck('user_id')->sort()->values()->all())->toBe([$owner->id, $partner->id])
         ->and($allocations->pluck('percentage')->sort()->values()->all())->toBe([25.0, 75.0])
-        ->and($ledgerEntries)->toHaveCount(1)
-        ->and($ledgerEntries->first()->type->value)->toBe('account_fund_expense')
-        ->and($ledgerEntries->first()->amount)->toBe(-200.0);
+        ->and($ledgerEntries)->toHaveCount(2)
+        ->and($ledgerEntries->pluck('type')->map->value->all())->toBe([
+            'account_fund_expense',
+            'account_fund_expense',
+        ])
+        ->and($ledgerEntries->pluck('amount')->all())->toBe([-50.0, -150.0]);
 });
 
 it('does not create pending incomes for users with zero percentage', function () {
     $owner = User::factory()->create();
     $partner = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
     $account->users()->sync([
         $owner->id => ['percentage' => 100],
         $partner->id => ['percentage' => 0],
@@ -119,7 +122,7 @@ it('allocates the exact split total even when decimal divisions leave a remainde
     $owner = User::factory()->create();
     $partner = User::factory()->create();
     $thirdUser = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
     $account->users()->sync([
         $owner->id => ['percentage' => 33.33],
         $partner->id => ['percentage' => 33.33],
