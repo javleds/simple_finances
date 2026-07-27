@@ -29,6 +29,7 @@ const props = withDefaults(
   defineProps<{
     formId?: string;
     accountUsers?: ReadonlyArray<AccountMember>;
+    accountBalance?: number | null;
     financialGoals?: ReadonlyArray<{
       id: string;
       name: string;
@@ -43,6 +44,7 @@ const props = withDefaults(
   {
     formId: 'transaction-form',
     accountUsers: () => [],
+    accountBalance: null,
     financialGoals: () => [],
     enableCreateAndAddAnother: false,
     isLoadingFinancialGoals: false,
@@ -95,10 +97,11 @@ const accountUserOptions = computed(() =>
     description: user.email,
   })),
 );
-const paymentSourceOptions = [
-  { value: 'account_fund', label: 'Fondo' },
-  { value: 'member_out_of_pocket', label: 'Bolsillo' },
-] as const;
+const canUseAccountFund = computed(() => (props.accountBalance ?? 0) > 0);
+const paymentSourceOptions = computed(() => [
+  { value: 'account_fund' as const, label: 'Fondo', disabled: isExpense.value && !canUseAccountFund.value },
+  { value: 'member_out_of_pocket' as const, label: 'Bolsillo' },
+]);
 const createAndAddAnother = ref(false);
 const { error: conceptError, touch: touchConcept } = useFormFieldInteraction('concept');
 const { error: amountError, touch: touchAmount } = useFormFieldInteraction('amount');
@@ -167,6 +170,16 @@ watch(showUserSplitToggle, (isVisible) => {
     splitBetweenUsers.value = false;
   }
 });
+
+watch(
+  [isExpense, canUseAccountFund],
+  ([nextIsExpense, nextCanUseAccountFund]) => {
+    if (nextIsExpense && !nextCanUseAccountFund && paymentSource.value === 'account_fund') {
+      paymentSource.value = 'member_out_of_pocket';
+    }
+  },
+  { immediate: true },
+);
 
 async function handleSubmit(): Promise<void> {
   const payload = await submitForm();
@@ -256,6 +269,9 @@ async function handleSubmit(): Promise<void> {
                 @update:model-value="paymentSource = $event"
               />
             </div>
+            <AppText v-if="!canUseAccountFund" size="sm" tone="subtle">
+              Sin saldo disponible; este egreso debe registrarse como pago de bolsillo.
+            </AppText>
           </section>
 
           <AppInput

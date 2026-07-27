@@ -22,6 +22,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./pages/AccountTransactionsPage.vue'),
       },
       {
+        name: 'admin.accounts.ledger',
+        path: 'ledger',
+        component: () => import('./pages/AccountLedgerPage.vue'),
+      },
+      {
         name: 'admin.accounts.goals',
         path: 'goals',
         component: () => import('./pages/AccountGoalsPage.vue'),

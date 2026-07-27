@@ -16,6 +16,7 @@ import {
 } from '../schemas/accountSchemas';
 import type {
   Account,
+  AccountLedgerResult,
   AccountListFilters,
   AccountMember,
   AccountMemberTransferPayload,
@@ -97,6 +98,54 @@ const accountMemberTransferResponseSchema = z
     settlementsByUser: payload.meta.settlements_by_user,
     pendingReimbursements: payload.meta.pending_reimbursements,
   }));
+
+const accountLedgerAllocationApiSchema = z
+  .object({
+    user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    user_name: z.string().nullable().optional().default(null),
+    amount: z.unknown().transform((value) => Number(value) || 0),
+    percentage: z.unknown().transform((value) => Number(value) || 0),
+  })
+  .transform((payload) => ({
+    userId: payload.user_id,
+    userName: payload.user_name,
+    amount: payload.amount,
+    percentage: payload.percentage,
+  }));
+
+const accountLedgerRowApiSchema = z
+  .object({
+    id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    occurred_at: z.string().nullable().optional().default(null),
+    source_type: z.string(),
+    transaction_id: z
+      .union([z.string(), z.number()])
+      .nullable()
+      .optional()
+      .transform((value) => (value == null ? null : String(value))),
+    label: z.string().catch('Movimiento'),
+    description: z.string().catch(''),
+    amount: z.unknown().transform((value) => Number(value) || 0),
+    balance_after: z.unknown().transform((value) => Number(value) || 0),
+    custody_after_by_user: z.array(accountMemberAmountApiSchema).default([]),
+    settlement_after_by_user: z.array(accountMemberAmountApiSchema).default([]),
+    allocations: z.array(accountLedgerAllocationApiSchema).default([]),
+  })
+  .transform((payload) => ({
+    id: payload.id,
+    occurredAt: payload.occurred_at,
+    sourceType: payload.source_type,
+    transactionId: payload.transaction_id,
+    label: payload.label,
+    description: payload.description,
+    amount: payload.amount,
+    balanceAfter: payload.balance_after,
+    custodyAfterByUser: payload.custody_after_by_user,
+    settlementAfterByUser: payload.settlement_after_by_user,
+    allocations: payload.allocations,
+  }));
+
+const accountLedgerCollectionSchema = createPaginatedCollectionSchema(accountLedgerRowApiSchema);
 
 const singleAccountSchema = z
   .union([
@@ -228,6 +277,21 @@ export function createAccountsRepository() {
       );
 
       return accountMemberTransferResponseSchema.parse(response);
+    },
+    async listLedger(
+      accountId: string,
+      options?: { page?: number; perPage?: number },
+    ): Promise<AccountLedgerResult> {
+      const searchParams = buildQueryParams({
+        page: options?.page,
+        per_page: options?.perPage,
+      });
+      const query = searchParams.toString();
+      const response = await apiClient.get<unknown>(
+        query ? `${accountsPath}/${accountId}/ledger?${query}` : `${accountsPath}/${accountId}/ledger`,
+      );
+
+      return accountLedgerCollectionSchema.parse(response);
     },
     async create(payload: AccountWritePayload): Promise<Account> {
       const response = await apiClient.post<unknown>(accountsPath, mapWritePayloadToApi(payload));

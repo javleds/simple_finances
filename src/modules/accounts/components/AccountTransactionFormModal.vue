@@ -20,6 +20,7 @@ const props = withDefaults(
   defineProps<{
     accountId: string;
     accountUsers: AccountMember[];
+    accountBalance?: number | null;
     actions: ReadonlyArray<AppModalAction>;
     financialGoals: AccountGoal[];
     formId: string;
@@ -33,6 +34,7 @@ const props = withDefaults(
   }>(),
   {
     enableCreateAndAddAnother: false,
+    accountBalance: null,
     initialValues: null,
     requiresInitialValues: false,
     serverError: null,
@@ -59,6 +61,7 @@ const emit = defineEmits<{
       v-if="!props.requiresInitialValues || props.initialValues"
       :form-id="props.formId"
       :account-users="props.accountUsers"
+      :account-balance="props.accountBalance"
       :enable-create-and-add-another="props.enableCreateAndAddAnother"
       :financial-goals="props.financialGoals"
       :is-loading-financial-goals="props.isLoadingFinancialGoals"

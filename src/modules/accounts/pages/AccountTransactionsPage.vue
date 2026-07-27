@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 
 import type {
   Account,
+  AccountMemberAmount,
   AccountMemberTransferResult,
   AccountPendingReimbursement,
 } from '@/modules/accounts/types';
@@ -28,8 +29,25 @@ const { activeFilters, clearFilters, searchTerm, selectedTypes, toggleType } =
   useAccountTransactionFilters();
 
 const account = computed(() => props.account);
-const reimbursementAccounts = computed(() => (account.value ? [account.value] : []));
 const accountBalance = ref(account.value?.balance ?? 0);
+const custodyByUser = ref<AccountMemberAmount[]>(account.value?.custodyByUser ?? []);
+const settlementsByUser = ref<AccountMemberAmount[]>(account.value?.settlementsByUser ?? []);
+const pendingReimbursements = ref<AccountPendingReimbursement[]>(
+  account.value?.pendingReimbursements ?? [],
+);
+const reimbursementAccounts = computed(() =>
+  account.value
+    ? [
+        {
+          ...account.value,
+          balance: accountBalance.value,
+          custodyByUser: custodyByUser.value,
+          settlementsByUser: settlementsByUser.value,
+          pendingReimbursements: pendingReimbursements.value,
+        },
+      ]
+    : [],
+);
 const { accountId, accountUsers, currentUserId } = useAccountTransactionsContext(account);
 const {
   goals: financialGoals,
@@ -139,6 +157,9 @@ watch(
   (nextBalance) => {
     if (typeof nextBalance === 'number') {
       accountBalance.value = nextBalance;
+      custodyByUser.value = account.value?.custodyByUser ?? [];
+      settlementsByUser.value = account.value?.settlementsByUser ?? [];
+      pendingReimbursements.value = account.value?.pendingReimbursements ?? [];
     }
   },
   { immediate: true },
@@ -156,6 +177,18 @@ function applyMutationMeta(meta: TransactionMutationMeta): void {
   if (typeof meta.accountBalance === 'number') {
     accountBalance.value = meta.accountBalance;
   }
+
+  if (meta.custodyByUser) {
+    custodyByUser.value = meta.custodyByUser;
+  }
+
+  if (meta.settlementsByUser) {
+    settlementsByUser.value = meta.settlementsByUser;
+  }
+
+  if (meta.pendingReimbursements) {
+    pendingReimbursements.value = meta.pendingReimbursements;
+  }
 }
 
 function applyTransferResults(results: AccountMemberTransferResult[]): void {
@@ -163,6 +196,12 @@ function applyTransferResults(results: AccountMemberTransferResult[]): void {
 
   if (typeof latestResult?.accountBalance === 'number') {
     accountBalance.value = latestResult.accountBalance;
+  }
+
+  if (latestResult) {
+    custodyByUser.value = latestResult.custodyByUser;
+    settlementsByUser.value = latestResult.settlementsByUser;
+    pendingReimbursements.value = latestResult.pendingReimbursements;
   }
 }
 
@@ -199,6 +238,7 @@ async function handleSettleAllAccountReimbursements(
   <section class="space-y-4">
     <AccountTransactionsHeader
       :balance="accountBalance"
+      :custody-by-user="custodyByUser"
     />
 
     <section v-if="transferError" class="rounded-2xl border border-(--app-color-danger) px-4 py-3">
@@ -248,6 +288,7 @@ async function handleSettleAllAccountReimbursements(
     <AccountTransactionsModals
       :account-id="accountId"
       :account-users="accountUsers"
+      :account-balance="accountBalance"
       :create-initial-values="createInitialValues"
       :create-transaction-actions="createTransactionActions"
       :delete-error="deleteError"

@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { ArrowsRightLeftIcon, EnvelopeIcon, FlagIcon, UsersIcon } from '@heroicons/vue/24/outline';
+import {
+  ArrowsRightLeftIcon,
+  BookOpenIcon,
+  EnvelopeIcon,
+  FlagIcon,
+  UsersIcon,
+} from '@heroicons/vue/24/outline';
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -7,7 +13,7 @@ import { useAccountRelationshipAccount } from '@/modules/accounts/composables/us
 import type { AccountMember } from '@/modules/accounts/types';
 import { AppCard, AppContextTabs, AppLink, AppText, AppTitle } from '@/modules/shared/components';
 
-type AccountRelationSection = 'transactions' | 'invitations' | 'goals' | 'users';
+type AccountRelationSection = 'transactions' | 'ledger' | 'invitations' | 'goals' | 'users';
 
 const route = useRoute();
 const router = useRouter();
@@ -23,6 +29,11 @@ const relationshipSections = [
     value: 'transactions',
     label: 'Transacciones',
     icon: ArrowsRightLeftIcon,
+  },
+  {
+    value: 'ledger',
+    label: 'Libro',
+    icon: BookOpenIcon,
   },
   {
     value: 'invitations',

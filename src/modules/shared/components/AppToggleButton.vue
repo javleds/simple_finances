@@ -2,6 +2,7 @@
 type ToggleOption<TOptionValue extends string> = {
   value: TOptionValue;
   label: string;
+  disabled?: boolean;
 };
 
 const props = defineProps<{
@@ -13,12 +14,12 @@ const emit = defineEmits<{
   'update:modelValue': [value: TValue];
 }>();
 
-function selectValue(nextValue: TValue): void {
-  if (props.modelValue === nextValue) {
+function selectValue(option: ToggleOption<TValue>): void {
+  if (option.disabled || props.modelValue === option.value) {
     return;
   }
 
-  emit('update:modelValue', nextValue);
+  emit('update:modelValue', option.value);
 }
 </script>
 
@@ -31,13 +32,16 @@ function selectValue(nextValue: TValue): void {
       v-for="option in props.options"
       :key="option.value"
       type="button"
+      :disabled="option.disabled"
       class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
       :class="
         props.modelValue === option.value
           ? 'bg-(--app-color-secondary) text-(--app-color-secondary-foreground)'
-          : 'text-(--app-color-text-subtle) hover:text-(--app-color-text)'
+          : option.disabled
+            ? 'cursor-not-allowed text-(--app-color-text-muted) opacity-50'
+            : 'text-(--app-color-text-subtle) hover:text-(--app-color-text)'
       "
-      @click="selectValue(option.value)"
+      @click="selectValue(option)"
     >
       {{ option.label }}
     </button>

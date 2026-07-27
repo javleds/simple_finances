@@ -1,3 +1,5 @@
+import type { PaginatedCollection } from '@/modules/shared/lib/pagination';
+
 export type AccountStatus = 'Activo' | 'Inactivo';
 export type AccountKindFilter = 'credit' | 'debit';
 export type AccountSurfaceFilter = 'virtual' | 'physical';
@@ -38,6 +40,29 @@ export type AccountMemberTransferResult = {
   settlementsByUser: AccountMemberAmount[];
   pendingReimbursements: AccountPendingReimbursement[];
 };
+
+export type AccountLedgerAllocation = {
+  userId: string;
+  userName: string | null;
+  amount: number;
+  percentage: number;
+};
+
+export type AccountLedgerRow = {
+  id: string;
+  occurredAt: string | null;
+  sourceType: string;
+  transactionId: string | null;
+  label: string;
+  description: string;
+  amount: number;
+  balanceAfter: number;
+  custodyAfterByUser: AccountMemberAmount[];
+  settlementAfterByUser: AccountMemberAmount[];
+  allocations: AccountLedgerAllocation[];
+};
+
+export type AccountLedgerResult = PaginatedCollection<AccountLedgerRow>;
 
 export type AccountMember = {
   id: string;
