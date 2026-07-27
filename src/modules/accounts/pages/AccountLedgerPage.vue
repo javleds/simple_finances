@@ -3,7 +3,8 @@ import { computed, ref, watch } from 'vue';
 
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import type { Account, AccountLedgerRow, AccountMemberAmount } from '@/modules/accounts/types';
-import { AppButton, AppCard, AppText, AppTitle } from '@/modules/shared/components';
+import { AppButton, AppCard, AppLoadMoreFooter, AppText, AppTitle } from '@/modules/shared/components';
+import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 
 const props = defineProps<{ account?: Account }>();
 
@@ -12,10 +13,21 @@ const rows = ref<AccountLedgerRow[]>([]);
 const isLoading = ref(false);
 const isLoadingMore = ref(false);
 const loadError = ref<string | null>(null);
+const loadMoreError = ref<string | null>(null);
 const page = ref(1);
 const hasMore = ref(false);
 
 const accountId = computed(() => props.account?.id ?? '');
+const canLoadMore = computed(
+  () => !isLoading.value && !isLoadingMore.value && hasMore.value && !loadMoreError.value,
+);
+
+const { target: loadMoreSentinel } = useInfiniteScroll({
+  enabled: canLoadMore,
+  onIntersect: () => {
+    void loadMoreLedger();
+  },
+});
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-MX', {
@@ -49,7 +61,11 @@ async function loadLedger(nextPage = 1): Promise<void> {
 
   const loadingState = nextPage === 1 ? isLoading : isLoadingMore;
   loadingState.value = true;
-  loadError.value = null;
+  if (nextPage === 1) {
+    loadError.value = null;
+  } else {
+    loadMoreError.value = null;
+  }
 
   try {
     const result = await repository.listLedger(accountId.value, {
@@ -61,16 +77,53 @@ async function loadLedger(nextPage = 1): Promise<void> {
     page.value = result.currentPage;
     hasMore.value = result.hasMore;
   } catch (error) {
-    loadError.value = error instanceof Error ? error.message : 'No se pudo cargar el libro.';
+    const message = error instanceof Error ? error.message : 'No se pudo cargar el libro.';
+
+    if (nextPage === 1) {
+      loadError.value = message;
+    } else {
+      loadMoreError.value = message;
+    }
   } finally {
     loadingState.value = false;
   }
+}
+
+async function loadMoreLedger(): Promise<void> {
+  if (!hasMore.value || isLoadingMore.value) {
+    return;
+  }
+
+  await loadLedger(page.value + 1);
+}
+
+function infiniteStatusLabel(): string {
+  if (isLoadingMore.value) {
+    return 'Cargando más movimientos del libro...';
+  }
+
+  if (loadMoreError.value) {
+    return loadMoreError.value;
+  }
+
+  if (!hasMore.value) {
+    return 'Has llegado al inicio del libro.';
+  }
+
+  return 'Sigue desplazándote para revisar más movimientos.';
+}
+
+function retryLoadMore(): void {
+  void loadMoreLedger();
 }
 
 watch(
   accountId,
   () => {
     rows.value = [];
+    page.value = 1;
+    hasMore.value = false;
+    loadMoreError.value = null;
     void loadLedger();
   },
   { immediate: true },
@@ -171,14 +224,12 @@ watch(
       </article>
     </div>
 
-    <AppButton
-      v-if="hasMore"
-      full-width
-      variant="outline"
-      :loading="isLoadingMore"
-      @click="loadLedger(page + 1)"
-    >
-      Cargar más
-    </AppButton>
+    <div v-if="rows.length" ref="loadMoreSentinel">
+      <AppLoadMoreFooter
+        :label="infiniteStatusLabel()"
+        :show-retry="Boolean(loadMoreError)"
+        @retry="retryLoadMore"
+      />
+    </div>
   </section>
 </template>
