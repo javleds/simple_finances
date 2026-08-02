@@ -341,84 +341,6 @@ watch(
       </div>
     </AppCard>
 
-    <section class="space-y-3">
-      <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
-          <AppTitle as="h3" size="sm" class="text-base!">Integridad</AppTitle>
-          <AppText tone="subtle">
-            Correcciones auditables para custodia y reembolsos del libro.
-          </AppText>
-        </div>
-        <AppButton variant="outline" :disabled="isLoadingDiagnostics" @click="loadDiagnostics()">
-          Revisar
-        </AppButton>
-      </div>
-
-      <AppCard v-if="diagnosticsError" class="rounded-2xl border-(--app-color-danger)">
-        <AppText class="text-(--app-color-danger)!">{{ diagnosticsError }}</AppText>
-      </AppCard>
-
-      <AppCard v-else-if="actionMessage" class="rounded-2xl border-(--app-color-success)">
-        <AppText class="text-(--app-color-success)!">{{ actionMessage }}</AppText>
-      </AppCard>
-
-      <div v-if="isLoadingDiagnostics" class="h-20 animate-pulse rounded-2xl bg-(--app-color-surface-muted)" />
-
-      <div v-else class="overflow-hidden rounded-2xl border border-(--app-color-border)">
-        <article
-          v-if="openDiagnostics.length === 0"
-          class="bg-(--app-color-surface) px-4 py-4"
-        >
-          <p class="text-sm font-semibold text-(--app-color-text)">Sin inconsistencias abiertas</p>
-          <p class="mt-1 text-xs text-(--app-color-text-subtle)">
-            El balance, la custodia y los reembolsos no muestran huecos accionables.
-          </p>
-        </article>
-
-        <article
-          v-for="diagnostic in openDiagnostics"
-          v-else
-          :key="diagnostic.id"
-          class="border-b border-(--app-color-border) bg-(--app-color-surface) px-4 py-4 last:border-b-0"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <p class="text-sm font-bold text-(--app-color-text)">{{ diagnostic.title }}</p>
-              <p class="mt-1 text-xs leading-5 text-(--app-color-text-subtle)">
-                {{ diagnostic.description }}
-              </p>
-            </div>
-            <AppButton variant="secondary" @click="openDiagnostic(diagnostic)">
-              {{ diagnostic.mode === 'needs_user_input' ? 'Completar' : 'Corregir' }}
-            </AppButton>
-          </div>
-        </article>
-      </div>
-
-      <div
-        v-if="recentReversibleRepairs.length"
-        class="overflow-hidden rounded-2xl border border-(--app-color-border)"
-      >
-        <article
-          v-for="repair in recentReversibleRepairs"
-          :key="repair.id"
-          class="border-b border-(--app-color-border) bg-(--app-color-surface) px-4 py-4 last:border-b-0"
-        >
-          <div class="flex items-center justify-between gap-3">
-            <div class="min-w-0">
-              <p class="truncate text-sm font-bold text-(--app-color-text)">
-                {{ repair.description }}
-              </p>
-              <p class="mt-1 text-xs text-(--app-color-text-subtle)">
-                {{ formatCurrency(repair.amount) }} · {{ repair.actorUserName }}
-              </p>
-            </div>
-            <AppButton variant="outline" @click="openReverseRepair(repair)">Reversar</AppButton>
-          </div>
-        </article>
-      </div>
-    </section>
-
     <div v-else-if="isLoading" class="space-y-3">
       <div
         v-for="index in 4"
@@ -496,6 +418,84 @@ watch(
         </div>
       </article>
     </div>
+
+    <section class="space-y-3">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <AppTitle as="h3" size="sm" class="text-base!">Integridad</AppTitle>
+          <AppText tone="subtle">
+            Correcciones auditables para custodia y reembolsos del libro.
+          </AppText>
+        </div>
+        <AppButton variant="outline" :disabled="isLoadingDiagnostics" @click="loadDiagnostics()">
+          Revisar
+        </AppButton>
+      </div>
+
+      <AppCard v-if="diagnosticsError" class="rounded-2xl border-(--app-color-danger)">
+        <AppText class="text-(--app-color-danger)!">{{ diagnosticsError }}</AppText>
+      </AppCard>
+
+      <AppCard v-else-if="actionMessage" class="rounded-2xl border-(--app-color-success)">
+        <AppText class="text-(--app-color-success)!">{{ actionMessage }}</AppText>
+      </AppCard>
+
+      <div v-if="isLoadingDiagnostics" class="h-20 animate-pulse rounded-2xl bg-(--app-color-surface-muted)" />
+
+      <div v-else class="overflow-hidden rounded-2xl border border-(--app-color-border)">
+        <article
+          v-if="openDiagnostics.length === 0"
+          class="bg-(--app-color-surface) px-4 py-4"
+        >
+          <p class="text-sm font-semibold text-(--app-color-text)">Sin inconsistencias abiertas</p>
+          <p class="mt-1 text-xs text-(--app-color-text-subtle)">
+            El balance, la custodia y los reembolsos no muestran huecos accionables.
+          </p>
+        </article>
+
+        <article
+          v-for="diagnostic in openDiagnostics"
+          v-else
+          :key="diagnostic.id"
+          class="border-b border-(--app-color-border) bg-(--app-color-surface) px-4 py-4 last:border-b-0"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-bold text-(--app-color-text)">{{ diagnostic.title }}</p>
+              <p class="mt-1 text-xs leading-5 text-(--app-color-text-subtle)">
+                {{ diagnostic.description }}
+              </p>
+            </div>
+            <AppButton variant="secondary" @click="openDiagnostic(diagnostic)">
+              {{ diagnostic.mode === 'needs_user_input' ? 'Completar' : 'Corregir' }}
+            </AppButton>
+          </div>
+        </article>
+      </div>
+
+      <div
+        v-if="recentReversibleRepairs.length"
+        class="overflow-hidden rounded-2xl border border-(--app-color-border)"
+      >
+        <article
+          v-for="repair in recentReversibleRepairs"
+          :key="repair.id"
+          class="border-b border-(--app-color-border) bg-(--app-color-surface) px-4 py-4 last:border-b-0"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <p class="truncate text-sm font-bold text-(--app-color-text)">
+                {{ repair.description }}
+              </p>
+              <p class="mt-1 text-xs text-(--app-color-text-subtle)">
+                {{ formatCurrency(repair.amount) }} · {{ repair.actorUserName }}
+              </p>
+            </div>
+            <AppButton variant="outline" @click="openReverseRepair(repair)">Reversar</AppButton>
+          </div>
+        </article>
+      </div>
+    </section>
 
     <div v-if="rows.length" ref="loadMoreSentinel">
       <AppLoadMoreFooter
