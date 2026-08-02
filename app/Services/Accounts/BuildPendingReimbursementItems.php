@@ -23,6 +23,7 @@ class BuildPendingReimbursementItems
                 AccountMemberLedgerEntryType::ExpensePaid,
                 AccountMemberLedgerEntryType::ExpenseShare,
                 AccountMemberLedgerEntryType::SettlementTransfer,
+                AccountMemberLedgerEntryType::SettlementCorrection,
             ])
             ->groupBy('transaction_id')
             ->havingRaw('open_amount < -0.001')

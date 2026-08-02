@@ -60,6 +60,7 @@ class BuildAccountMemberSummary
                 AccountMemberLedgerEntryType::AccountFundExpense,
                 AccountMemberLedgerEntryType::InternalTransfer,
                 AccountMemberLedgerEntryType::ManualAdjustment,
+                AccountMemberLedgerEntryType::CustodyCorrection,
             ], true))
             ->sum('amount');
     }
@@ -71,6 +72,7 @@ class BuildAccountMemberSummary
                 AccountMemberLedgerEntryType::ExpensePaid,
                 AccountMemberLedgerEntryType::ExpenseShare,
                 AccountMemberLedgerEntryType::SettlementTransfer,
+                AccountMemberLedgerEntryType::SettlementCorrection,
                 AccountMemberLedgerEntryType::LegacySettlement,
             ], true))
             ->sum('amount');
@@ -142,6 +144,7 @@ class BuildAccountMemberSummary
                 AccountMemberLedgerEntryType::ExpensePaid,
                 AccountMemberLedgerEntryType::ExpenseShare,
                 AccountMemberLedgerEntryType::SettlementTransfer,
+                AccountMemberLedgerEntryType::SettlementCorrection,
             ])
             ->groupBy('transaction_id', 'user_id')
             ->havingRaw('abs(open_amount) > 0.001')
@@ -260,6 +263,7 @@ class BuildAccountMemberSummary
             ->whereNull('transaction_id')
             ->whereIn('type', [
                 AccountMemberLedgerEntryType::SettlementTransfer,
+                AccountMemberLedgerEntryType::SettlementCorrection,
                 AccountMemberLedgerEntryType::LegacySettlement,
             ])
             ->groupBy('user_id')

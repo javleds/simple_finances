@@ -21,6 +21,7 @@ class BuildAccountCustodySummary
                 AccountMemberLedgerEntryType::AccountFundExpense,
                 AccountMemberLedgerEntryType::InternalTransfer,
                 AccountMemberLedgerEntryType::ManualAdjustment,
+                AccountMemberLedgerEntryType::CustodyCorrection,
             ])
             ->groupBy('user_id')
             ->get()

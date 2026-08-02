@@ -39,7 +39,14 @@ class BuildAccountLedgerTimeline
 
         $entries = $account->memberLedgerEntries()
             ->with(['user', 'relatedUser', 'transaction'])
-            ->whereNull('transaction_id')
+            ->where(function ($query): void {
+                $query
+                    ->whereNull('transaction_id')
+                    ->orWhereIn('type', [
+                        AccountMemberLedgerEntryType::SettlementCorrection,
+                        AccountMemberLedgerEntryType::CustodyCorrection,
+                    ]);
+            })
             ->orderBy('occurred_at')
             ->orderBy('id')
             ->get();
@@ -99,7 +106,7 @@ class BuildAccountLedgerTimeline
             }
         }
 
-        foreach ($transaction->ledgerEntries as $entry) {
+        foreach ($transaction->ledgerEntries->reject(fn (AccountMemberLedgerEntry $entry): bool => $this->isCorrectionEntry($entry)) as $entry) {
             $this->applyLedgerEntry($entry, $custodyByUser, $settlementByUser);
         }
 
@@ -142,7 +149,7 @@ class BuildAccountLedgerTimeline
             'id' => 'ledger-'.$entry->id,
             'occurred_at' => optional($entry->occurred_at)->toDateString(),
             'source_type' => $entry->type->value,
-            'transaction_id' => null,
+            'transaction_id' => $entry->transaction_id,
             'label' => $entry->description,
             'description' => $this->ledgerEntryDescription($entry),
             'amount' => round((float) $entry->amount, 2),
@@ -177,6 +184,15 @@ class BuildAccountLedgerTimeline
             AccountMemberLedgerEntryType::AccountFundExpense,
             AccountMemberLedgerEntryType::InternalTransfer,
             AccountMemberLedgerEntryType::ManualAdjustment,
+            AccountMemberLedgerEntryType::CustodyCorrection,
+        ], true);
+    }
+
+    private function isCorrectionEntry(AccountMemberLedgerEntry $entry): bool
+    {
+        return in_array($entry->type, [
+            AccountMemberLedgerEntryType::SettlementCorrection,
+            AccountMemberLedgerEntryType::CustodyCorrection,
         ], true);
     }
 
@@ -201,6 +217,10 @@ class BuildAccountLedgerTimeline
             AccountMemberLedgerEntryType::SettlementTransfer => $relatedName
                 ? "{$userName} liquido con {$relatedName}"
                 : "{$userName} liquido un pendiente",
+            AccountMemberLedgerEntryType::SettlementCorrection => $relatedName
+                ? "{$userName} corrigio reembolso con {$relatedName}"
+                : "{$userName} corrigio un reembolso",
+            AccountMemberLedgerEntryType::CustodyCorrection => "{$userName} ajusto custodia",
             default => $entry->type->value,
         };
     }

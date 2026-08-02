@@ -150,6 +150,7 @@ class RegisterAccountMemberTransfer
                 AccountMemberLedgerEntryType::ExpensePaid,
                 AccountMemberLedgerEntryType::ExpenseShare,
                 AccountMemberLedgerEntryType::SettlementTransfer,
+                AccountMemberLedgerEntryType::SettlementCorrection,
             ])
             ->groupBy('transaction_id')
             ->havingRaw('sum(amount) < -0.001')

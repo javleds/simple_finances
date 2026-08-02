@@ -56,6 +56,7 @@ class HydrateCurrentUserPendingReimbursements
                 AccountMemberLedgerEntryType::ExpensePaid,
                 AccountMemberLedgerEntryType::ExpenseShare,
                 AccountMemberLedgerEntryType::SettlementTransfer,
+                AccountMemberLedgerEntryType::SettlementCorrection,
             ])
             ->groupBy('transaction_id')
             ->havingRaw('abs(open_amount) > 0.001')

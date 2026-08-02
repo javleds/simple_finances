@@ -14,6 +14,8 @@ enum AccountMemberLedgerEntryType: string
     case ExpenseShare = 'expense_share';
     case InternalTransfer = 'internal_transfer';
     case SettlementTransfer = 'settlement_transfer';
+    case SettlementCorrection = 'settlement_correction';
+    case CustodyCorrection = 'custody_correction';
     case ManualAdjustment = 'manual_adjustment';
     case LegacySettlement = 'legacy_settlement';
 }
