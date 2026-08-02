@@ -78,6 +78,34 @@ function sharedAccountLifecycleCreateSharedExpense(
         ->json('data.id');
 }
 
+function sharedAccountLifecycleCreateSharedExpenseResponse(
+    $test,
+    Account $account,
+    User $creator,
+    User $custodian,
+    User $member,
+    string $concept,
+    float $amount,
+    int $paidByUserId,
+) {
+    return $test
+        ->withHeaders(sharedAccountLifecycleHeaders($creator))
+        ->postJson("/api/accounts/{$account->id}/transactions", [
+            'type' => 'outcome',
+            'status' => 'completed',
+            'concept' => $concept,
+            'amount' => $amount,
+            'paid_by_user_id' => $paidByUserId,
+            'payment_source' => 'member_out_of_pocket',
+            'split_between_users' => true,
+            'user_payments' => [
+                ['user_id' => $custodian->id, 'percentage' => 50],
+                ['user_id' => $member->id, 'percentage' => 50],
+            ],
+            'scheduled_at' => '2026-07-10',
+        ]);
+}
+
 function sharedAccountLifecycleUpdateSharedExpense(
     $test,
     Account $account,
@@ -349,6 +377,49 @@ it('keeps a receivable shared account consistent when expenses are edited, delet
         ->where('type', 'income')
         ->where('concept', 'Reimbursement from Member to Payer')
         ->exists())->toBeTrue();
+});
+
+it('keeps a receivable expense actionable when the creator records another member as payer', function () {
+    $creator = User::factory()->create(['name' => 'Creator']);
+    $payer = User::factory()->create(['name' => 'Payer']);
+    $account = sharedAccountLifecycleAccount($creator, $payer, 'Creator records payer account');
+
+    $response = sharedAccountLifecycleCreateSharedExpenseResponse(
+        $this,
+        $account,
+        $creator,
+        $creator,
+        $payer,
+        'Dinner paid by payer',
+        200.0,
+        $payer->id,
+    );
+    $response
+        ->assertCreated()
+        ->assertJsonPath('meta.pending_reimbursements.0.from_user_id', $creator->id)
+        ->assertJsonPath('meta.pending_reimbursements.0.to_user_id', $payer->id)
+        ->assertJsonPath('meta.pending_reimbursements.0.amount', 100.0);
+    $transactionId = (int) $response->json('data.id');
+
+    expect((float) $account->fresh()->balance)->toBe(-100.0);
+    sharedAccountLifecycleAssertExpenseLedger($transactionId, $payer, $creator, 200.0, 100.0, 100.0);
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $creator, 'Dinner paid by payer', 100.0, 0.0);
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Dinner paid by payer', 0.0, 100.0);
+
+    $this
+        ->withHeaders(sharedAccountLifecycleHeaders($creator))
+        ->getJson("/api/accounts/{$account->id}")
+        ->assertOk()
+        ->assertJsonPath('data.pending_reimbursements.0.from_user_id', $creator->id)
+        ->assertJsonPath('data.pending_reimbursements.0.to_user_id', $payer->id)
+        ->assertJsonPath('data.pending_reimbursements.0.amount', 100.0)
+        ->assertJsonPath('data.pending_reimbursements.0.items.0.transaction_id', (string) $transactionId);
+
+    sharedAccountLifecycleSettle($this, $account, $creator, $creator, $payer, 100.0);
+
+    expect((float) $account->fresh()->balance)->toBe(0.0);
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $creator, 'Dinner paid by payer', 0.0, 0.0);
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Dinner paid by payer', 0.0, 0.0);
 });
 
 it('keeps a low balance ordinary account consistent when a member expense turns it negative', function () {
