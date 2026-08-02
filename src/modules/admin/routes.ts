@@ -5,6 +5,7 @@ import distributionRoutes from '@/modules/distribution/routes';
 import settingsRoutes from '@/modules/settings/routes';
 import subscriptionsRoutes from '@/modules/subscriptions/routes';
 import transactionsRoutes from '@/modules/transactions/routes';
+import virtualAccountsRoutes from '@/modules/virtual-accounts/routes';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -28,6 +29,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./pages/ProfilePage.vue'),
       },
       ...accountsRoutes,
+      ...virtualAccountsRoutes,
       ...subscriptionsRoutes,
       ...distributionRoutes,
       ...transactionsRoutes,

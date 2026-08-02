@@ -3,6 +3,7 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowLeftIcon,
   ArrowRightOnRectangleIcon,
+  BanknotesIcon,
   CreditCardIcon,
   EnvelopeIcon,
   HomeIcon,
@@ -14,6 +15,7 @@ import {
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import {
   AdjustmentsHorizontalIcon as AdjustmentsHorizontalSolidIcon,
+  BanknotesIcon as BanknotesSolidIcon,
   CreditCardIcon as CreditCardSolidIcon,
   HomeIcon as HomeSolidIcon,
   Squares2X2Icon as Squares2X2SolidIcon,
@@ -70,6 +72,12 @@ const navigationItems: AdminNavigationItem[] = [
     activeIcon: WalletSolidIcon,
   },
   {
+    label: 'Ahorro',
+    routeName: 'admin.virtual-accounts',
+    icon: BanknotesIcon,
+    activeIcon: BanknotesSolidIcon,
+  },
+  {
     label: 'Subs',
     routeName: 'admin.subscriptions',
     icon: CreditCardIcon,
@@ -108,7 +116,7 @@ function showBackButton(): boolean {
     return true;
   }
 
-  if (route.name === 'admin.transactions') {
+  if (route.name === 'admin.transactions' || route.name === 'admin.virtual-accounts') {
     return true;
   }
 
@@ -189,7 +197,8 @@ onBeforeUnmount(() => {
                 ? { name: 'admin.distribution' }
                 : route.name === 'admin.profile' ||
                     route.name === 'admin.invitations' ||
-                    route.name === 'admin.transactions'
+                    route.name === 'admin.transactions' ||
+                    route.name === 'admin.virtual-accounts'
                   ? { name: 'admin.dashboard' }
                   : { name: 'admin.accounts' }
             "
@@ -200,7 +209,8 @@ onBeforeUnmount(() => {
                 ? 'Volver a distribución'
                 : route.name === 'admin.profile' ||
                     route.name === 'admin.invitations' ||
-                    route.name === 'admin.transactions'
+                    route.name === 'admin.transactions' ||
+                    route.name === 'admin.virtual-accounts'
                   ? 'Volver al escritorio'
                   : 'Volver a cuentas'
             "
@@ -270,7 +280,7 @@ onBeforeUnmount(() => {
       :style="{ borderColor: 'var(--app-color-border-strong)' }"
       aria-label="Primary"
     >
-      <ul class="grid grid-cols-5 gap-1">
+      <ul class="grid grid-cols-6 gap-1">
         <li v-for="item in navigationItems" :key="item.routeName">
           <RouterLink
             :to="{ name: item.routeName }"
