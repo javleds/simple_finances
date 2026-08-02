@@ -36,6 +36,7 @@ class Transaction extends Model
             'scheduled_at' => 'immutable_datetime',
             'legacy_migrated_at' => 'immutable_datetime',
             'financial_goal_id' => 'integer',
+            'account_balance_snapshot_id' => 'integer',
         ];
     }
 
@@ -62,6 +63,11 @@ class Transaction extends Model
     public function financialGoal(): BelongsTo
     {
         return $this->belongsTo(FinancialGoal::class);
+    }
+
+    public function accountBalanceSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(AccountBalanceSnapshot::class);
     }
 
     public function parentTransaction(): BelongsTo

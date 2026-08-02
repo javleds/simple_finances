@@ -46,6 +46,11 @@ class Account extends Model
         return $this->hasMany(AccountMemberLedgerEntry::class);
     }
 
+    public function balanceSnapshots(): HasMany
+    {
+        return $this->hasMany(AccountBalanceSnapshot::class);
+    }
+
     public function feedAccount(): BelongsTo
     {
         return $this->belongsTo(Account::class, 'feed_account_id', 'id');

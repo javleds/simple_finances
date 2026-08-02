@@ -86,6 +86,7 @@ class TransactionController extends ApiController
         BuildTransactionAccountMeta $buildTransactionAccountMeta,
     ): JsonResponse {
         abort_unless($transaction->user_id === $request->user()->id, 403);
+        abort_if($transaction->account_balance_snapshot_id !== null, 422, 'Snapshot adjustment transactions cannot be edited directly.');
         $this->ensureTransactionPayloadAccess($request);
 
         $previousAccountId = $transaction->account_id;
@@ -110,6 +111,7 @@ class TransactionController extends ApiController
         BuildTransactionAccountMeta $buildTransactionAccountMeta,
     ): JsonResponse {
         abort_unless($transaction->user_id === auth()->id(), 403);
+        abort_if($transaction->account_balance_snapshot_id !== null, 422, 'Snapshot adjustment transactions cannot be deleted directly.');
 
         $accountId = $transaction->account_id;
         $subTransactionIds = $transactionRemover->execute($transaction);

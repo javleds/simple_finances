@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AccountBalanceSnapshotController;
 use App\Http\Controllers\Api\AccountInviteController;
 use App\Http\Controllers\Api\AccountFinancialGoalController;
 use App\Http\Controllers\Api\AccountLedgerController;
@@ -36,6 +37,7 @@ use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\SubscriptionPaymentController;
 use App\Http\Controllers\Api\TelegramVerificationCodeController;
 use App\Http\Controllers\Api\TransactionController;
+use App\Http\Controllers\Api\VirtualAccountController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function (): void {
@@ -65,6 +67,7 @@ Route::middleware('api.auth')->group(function (): void {
     Route::get('dashboard/accounts', [DashboardAccountController::class, 'index']);
     Route::get('dashboard/subscriptions', [DashboardSubscriptionController::class, 'index']);
     Route::get('dashboard/period-summary', [DashboardPeriodSummaryController::class, 'index']);
+    Route::get('virtual-accounts', [VirtualAccountController::class, 'index']);
     Route::get('notification-settings', [NotificationSettingsController::class, 'show']);
     Route::put('notification-settings', [NotificationSettingsController::class, 'update']);
 
@@ -94,6 +97,10 @@ Route::middleware('api.auth')->group(function (): void {
     Route::get('accounts/{account}/transactions/{transaction}', [AccountTransactionController::class, 'show']);
     Route::put('accounts/{account}/transactions/{transaction}', [AccountTransactionController::class, 'update']);
     Route::delete('accounts/{account}/transactions/{transaction}', [AccountTransactionController::class, 'delete']);
+    Route::get('accounts/{account}/balance-snapshots', [AccountBalanceSnapshotController::class, 'index']);
+    Route::post('accounts/{account}/balance-snapshots', [AccountBalanceSnapshotController::class, 'store']);
+    Route::put('accounts/{account}/balance-snapshots/{snapshot}', [AccountBalanceSnapshotController::class, 'update']);
+    Route::delete('accounts/{account}/balance-snapshots/{snapshot}', [AccountBalanceSnapshotController::class, 'delete']);
     Route::get('accounts/{account}/financial-goals', [AccountFinancialGoalController::class, 'index']);
     Route::post('accounts/{account}/financial-goals', [AccountFinancialGoalController::class, 'store']);
     Route::get('accounts/{account}/financial-goals/{financialGoal}', [AccountFinancialGoalController::class, 'show']);
