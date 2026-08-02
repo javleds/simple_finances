@@ -1,7 +1,12 @@
+import { useQueryClient } from '@tanstack/vue-query';
 import { computed, ref } from 'vue';
 
+import { dashboardQueryKeys } from '@/modules/admin/queries/dashboardQueries';
+import { accountQueryKeys } from '@/modules/accounts/queries/accountQueries';
+import type { Account } from '@/modules/accounts/types';
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
 import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
+import { transactionFacilityQueryKeys } from '@/modules/transactions/queries/transactionFacilityQueries';
 
 import { createTransactionsRepository } from '../repositories/transactionsRepository';
 import type {
@@ -16,6 +21,7 @@ import type {
 const transactionsRepository = createTransactionsRepository();
 
 export function useTransactionsCrud() {
+  const queryClient = useQueryClient();
   const transactionsState = usePaginatedCollection<
     Transaction,
     [string | undefined, TransactionListFilters | undefined]
@@ -61,6 +67,7 @@ export function useTransactionsCrud() {
     try {
       const result = await transactionsRepository.create(payload);
       transactionsState.prependItems(result.transactions);
+      syncAccountState(payload.accountId, result.meta);
       return result;
     } catch (error) {
       saveError.value = resolveApiErrorMessage(error, 'No fue posible crear la transacción.');
@@ -83,6 +90,7 @@ export function useTransactionsCrud() {
         (transaction) => transaction.id === transactionId,
         result.transaction,
       );
+      syncAccountState(payload.accountId, result.meta);
       return result;
     } catch (error) {
       saveError.value = resolveApiErrorMessage(error, 'No fue posible actualizar la transacción.');
@@ -103,6 +111,9 @@ export function useTransactionsCrud() {
       const result = await transactionsRepository.remove(transactionId, accountId);
       const removedIds = new Set([transactionId, ...result.meta.subtransactionIds]);
       transactionsState.removeItem((transaction) => removedIds.has(transaction.id));
+      if (accountId) {
+        syncAccountState(accountId, result.meta);
+      }
       return result;
     } catch (error) {
       deleteError.value = resolveApiErrorMessage(error, 'No fue posible eliminar la transacción.');
@@ -118,6 +129,39 @@ export function useTransactionsCrud() {
 
   function clearDeleteError(): void {
     deleteError.value = null;
+  }
+
+  function syncAccountState(accountId: string, meta: TransactionMutationMeta): void {
+    updateAccountDetailCache(accountId, meta);
+    void queryClient.invalidateQueries({ queryKey: accountQueryKeys.all });
+    void queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all });
+    void queryClient.invalidateQueries({ queryKey: transactionFacilityQueryKeys.all });
+  }
+
+  function updateAccountDetailCache(accountId: string, meta: TransactionMutationMeta): void {
+    const account = queryClient.getQueryData<Account>(accountQueryKeys.detail(accountId));
+
+    if (!account) {
+      return;
+    }
+
+    queryClient.setQueryData<Account>(accountQueryKeys.detail(accountId), {
+      ...account,
+      balance: meta.accountBalance ?? account.balance,
+      custodyByUser: meta.custodyByUser ?? account.custodyByUser,
+      settlementsByUser: meta.settlementsByUser ?? account.settlementsByUser,
+      pendingReimbursements: meta.pendingReimbursements ?? account.pendingReimbursements,
+      users: account.users.map((user) => {
+        const custody = meta.custodyByUser?.find((item) => item.userId === user.id);
+        const settlement = meta.settlementsByUser?.find((item) => item.userId === user.id);
+
+        return {
+          ...user,
+          custodyAmount: custody?.amount ?? user.custodyAmount,
+          settlementAmount: settlement?.amount ?? user.settlementAmount,
+        };
+      }),
+    });
   }
 
   return {
