@@ -16,6 +16,9 @@ import {
 } from '../schemas/accountSchemas';
 import type {
   Account,
+  AccountLedgerDiagnosticsResult,
+  AccountLedgerRepair,
+  AccountLedgerRepairPayload,
   AccountLedgerResult,
   AccountListFilters,
   AccountMember,
@@ -147,6 +150,189 @@ const accountLedgerRowApiSchema = z
 
 const accountLedgerCollectionSchema = createPaginatedCollectionSchema(accountLedgerRowApiSchema);
 
+const accountLedgerRepairPreviewEntryApiSchema = z
+  .object({
+    user_id: z
+      .union([z.string(), z.number()])
+      .nullable()
+      .optional()
+      .transform((value) => (value == null ? null : String(value))),
+    user_name: z.string().nullable().optional().default(null),
+    related_user_id: z
+      .union([z.string(), z.number()])
+      .nullable()
+      .optional()
+      .transform((value) => (value == null ? null : String(value))),
+    related_user_name: z.string().nullable().optional().default(null),
+    transaction_id: z
+      .union([z.string(), z.number()])
+      .nullable()
+      .optional()
+      .transform((value) => (value == null ? null : String(value))),
+    type: z.string().catch('ledger_correction'),
+    amount: z.unknown().transform((value) => Number(value) || 0),
+    description: z.string().nullable().optional().default(null),
+  })
+  .transform((payload) => ({
+    userId: payload.user_id ?? '',
+    userName: payload.user_name,
+    relatedUserId: payload.related_user_id,
+    relatedUserName: payload.related_user_name,
+    transactionId: payload.transaction_id,
+    type: payload.type,
+    amount: payload.amount,
+    description: payload.description,
+  }));
+
+const accountLedgerRepairPreviewApiSchema = z
+  .object({
+    summary: z.string().catch('Corrección del libro'),
+    ledger_entries: z.array(accountLedgerRepairPreviewEntryApiSchema).optional().default([]),
+  })
+  .catch({
+    summary: 'Corrección del libro',
+    ledger_entries: [],
+  })
+  .transform((payload) => ({
+    summary: payload.summary,
+    ledgerEntries: payload.ledger_entries,
+  }));
+
+const accountLedgerRepairPayloadApiSchema = z
+  .object({
+    diagnostic_id: z.string().optional(),
+    issue_code: z.string(),
+    repair_type: z.enum(['settlement_correction', 'custody_correction']),
+    from_user_id: z
+      .union([z.string(), z.number()])
+      .optional()
+      .transform((value) => (value == null ? undefined : String(value))),
+    to_user_id: z
+      .union([z.string(), z.number()])
+      .optional()
+      .transform((value) => (value == null ? undefined : String(value))),
+    user_id: z
+      .union([z.string(), z.number()])
+      .optional()
+      .transform((value) => (value == null ? undefined : String(value))),
+    transaction_id: z
+      .union([z.string(), z.number()])
+      .nullable()
+      .optional()
+      .transform((value) => (value == null ? null : String(value))),
+    amount: z.unknown().transform((value) => Number(value) || 0),
+    description: z.string().catch('Corrección del libro'),
+  })
+  .transform<AccountLedgerRepairPayload>((payload) => ({
+    diagnosticId: payload.diagnostic_id,
+    issueCode: payload.issue_code,
+    repairType: payload.repair_type,
+    fromUserId: payload.from_user_id,
+    toUserId: payload.to_user_id,
+    userId: payload.user_id,
+    transactionId: payload.transaction_id,
+    amount: payload.amount,
+    description: payload.description,
+  }));
+
+const recordSchema = z.record(z.string(), z.unknown()).catch({});
+
+const accountLedgerDiagnosticApiSchema = z
+  .object({
+    id: z.string(),
+    code: z.string(),
+    severity: z.string().catch('warning'),
+    confidence: z.string().catch('high'),
+    mode: z.string().catch('automatic'),
+    repair_type: z.enum(['settlement_correction', 'custody_correction']),
+    title: z.string().catch('Corrección disponible'),
+    description: z.string().catch(''),
+    target_transaction_id: z
+      .union([z.string(), z.number()])
+      .nullable()
+      .optional()
+      .transform((value) => (value == null ? null : String(value))),
+    evidence: recordSchema,
+    preview: accountLedgerRepairPreviewApiSchema,
+    suggested_payload: accountLedgerRepairPayloadApiSchema,
+    required_fields: z.array(z.string()).optional().default([]),
+  })
+  .transform((payload) => ({
+    id: payload.id,
+    code: payload.code,
+    severity: payload.severity,
+    confidence: payload.confidence,
+    mode: payload.mode,
+    repairType: payload.repair_type,
+    title: payload.title,
+    description: payload.description,
+    targetTransactionId: payload.target_transaction_id,
+    evidence: payload.evidence,
+    preview: payload.preview,
+    suggestedPayload: {
+      ...payload.suggested_payload,
+      diagnosticId: payload.id,
+      evidence: payload.evidence,
+      preview: payload.preview as unknown as Record<string, unknown>,
+    },
+    requiredFields: payload.required_fields,
+  }));
+
+const accountLedgerRepairApiSchema = z
+  .object({
+    id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    status: z.string(),
+    issue_code: z.string(),
+    repair_type: z.enum(['settlement_correction', 'custody_correction']),
+    confidence: z.string(),
+    actor_user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+    actor_user_name: z.string().catch('Usuario no disponible'),
+    target_transaction_id: z
+      .union([z.string(), z.number()])
+      .nullable()
+      .optional()
+      .transform((value) => (value == null ? null : String(value))),
+    target_transaction_concept: z.string().nullable().optional().default(null),
+    description: z.string().catch('Corrección del libro'),
+    amount: z.unknown().transform((value) => Number(value) || 0),
+    created_at: z.string().nullable().optional().default(null),
+    can_reverse: z.boolean().catch(false),
+    preview: accountLedgerRepairPreviewApiSchema,
+    result: recordSchema,
+  })
+  .transform<AccountLedgerRepair>((payload) => ({
+    id: payload.id,
+    status: payload.status,
+    issueCode: payload.issue_code,
+    repairType: payload.repair_type,
+    confidence: payload.confidence,
+    actorUserId: payload.actor_user_id,
+    actorUserName: payload.actor_user_name,
+    targetTransactionId: payload.target_transaction_id,
+    targetTransactionConcept: payload.target_transaction_concept,
+    description: payload.description,
+    amount: payload.amount,
+    createdAt: payload.created_at,
+    canReverse: payload.can_reverse,
+    preview: payload.preview,
+    result: payload.result,
+  }));
+
+const accountLedgerDiagnosticsResponseSchema = z
+  .object({
+    data: z.object({
+      diagnostics: z.array(accountLedgerDiagnosticApiSchema).default([]),
+      repairs: z.array(accountLedgerRepairApiSchema).default([]),
+    }),
+  })
+  .transform<AccountLedgerDiagnosticsResult>((payload) => payload.data);
+
+const accountLedgerRepairResponseSchema = z
+  .object({
+    data: accountLedgerRepairApiSchema,
+  })
+  .transform<AccountLedgerRepair>((payload) => payload.data);
+
 const singleAccountSchema = z
   .union([
     accountApiSchema,
@@ -174,6 +360,40 @@ function mapWritePayloadToApi(payload: AccountWritePayload) {
     credit_card: payload.isCredit,
     credit_line: payload.creditLine,
     cutoff_day: payload.closingDay,
+  };
+}
+
+function mapRepairPreviewToApi(preview: AccountLedgerRepairPayload['preview']) {
+  if (!preview || !('ledgerEntries' in preview)) {
+    return preview;
+  }
+
+  const typedPreview = preview as unknown as {
+    summary?: string;
+    ledgerEntries?: Array<{
+      userId?: string;
+      userName?: string | null;
+      relatedUserId?: string | null;
+      relatedUserName?: string | null;
+      transactionId?: string | null;
+      type?: string;
+      amount?: number;
+      description?: string | null;
+    }>;
+  };
+
+  return {
+    summary: typedPreview.summary,
+    ledger_entries: typedPreview.ledgerEntries?.map((entry) => ({
+      user_id: entry.userId,
+      user_name: entry.userName,
+      related_user_id: entry.relatedUserId,
+      related_user_name: entry.relatedUserName,
+      transaction_id: entry.transactionId,
+      type: entry.type,
+      amount: entry.amount,
+      description: entry.description,
+    })),
   };
 }
 
@@ -292,6 +512,38 @@ export function createAccountsRepository() {
       );
 
       return accountLedgerCollectionSchema.parse(response);
+    },
+    async listLedgerDiagnostics(accountId: string): Promise<AccountLedgerDiagnosticsResult> {
+      const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}/ledger/diagnostics`);
+
+      return accountLedgerDiagnosticsResponseSchema.parse(response);
+    },
+    async repairLedger(
+      accountId: string,
+      payload: AccountLedgerRepairPayload,
+    ): Promise<AccountLedgerRepair> {
+      const response = await apiClient.post<unknown>(`${accountsPath}/${accountId}/ledger/repairs`, {
+        diagnostic_id: payload.diagnosticId,
+        issue_code: payload.issueCode,
+        repair_type: payload.repairType,
+        from_user_id: payload.fromUserId,
+        to_user_id: payload.toUserId,
+        user_id: payload.userId,
+        transaction_id: payload.transactionId,
+        amount: payload.amount,
+        description: payload.description,
+        evidence: payload.evidence,
+        preview: mapRepairPreviewToApi(payload.preview),
+      });
+
+      return accountLedgerRepairResponseSchema.parse(response);
+    },
+    async reverseLedgerRepair(accountId: string, repairId: string): Promise<AccountLedgerRepair> {
+      const response = await apiClient.post<unknown>(
+        `${accountsPath}/${accountId}/ledger/repairs/${repairId}/reverse`,
+      );
+
+      return accountLedgerRepairResponseSchema.parse(response);
     },
     async create(payload: AccountWritePayload): Promise<Account> {
       const response = await apiClient.post<unknown>(accountsPath, mapWritePayloadToApi(payload));

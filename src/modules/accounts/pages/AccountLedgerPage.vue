@@ -2,8 +2,24 @@
 import { computed, ref, watch } from 'vue';
 
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
-import type { Account, AccountLedgerRow, AccountMemberAmount } from '@/modules/accounts/types';
-import { AppButton, AppCard, AppLoadMoreFooter, AppText, AppTitle } from '@/modules/shared/components';
+import type {
+  Account,
+  AccountLedgerDiagnostic,
+  AccountLedgerRepair,
+  AccountLedgerRepairPayload,
+  AccountLedgerRow,
+  AccountMemberAmount,
+} from '@/modules/accounts/types';
+import {
+  AppButton,
+  AppCard,
+  AppInput,
+  AppLoadMoreFooter,
+  AppModal,
+  AppText,
+  AppTitle,
+} from '@/modules/shared/components';
+import type { AppModalAction } from '@/modules/shared/types/modal';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 
 const props = defineProps<{ account?: Account }>();
@@ -14,6 +30,18 @@ const isLoading = ref(false);
 const isLoadingMore = ref(false);
 const loadError = ref<string | null>(null);
 const loadMoreError = ref<string | null>(null);
+const diagnostics = ref<AccountLedgerDiagnostic[]>([]);
+const repairs = ref<AccountLedgerRepair[]>([]);
+const isLoadingDiagnostics = ref(false);
+const diagnosticsError = ref<string | null>(null);
+const actionError = ref<string | null>(null);
+const actionMessage = ref<string | null>(null);
+const selectedDiagnostic = ref<AccountLedgerDiagnostic | null>(null);
+const selectedRepair = ref<AccountLedgerRepair | null>(null);
+const isApplyingRepair = ref(false);
+const custodyUserId = ref('');
+const custodyAmount = ref('');
+const custodyDescription = ref('');
 const page = ref(1);
 const hasMore = ref(false);
 
@@ -21,6 +49,51 @@ const accountId = computed(() => props.account?.id ?? '');
 const canLoadMore = computed(
   () => !isLoading.value && !isLoadingMore.value && hasMore.value && !loadMoreError.value,
 );
+const openDiagnostics = computed(() => diagnostics.value.filter((item) => item.mode !== 'hidden'));
+const recentReversibleRepairs = computed(() => repairs.value.filter((repair) => repair.canReverse));
+const diagnosticModalActions = computed<ReadonlyArray<AppModalAction>>(() => [
+  {
+    key: 'cancel',
+    label: 'Cancelar',
+    tone: 'neutral',
+    autoClose: true,
+    disabled: isApplyingRepair.value,
+  },
+  {
+    key: 'apply',
+    label: selectedDiagnostic.value?.mode === 'needs_user_input' ? 'Guardar corrección' : 'Aplicar corrección',
+    tone: 'primary',
+    loading: isApplyingRepair.value,
+    disabled: isApplyingRepair.value || !canApplySelectedDiagnostic.value,
+  },
+]);
+const reverseModalActions = computed<ReadonlyArray<AppModalAction>>(() => [
+  {
+    key: 'cancel',
+    label: 'Cancelar',
+    tone: 'neutral',
+    autoClose: true,
+    disabled: isApplyingRepair.value,
+  },
+  {
+    key: 'reverse',
+    label: 'Reversar',
+    tone: 'danger',
+    loading: isApplyingRepair.value,
+    disabled: isApplyingRepair.value,
+  },
+]);
+const canApplySelectedDiagnostic = computed(() => {
+  if (!selectedDiagnostic.value) {
+    return false;
+  }
+
+  if (selectedDiagnostic.value.mode !== 'needs_user_input') {
+    return true;
+  }
+
+  return Boolean(custodyUserId.value && Number(custodyAmount.value) !== 0 && custodyDescription.value.trim());
+});
 
 const { target: loadMoreSentinel } = useInfiniteScroll({
   enabled: canLoadMore,
@@ -89,6 +162,27 @@ async function loadLedger(nextPage = 1): Promise<void> {
   }
 }
 
+async function loadDiagnostics(): Promise<void> {
+  if (!accountId.value) {
+    return;
+  }
+
+  isLoadingDiagnostics.value = true;
+  diagnosticsError.value = null;
+
+  try {
+    const result = await repository.listLedgerDiagnostics(accountId.value);
+    diagnostics.value = result.diagnostics;
+    repairs.value = result.repairs;
+  } catch (error) {
+    diagnosticsError.value = error instanceof Error
+      ? error.message
+      : 'No se pudo revisar la integridad del libro.';
+  } finally {
+    isLoadingDiagnostics.value = false;
+  }
+}
+
 async function loadMoreLedger(): Promise<void> {
   if (!hasMore.value || isLoadingMore.value) {
     return;
@@ -117,6 +211,106 @@ function retryLoadMore(): void {
   void loadMoreLedger();
 }
 
+function openDiagnostic(diagnostic: AccountLedgerDiagnostic): void {
+  selectedDiagnostic.value = diagnostic;
+  actionError.value = null;
+
+  if (diagnostic.mode === 'needs_user_input') {
+    custodyUserId.value = props.account?.users[0]?.id ?? '';
+    custodyAmount.value = String(diagnostic.suggestedPayload.amount || '');
+    custodyDescription.value = diagnostic.suggestedPayload.description;
+  }
+}
+
+function openReverseRepair(repair: AccountLedgerRepair): void {
+  selectedRepair.value = repair;
+  actionError.value = null;
+}
+
+function closeDiagnosticModal(): void {
+  if (isApplyingRepair.value) {
+    return;
+  }
+
+  selectedDiagnostic.value = null;
+}
+
+function closeReverseModal(): void {
+  if (isApplyingRepair.value) {
+    return;
+  }
+
+  selectedRepair.value = null;
+}
+
+async function handleDiagnosticAction(key: string): Promise<void> {
+  if (key !== 'apply' || !selectedDiagnostic.value) {
+    return;
+  }
+
+  await applyDiagnostic(selectedDiagnostic.value);
+}
+
+async function handleReverseAction(key: string): Promise<void> {
+  if (key !== 'reverse' || !selectedRepair.value || !accountId.value) {
+    return;
+  }
+
+  isApplyingRepair.value = true;
+  actionError.value = null;
+
+  try {
+    await repository.reverseLedgerRepair(accountId.value, selectedRepair.value.id);
+    selectedRepair.value = null;
+    actionMessage.value = 'Corrección reversada. El libro fue actualizado.';
+    await refreshLedgerTools();
+  } catch (error) {
+    actionError.value = error instanceof Error ? error.message : 'No se pudo reversar la corrección.';
+  } finally {
+    isApplyingRepair.value = false;
+  }
+}
+
+async function applyDiagnostic(diagnostic: AccountLedgerDiagnostic): Promise<void> {
+  if (!accountId.value) {
+    return;
+  }
+
+  isApplyingRepair.value = true;
+  actionError.value = null;
+
+  try {
+    await repository.repairLedger(accountId.value, buildRepairPayload(diagnostic));
+    selectedDiagnostic.value = null;
+    actionMessage.value = 'Corrección aplicada. Revisa el resultado en el libro.';
+    await refreshLedgerTools();
+  } catch (error) {
+    actionError.value = error instanceof Error ? error.message : 'No se pudo aplicar la corrección.';
+  } finally {
+    isApplyingRepair.value = false;
+  }
+}
+
+function buildRepairPayload(diagnostic: AccountLedgerDiagnostic): AccountLedgerRepairPayload {
+  if (diagnostic.mode !== 'needs_user_input') {
+    return diagnostic.suggestedPayload;
+  }
+
+  return {
+    ...diagnostic.suggestedPayload,
+    userId: custodyUserId.value,
+    amount: Number(custodyAmount.value),
+    description: custodyDescription.value.trim(),
+  };
+}
+
+async function refreshLedgerTools(): Promise<void> {
+  rows.value = [];
+  page.value = 1;
+  hasMore.value = false;
+  await Promise.all([loadLedger(), loadDiagnostics()]);
+}
+
 watch(
   accountId,
   () => {
@@ -124,7 +318,8 @@ watch(
     page.value = 1;
     hasMore.value = false;
     loadMoreError.value = null;
-    void loadLedger();
+    actionMessage.value = null;
+    void Promise.all([loadLedger(), loadDiagnostics()]);
   },
   { immediate: true },
 );
@@ -145,6 +340,84 @@ watch(
         <AppButton variant="outline" @click="loadLedger()">Reintentar</AppButton>
       </div>
     </AppCard>
+
+    <section class="space-y-3">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <AppTitle as="h3" size="sm" class="text-base!">Integridad</AppTitle>
+          <AppText tone="subtle">
+            Correcciones auditables para custodia y reembolsos del libro.
+          </AppText>
+        </div>
+        <AppButton variant="outline" :disabled="isLoadingDiagnostics" @click="loadDiagnostics()">
+          Revisar
+        </AppButton>
+      </div>
+
+      <AppCard v-if="diagnosticsError" class="rounded-2xl border-(--app-color-danger)">
+        <AppText class="text-(--app-color-danger)!">{{ diagnosticsError }}</AppText>
+      </AppCard>
+
+      <AppCard v-else-if="actionMessage" class="rounded-2xl border-(--app-color-success)">
+        <AppText class="text-(--app-color-success)!">{{ actionMessage }}</AppText>
+      </AppCard>
+
+      <div v-if="isLoadingDiagnostics" class="h-20 animate-pulse rounded-2xl bg-(--app-color-surface-muted)" />
+
+      <div v-else class="overflow-hidden rounded-2xl border border-(--app-color-border)">
+        <article
+          v-if="openDiagnostics.length === 0"
+          class="bg-(--app-color-surface) px-4 py-4"
+        >
+          <p class="text-sm font-semibold text-(--app-color-text)">Sin inconsistencias abiertas</p>
+          <p class="mt-1 text-xs text-(--app-color-text-subtle)">
+            El balance, la custodia y los reembolsos no muestran huecos accionables.
+          </p>
+        </article>
+
+        <article
+          v-for="diagnostic in openDiagnostics"
+          v-else
+          :key="diagnostic.id"
+          class="border-b border-(--app-color-border) bg-(--app-color-surface) px-4 py-4 last:border-b-0"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-bold text-(--app-color-text)">{{ diagnostic.title }}</p>
+              <p class="mt-1 text-xs leading-5 text-(--app-color-text-subtle)">
+                {{ diagnostic.description }}
+              </p>
+            </div>
+            <AppButton variant="secondary" @click="openDiagnostic(diagnostic)">
+              {{ diagnostic.mode === 'needs_user_input' ? 'Completar' : 'Corregir' }}
+            </AppButton>
+          </div>
+        </article>
+      </div>
+
+      <div
+        v-if="recentReversibleRepairs.length"
+        class="overflow-hidden rounded-2xl border border-(--app-color-border)"
+      >
+        <article
+          v-for="repair in recentReversibleRepairs"
+          :key="repair.id"
+          class="border-b border-(--app-color-border) bg-(--app-color-surface) px-4 py-4 last:border-b-0"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <p class="truncate text-sm font-bold text-(--app-color-text)">
+                {{ repair.description }}
+              </p>
+              <p class="mt-1 text-xs text-(--app-color-text-subtle)">
+                {{ formatCurrency(repair.amount) }} · {{ repair.actorUserName }}
+              </p>
+            </div>
+            <AppButton variant="outline" @click="openReverseRepair(repair)">Reversar</AppButton>
+          </div>
+        </article>
+      </div>
+    </section>
 
     <div v-else-if="isLoading" class="space-y-3">
       <div
@@ -231,5 +504,101 @@ watch(
         @retry="retryLoadMore"
       />
     </div>
+
+    <AppModal
+      :open="Boolean(selectedDiagnostic)"
+      title="Confirmar corrección"
+      variant="warning"
+      :actions="diagnosticModalActions"
+      @close="closeDiagnosticModal"
+      @action="handleDiagnosticAction"
+    >
+      <div v-if="selectedDiagnostic" class="space-y-4">
+        <div>
+          <p class="text-base font-bold text-(--app-color-text)">
+            {{ selectedDiagnostic.title }}
+          </p>
+          <p class="mt-1 text-sm leading-6 text-(--app-color-text-subtle)">
+            {{ selectedDiagnostic.description }}
+          </p>
+        </div>
+
+        <div
+          v-if="selectedDiagnostic.mode === 'needs_user_input'"
+          class="space-y-3 rounded-2xl border border-(--app-color-border) bg-(--app-color-surface-muted) p-3"
+        >
+          <label class="block text-xs font-semibold text-(--app-color-text-subtle)" for="custody-user">
+            Custodio
+          </label>
+          <select
+            id="custody-user"
+            v-model="custodyUserId"
+            class="w-full rounded-xl border border-(--app-color-border) bg-(--app-color-surface) px-3 py-3 text-sm font-semibold text-(--app-color-text) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+          >
+            <option v-for="user in props.account?.users ?? []" :key="user.id" :value="user.id">
+              {{ user.name }}
+            </option>
+          </select>
+
+          <AppInput
+            id="custody-amount"
+            v-model="custodyAmount"
+            label="Monto de custodia"
+            mask="amount"
+          />
+          <AppInput
+            id="custody-description"
+            v-model="custodyDescription"
+            label="Descripción"
+          />
+        </div>
+
+        <div class="rounded-2xl border border-(--app-color-border) bg-(--app-color-surface-muted) p-3">
+          <p class="text-sm font-semibold text-(--app-color-text)">
+            {{ selectedDiagnostic.preview.summary }}
+          </p>
+          <div v-if="selectedDiagnostic.preview.ledgerEntries.length" class="mt-3 divide-y divide-(--app-color-border)">
+            <p
+              v-for="entry in selectedDiagnostic.preview.ledgerEntries"
+              :key="`${entry.userId}-${entry.relatedUserId}-${entry.amount}`"
+              class="flex justify-between gap-3 py-2 text-xs text-(--app-color-text-subtle)"
+            >
+              <span class="min-w-0 truncate">
+                {{ entry.userName ?? 'Usuario' }}
+                <template v-if="entry.relatedUserName"> / {{ entry.relatedUserName }}</template>
+              </span>
+              <span class="shrink-0 font-bold text-(--app-color-text)">
+                {{ formatCurrency(entry.amount) }}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <AppText v-if="actionError" class="text-(--app-color-danger)!">{{ actionError }}</AppText>
+      </div>
+    </AppModal>
+
+    <AppModal
+      :open="Boolean(selectedRepair)"
+      title="Reversar corrección"
+      variant="danger"
+      :actions="reverseModalActions"
+      @close="closeReverseModal"
+      @action="handleReverseAction"
+    >
+      <div v-if="selectedRepair" class="space-y-4">
+        <p class="text-sm leading-6 text-(--app-color-text-subtle)">
+          Se crearán asientos inversos para la corrección aplicada por
+          {{ selectedRepair.actorUserName }}. El movimiento original no se modifica.
+        </p>
+        <div class="rounded-2xl border border-(--app-color-border) bg-(--app-color-surface-muted) p-3">
+          <p class="text-sm font-bold text-(--app-color-text)">{{ selectedRepair.description }}</p>
+          <p class="mt-1 text-xs text-(--app-color-text-subtle)">
+            {{ formatCurrency(selectedRepair.amount) }}
+          </p>
+        </div>
+        <AppText v-if="actionError" class="text-(--app-color-danger)!">{{ actionError }}</AppText>
+      </div>
+    </AppModal>
   </section>
 </template>
