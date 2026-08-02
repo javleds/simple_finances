@@ -67,6 +67,137 @@ it('summarizes out of pocket shared expenses as reimbursements between members',
         ]);
 });
 
+it('keeps opposite transaction debts actionable instead of hiding them behind account netting', function () {
+    $javier = User::factory()->create(['name' => 'Javier']);
+    $divanny = User::factory()->create(['name' => 'Divanny']);
+    $account = Account::factory()->create(['user_id' => $javier->id]);
+    $account->users()->sync([
+        $javier->id => ['percentage' => 50],
+        $divanny->id => ['percentage' => 50],
+    ]);
+
+    $filos = Transaction::factory()
+        ->outcome()
+        ->completed()
+        ->create([
+            'account_id' => $account->id,
+            'user_id' => $javier->id,
+            'paid_by_user_id' => $divanny->id,
+            'concept' => 'Filos',
+            'amount' => 200.0,
+            'scheduled_at' => CarbonImmutable::parse('2026-07-31'),
+        ]);
+    $groceries = Transaction::factory()
+        ->outcome()
+        ->completed()
+        ->create([
+            'account_id' => $account->id,
+            'user_id' => $javier->id,
+            'paid_by_user_id' => $javier->id,
+            'concept' => 'Groceries',
+            'amount' => 500.0,
+            'scheduled_at' => CarbonImmutable::parse('2026-08-01'),
+        ]);
+
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $divanny->id,
+        'transaction_id' => $filos->id,
+        'type' => AccountMemberLedgerEntryType::ExpensePaid,
+        'amount' => 200.0,
+        'description' => 'Filos',
+        'occurred_at' => $filos->scheduled_at,
+    ]);
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $javier->id,
+        'transaction_id' => $filos->id,
+        'related_user_id' => $divanny->id,
+        'type' => AccountMemberLedgerEntryType::ExpenseShare,
+        'amount' => -100.0,
+        'description' => 'Filos',
+        'occurred_at' => $filos->scheduled_at,
+    ]);
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $divanny->id,
+        'transaction_id' => $filos->id,
+        'related_user_id' => $divanny->id,
+        'type' => AccountMemberLedgerEntryType::ExpenseShare,
+        'amount' => -100.0,
+        'description' => 'Filos',
+        'occurred_at' => $filos->scheduled_at,
+    ]);
+
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $javier->id,
+        'transaction_id' => $groceries->id,
+        'type' => AccountMemberLedgerEntryType::ExpensePaid,
+        'amount' => 500.0,
+        'description' => 'Groceries',
+        'occurred_at' => $groceries->scheduled_at,
+    ]);
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $divanny->id,
+        'transaction_id' => $groceries->id,
+        'related_user_id' => $javier->id,
+        'type' => AccountMemberLedgerEntryType::ExpenseShare,
+        'amount' => -250.0,
+        'description' => 'Groceries',
+        'occurred_at' => $groceries->scheduled_at,
+    ]);
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $javier->id,
+        'transaction_id' => $groceries->id,
+        'related_user_id' => $javier->id,
+        'type' => AccountMemberLedgerEntryType::ExpenseShare,
+        'amount' => -250.0,
+        'description' => 'Groceries',
+        'occurred_at' => $groceries->scheduled_at,
+    ]);
+
+    $summary = app(BuildAccountMemberSummary::class)->execute($account);
+
+    expect($summary['settlements_by_user'])->toMatchArray([
+        ['user_id' => $javier->id, 'user_name' => 'Javier', 'amount' => 150.0],
+        ['user_id' => $divanny->id, 'user_name' => 'Divanny', 'amount' => -150.0],
+    ])
+        ->and($summary['pending_reimbursements'])->toHaveCount(2)
+        ->and($summary['pending_reimbursements'])->toContain([
+            'from_user_id' => $javier->id,
+            'from_user_name' => 'Javier',
+            'to_user_id' => $divanny->id,
+            'to_user_name' => 'Divanny',
+            'amount' => 100.0,
+            'items' => [
+                [
+                    'transaction_id' => (string) $filos->id,
+                    'concept' => 'Filos',
+                    'amount' => 100.0,
+                    'occurred_at' => '2026-07-31',
+                ],
+            ],
+        ])
+        ->and($summary['pending_reimbursements'])->toContain([
+            'from_user_id' => $divanny->id,
+            'from_user_name' => 'Divanny',
+            'to_user_id' => $javier->id,
+            'to_user_name' => 'Javier',
+            'amount' => 250.0,
+            'items' => [
+                [
+                    'transaction_id' => (string) $groceries->id,
+                    'concept' => 'Groceries',
+                    'amount' => 250.0,
+                    'occurred_at' => '2026-08-01',
+                ],
+            ],
+        ]);
+});
+
 it('settles reimbursements and updates custody with an internal member transfer', function () {
     $owner = User::factory()->create(['name' => 'Owner']);
     $partner = User::factory()->create(['name' => 'Partner']);
