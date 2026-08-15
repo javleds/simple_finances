@@ -198,7 +198,7 @@ it('keeps opposite transaction debts actionable instead of hiding them behind ac
         ]);
 });
 
-it('settles reimbursements and updates custody with an internal member transfer', function () {
+it('settles reimbursements without changing member custody', function () {
     $owner = User::factory()->create(['name' => 'Owner']);
     $partner = User::factory()->create(['name' => 'Partner']);
     $account = Account::factory()->create(['user_id' => $owner->id]);
@@ -258,8 +258,8 @@ it('settles reimbursements and updates custody with an internal member transfer'
         ['user_id' => $partner->id, 'user_name' => 'Partner', 'amount' => 0.0],
     ])
         ->and($summary['custody_by_user'])->toMatchArray([
-            ['user_id' => $owner->id, 'user_name' => 'Owner', 'amount' => -500.0],
-            ['user_id' => $partner->id, 'user_name' => 'Partner', 'amount' => 500.0],
+            ['user_id' => $owner->id, 'user_name' => 'Owner', 'amount' => 0.0],
+            ['user_id' => $partner->id, 'user_name' => 'Partner', 'amount' => 0.0],
         ])
         ->and($settlementTransactionEntries)->toHaveCount(2)
         ->and($settlementTransactionEntries->pluck('amount')->all())->toBe([500.0, -500.0])
@@ -267,11 +267,8 @@ it('settles reimbursements and updates custody with an internal member transfer'
         ->and($ownerReceivableAmount)->toBe(0.0)
         ->and($partnerPendingAmount)->toBe(0.0)
         ->and($partnerReceivableAmount)->toBe(0.0)
-        ->and($recoveryTransaction)->not->toBeNull()
-        ->and((float) $recoveryTransaction->amount)->toBe(500.0)
-        ->and($recoveryTransaction->user_id)->toBe($owner->id)
-        ->and($recoveryTransaction->custodian_user_id)->toBe($partner->id)
-        ->and((float) $account->fresh()->balance)->toBe(0.0)
+        ->and($recoveryTransaction)->toBeNull()
+        ->and((float) $account->fresh()->balance)->toBe(-500.0)
         ->and($summary['pending_reimbursements'])->toBe([]);
 });
 

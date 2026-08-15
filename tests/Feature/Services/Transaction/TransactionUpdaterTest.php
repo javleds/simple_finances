@@ -166,3 +166,57 @@ it('removes allocations and ledger when changing an outcome to income', function
         ->and(AccountMemberLedgerEntry::where('transaction_id', $transaction->id)->pluck('type')->map->value->all())->toBe(['income_custody'])
         ->and($transaction->fresh()->type)->toBe(TransactionType::Income);
 });
+
+it('removes split allocations when updating an out of pocket expense to a single responsible member', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 3000.0]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $partner->id => ['percentage' => 50],
+    ]);
+    $this->actingAs($owner);
+
+    $transaction = app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Split by mistake',
+        'amount' => 2200.0,
+        'account_id' => $account->id,
+        'payment_source' => TransactionPaymentSource::MemberOutOfPocket,
+        'paid_by_user_id' => $partner->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 50],
+            ['user_id' => $partner->id, 'percentage' => 50],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    app(TransactionUpdater::class)->execute($transaction, TransactionFormDto::fromFormArray([
+        'id' => $transaction->id,
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Split by mistake',
+        'amount' => 2200.0,
+        'account_id' => $account->id,
+        'payment_source' => TransactionPaymentSource::MemberOutOfPocket,
+        'paid_by_user_id' => $partner->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    $ledgerEntries = AccountMemberLedgerEntry::query()
+        ->where('transaction_id', $transaction->id)
+        ->orderBy('id')
+        ->get();
+
+    expect(TransactionAllocation::query()->where('transaction_id', $transaction->id)->count())->toBe(0)
+        ->and(Transaction::query()->where('parent_transaction_id', $transaction->id)->exists())->toBeFalse()
+        ->and($ledgerEntries->pluck('user_id')->all())->toBe([$partner->id, $owner->id])
+        ->and($ledgerEntries->pluck('type')->map->value->all())->toBe(['expense_paid', 'expense_share'])
+        ->and($ledgerEntries->pluck('amount')->all())->toBe([2200.0, -2200.0]);
+});

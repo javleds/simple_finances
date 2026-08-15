@@ -80,7 +80,7 @@ Important transaction fields:
 : Negative settlement entry for each member's responsibility in an out-of-pocket expense.
 
 `internal_transfer`
-: Custody movement between members.
+: Custody movement between members. It is reserved for explicit custody changes and should not be created by reimbursement settlement.
 
 `settlement_transfer`
 : Settlement movement that reduces or clears a reimbursement obligation.
@@ -163,16 +163,12 @@ See [member-transfer-lifecycle.puml](diagrams/member-transfer-lifecycle.puml).
 
 ![Member transfer lifecycle](diagrams/member-transfer-lifecycle.svg)
 
-When a member pays another member, the app records both sides:
+When a member pays another member to settle a reimbursement, the app records settlement entries only:
 
-- custody side:
-  - sender gets `internal_transfer -amount`,
-  - receiver gets `internal_transfer +amount`.
-- settlement side:
-  - sender gets `settlement_transfer +amount`,
-  - receiver gets `settlement_transfer -amount`.
+- sender gets `settlement_transfer +amount`,
+- receiver gets `settlement_transfer -amount`.
 
-This clears the debt while preserving who now holds the money.
+This clears or reduces the debt without changing account custody or creating an economic income transaction. If money custody must move between members, record that as an explicit custody operation instead of piggybacking it on reimbursement settlement.
 
 Endpoint:
 
@@ -238,11 +234,12 @@ This is used for balance recalculation, account transaction lists, and transacti
 - `SyncTransactionAllocations`: owns allocation persistence.
 - `SyncAccountMemberLedger`: owns ledger regeneration for a transaction.
 - `BuildAccountMemberSummary`: derives custody, settlement, and reimbursements.
-- `RegisterAccountMemberTransfer`: records settlement/custody movement between members.
+- `RegisterAccountMemberTransfer`: records reimbursement settlement between members.
 
 ## Current Trade-Offs
 
 - Completed out-of-pocket expenses immediately produce reimbursement suggestions.
 - Account-fund expenses do not automatically infer which custodian should be reimbursed unless the payment source is captured as out-of-pocket.
+- Reimbursement settlement does not change custody or account balance.
 - Historical pending transaction data is normalized to completed data by migration.
 - `legacy_migrated_at` is the safety marker that prevents double-counting migrated children.

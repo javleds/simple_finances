@@ -73,6 +73,10 @@ class TransactionCreator
             return [];
         }
 
+        if (! $dto->splitBetweenUsers) {
+            return [];
+        }
+
         $account = Account::withoutGlobalScopes()->findOrFail($transaction->account_id);
 
         return $this->resolveOutcomeUserPayments->execute(

@@ -1,6 +1,7 @@
 <?php
 
 use App\Dto\TransactionFormDto;
+use App\Enums\TransactionPaymentSource;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Account;
@@ -116,6 +117,42 @@ it('does not create pending incomes for users with zero percentage', function ()
     expect($allocations)->toHaveCount(1)
         ->and($allocations->pluck('user_id')->all())->toBe([$owner->id])
         ->and($allocations->pluck('percentage')->all())->toBe([100.0]);
+});
+
+it('records an out of pocket payment by another member without splitting it', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 3000.0]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $partner->id => ['percentage' => 50],
+    ]);
+    $this->actingAs($owner);
+
+    $transaction = app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Partner paid full expense',
+        'amount' => 2200.0,
+        'account_id' => $account->id,
+        'payment_source' => TransactionPaymentSource::MemberOutOfPocket,
+        'paid_by_user_id' => $partner->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    $ledgerEntries = AccountMemberLedgerEntry::query()
+        ->where('transaction_id', $transaction->id)
+        ->orderBy('id')
+        ->get();
+
+    expect(TransactionAllocation::query()->where('transaction_id', $transaction->id)->count())->toBe(0)
+        ->and(Transaction::query()->where('parent_transaction_id', $transaction->id)->exists())->toBeFalse()
+        ->and($ledgerEntries->pluck('user_id')->all())->toBe([$partner->id, $owner->id])
+        ->and($ledgerEntries->pluck('type')->map->value->all())->toBe(['expense_paid', 'expense_share'])
+        ->and($ledgerEntries->pluck('amount')->all())->toBe([2200.0, -2200.0]);
 });
 
 it('allocates the exact split total even when decimal divisions leave a remainder', function () {

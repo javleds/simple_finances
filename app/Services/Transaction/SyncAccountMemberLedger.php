@@ -72,7 +72,11 @@ class SyncAccountMemberLedger
             'occurred_at' => $transaction->scheduled_at,
         ]);
 
-        foreach ($transaction->allocations as $allocation) {
+        $allocations = $transaction->allocations->isNotEmpty()
+            ? $transaction->allocations
+            : collect([(object) ['user_id' => $transaction->user_id, 'amount' => $transaction->amount]]);
+
+        foreach ($allocations as $allocation) {
             $transaction->ledgerEntries()->create([
                 'account_id' => $transaction->account_id,
                 'user_id' => $allocation->user_id,

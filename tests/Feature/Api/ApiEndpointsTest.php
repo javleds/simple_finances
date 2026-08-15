@@ -1084,12 +1084,20 @@ it('returns the created transaction with allocations when storing a split accoun
     $memberOne = User::factory()->create();
     $memberTwo = User::factory()->create();
     $memberThree = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
 
     $account->users()->attach($owner->id, ['percentage' => 100]);
     $account->users()->attach($memberOne->id, ['percentage' => 33.0]);
     $account->users()->attach($memberTwo->id, ['percentage' => 33.33]);
     $account->users()->attach($memberThree->id, ['percentage' => 33.67]);
+    Transaction::factory()
+        ->income()
+        ->completed()
+        ->create([
+            'account_id' => $account->id,
+            'user_id' => $owner->id,
+            'amount' => 1000.0,
+        ]);
 
     $response = $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/transactions", [
@@ -1134,7 +1142,7 @@ it('returns the created transaction with allocations when storing a split accoun
         ->and($allocations->pluck('user_id')->all())->toBe([$memberOne->id, $memberTwo->id, $memberThree->id])
         ->and($allocations->pluck('percentage')->all())->toBe([33.0, 33.33, 33.67])
         ->and($allocations->pluck('amount')->all())->toBe([99.0, 99.99, 101.01])
-        ->and((float) $response->json('meta.account.balance'))->toBe(-300.0);
+        ->and((float) $response->json('meta.account.balance'))->toBe(700.0);
 
     $this->withHeaders(apiHeaders($owner))
         ->deleteJson("/api/accounts/{$account->id}/transactions/{$transaction['id']}")
@@ -1155,13 +1163,13 @@ it('lists split transactions as single movements with allocations', function () 
     $account->users()->attach($memberOne->id, ['percentage' => 33.33]);
     $account->users()->attach($memberTwo->id, ['percentage' => 33.33]);
     $account->users()->attach($memberThree->id, ['percentage' => 33.34]);
-
     $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/transactions", [
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => 'Split order',
             'amount' => 100,
+            'payment_source' => 'member_out_of_pocket',
             'split_between_users' => true,
             'user_payments' => [
                 [
@@ -1240,12 +1248,20 @@ it('marks account transactions that the current user still needs to reimburse', 
 it('updates split allocations when editing a shared transaction through the api', function () {
     $owner = User::factory()->create();
     $member = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
 
     $account->users()->sync([
         $owner->id => ['percentage' => 50],
         $member->id => ['percentage' => 50],
     ]);
+    Transaction::factory()
+        ->income()
+        ->completed()
+        ->create([
+            'account_id' => $account->id,
+            'user_id' => $owner->id,
+            'amount' => 1000.0,
+        ]);
 
     $createResponse = $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/transactions", [

@@ -3,11 +3,8 @@
 namespace App\Services\Accounts;
 
 use App\Enums\AccountMemberLedgerEntryType;
-use App\Enums\TransactionStatus;
-use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\AccountMemberLedgerEntry;
-use App\Models\Transaction;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -25,25 +22,7 @@ class RegisterAccountMemberTransfer
         $description = $payload['description'] ?? 'Transferencia interna';
 
         return DB::transaction(function () use ($account, $payload, $amount, $occurredAt, $description): array {
-            $custodyFromEntry = $account->memberLedgerEntries()->create([
-                'user_id' => (int) $payload['from_user_id'],
-                'related_user_id' => (int) $payload['to_user_id'],
-                'type' => AccountMemberLedgerEntryType::InternalTransfer,
-                'amount' => $amount * -1,
-                'description' => $description,
-                'occurred_at' => $occurredAt,
-            ]);
-
-            $custodyToEntry = $account->memberLedgerEntries()->create([
-                'user_id' => (int) $payload['to_user_id'],
-                'related_user_id' => (int) $payload['from_user_id'],
-                'type' => AccountMemberLedgerEntryType::InternalTransfer,
-                'amount' => $amount,
-                'description' => $description,
-                'occurred_at' => $occurredAt,
-            ]);
-
-            $settlementEntries = $this->createSettlementEntries(
+            return $this->createSettlementEntries(
                 account: $account,
                 fromUserId: (int) $payload['from_user_id'],
                 toUserId: (int) $payload['to_user_id'],
@@ -51,17 +30,6 @@ class RegisterAccountMemberTransfer
                 description: $description,
                 occurredAt: $occurredAt,
             );
-
-            $this->createBalanceRecoveryTransaction(
-                account: $account,
-                fromUserId: (int) $payload['from_user_id'],
-                toUserId: (int) $payload['to_user_id'],
-                amount: $amount,
-                description: $description,
-                occurredAt: $occurredAt,
-            );
-
-            return [$custodyFromEntry, $custodyToEntry, ...$settlementEntries];
         });
     }
 
@@ -187,41 +155,4 @@ class RegisterAccountMemberTransfer
         ]);
     }
 
-    private function createBalanceRecoveryTransaction(
-        Account $account,
-        int $fromUserId,
-        int $toUserId,
-        float $amount,
-        string $description,
-        Carbon $occurredAt,
-    ): ?Transaction {
-        $balance = round((float) $account->fresh()->balance, 2);
-
-        if ($balance >= 0.0) {
-            return null;
-        }
-
-        $recoveryAmount = round(min($amount, abs($balance)), 2);
-
-        if ($recoveryAmount <= 0.0) {
-            return null;
-        }
-
-        $transaction = new Transaction;
-        $transaction->account_id = $account->id;
-        $transaction->user_id = $fromUserId;
-        $transaction->custodian_user_id = $toUserId;
-        $transaction->type = TransactionType::Income;
-        $transaction->status = TransactionStatus::Completed;
-        $transaction->concept = $description;
-        $transaction->amount = $recoveryAmount;
-        $transaction->percentage = 100.0;
-        $transaction->scheduled_at = $occurredAt;
-        $transaction->financial_goal_id = null;
-        $transaction->save();
-
-        app(RecalculateAccountBalance::class)->execute($account);
-
-        return $transaction;
-    }
 }
