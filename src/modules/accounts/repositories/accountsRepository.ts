@@ -71,6 +71,10 @@ const accountPendingReimbursementApiSchema = z
     to_user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
     to_user_name: z.string().catch('Usuario no disponible'),
     amount: z.unknown().transform((value) => Number(value) || 0),
+    action_type: z
+      .enum(['user_to_user', 'custody_to_user', 'user_to_account'])
+      .optional()
+      .default('user_to_user'),
     items: z.array(accountPendingReimbursementItemApiSchema).optional().default([]),
   })
   .transform((payload) => ({
@@ -79,6 +83,7 @@ const accountPendingReimbursementApiSchema = z
     toUserId: payload.to_user_id,
     toUserName: payload.to_user_name,
     amount: payload.amount,
+    actionType: payload.action_type,
     items: payload.items,
   }));
 
@@ -93,6 +98,7 @@ const accountMemberTransferResponseSchema = z
       custody_by_user: z.array(accountMemberAmountApiSchema).default([]),
       settlements_by_user: z.array(accountMemberAmountApiSchema).default([]),
       pending_reimbursements: z.array(accountPendingReimbursementApiSchema).default([]),
+      ledger_rows: z.array(z.unknown()).optional().default([]),
     }),
   })
   .transform<AccountMemberTransferResult>((payload) => ({
@@ -100,6 +106,7 @@ const accountMemberTransferResponseSchema = z
     custodyByUser: payload.meta.custody_by_user,
     settlementsByUser: payload.meta.settlements_by_user,
     pendingReimbursements: payload.meta.pending_reimbursements,
+    ledgerRows: payload.meta.ledger_rows as AccountMemberTransferResult['ledgerRows'],
   }));
 
 const accountLedgerAllocationApiSchema = z
@@ -490,6 +497,7 @@ export function createAccountsRepository() {
         {
           from_user_id: payload.fromUserId,
           to_user_id: payload.toUserId,
+          action_type: payload.actionType,
           amount: payload.amount,
           description: payload.description,
           occurred_at: payload.occurredAt,

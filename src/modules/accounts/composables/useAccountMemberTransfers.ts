@@ -52,6 +52,7 @@ export function useAccountMemberTransfers() {
         transfer: {
           fromUserId: reimbursement.fromUserId,
           toUserId: reimbursement.toUserId,
+          actionType: reimbursement.actionType,
           amount: reimbursement.amount,
           description: `Reembolso de ${reimbursement.fromUserName} a ${reimbursement.toUserName}`,
         },
@@ -118,6 +119,17 @@ export function useAccountMemberTransfers() {
         };
       }),
     });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('account-ledger-rows-updated', {
+          detail: {
+            accountId,
+            rows: result.ledgerRows,
+          },
+        }),
+      );
+    }
   }
 
   return {

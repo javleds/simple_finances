@@ -21,6 +21,7 @@ const props = withDefaults(
     accountId: string;
     accountUsers: AccountMember[];
     accountBalance?: number | null;
+    currentUserId?: string | null;
     actions: ReadonlyArray<AppModalAction>;
     financialGoals: AccountGoal[];
     formId: string;
@@ -35,6 +36,7 @@ const props = withDefaults(
   {
     enableCreateAndAddAnother: false,
     accountBalance: null,
+    currentUserId: null,
     initialValues: null,
     requiresInitialValues: false,
     serverError: null,
@@ -62,6 +64,7 @@ const emit = defineEmits<{
       :form-id="props.formId"
       :account-users="props.accountUsers"
       :account-balance="props.accountBalance"
+      :current-user-id="props.currentUserId"
       :enable-create-and-add-another="props.enableCreateAndAddAnother"
       :financial-goals="props.financialGoals"
       :is-loading-financial-goals="props.isLoadingFinancialGoals"

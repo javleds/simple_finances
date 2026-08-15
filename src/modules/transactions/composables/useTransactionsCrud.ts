@@ -133,9 +133,25 @@ export function useTransactionsCrud() {
 
   function syncAccountState(accountId: string, meta: TransactionMutationMeta): void {
     updateAccountDetailCache(accountId, meta);
+    notifyLedgerRows(accountId, meta);
     void queryClient.invalidateQueries({ queryKey: accountQueryKeys.all });
     void queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all });
     void queryClient.invalidateQueries({ queryKey: transactionFacilityQueryKeys.all });
+  }
+
+  function notifyLedgerRows(accountId: string, meta: TransactionMutationMeta): void {
+    if (!meta.ledgerRows || typeof window === 'undefined') {
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent('account-ledger-rows-updated', {
+        detail: {
+          accountId,
+          rows: meta.ledgerRows,
+        },
+      }),
+    );
   }
 
   function updateAccountDetailCache(accountId: string, meta: TransactionMutationMeta): void {

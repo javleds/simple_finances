@@ -21,6 +21,7 @@ const props = withDefaults(
     accountId: string;
     accountUsers: AccountMember[];
     accountBalance?: number | null;
+    currentUserId?: string | null;
     createTransactionActions: ReadonlyArray<AppModalAction>;
     deleteError?: string | null;
     deleteTransactionActions: ReadonlyArray<AppModalAction>;
@@ -37,6 +38,7 @@ const props = withDefaults(
   {
     createInitialValues: null,
     accountBalance: null,
+    currentUserId: null,
     deleteError: null,
     saveError: null,
   },
@@ -60,6 +62,7 @@ const emit = defineEmits<{
     :account-id="props.accountId"
     :account-users="props.accountUsers"
     :account-balance="props.accountBalance"
+    :current-user-id="props.currentUserId"
     :actions="props.createTransactionActions"
     enable-create-and-add-another
     :financial-goals="props.financialGoals"
@@ -78,6 +81,7 @@ const emit = defineEmits<{
     :account-id="props.accountId"
     :account-users="props.accountUsers"
     :account-balance="props.accountBalance"
+    :current-user-id="props.currentUserId"
     :actions="props.editTransactionActions"
     :financial-goals="props.financialGoals"
     form-id="edit-transaction-form"

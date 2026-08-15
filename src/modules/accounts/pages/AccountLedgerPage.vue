@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
 import type {
@@ -100,6 +100,26 @@ const { target: loadMoreSentinel } = useInfiniteScroll({
   onIntersect: () => {
     void loadMoreLedger();
   },
+});
+
+function handleLedgerRowsUpdated(event: Event): void {
+  const detail = (event as CustomEvent<{ accountId: string; rows: AccountLedgerRow[] }>).detail;
+
+  if (!detail || detail.accountId !== accountId.value) {
+    return;
+  }
+
+  rows.value = detail.rows;
+  page.value = 1;
+  hasMore.value = detail.rows.length >= 20;
+}
+
+onMounted(() => {
+  window.addEventListener('account-ledger-rows-updated', handleLedgerRowsUpdated);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('account-ledger-rows-updated', handleLedgerRowsUpdated);
 });
 
 function formatCurrency(value: number): string {

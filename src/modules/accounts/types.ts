@@ -23,12 +23,14 @@ export type AccountPendingReimbursement = {
   toUserId: string;
   toUserName: string;
   amount: number;
+  actionType: 'user_to_user' | 'custody_to_user' | 'user_to_account';
   items: AccountPendingReimbursementItem[];
 };
 
 export type AccountMemberTransferPayload = {
   fromUserId: string;
   toUserId: string;
+  actionType?: AccountPendingReimbursement['actionType'];
   amount: number;
   description?: string;
   occurredAt?: string;
@@ -39,6 +41,7 @@ export type AccountMemberTransferResult = {
   custodyByUser: AccountMemberAmount[];
   settlementsByUser: AccountMemberAmount[];
   pendingReimbursements: AccountPendingReimbursement[];
+  ledgerRows: AccountLedgerRow[];
 };
 
 export type AccountLedgerAllocation = {

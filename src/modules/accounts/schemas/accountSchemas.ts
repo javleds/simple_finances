@@ -71,6 +71,10 @@ const accountPendingReimbursementApiSchema = z
     to_user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
     to_user_name: z.string().catch('Usuario no disponible'),
     amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    action_type: z
+      .enum(['user_to_user', 'custody_to_user', 'user_to_account'])
+      .optional()
+      .default('user_to_user'),
     items: z.array(accountPendingReimbursementItemApiSchema).optional().default([]),
   })
   .transform<AccountPendingReimbursement>((payload) => ({
@@ -79,6 +83,7 @@ const accountPendingReimbursementApiSchema = z
     toUserId: payload.to_user_id,
     toUserName: payload.to_user_name,
     amount: payload.amount,
+    actionType: payload.action_type,
     items: payload.items,
   }));
 

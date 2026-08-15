@@ -1,3 +1,4 @@
+import type { AccountLedgerRow } from '@/modules/accounts/types';
 import type { PaginatedCollection } from '@/modules/shared/lib/pagination';
 
 export type TransactionType = 'income' | 'expense';
@@ -92,6 +93,7 @@ export type TransactionMutationMeta = {
   custodyByUser: TransactionMemberAmount[] | null;
   settlementsByUser: TransactionMemberAmount[] | null;
   pendingReimbursements: TransactionPendingReimbursement[] | null;
+  ledgerRows: AccountLedgerRow[] | null;
   subtransactionIds: string[];
 };
 
@@ -107,6 +109,7 @@ export type TransactionPendingReimbursement = {
   toUserId: string;
   toUserName: string;
   amount: number;
+  actionType: 'user_to_user' | 'custody_to_user' | 'user_to_account';
   items: TransactionPendingReimbursementItem[];
 };
 

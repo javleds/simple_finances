@@ -38,6 +38,7 @@ const props = withDefaults(
     enableCreateAndAddAnother?: boolean;
     isLoadingFinancialGoals?: boolean;
     initialValues?: Partial<Transaction> | null;
+    currentUserId?: string | null;
     lockedAccountId?: string | null;
     serverError?: string | null;
   }>(),
@@ -49,6 +50,7 @@ const props = withDefaults(
     enableCreateAndAddAnother: false,
     isLoadingFinancialGoals: false,
     initialValues: null,
+    currentUserId: null,
     lockedAccountId: null,
     serverError: null,
   },
@@ -97,9 +99,8 @@ const accountUserOptions = computed(() =>
     description: user.email,
   })),
 );
-const canUseAccountFund = computed(() => (props.accountBalance ?? 0) > 0);
 const paymentSourceOptions = computed(() => [
-  { value: 'account_fund' as const, label: 'Fondo', disabled: isExpense.value && !canUseAccountFund.value },
+  { value: 'account_fund' as const, label: 'Fondo', disabled: false },
   { value: 'member_out_of_pocket' as const, label: 'Bolsillo' },
 ]);
 const createAndAddAnother = ref(false);
@@ -144,13 +145,15 @@ watch(
   () => props.accountUsers,
   (nextUsers) => {
     const firstUserId = nextUsers[0]?.id ?? null;
+    const currentAccountUserId = nextUsers.find((user) => user.id === props.currentUserId)?.id ?? null;
+    const defaultUserId = props.initialValues ? firstUserId : currentAccountUserId ?? firstUserId;
 
-    if (!paidByUserId.value && firstUserId) {
-      paidByUserId.value = firstUserId;
+    if (!paidByUserId.value && defaultUserId) {
+      paidByUserId.value = defaultUserId;
     }
 
-    if (!custodianUserId.value && firstUserId) {
-      custodianUserId.value = firstUserId;
+    if (!custodianUserId.value && defaultUserId) {
+      custodianUserId.value = defaultUserId;
     }
 
     if (Object.keys(userPayments.value).length > 0) {
@@ -170,16 +173,6 @@ watch(showUserSplitToggle, (isVisible) => {
     splitBetweenUsers.value = false;
   }
 });
-
-watch(
-  [isExpense, canUseAccountFund],
-  ([nextIsExpense, nextCanUseAccountFund]) => {
-    if (nextIsExpense && !nextCanUseAccountFund && paymentSource.value === 'account_fund') {
-      paymentSource.value = 'member_out_of_pocket';
-    }
-  },
-  { immediate: true },
-);
 
 async function handleSubmit(): Promise<void> {
   const payload = await submitForm();
@@ -269,9 +262,6 @@ async function handleSubmit(): Promise<void> {
                 @update:model-value="paymentSource = $event"
               />
             </div>
-            <AppText v-if="!canUseAccountFund" size="sm" tone="subtle">
-              Sin saldo disponible; este egreso debe registrarse como pago de bolsillo.
-            </AppText>
           </section>
 
           <AppInput

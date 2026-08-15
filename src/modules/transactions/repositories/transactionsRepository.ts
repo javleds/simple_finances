@@ -109,6 +109,10 @@ const pendingReimbursementApiSchema = z
     to_user_id: transactionIdSchema,
     to_user_name: z.string().catch('Usuario no disponible'),
     amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    action_type: z
+      .enum(['user_to_user', 'custody_to_user', 'user_to_account'])
+      .optional()
+      .default('user_to_user'),
     items: z.array(pendingReimbursementItemApiSchema).optional().default([]),
   })
   .transform<TransactionPendingReimbursement>((payload) => ({
@@ -117,7 +121,50 @@ const pendingReimbursementApiSchema = z
     toUserId: payload.to_user_id,
     toUserName: payload.to_user_name,
     amount: payload.amount,
+    actionType: payload.action_type,
     items: payload.items,
+  }));
+
+const ledgerAllocationApiSchema = z
+  .object({
+    user_id: transactionIdSchema,
+    user_name: z.string().nullable().optional().default(null),
+    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  })
+  .transform((payload) => ({
+    userId: payload.user_id,
+    userName: payload.user_name,
+    amount: payload.amount,
+    percentage: payload.percentage,
+  }));
+
+const ledgerRowApiSchema = z
+  .object({
+    id: transactionIdSchema,
+    occurred_at: z.string().nullable().optional().default(null),
+    source_type: z.string(),
+    transaction_id: transactionIdSchema.nullable().optional().default(null),
+    label: z.string().catch('Movimiento'),
+    description: z.string().catch(''),
+    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    balance_after: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    custody_after_by_user: z.array(memberAmountApiSchema).default([]),
+    settlement_after_by_user: z.array(memberAmountApiSchema).default([]),
+    allocations: z.array(ledgerAllocationApiSchema).default([]),
+  })
+  .transform((payload) => ({
+    id: payload.id,
+    occurredAt: payload.occurred_at,
+    sourceType: payload.source_type,
+    transactionId: payload.transaction_id,
+    label: payload.label,
+    description: payload.description,
+    amount: payload.amount,
+    balanceAfter: payload.balance_after,
+    custodyAfterByUser: payload.custody_after_by_user,
+    settlementAfterByUser: payload.settlement_after_by_user,
+    allocations: payload.allocations,
   }));
 
 const transactionMutationMetaPayloadSchema = z
@@ -135,6 +182,7 @@ const transactionMutationMetaPayloadSchema = z
     custody_by_user: z.array(memberAmountApiSchema).optional(),
     settlements_by_user: z.array(memberAmountApiSchema).optional(),
     pending_reimbursements: z.array(pendingReimbursementApiSchema).optional(),
+    ledger_rows: z.array(ledgerRowApiSchema).optional(),
     subtransactions: z.array(transactionIdSchema).optional().default([]),
   })
   .optional()
@@ -144,6 +192,7 @@ const transactionMutationMetaPayloadSchema = z
     custodyByUser: payload?.custody_by_user ?? null,
     settlementsByUser: payload?.settlements_by_user ?? null,
     pendingReimbursements: payload?.pending_reimbursements ?? null,
+    ledgerRows: payload?.ledger_rows ?? null,
     subtransactionIds: payload?.subtransactions ?? [],
   }));
 
@@ -164,6 +213,7 @@ export const transactionListMetaSchema = z
       custodyByUser: null,
       settlementsByUser: null,
       pendingReimbursements: null,
+      ledgerRows: null,
       subtransactionIds: [],
     },
   })
@@ -241,6 +291,7 @@ export const createdTransactionResponseSchema = z
         custodyByUser: null,
         settlementsByUser: null,
         pendingReimbursements: null,
+        ledgerRows: null,
         subtransactionIds: [],
       },
     })),

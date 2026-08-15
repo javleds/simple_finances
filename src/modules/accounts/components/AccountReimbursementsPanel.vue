@@ -168,6 +168,10 @@ function reimbursementLabel(reimbursement: AccountPendingReimbursement): string 
   const role = reimbursementRole(reimbursement);
 
   if (role === 'debtor') {
+    if (reimbursement.actionType === 'user_to_account') {
+      return `Por aportar ${formatCurrency(reimbursement.amount)}`;
+    }
+
     return `Por pagar ${formatCurrency(reimbursement.amount)}`;
   }
 
@@ -182,6 +186,10 @@ function reimbursementActionLabel(reimbursement: AccountPendingReimbursement): s
   const role = reimbursementRole(reimbursement);
 
   if (role === 'debtor') {
+    if (reimbursement.actionType === 'user_to_account') {
+      return 'Aportar a la cuenta';
+    }
+
     return 'Pagar reembolso';
   }
 
@@ -197,6 +205,14 @@ function canSettle(reimbursement: AccountPendingReimbursement): boolean {
 }
 
 function detailsLabel(reimbursement: AccountPendingReimbursement): string {
+  if (reimbursement.actionType === 'user_to_account') {
+    return `${reimbursement.fromUserName} aporta a la cuenta`;
+  }
+
+  if (reimbursement.actionType === 'custody_to_user') {
+    return `La custodia de ${reimbursement.fromUserName} paga a ${reimbursement.toUserName}`;
+  }
+
   return `${reimbursement.fromUserName} paga a ${reimbursement.toUserName}`;
 }
 
@@ -288,7 +304,7 @@ function itemDateLabel(date: string | null): string {
           <AppTitle as="h2" size="sm">{{ props.title }}</AppTitle>
           <AppText>
             {{ totalReimbursements }}
-            {{ pluralize(totalReimbursements, 'reembolso', 'reembolsos') }} en
+            {{ pluralize(totalReimbursements, 'acción pendiente', 'acciones pendientes') }} en
             {{ accountsWithReimbursements.length }}
             {{ pluralize(accountsWithReimbursements.length, 'cuenta', 'cuentas') }}.
           </AppText>
@@ -332,7 +348,7 @@ function itemDateLabel(date: string | null): string {
                   v-if="account.pendingReimbursements.length > 1"
                   class="text-xs text-(--app-color-text-subtle)"
                 >
-                  {{ account.pendingReimbursements.length }} reembolsos
+                  {{ account.pendingReimbursements.length }} acciones pendientes
                 </p>
               </div>
 
