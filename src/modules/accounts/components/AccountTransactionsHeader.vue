@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { ArrowPathIcon } from '@heroicons/vue/24/outline';
 
 import { AppCard, AppHeroMetric } from '@/modules/shared/components';
@@ -8,6 +9,10 @@ const props = defineProps<{
   balance: number;
   custodyByUser?: AccountMemberAmount[];
 }>();
+
+const visibleCustodyByUser = computed(() =>
+  (props.custodyByUser ?? []).filter((item) => item.amount > 0),
+);
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-MX', {
@@ -33,13 +38,13 @@ function formatCurrency(value: number): string {
         </template>
       </AppHeroMetric>
 
-      <div v-if="props.custodyByUser?.length" class="border-t border-(--app-color-border) pt-4">
+      <div v-if="visibleCustodyByUser.length" class="border-t border-(--app-color-border) pt-4">
         <p class="text-xs font-semibold uppercase tracking-wide text-(--app-color-text-subtle)">
           Custodia
         </p>
         <div class="mt-3 grid gap-2">
           <div
-            v-for="custody in props.custodyByUser.filter((item) => item.amount > 0)"
+            v-for="custody in visibleCustodyByUser"
             :key="custody.userId"
             class="flex items-center justify-between gap-3 text-sm"
           >
