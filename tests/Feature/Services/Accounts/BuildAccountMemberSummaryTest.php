@@ -271,7 +271,7 @@ it('settles reimbursements without changing member custody', function () {
         ->and($partnerPendingAmount)->toBe(0.0)
         ->and($partnerReceivableAmount)->toBe(0.0)
         ->and($recoveryTransaction)->toBeNull()
-        ->and((float) $account->fresh()->balance)->toBe(-1000.0)
+        ->and((float) $account->fresh()->balance)->toBe(-500.0)
         ->and($summary['pending_reimbursements'])->toBe([]);
 });
 

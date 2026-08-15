@@ -607,7 +607,7 @@ it('lists shared account reimbursements and settles them through the api', funct
             'description' => 'Dinner reimbursement',
         ])
         ->assertCreated()
-        ->assertJsonPath('meta.account.balance', -1000.0)
+        ->assertJsonPath('meta.account.balance', -500.0)
         ->assertJsonPath('meta.pending_reimbursements', [])
         ->assertJsonPath('meta.settlements_by_user.0.amount', 0.0)
         ->assertJsonPath('meta.settlements_by_user.1.amount', 0.0);

@@ -344,7 +344,7 @@ it('keeps a receivable shared account consistent when expenses are edited, delet
         $payer->id,
     );
 
-    expect((float) $account->fresh()->balance)->toBe(-200.0);
+    expect((float) $account->fresh()->balance)->toBe(-100.0);
     sharedAccountLifecycleAssertExpenseLedger($transactionId, $payer, $member, 200.0, 100.0, 100.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Trip dinner', 0.0, 100.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Trip dinner', 100.0, 0.0);
@@ -361,7 +361,7 @@ it('keeps a receivable shared account consistent when expenses are edited, delet
         $payer->id,
     );
 
-    expect((float) $account->fresh()->balance)->toBe(-300.0);
+    expect((float) $account->fresh()->balance)->toBe(-150.0);
     sharedAccountLifecycleAssertExpenseLedger($transactionId, $payer, $member, 300.0, 150.0, 150.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Trip dinner updated', 0.0, 150.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Trip dinner updated', 150.0, 0.0);
@@ -385,7 +385,7 @@ it('keeps a receivable shared account consistent when expenses are edited, delet
 
     sharedAccountLifecycleSettle($this, $account, $member, $member, $payer, 100.0);
 
-    expect((float) $account->fresh()->balance)->toBe(-200.0);
+    expect((float) $account->fresh()->balance)->toBe(-100.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Trip tickets', 0.0, 0.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Trip tickets', 0.0, 0.0);
     expect(Transaction::query()
@@ -417,7 +417,7 @@ it('keeps a receivable expense actionable when the creator records another membe
         ->assertJsonPath('meta.pending_reimbursements.0.amount', 100.0);
     $transactionId = (int) $response->json('data.id');
 
-    expect((float) $account->fresh()->balance)->toBe(-200.0);
+    expect((float) $account->fresh()->balance)->toBe(-100.0);
     sharedAccountLifecycleAssertExpenseLedger($transactionId, $payer, $creator, 200.0, 100.0, 100.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $creator, 'Dinner paid by payer', 100.0, 0.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Dinner paid by payer', 0.0, 100.0);
@@ -433,7 +433,7 @@ it('keeps a receivable expense actionable when the creator records another membe
 
     sharedAccountLifecycleSettle($this, $account, $creator, $creator, $payer, 100.0);
 
-    expect((float) $account->fresh()->balance)->toBe(-200.0);
+    expect((float) $account->fresh()->balance)->toBe(-100.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $creator, 'Dinner paid by payer', 0.0, 0.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Dinner paid by payer', 0.0, 0.0);
 });

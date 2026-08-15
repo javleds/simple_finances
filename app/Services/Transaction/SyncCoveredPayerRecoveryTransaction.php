@@ -2,11 +2,19 @@
 
 namespace App\Services\Transaction;
 
+use App\Enums\TransactionPaymentSource;
+use App\Enums\TransactionStatus;
+use App\Enums\TransactionType;
+use App\Models\Account;
 use App\Models\Transaction;
+use App\Services\Accounts\BuildAccountCustodySummary;
+use Illuminate\Support\Carbon;
 
 class SyncCoveredPayerRecoveryTransaction
 {
     private const CONCEPT_PREFIX = 'Parte cubierta por ';
+
+    public function __construct(private readonly BuildAccountCustodySummary $buildAccountCustodySummary) {}
 
     public function execute(Transaction $transaction): void
     {
@@ -53,6 +61,24 @@ class SyncCoveredPayerRecoveryTransaction
 
     private function shouldCreateRecovery(Transaction $transaction): bool
     {
-        return false;
+        if ($transaction->type !== TransactionType::Outcome
+            || $transaction->status !== TransactionStatus::Completed
+            || $transaction->payment_source !== TransactionPaymentSource::MemberOutOfPocket
+            || $transaction->paid_by_user_id === null
+        ) {
+            return false;
+        }
+
+        $account = Account::withoutGlobalScopes()->find($transaction->account_id);
+
+        if (! $account) {
+            return false;
+        }
+
+        if (round((float) $account->balance, 2) > 0.0) {
+            return false;
+        }
+
+        return $this->buildAccountCustodySummary->positiveTotal($account) <= 0.0;
     }
 }

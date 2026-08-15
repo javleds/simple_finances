@@ -157,6 +157,57 @@ it('records an out of pocket payment by another member without splitting it', fu
         ->and($ledgerEntries->pluck('amount')->all())->toBe([-2200.0]);
 });
 
+it('only leaves the non payer share open when an out of pocket split expense has no custody', function () {
+    $owner = User::factory()->create(['name' => 'Owner']);
+    $partner = User::factory()->create(['name' => 'Partner']);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $partner->id => ['percentage' => 50],
+    ]);
+    $this->actingAs($owner);
+
+    $transaction = app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Owner paid split expense',
+        'amount' => 1000.0,
+        'account_id' => $account->id,
+        'payment_source' => TransactionPaymentSource::MemberOutOfPocket,
+        'paid_by_user_id' => $owner->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 50],
+            ['user_id' => $partner->id, 'percentage' => 50],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    $summary = app(BuildAccountMemberSummary::class)->execute($account->fresh());
+
+    expect((float) $account->fresh()->balance)->toBe(-500.0)
+        ->and((float) Transaction::query()->where('parent_transaction_id', $transaction->id)->sum('amount'))->toBe(500.0)
+        ->and($summary['pending_reimbursements'])->toBe([
+            [
+                'from_user_id' => $partner->id,
+                'from_user_name' => 'Partner',
+                'to_user_id' => $owner->id,
+                'to_user_name' => 'Owner',
+                'amount' => 500.0,
+                'action_type' => 'user_to_user',
+                'items' => [
+                    [
+                        'transaction_id' => (string) $transaction->id,
+                        'concept' => 'Owner paid split expense',
+                        'amount' => 500.0,
+                        'occurred_at' => $transaction->scheduled_at->toDateString(),
+                    ],
+                ],
+            ],
+        ]);
+});
+
 it('allocates the exact split total even when decimal divisions leave a remainder', function () {
     $owner = User::factory()->create();
     $partner = User::factory()->create();
