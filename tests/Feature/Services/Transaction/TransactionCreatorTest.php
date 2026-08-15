@@ -9,6 +9,8 @@ use App\Models\AccountMemberLedgerEntry;
 use App\Models\Transaction;
 use App\Models\TransactionAllocation;
 use App\Models\User;
+use App\Services\Accounts\BuildAccountMemberSummary;
+use App\Services\Accounts\RegisterAccountMemberTransfer;
 use App\Services\Transaction\TransactionCreator;
 
 it('creates a single transaction when no user payments are provided', function () {
@@ -86,7 +88,7 @@ it('creates allocations and member ledger entries for outcome type with user pay
 it('does not create pending incomes for users with zero percentage', function () {
     $owner = User::factory()->create();
     $partner = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
     $account->users()->sync([
         $owner->id => ['percentage' => 100],
         $partner->id => ['percentage' => 0],
@@ -150,9 +152,9 @@ it('records an out of pocket payment by another member without splitting it', fu
 
     expect(TransactionAllocation::query()->where('transaction_id', $transaction->id)->count())->toBe(0)
         ->and(Transaction::query()->where('parent_transaction_id', $transaction->id)->exists())->toBeFalse()
-        ->and($ledgerEntries->pluck('user_id')->all())->toBe([$partner->id, $owner->id])
-        ->and($ledgerEntries->pluck('type')->map->value->all())->toBe(['expense_paid', 'expense_share'])
-        ->and($ledgerEntries->pluck('amount')->all())->toBe([2200.0, -2200.0]);
+        ->and($ledgerEntries->pluck('user_id')->all())->toBe([$owner->id])
+        ->and($ledgerEntries->pluck('type')->map->value->all())->toBe(['custody_reimbursement_due'])
+        ->and($ledgerEntries->pluck('amount')->all())->toBe([-2200.0]);
 });
 
 it('allocates the exact split total even when decimal divisions leave a remainder', function () {
@@ -213,3 +215,259 @@ it('throws an exception when creating a transaction with non-completed status', 
 
     app(TransactionCreator::class)->execute($dto);
 })->throws(\InvalidArgumentException::class, 'Transactions must have status Completed.');
+
+it('records account deficit shares when an account fund expense exceeds custody', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $partner->id => ['percentage' => 50],
+    ]);
+    $this->actingAs($owner);
+
+    app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Income,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Initial fund',
+        'amount' => 1000.0,
+        'account_id' => $account->id,
+        'custodian_user_id' => $owner->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    $transaction = app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Overfunded groceries',
+        'amount' => 1500.0,
+        'account_id' => $account->id,
+        'payment_source' => TransactionPaymentSource::AccountFund,
+        'paid_by_user_id' => $owner->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 50],
+            ['user_id' => $partner->id, 'percentage' => 50],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    $account->refresh();
+    $ledgerEntries = AccountMemberLedgerEntry::query()
+        ->where('transaction_id', $transaction->id)
+        ->orderBy('id')
+        ->get();
+
+    expect((float) $account->balance)->toBe(-500.0)
+        ->and($ledgerEntries->pluck('type')->map->value->all())->toBe([
+            'account_fund_expense',
+            'account_fund_expense',
+            'account_deficit_share',
+            'account_deficit_share',
+        ])
+        ->and($ledgerEntries->pluck('amount')->all())->toBe([-750.0, -250.0, -250.0, -250.0]);
+});
+
+it('records custody reimbursement when account fund payer covers a responsible user shortfall', function () {
+    $owner = User::factory()->create();
+    $partner = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $partner->id => ['percentage' => 50],
+    ]);
+    $this->actingAs($partner);
+
+    app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Income,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Owner fund',
+        'amount' => 1000.0,
+        'account_id' => $account->id,
+        'custodian_user_id' => $owner->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+    app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Income,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Partner fund',
+        'amount' => 500.0,
+        'account_id' => $account->id,
+        'custodian_user_id' => $partner->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    $transaction = app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Partner groceries',
+        'amount' => 700.0,
+        'account_id' => $account->id,
+        'payment_source' => TransactionPaymentSource::AccountFund,
+        'paid_by_user_id' => $partner->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    $account->refresh();
+    $ledgerEntries = AccountMemberLedgerEntry::query()
+        ->where('transaction_id', $transaction->id)
+        ->orderBy('id')
+        ->get();
+
+    expect((float) $account->balance)->toBe(800.0)
+        ->and($ledgerEntries->pluck('user_id')->all())->toBe([$partner->id, $owner->id, $owner->id, $partner->id])
+        ->and($ledgerEntries->pluck('type')->map->value->all())->toBe([
+            'account_fund_expense',
+            'account_fund_expense',
+            'custody_reimbursement_due',
+            'custody_reimbursement_due',
+        ])
+        ->and($ledgerEntries->pluck('amount')->all())->toBe([-500.0, -200.0, -200.0, 200.0]);
+});
+
+it('settles an account deficit by increasing balance and custodian amount', function () {
+    $owner = User::factory()->create(['name' => 'Owner']);
+    $partner = User::factory()->create(['name' => 'Partner']);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $partner->id => ['percentage' => 50],
+    ]);
+    $this->actingAs($owner);
+
+    app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Income,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Initial fund',
+        'amount' => 1000.0,
+        'account_id' => $account->id,
+        'custodian_user_id' => $owner->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Overfunded groceries',
+        'amount' => 1500.0,
+        'account_id' => $account->id,
+        'payment_source' => TransactionPaymentSource::AccountFund,
+        'paid_by_user_id' => $owner->id,
+        'split_between_users' => true,
+        'user_payments' => [
+            ['user_id' => $owner->id, 'percentage' => 50],
+            ['user_id' => $partner->id, 'percentage' => 50],
+        ],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    app(RegisterAccountMemberTransfer::class)->execute($account, [
+        'from_user_id' => $partner->id,
+        'to_user_id' => $owner->id,
+        'action_type' => 'user_to_account',
+        'amount' => 250.0,
+        'description' => 'Partner aporte',
+        'occurred_at' => now(),
+    ]);
+
+    $summary = app(BuildAccountMemberSummary::class)->execute($account->fresh());
+    $ownerPending = collect($summary['pending_reimbursements'])
+        ->first(fn (array $item): bool => (int) $item['from_user_id'] === $owner->id
+            && (int) $item['to_user_id'] === $owner->id
+            && $item['action_type'] === 'user_to_account');
+
+    expect((float) $account->fresh()->balance)->toBe(-250.0)
+        ->and($summary['custody_by_user'])->toContain([
+            'user_id' => $owner->id,
+            'user_name' => 'Owner',
+            'amount' => 250.0,
+        ])
+        ->and($ownerPending)->not->toBeNull()
+        ->and($ownerPending['amount'])->toBe(250.0);
+});
+
+it('settles a custody reimbursement without changing balance', function () {
+    $owner = User::factory()->create(['name' => 'Owner']);
+    $partner = User::factory()->create(['name' => 'Partner']);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
+    $account->users()->sync([
+        $owner->id => ['percentage' => 50],
+        $partner->id => ['percentage' => 50],
+    ]);
+    $this->actingAs($partner);
+
+    app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Income,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Owner fund',
+        'amount' => 1000.0,
+        'account_id' => $account->id,
+        'custodian_user_id' => $owner->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+    app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Income,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Partner fund',
+        'amount' => 500.0,
+        'account_id' => $account->id,
+        'custodian_user_id' => $partner->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    app(TransactionCreator::class)->execute(TransactionFormDto::fromFormArray([
+        'type' => TransactionType::Outcome,
+        'status' => TransactionStatus::Completed,
+        'concept' => 'Partner groceries',
+        'amount' => 700.0,
+        'account_id' => $account->id,
+        'payment_source' => TransactionPaymentSource::AccountFund,
+        'paid_by_user_id' => $partner->id,
+        'split_between_users' => false,
+        'user_payments' => [],
+        'scheduled_at' => now(),
+        'financial_goal_id' => null,
+    ]));
+
+    app(RegisterAccountMemberTransfer::class)->execute($account, [
+        'from_user_id' => $owner->id,
+        'to_user_id' => $partner->id,
+        'action_type' => 'custody_to_user',
+        'amount' => 200.0,
+        'description' => 'Owner reimburses partner',
+        'occurred_at' => now(),
+    ]);
+
+    $summary = app(BuildAccountMemberSummary::class)->execute($account->fresh());
+
+    expect((float) $account->fresh()->balance)->toBe(800.0)
+        ->and($summary['custody_by_user'])->toContain([
+            'user_id' => $owner->id,
+            'user_name' => 'Owner',
+            'amount' => 600.0,
+        ])
+        ->and($summary['pending_reimbursements'])->toBe([]);
+});

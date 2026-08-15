@@ -4,12 +4,14 @@ namespace App\Services\Transaction;
 
 use App\Dto\AccountBalanceMetaDto;
 use App\Models\Account;
+use App\Services\Accounts\BuildAccountLedgerTimeline;
 use App\Services\Accounts\BuildAccountMemberSummary;
 
 class BuildTransactionAccountMeta
 {
     public function __construct(
         private readonly BuildAccountMemberSummary $buildAccountMemberSummary,
+        private readonly BuildAccountLedgerTimeline $buildAccountLedgerTimeline,
     ) {}
 
     public function execute(
@@ -19,6 +21,7 @@ class BuildTransactionAccountMeta
     {
         $meta = [
             'account' => $this->accountMeta($accountId)->toArray(),
+            'ledger_rows' => $this->ledgerRows($accountId),
         ];
 
         $meta = array_merge($meta, $this->memberSummaryMeta($accountId));
@@ -45,5 +48,15 @@ class BuildTransactionAccountMeta
         $account = Account::withoutGlobalScopes()->findOrFail($accountId);
 
         return $this->buildAccountMemberSummary->execute($account);
+    }
+
+    private function ledgerRows(int $accountId): array
+    {
+        $account = Account::withoutGlobalScopes()->findOrFail($accountId);
+
+        return $this->buildAccountLedgerTimeline->execute($account)
+            ->take(20)
+            ->values()
+            ->all();
     }
 }

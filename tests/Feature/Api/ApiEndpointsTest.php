@@ -537,7 +537,7 @@ it('filters soft deleted accounts by deleted at state', function () {
 it('returns member summaries for shared accounts', function () {
     $owner = User::factory()->create(['name' => 'Account Owner']);
     $sharedUser = User::factory()->create(['name' => 'Shared User']);
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
     $account->users()->attach([
         $owner->id => ['percentage' => 0],
         $sharedUser->id => ['percentage' => 50],
@@ -565,7 +565,7 @@ it('returns member summaries for shared accounts', function () {
 it('lists shared account reimbursements and settles them through the api', function () {
     $owner = User::factory()->create(['name' => 'Account Owner']);
     $sharedUser = User::factory()->create(['name' => 'Shared User']);
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
     $account->users()->sync([
         $owner->id => ['percentage' => 50],
         $sharedUser->id => ['percentage' => 50],
@@ -607,7 +607,7 @@ it('lists shared account reimbursements and settles them through the api', funct
             'description' => 'Dinner reimbursement',
         ])
         ->assertCreated()
-        ->assertJsonPath('meta.account.balance', -500.0)
+        ->assertJsonPath('meta.account.balance', -1000.0)
         ->assertJsonPath('meta.pending_reimbursements', [])
         ->assertJsonPath('meta.settlements_by_user.0.amount', 0.0)
         ->assertJsonPath('meta.settlements_by_user.1.amount', 0.0);
@@ -615,7 +615,7 @@ it('lists shared account reimbursements and settles them through the api', funct
 
 it('returns member summaries for accounts without shared users', function () {
     $owner = User::factory()->create(['name' => 'Single Owner']);
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
     $account->users()->attach($owner->id);
 
     $this->withHeaders(apiHeaders($owner))
@@ -1205,7 +1205,7 @@ it('lists split transactions as single movements with allocations', function () 
 it('marks account transactions that the current user still needs to reimburse', function () {
     $owner = User::factory()->create();
     $sharedUser = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
     $account->users()->sync([
         $owner->id => ['percentage' => 50],
         $sharedUser->id => ['percentage' => 50],

@@ -6,6 +6,7 @@ use App\Http\Requests\Api\AccountMemberTransferRequest;
 use App\Models\Account;
 use App\Models\NotificationType;
 use App\Models\User;
+use App\Services\Accounts\BuildAccountLedgerTimeline;
 use App\Services\Accounts\BuildAccountMemberSummary;
 use App\Services\Accounts\RegisterAccountMemberTransfer;
 use App\Services\Api\AuthorizeAccountAccess;
@@ -18,6 +19,7 @@ class AccountMemberTransferController extends ApiController
     public function __construct(
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
         private readonly BuildAccountMemberSummary $buildAccountMemberSummary,
+        private readonly BuildAccountLedgerTimeline $buildAccountLedgerTimeline,
     ) {}
 
     public function store(
@@ -43,6 +45,10 @@ class AccountMemberTransferController extends ApiController
         $meta['account'] = [
             'balance' => (float) $freshAccount->balance,
         ];
+        $meta['ledger_rows'] = $this->buildAccountLedgerTimeline->execute($freshAccount)
+            ->take(20)
+            ->values()
+            ->all();
 
         return $this->respond([
             'data' => $entries,

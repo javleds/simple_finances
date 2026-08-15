@@ -52,6 +52,7 @@ class BuildAccountLedgerTimeline
             ->get();
 
         $events = $transactions
+            ->toBase()
             ->map(fn (Transaction $transaction): array => [
                 'sort_date' => $transaction->scheduled_at,
                 'sort_id' => $transaction->id,
@@ -185,6 +186,7 @@ class BuildAccountLedgerTimeline
             AccountMemberLedgerEntryType::InternalTransfer,
             AccountMemberLedgerEntryType::ManualAdjustment,
             AccountMemberLedgerEntryType::CustodyCorrection,
+            AccountMemberLedgerEntryType::CustodyReimbursementPayment,
         ], true);
     }
 
@@ -221,6 +223,14 @@ class BuildAccountLedgerTimeline
                 ? "{$userName} corrigio reembolso con {$relatedName}"
                 : "{$userName} corrigio un reembolso",
             AccountMemberLedgerEntryType::CustodyCorrection => "{$userName} ajusto custodia",
+            AccountMemberLedgerEntryType::CustodyReimbursementDue => $relatedName
+                ? "{$userName} tiene pendiente con {$relatedName}"
+                : "{$userName} tiene un pendiente de custodia",
+            AccountMemberLedgerEntryType::CustodyReimbursementPayment => $relatedName
+                ? "{$userName} pago custodia a {$relatedName}"
+                : "{$userName} pago un pendiente de custodia",
+            AccountMemberLedgerEntryType::AccountDeficitShare => "{$userName} debe aportar a la cuenta",
+            AccountMemberLedgerEntryType::AccountDeficitPayment => "{$userName} aporto a la cuenta",
             default => $entry->type->value,
         };
     }

@@ -55,7 +55,7 @@ it('creates allocations when enabling split on an existing outcome transaction',
     $allocations = TransactionAllocation::where('transaction_id', $updatedTransaction->id)->orderBy('id')->get();
     $ledgerEntries = AccountMemberLedgerEntry::where('transaction_id', $updatedTransaction->id)->orderBy('id')->get();
 
-    expect(Transaction::count())->toBe(2)
+    expect(Transaction::count())->toBe(1)
         ->and($allocations)->toHaveCount(2)
         ->and($allocations->pluck('user_id')->all())->toBe([$owner->id, $partner->id])
         ->and($allocations->pluck('amount')->all())->toBe([72.0, 108.0])

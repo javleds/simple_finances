@@ -8,6 +8,7 @@ use App\Models\AccountMemberLedgerEntry;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class BuildAccountMemberSummary
 {
@@ -61,6 +62,7 @@ class BuildAccountMemberSummary
                 AccountMemberLedgerEntryType::InternalTransfer,
                 AccountMemberLedgerEntryType::ManualAdjustment,
                 AccountMemberLedgerEntryType::CustodyCorrection,
+                AccountMemberLedgerEntryType::CustodyReimbursementPayment,
             ], true))
             ->sum('amount');
     }
@@ -73,6 +75,9 @@ class BuildAccountMemberSummary
                 AccountMemberLedgerEntryType::ExpenseShare,
                 AccountMemberLedgerEntryType::SettlementTransfer,
                 AccountMemberLedgerEntryType::SettlementCorrection,
+                AccountMemberLedgerEntryType::CustodyReimbursementDue,
+                AccountMemberLedgerEntryType::AccountDeficitShare,
+                AccountMemberLedgerEntryType::AccountDeficitPayment,
                 AccountMemberLedgerEntryType::LegacySettlement,
             ], true))
             ->sum('amount');
@@ -137,15 +142,215 @@ class BuildAccountMemberSummary
 
     private function transactionDebts(Account $account): array
     {
+        $typedDebts = array_merge(
+            $this->custodyReimbursementDebts($account),
+            $this->selfCustodyReimbursementDebts($account),
+            $this->accountDeficitDebts($account),
+        );
+
         $openAmounts = $account->memberLedgerEntries()
             ->selectRaw('transaction_id, user_id, round(sum(amount), 2) as open_amount')
             ->whereNotNull('transaction_id')
+            ->whereNotIn('transaction_id', function ($query): void {
+                $query
+                    ->select('transaction_id')
+                    ->from('account_member_ledger_entries')
+                    ->whereNotNull('transaction_id')
+                    ->whereIn('type', [
+                        AccountMemberLedgerEntryType::CustodyReimbursementDue,
+                        AccountMemberLedgerEntryType::AccountDeficitShare,
+                    ]);
+            })
             ->whereIn('type', [
                 AccountMemberLedgerEntryType::ExpensePaid,
                 AccountMemberLedgerEntryType::ExpenseShare,
                 AccountMemberLedgerEntryType::SettlementTransfer,
                 AccountMemberLedgerEntryType::SettlementCorrection,
             ])
+            ->groupBy('transaction_id', 'user_id')
+            ->havingRaw('abs(open_amount) > 0.001')
+            ->with('transaction')
+            ->orderByDesc('transaction_id')
+            ->get()
+            ->groupBy('transaction_id');
+
+        if ($openAmounts->isEmpty()) {
+            return $typedDebts;
+        }
+
+        $usersById = $this->accountUsers($account)->keyBy('id');
+        $reimbursementsByPair = [];
+
+        foreach ($openAmounts as $transactionId => $transactionRows) {
+            $debtors = $transactionRows
+                ->filter(fn (AccountMemberLedgerEntry $entry): bool => (float) $entry->open_amount < -0.001)
+                ->map(fn (AccountMemberLedgerEntry $entry): array => [
+                    'user_id' => (int) $entry->user_id,
+                    'open_amount' => abs(round((float) $entry->open_amount, 2)),
+                    'transaction' => $entry->transaction,
+                ])
+                ->values();
+            $creditors = $transactionRows
+                ->filter(fn (AccountMemberLedgerEntry $entry): bool => (float) $entry->open_amount > 0.001)
+                ->map(fn (AccountMemberLedgerEntry $entry): array => [
+                    'user_id' => (int) $entry->user_id,
+                    'open_amount' => round((float) $entry->open_amount, 2),
+                ])
+                ->values();
+
+            foreach ($debtors as &$debtor) {
+                foreach ($creditors as &$creditor) {
+                    if ($debtor['open_amount'] <= 0.0 || $creditor['open_amount'] <= 0.0) {
+                        continue;
+                    }
+
+                    $amount = round(min($debtor['open_amount'], $creditor['open_amount']), 2);
+
+                    if ($amount <= 0.0) {
+                        continue;
+                    }
+
+                    $this->appendTransactionDebt(
+                        reimbursementsByPair: $reimbursementsByPair,
+                        usersById: $usersById,
+                        fromUserId: (int) $debtor['user_id'],
+                        toUserId: (int) $creditor['user_id'],
+                        transactionId: (int) $transactionId,
+                        transaction: $debtor['transaction'],
+                        amount: $amount,
+                        actionType: 'user_to_user',
+                    );
+
+                    $debtor['open_amount'] = round($debtor['open_amount'] - $amount, 2);
+                    $creditor['open_amount'] = round($creditor['open_amount'] - $amount, 2);
+                }
+            }
+        }
+
+        $this->applyDebtorCredits(
+            reimbursementsByPair: $reimbursementsByPair,
+            debtorCredits: $this->nonTransactionSettlementCredits($account),
+        );
+
+        $genericDebts = array_values(array_filter(
+            $reimbursementsByPair,
+            fn (array $item): bool => (float) $item['amount'] > 0.0,
+        ));
+
+        return array_merge($typedDebts, $genericDebts);
+    }
+
+    private function appendTransactionDebt(
+        array &$reimbursementsByPair,
+        Collection $usersById,
+        int $fromUserId,
+        int $toUserId,
+        int $transactionId,
+        ?Transaction $transaction,
+        float $amount,
+        string $actionType,
+    ): void {
+        $key = "{$actionType}:{$fromUserId}:{$toUserId}";
+
+        if (! isset($reimbursementsByPair[$key])) {
+            $fromUser = $usersById->get($fromUserId);
+            $toUser = $usersById->get($toUserId);
+
+            $reimbursementsByPair[$key] = [
+                'from_user_id' => $fromUserId,
+                'from_user_name' => $fromUser?->name ?? 'Usuario no disponible',
+                'to_user_id' => $toUserId,
+                'to_user_name' => $toUser?->name ?? 'Usuario no disponible',
+                'amount' => 0.0,
+                'action_type' => $actionType,
+                'items' => [],
+            ];
+        }
+
+        $reimbursementsByPair[$key]['amount'] = round(
+            (float) $reimbursementsByPair[$key]['amount'] + $amount,
+            2,
+        );
+        $reimbursementsByPair[$key]['items'][] = [
+            'transaction_id' => (string) $transactionId,
+            'concept' => $transaction?->concept ?? 'Movimiento no disponible',
+            'amount' => $amount,
+            'occurred_at' => optional($transaction?->scheduled_at)->toDateString(),
+        ];
+    }
+
+    private function custodyReimbursementDebts(Account $account): array
+    {
+        return $this->pairedTransactionDebts(
+            account: $account,
+            types: [AccountMemberLedgerEntryType::CustodyReimbursementDue, AccountMemberLedgerEntryType::SettlementTransfer],
+            actionType: 'custody_to_user',
+            requiredType: AccountMemberLedgerEntryType::CustodyReimbursementDue,
+        );
+    }
+
+    private function selfCustodyReimbursementDebts(Account $account): array
+    {
+        $openAmounts = $account->memberLedgerEntries()
+            ->selectRaw('transaction_id, user_id, round(sum(amount), 2) as open_amount')
+            ->whereNotNull('transaction_id')
+            ->whereColumn('user_id', 'related_user_id')
+            ->whereIn('type', [
+                AccountMemberLedgerEntryType::CustodyReimbursementDue,
+                AccountMemberLedgerEntryType::SettlementTransfer,
+            ])
+            ->groupBy('transaction_id', 'user_id')
+            ->havingRaw('open_amount < -0.001')
+            ->with('transaction')
+            ->orderByDesc('transaction_id')
+            ->get();
+
+        if ($openAmounts->isEmpty()) {
+            return [];
+        }
+
+        $usersById = $this->accountUsers($account)->keyBy('id');
+        $reimbursementsByPair = [];
+
+        foreach ($openAmounts as $entry) {
+            $userId = (int) $entry->user_id;
+            $this->appendTransactionDebt(
+                reimbursementsByPair: $reimbursementsByPair,
+                usersById: $usersById,
+                fromUserId: $userId,
+                toUserId: $userId,
+                transactionId: (int) $entry->transaction_id,
+                transaction: $entry->transaction,
+                amount: abs(round((float) $entry->open_amount, 2)),
+                actionType: 'custody_to_user',
+            );
+        }
+
+        return array_values($reimbursementsByPair);
+    }
+
+    private function pairedTransactionDebts(
+        Account $account,
+        array $types,
+        string $actionType,
+        ?AccountMemberLedgerEntryType $requiredType = null,
+    ): array {
+        $query = $account->memberLedgerEntries()
+            ->selectRaw('transaction_id, user_id, round(sum(amount), 2) as open_amount')
+            ->whereNotNull('transaction_id')
+            ->whereIn('type', $types);
+
+        if ($requiredType !== null) {
+            $query->whereIn('transaction_id', function ($subQuery) use ($requiredType): void {
+                $subQuery
+                    ->select('transaction_id')
+                    ->from('account_member_ledger_entries')
+                    ->whereNotNull('transaction_id')
+                    ->where('type', $requiredType);
+            });
+        }
+
+        $openAmounts = $query
             ->groupBy('transaction_id', 'user_id')
             ->havingRaw('abs(open_amount) > 0.001')
             ->with('transaction')
@@ -197,6 +402,7 @@ class BuildAccountMemberSummary
                         transactionId: (int) $transactionId,
                         transaction: $debtor['transaction'],
                         amount: $amount,
+                        actionType: $actionType,
                     );
 
                     $debtor['open_amount'] = round($debtor['open_amount'] - $amount, 2);
@@ -205,52 +411,63 @@ class BuildAccountMemberSummary
             }
         }
 
-        $this->applyDebtorCredits(
-            reimbursementsByPair: $reimbursementsByPair,
-            debtorCredits: $this->nonTransactionSettlementCredits($account),
-        );
-
         return array_values(array_filter(
             $reimbursementsByPair,
             fn (array $item): bool => (float) $item['amount'] > 0.0,
         ));
     }
 
-    private function appendTransactionDebt(
-        array &$reimbursementsByPair,
-        Collection $usersById,
-        int $fromUserId,
-        int $toUserId,
-        int $transactionId,
-        ?Transaction $transaction,
-        float $amount,
-    ): void {
-        $key = "{$fromUserId}:{$toUserId}";
+    private function accountDeficitDebts(Account $account): array
+    {
+        $entries = DB::table('account_member_ledger_entries')
+            ->where('account_id', $account->id)
+            ->whereNotNull('transaction_id')
+            ->whereIn('type', [
+                AccountMemberLedgerEntryType::AccountDeficitShare->value,
+                AccountMemberLedgerEntryType::AccountDeficitPayment->value,
+            ])
+            ->orderByDesc('transaction_id')
+            ->get();
 
-        if (! isset($reimbursementsByPair[$key])) {
-            $fromUser = $usersById->get($fromUserId);
-            $toUser = $usersById->get($toUserId);
-
-            $reimbursementsByPair[$key] = [
-                'from_user_id' => $fromUserId,
-                'from_user_name' => $fromUser?->name ?? 'Usuario no disponible',
-                'to_user_id' => $toUserId,
-                'to_user_name' => $toUser?->name ?? 'Usuario no disponible',
-                'amount' => 0.0,
-                'items' => [],
-            ];
+        if ($entries->isEmpty()) {
+            return [];
         }
 
-        $reimbursementsByPair[$key]['amount'] = round(
-            (float) $reimbursementsByPair[$key]['amount'] + $amount,
-            2,
-        );
-        $reimbursementsByPair[$key]['items'][] = [
-            'transaction_id' => (string) $transactionId,
-            'concept' => $transaction?->concept ?? 'Movimiento no disponible',
-            'amount' => $amount,
-            'occurred_at' => optional($transaction?->scheduled_at)->toDateString(),
-        ];
+        $usersById = $this->accountUsers($account)->keyBy('id');
+        $reimbursementsByPair = [];
+        $openAmounts = $entries
+            ->groupBy(fn (object $entry): string => $entry->transaction_id.':'.$entry->user_id)
+            ->map(function (Collection $rows): array {
+                $share = $rows->firstWhere('type', AccountMemberLedgerEntryType::AccountDeficitShare->value);
+
+                return [
+                    'transaction_id' => (int) $rows->first()->transaction_id,
+                    'user_id' => (int) $rows->first()->user_id,
+                    'related_user_id' => (int) ($share?->related_user_id ?: $rows->first()->related_user_id ?: $rows->first()->user_id),
+                    'open_amount' => round((float) $rows->sum('amount'), 2),
+                    'transaction' => Transaction::withoutGlobalScopes()->find((int) $rows->first()->transaction_id),
+                ];
+            })
+            ->filter(fn (array $row): bool => (float) $row['open_amount'] < -0.001)
+            ->values();
+
+        foreach ($openAmounts as $entry) {
+            $fromUserId = (int) $entry['user_id'];
+            $toUserId = (int) $entry['related_user_id'];
+
+            $this->appendTransactionDebt(
+                reimbursementsByPair: $reimbursementsByPair,
+                usersById: $usersById,
+                fromUserId: $fromUserId,
+                toUserId: $toUserId,
+                transactionId: (int) $entry['transaction_id'],
+                transaction: $entry['transaction'],
+                amount: abs(round((float) $entry['open_amount'], 2)),
+                actionType: 'user_to_account',
+            );
+        }
+
+        return array_values($reimbursementsByPair);
     }
 
     /**

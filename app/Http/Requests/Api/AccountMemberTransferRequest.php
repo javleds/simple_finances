@@ -14,8 +14,9 @@ class AccountMemberTransferRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'from_user_id' => ['required', 'integer', 'exists:users,id', 'different:to_user_id'],
+            'from_user_id' => ['required', 'integer', 'exists:users,id'],
             'to_user_id' => ['required', 'integer', 'exists:users,id'],
+            'action_type' => ['nullable', 'in:user_to_user,custody_to_user,user_to_account'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'description' => ['nullable', 'string', 'max:255'],
             'occurred_at' => ['nullable', 'date'],

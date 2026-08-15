@@ -55,6 +55,9 @@ class HydrateCurrentUserPendingReimbursements
             ->whereIn('type', [
                 AccountMemberLedgerEntryType::ExpensePaid,
                 AccountMemberLedgerEntryType::ExpenseShare,
+                AccountMemberLedgerEntryType::CustodyReimbursementDue,
+                AccountMemberLedgerEntryType::AccountDeficitShare,
+                AccountMemberLedgerEntryType::AccountDeficitPayment,
                 AccountMemberLedgerEntryType::SettlementTransfer,
                 AccountMemberLedgerEntryType::SettlementCorrection,
             ])

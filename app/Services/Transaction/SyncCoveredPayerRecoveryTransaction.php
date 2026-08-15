@@ -2,11 +2,7 @@
 
 namespace App\Services\Transaction;
 
-use App\Enums\TransactionPaymentSource;
-use App\Enums\TransactionStatus;
-use App\Enums\TransactionType;
 use App\Models\Transaction;
-use Illuminate\Support\Carbon;
 
 class SyncCoveredPayerRecoveryTransaction
 {
@@ -57,9 +53,6 @@ class SyncCoveredPayerRecoveryTransaction
 
     private function shouldCreateRecovery(Transaction $transaction): bool
     {
-        return $transaction->type === TransactionType::Outcome
-            && $transaction->status === TransactionStatus::Completed
-            && $transaction->payment_source === TransactionPaymentSource::MemberOutOfPocket
-            && $transaction->paid_by_user_id !== null;
+        return false;
     }
 }

@@ -3,8 +3,12 @@
 namespace App\Services\Accounts;
 
 use App\Enums\AccountMemberLedgerEntryType;
+use App\Enums\TransactionStatus;
+use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\AccountMemberLedgerEntry;
+use App\Models\Transaction;
+use App\Services\Transaction\SyncAccountMemberLedger;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +16,11 @@ use Illuminate\Support\Facades\DB;
 class RegisterAccountMemberTransfer
 {
     private const ROUNDING_SETTLEMENT_TOLERANCE = 0.10;
+
+    public function __construct(
+        private readonly RecalculateAccountBalance $recalculateAccountBalance,
+        private readonly SyncAccountMemberLedger $syncAccountMemberLedger,
+    ) {}
 
     public function execute(Account $account, array $payload): array
     {
@@ -22,15 +31,155 @@ class RegisterAccountMemberTransfer
         $description = $payload['description'] ?? 'Transferencia interna';
 
         return DB::transaction(function () use ($account, $payload, $amount, $occurredAt, $description): array {
-            return $this->createSettlementEntries(
-                account: $account,
-                fromUserId: (int) $payload['from_user_id'],
-                toUserId: (int) $payload['to_user_id'],
-                amount: $amount,
-                description: $description,
-                occurredAt: $occurredAt,
-            );
+            $actionType = $payload['action_type'] ?? 'user_to_user';
+
+            if ($actionType === 'user_to_account') {
+                return $this->createAccountDeficitPayment(
+                    account: $account,
+                    fromUserId: (int) $payload['from_user_id'],
+                    toUserId: (int) $payload['to_user_id'],
+                    amount: $amount,
+                    description: $description,
+                    occurredAt: $occurredAt,
+                );
+            }
+
+            $entries = $actionType === 'custody_to_user' && (int) $payload['from_user_id'] === (int) $payload['to_user_id']
+                ? $this->createSelfSettlementEntries(
+                    account: $account,
+                    userId: (int) $payload['from_user_id'],
+                    amount: $amount,
+                    description: $description,
+                    occurredAt: $occurredAt,
+                )
+                : $this->createSettlementEntries(
+                    account: $account,
+                    fromUserId: (int) $payload['from_user_id'],
+                    toUserId: (int) $payload['to_user_id'],
+                    amount: $amount,
+                    description: $description,
+                    occurredAt: $occurredAt,
+                    types: $actionType === 'custody_to_user'
+                        ? [AccountMemberLedgerEntryType::CustodyReimbursementDue, AccountMemberLedgerEntryType::SettlementTransfer]
+                        : null,
+                );
+
+            if ($actionType === 'custody_to_user') {
+                $entries[] = $account->memberLedgerEntries()->create([
+                    'user_id' => (int) $payload['from_user_id'],
+                    'related_user_id' => (int) $payload['to_user_id'],
+                    'type' => AccountMemberLedgerEntryType::CustodyReimbursementPayment,
+                    'amount' => $amount * -1,
+                    'description' => $description,
+                    'occurred_at' => $occurredAt,
+                ]);
+            }
+
+            return $entries;
         });
+    }
+
+    /**
+     * @return array<int, AccountMemberLedgerEntry>
+     */
+    private function createAccountDeficitPayment(
+        Account $account,
+        int $fromUserId,
+        int $toUserId,
+        float $amount,
+        string $description,
+        Carbon $occurredAt,
+    ): array {
+        $income = new Transaction;
+        $income->type = TransactionType::Income;
+        $income->status = TransactionStatus::Completed;
+        $income->concept = $description;
+        $income->amount = $amount;
+        $income->percentage = 100.0;
+        $income->account_id = $account->id;
+        $income->custodian_user_id = $toUserId;
+        $income->scheduled_at = $occurredAt;
+        $income->user_id = auth()->id() ?? $fromUserId;
+        $income->save();
+
+        $this->syncAccountMemberLedger->execute($income);
+        $this->recalculateAccountBalance->execute($account);
+
+        $entries = [$income->ledgerEntries()->first()];
+        $items = $this->openTransactionDebts($account, $fromUserId, [
+            AccountMemberLedgerEntryType::AccountDeficitShare,
+            AccountMemberLedgerEntryType::AccountDeficitPayment,
+        ]);
+        $runningTotal = 0.0;
+
+        foreach ($items as $item) {
+            if ($runningTotal >= $amount) {
+                break;
+            }
+
+            $itemAmount = round(min((float) $item->open_amount, $amount - $runningTotal), 2);
+
+            if ($itemAmount <= 0.0) {
+                continue;
+            }
+
+            $entries[] = $account->memberLedgerEntries()->create([
+                'user_id' => $fromUserId,
+                'transaction_id' => (int) $item->transaction_id,
+                'related_user_id' => $toUserId,
+                'type' => AccountMemberLedgerEntryType::AccountDeficitPayment,
+                'amount' => $itemAmount,
+                'description' => $description,
+                'occurred_at' => $occurredAt,
+            ]);
+
+            $runningTotal = round($runningTotal + $itemAmount, 2);
+        }
+
+        return array_values(array_filter($entries));
+    }
+
+    /**
+     * @return array<int, AccountMemberLedgerEntry>
+     */
+    private function createSelfSettlementEntries(
+        Account $account,
+        int $userId,
+        float $amount,
+        string $description,
+        Carbon $occurredAt,
+    ): array {
+        $items = $this->openTransactionDebts($account, $userId, [
+            AccountMemberLedgerEntryType::CustodyReimbursementDue,
+            AccountMemberLedgerEntryType::SettlementTransfer,
+        ]);
+        $entries = [];
+        $runningTotal = 0.0;
+
+        foreach ($items as $item) {
+            if ($runningTotal >= $amount) {
+                break;
+            }
+
+            $itemAmount = round(min((float) $item->open_amount, $amount - $runningTotal), 2);
+
+            if ($itemAmount <= 0.0) {
+                continue;
+            }
+
+            $entries[] = $this->createSettlementEntry(
+                $account,
+                $userId,
+                $userId,
+                $itemAmount,
+                $description,
+                $occurredAt,
+                (int) $item->transaction_id,
+            );
+            $runningTotal = round($runningTotal + $itemAmount, 2);
+        }
+
+        return $entries;
     }
 
     /**
@@ -43,8 +192,9 @@ class RegisterAccountMemberTransfer
         float $amount,
         string $description,
         Carbon $occurredAt,
+        ?array $types = null,
     ): array {
-        $items = $this->openTransactionDebts($account, $fromUserId);
+        $items = $this->openTransactionDebts($account, $fromUserId, $types);
 
         if ($items->isEmpty()) {
             return [
@@ -108,15 +258,16 @@ class RegisterAccountMemberTransfer
     /**
      * @return Collection<int, AccountMemberLedgerEntry>
      */
-    private function openTransactionDebts(Account $account, int $fromUserId): Collection
+    private function openTransactionDebts(Account $account, int $fromUserId, ?array $types = null): Collection
     {
         return $account->memberLedgerEntries()
             ->selectRaw('transaction_id, round(abs(sum(amount)), 2) as open_amount')
             ->where('user_id', $fromUserId)
             ->whereNotNull('transaction_id')
-            ->whereIn('type', [
+            ->whereIn('type', $types ?? [
                 AccountMemberLedgerEntryType::ExpensePaid,
                 AccountMemberLedgerEntryType::ExpenseShare,
+                AccountMemberLedgerEntryType::CustodyReimbursementDue,
                 AccountMemberLedgerEntryType::SettlementTransfer,
                 AccountMemberLedgerEntryType::SettlementCorrection,
             ])

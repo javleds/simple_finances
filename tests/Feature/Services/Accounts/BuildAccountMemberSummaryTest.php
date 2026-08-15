@@ -18,7 +18,7 @@ use Carbon\CarbonImmutable;
 it('summarizes out of pocket shared expenses as reimbursements between members', function () {
     $owner = User::factory()->create(['name' => 'Owner']);
     $partner = User::factory()->create(['name' => 'Partner']);
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
     $account->users()->sync([
         $owner->id => ['percentage' => 50],
         $partner->id => ['percentage' => 50],
@@ -50,19 +50,20 @@ it('summarizes out of pocket shared expenses as reimbursements between members',
     ])
         ->and($summary['pending_reimbursements'])->toBe([
             [
-                'from_user_id' => $owner->id,
-                'from_user_name' => 'Owner',
-                'to_user_id' => $partner->id,
-                'to_user_name' => 'Partner',
-                'amount' => 500.0,
-                'items' => [
-                    [
-                        'transaction_id' => (string) $transaction->id,
-                        'concept' => 'Travel dinner',
-                        'amount' => 500.0,
-                        'occurred_at' => $transaction->scheduled_at->toDateString(),
-                    ],
+            'from_user_id' => $owner->id,
+            'from_user_name' => 'Owner',
+            'to_user_id' => $partner->id,
+            'to_user_name' => 'Partner',
+            'amount' => 500.0,
+            'action_type' => 'user_to_user',
+            'items' => [
+                [
+                    'transaction_id' => (string) $transaction->id,
+                    'concept' => 'Travel dinner',
+                    'amount' => 500.0,
+                    'occurred_at' => $transaction->scheduled_at->toDateString(),
                 ],
+            ],
             ],
         ]);
 });
@@ -172,6 +173,7 @@ it('keeps opposite transaction debts actionable instead of hiding them behind ac
             'to_user_id' => $divanny->id,
             'to_user_name' => 'Divanny',
             'amount' => 100.0,
+            'action_type' => 'user_to_user',
             'items' => [
                 [
                     'transaction_id' => (string) $filos->id,
@@ -187,6 +189,7 @@ it('keeps opposite transaction debts actionable instead of hiding them behind ac
             'to_user_id' => $javier->id,
             'to_user_name' => 'Javier',
             'amount' => 250.0,
+            'action_type' => 'user_to_user',
             'items' => [
                 [
                     'transaction_id' => (string) $groceries->id,
@@ -201,7 +204,7 @@ it('keeps opposite transaction debts actionable instead of hiding them behind ac
 it('settles reimbursements without changing member custody', function () {
     $owner = User::factory()->create(['name' => 'Owner']);
     $partner = User::factory()->create(['name' => 'Partner']);
-    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
     $account->users()->sync([
         $owner->id => ['percentage' => 50],
         $partner->id => ['percentage' => 50],
@@ -268,7 +271,7 @@ it('settles reimbursements without changing member custody', function () {
         ->and($partnerPendingAmount)->toBe(0.0)
         ->and($partnerReceivableAmount)->toBe(0.0)
         ->and($recoveryTransaction)->toBeNull()
-        ->and((float) $account->fresh()->balance)->toBe(-500.0)
+        ->and((float) $account->fresh()->balance)->toBe(-1000.0)
         ->and($summary['pending_reimbursements'])->toBe([]);
 });
 
