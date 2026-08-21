@@ -75,6 +75,15 @@ class RegisterAccountMemberTransfer
                 ]);
             }
 
+            if ($actionType === 'user_to_user') {
+                $this->createNegativeBalanceSettlementIncomes(
+                    account: $account,
+                    entries: $entries,
+                    description: $description,
+                    occurredAt: $occurredAt,
+                );
+            }
+
             return $entries;
         });
     }
@@ -304,6 +313,75 @@ class RegisterAccountMemberTransfer
             'description' => $description,
             'occurred_at' => $occurredAt,
         ]);
+    }
+
+    /**
+     * @param array<int, AccountMemberLedgerEntry> $entries
+     */
+    private function createNegativeBalanceSettlementIncomes(
+        Account $account,
+        array $entries,
+        string $description,
+        Carbon $occurredAt,
+    ): void {
+        $remainingDeficit = round(abs(min((float) $account->fresh()->balance, 0.0)), 2);
+
+        if ($remainingDeficit <= 0.0) {
+            return;
+        }
+
+        $createdTotal = 0.0;
+
+        foreach ($entries as $entry) {
+            if ($remainingDeficit <= 0.0) {
+                break;
+            }
+
+            if ($entry->type !== AccountMemberLedgerEntryType::SettlementTransfer
+                || (float) $entry->amount <= 0.0
+                || $entry->transaction_id === null
+            ) {
+                continue;
+            }
+
+            $incomeAmount = round(min((float) $entry->amount, $remainingDeficit), 2);
+
+            if ($incomeAmount <= 0.0) {
+                continue;
+            }
+
+            $parentTransaction = Transaction::withoutGlobalScopes()->find($entry->transaction_id);
+
+            if (! $parentTransaction) {
+                continue;
+            }
+
+            $income = new Transaction;
+            $income->parent_transaction_id = $parentTransaction->id;
+            $income->type = TransactionType::Income;
+            $income->status = TransactionStatus::Completed;
+            $income->concept = $description.': '.$parentTransaction->concept;
+            $income->amount = $incomeAmount;
+            $income->percentage = 100.0;
+            $income->account_id = $account->id;
+            $income->user_id = $entry->user_id;
+            $income->paid_by_user_id = null;
+            $income->custodian_user_id = null;
+            $income->payment_source = null;
+            $income->scheduled_at = $occurredAt;
+            $income->financial_goal_id = null;
+            $income->legacy_migrated_at = Carbon::now();
+            $income->save();
+
+            $createdTotal = round($createdTotal + $incomeAmount, 2);
+            $remainingDeficit = round($remainingDeficit - $incomeAmount, 2);
+        }
+
+        if ($createdTotal > 0.0) {
+            $account->newQuery()
+                ->whereKey($account->id)
+                ->increment('balance', $createdTotal);
+        }
     }
 
 }

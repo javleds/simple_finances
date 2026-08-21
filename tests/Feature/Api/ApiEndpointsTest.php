@@ -607,10 +607,17 @@ it('lists shared account reimbursements and settles them through the api', funct
             'description' => 'Dinner reimbursement',
         ])
         ->assertCreated()
-        ->assertJsonPath('meta.account.balance', -500.0)
+        ->assertJsonPath('meta.account.balance', 0.0)
         ->assertJsonPath('meta.pending_reimbursements', [])
         ->assertJsonPath('meta.settlements_by_user.0.amount', 0.0)
         ->assertJsonPath('meta.settlements_by_user.1.amount', 0.0);
+
+    expect(Transaction::query()
+        ->where('account_id', $account->id)
+        ->where('parent_transaction_id', $transaction->id)
+        ->where('concept', 'Dinner reimbursement: Shared dinner')
+        ->whereNotNull('legacy_migrated_at')
+        ->sum('amount'))->toBe(500);
 });
 
 it('returns member summaries for accounts without shared users', function () {

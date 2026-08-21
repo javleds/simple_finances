@@ -385,14 +385,15 @@ it('keeps a receivable shared account consistent when expenses are edited, delet
 
     sharedAccountLifecycleSettle($this, $account, $member, $member, $payer, 100.0);
 
-    expect((float) $account->fresh()->balance)->toBe(-100.0);
+    expect((float) $account->fresh()->balance)->toBe(0.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Trip tickets', 0.0, 0.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Trip tickets', 0.0, 0.0);
     expect(Transaction::query()
         ->where('account_id', $account->id)
         ->where('type', 'income')
-        ->where('concept', 'Reimbursement from Member to Payer')
-        ->exists())->toBeFalse();
+        ->where('concept', 'Reimbursement from Member to Payer: Trip tickets')
+        ->whereNotNull('legacy_migrated_at')
+        ->exists())->toBeTrue();
 });
 
 it('keeps a receivable expense actionable when the creator records another member as payer', function () {
@@ -433,7 +434,7 @@ it('keeps a receivable expense actionable when the creator records another membe
 
     sharedAccountLifecycleSettle($this, $account, $creator, $creator, $payer, 100.0);
 
-    expect((float) $account->fresh()->balance)->toBe(-100.0);
+    expect((float) $account->fresh()->balance)->toBe(0.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $creator, 'Dinner paid by payer', 0.0, 0.0);
     sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Dinner paid by payer', 0.0, 0.0);
 });

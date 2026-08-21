@@ -245,7 +245,7 @@ it('settles reimbursements without changing member custody', function () {
     $recoveryTransaction = Transaction::query()
         ->where('account_id', $account->id)
         ->where('type', TransactionType::Income)
-        ->where('concept', 'Dinner reimbursement')
+        ->where('concept', 'Dinner reimbursement: Travel dinner')
         ->first();
 
     app(HydrateCurrentUserPendingReimbursements::class)->execute([$transaction], $owner->id);
@@ -270,8 +270,11 @@ it('settles reimbursements without changing member custody', function () {
         ->and($ownerReceivableAmount)->toBe(0.0)
         ->and($partnerPendingAmount)->toBe(0.0)
         ->and($partnerReceivableAmount)->toBe(0.0)
-        ->and($recoveryTransaction)->toBeNull()
-        ->and((float) $account->fresh()->balance)->toBe(-500.0)
+        ->and($recoveryTransaction)->not->toBeNull()
+        ->and((float) $recoveryTransaction->amount)->toBe(500.0)
+        ->and($recoveryTransaction->parent_transaction_id)->toBe($transaction->id)
+        ->and($recoveryTransaction->legacy_migrated_at)->not->toBeNull()
+        ->and((float) $account->fresh()->balance)->toBe(0.0)
         ->and($summary['pending_reimbursements'])->toBe([]);
 });
 
