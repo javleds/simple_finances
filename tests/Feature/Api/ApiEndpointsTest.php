@@ -1,9 +1,11 @@
 <?php
 
 use App\Enums\Frequency;
+use App\Enums\AccountMemberLedgerEntryType;
 use App\Enums\InviteStatus;
 use App\Models\Account;
 use App\Models\AccountInvite;
+use App\Models\AccountMemberLedgerEntry;
 use App\Models\FixedIncome;
 use App\Models\FixedOutcome;
 use App\Models\FinancialGoal;
@@ -990,6 +992,69 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ->assertOk();
 });
 
+it('lets a non owner leave a shared account only when they have no assigned amounts', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->attach([
+        $owner->id => ['percentage' => 100],
+        $member->id => ['percentage' => 0],
+    ]);
+
+    $this->withHeaders(apiHeaders($member))
+        ->deleteJson("/api/accounts/{$account->id}/users/{$member->id}")
+        ->assertOk();
+
+    expect($account->fresh()->users()->where('users.id', $member->id)->exists())->toBeFalse();
+});
+
+it('blocks leaving a shared account while the member has percentage custody or pending debt', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $owner->id]);
+    $account->users()->attach([
+        $owner->id => ['percentage' => 100],
+        $member->id => ['percentage' => 10],
+    ]);
+
+    $this->withHeaders(apiHeaders($member))
+        ->deleteJson("/api/accounts/{$account->id}/users/{$member->id}")
+        ->assertStatus(422);
+
+    $account->users()->updateExistingPivot($member->id, ['percentage' => 0]);
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $member->id,
+        'type' => AccountMemberLedgerEntryType::IncomeCustody,
+        'amount' => 25.0,
+        'description' => 'Member custody',
+        'occurred_at' => now(),
+    ]);
+
+    $this->withHeaders(apiHeaders($member))
+        ->deleteJson("/api/accounts/{$account->id}/users/{$member->id}")
+        ->assertStatus(422);
+
+    AccountMemberLedgerEntry::query()->delete();
+    AccountMemberLedgerEntry::query()->create([
+        'account_id' => $account->id,
+        'user_id' => $member->id,
+        'related_user_id' => $owner->id,
+        'type' => AccountMemberLedgerEntryType::ExpenseShare,
+        'amount' => -30.0,
+        'description' => 'Pending share',
+        'occurred_at' => now(),
+    ]);
+
+    $this->withHeaders(apiHeaders($member))
+        ->deleteJson("/api/accounts/{$account->id}/users/{$member->id}")
+        ->assertStatus(422);
+
+    $this->withHeaders(apiHeaders($owner))
+        ->deleteJson("/api/accounts/{$account->id}/users/{$owner->id}")
+        ->assertStatus(422);
+});
+
 it('bulk updates account user percentages with an exact normalized total', function () {
     $owner = User::factory()->create();
     $memberOne = User::factory()->create();
@@ -1473,6 +1538,38 @@ it('manages fixed incomes, partials and outcomes', function () {
     expect(FixedIncome::query()->count())->toBe(1);
     expect(PartialFixedIncome::query()->count())->toBe(1);
     expect(FixedOutcome::query()->count())->toBe(1);
+});
+
+it('deletes fixed income rules and fixed outcome relations', function () {
+    $user = User::factory()->create();
+    $fixedIncome = FixedIncome::factory()->create(['user_id' => $user->id]);
+    $partialFixedIncome = PartialFixedIncome::factory()->create([
+        'user_id' => $user->id,
+        'fixed_income_id' => $fixedIncome->id,
+    ]);
+    $fixedOutcome = FixedOutcome::factory()->create([
+        'user_id' => $user->id,
+        'fixed_income_id' => $fixedIncome->id,
+    ]);
+
+    $this->withHeaders(apiHeaders($user))
+        ->deleteJson("/api/fixed-outcomes/{$fixedOutcome->id}")
+        ->assertOk();
+
+    expect(FixedOutcome::query()->whereKey($fixedOutcome->id)->exists())->toBeFalse();
+
+    $remainingOutcome = FixedOutcome::factory()->create([
+        'user_id' => $user->id,
+        'fixed_income_id' => $fixedIncome->id,
+    ]);
+
+    $this->withHeaders(apiHeaders($user))
+        ->deleteJson("/api/fixed-incomes/{$fixedIncome->id}")
+        ->assertOk();
+
+    expect(FixedIncome::query()->whereKey($fixedIncome->id)->exists())->toBeFalse()
+        ->and(PartialFixedIncome::query()->whereKey($partialFixedIncome->id)->exists())->toBeFalse()
+        ->and(FixedOutcome::query()->whereKey($remainingOutcome->id)->exists())->toBeFalse();
 });
 
 it('searches fixed incomes by name', function () {

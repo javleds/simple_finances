@@ -127,7 +127,7 @@ class AccountUserController extends ApiController
 
     public function delete(Account $account, User $user, RemoveAccountUser $removeAccountUser): JsonResponse
     {
-        $this->ensureOwner($account);
+        $this->ensureCanRemoveUser($account, $user);
         $this->ensureAttached($account, $user);
 
         $removeAccountUser->execute($account, $user);
@@ -143,5 +143,54 @@ class AccountUserController extends ApiController
     private function ensureAttached(Account $account, User $user): void
     {
         $this->authorizeAccountAccess->ensureAccountUser($account, $user);
+    }
+
+    private function ensureCanRemoveUser(Account $account, User $user): void
+    {
+        $currentUserId = (int) auth()->id();
+
+        if ((int) $account->user_id === $currentUserId) {
+            abort_if((int) $user->id === $currentUserId, 422, 'Account owners cannot leave their own account.');
+
+            return;
+        }
+
+        abort_unless((int) $user->id === $currentUserId, 403);
+        $this->ensureUserCanLeaveAccount($account, $user);
+    }
+
+    private function ensureUserCanLeaveAccount(Account $account, User $user): void
+    {
+        $member = $account->users()
+            ->withPivot('percentage')
+            ->where('users.id', $user->id)
+            ->first();
+
+        if (! $member) {
+            return;
+        }
+
+        abort_if(round((float) $member->pivot->percentage, 2) !== 0.0, 422, 'You cannot leave an account while you still have an assigned percentage.');
+
+        $summary = $this->buildAccountMemberSummary->execute($account);
+        $custodyAmount = $this->summaryAmountForUser($summary['custody_by_user'], $user->id);
+        $settlementAmount = $this->summaryAmountForUser($summary['settlements_by_user'], $user->id);
+
+        abort_if(abs($custodyAmount) > 0.001, 422, 'You cannot leave an account while you still have custody.');
+        abort_if(abs($settlementAmount) > 0.001, 422, 'You cannot leave an account while you still have pending reimbursements.');
+    }
+
+    /**
+     * @param array<int, array{user_id: int|string, amount: float|int|string}> $items
+     */
+    private function summaryAmountForUser(array $items, int $userId): float
+    {
+        foreach ($items as $item) {
+            if ((int) $item['user_id'] === $userId) {
+                return round((float) $item['amount'], 2);
+            }
+        }
+
+        return 0.0;
     }
 }
