@@ -420,6 +420,16 @@ function mapAccountSurfacesToApi(surfaces: AccountListFilters['surface']): strin
   return [surfaces[0] === 'virtual' ? 'true' : 'false'];
 }
 
+export function mapAccountStatusesToDeletedAtFilter(
+  statuses: AccountListFilters['status'],
+): string[] | undefined {
+  if (!statuses || statuses.length === 0 || statuses.length > 1) {
+    return undefined;
+  }
+
+  return [statuses[0] === 'Inactivo' ? 'true' : 'false'];
+}
+
 export function createAccountsRepository() {
   return {
     async list(options?: {
@@ -431,7 +441,7 @@ export function createAccountsRepository() {
         page: options?.page,
         per_page: options?.perPage,
         search: options?.filters?.search,
-        status: options?.filters?.status,
+        deleted_at: mapAccountStatusesToDeletedAtFilter(options?.filters?.status),
         credit_card: mapAccountKindsToApi(options?.filters?.kind),
         virtual: mapAccountSurfacesToApi(options?.filters?.surface),
       });
