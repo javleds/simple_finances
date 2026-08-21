@@ -5,11 +5,13 @@ import { AppEmptyState, AppText } from '@/modules/shared/components';
 
 const props = defineProps<{
   accounts: Account[];
+  currentUserId: string | null;
 }>();
 
 const emit = defineEmits<{
   delete: [accountId: string];
   edit: [accountId: string];
+  leave: [accountId: string];
 }>();
 </script>
 
@@ -25,8 +27,10 @@ const emit = defineEmits<{
         v-for="account in props.accounts"
         :key="account.id"
         :account="account"
+        :current-user-id="props.currentUserId"
         @delete="emit('delete', $event)"
         @edit="emit('edit', $event)"
+        @leave="emit('leave', $event)"
       />
 
       <AppEmptyState

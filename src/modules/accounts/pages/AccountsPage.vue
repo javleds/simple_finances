@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
 import AccountDeleteModal from '@/modules/accounts/components/AccountDeleteModal.vue';
 import AccountFiltersModal from '@/modules/accounts/components/AccountFiltersModal.vue';
 import AccountFormModal from '@/modules/accounts/components/AccountFormModal.vue';
@@ -9,7 +11,9 @@ import { useAccountFilters } from '@/modules/accounts/composables/useAccountFilt
 import { useAccountListLoader } from '@/modules/accounts/composables/useAccountListLoader';
 import { useAccountModalActions } from '@/modules/accounts/composables/useAccountModalActions';
 import { useAccountModals } from '@/modules/accounts/composables/useAccountModals';
+import { canLeaveAccount } from '@/modules/accounts/lib/accountPermissions';
 import type { AccountWritePayload } from '@/modules/accounts/types';
+import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import { AppListState, AppLoadMoreFooter, AppText } from '@/modules/shared/components';
 
 const statusOptions = ['Activo', 'Inactivo'] as const;
@@ -21,6 +25,7 @@ const surfaceOptions = [
   { value: 'virtual', label: 'Virtual' },
   { value: 'physical', label: 'Física' },
 ] as const;
+const currentUserId = computed(() => getStoredAuthSession()?.user.id ?? null);
 const {
   activeFilters,
   clearFilters,
@@ -52,6 +57,7 @@ const {
   createAccount,
   updateAccount,
   deleteAccount,
+  leaveAccount,
 } = useAccountsCrud();
 
 const {
@@ -82,11 +88,16 @@ const {
 
 const { createAccountActions, deleteAccountActions, editAccountActions } = useAccountModalActions({
   createFormState,
+  currentUserId,
   editFormState,
   isDeleting,
   isSaving,
   selectedAccount,
 });
+
+const deleteModalMode = computed(() =>
+  canLeaveAccount(selectedAccount.value, currentUserId.value) ? 'leave' : 'delete',
+);
 
 const { handleLoadMoreRetry, infiniteStatusLabel, loadMoreSentinel, reloadAccounts } =
   useAccountListLoader({
@@ -124,7 +135,10 @@ async function confirmDeleteAccount(): Promise<void> {
     return;
   }
 
-  const wasDeleted = await deleteAccount(selectedAccount.value.id);
+  const wasDeleted =
+    deleteModalMode.value === 'leave' && currentUserId.value
+      ? await leaveAccount(selectedAccount.value.id, currentUserId.value)
+      : await deleteAccount(selectedAccount.value.id);
 
   if (wasDeleted) {
     closeDeleteAccount();
@@ -154,7 +168,13 @@ async function confirmDeleteAccount(): Promise<void> {
       loading-label="Cargando cuentas..."
       @retry="reloadAccounts"
     >
-      <AccountsList :accounts="accounts" @delete="openDeleteAccount" @edit="openEditAccount">
+      <AccountsList
+        :accounts="accounts"
+        :current-user-id="currentUserId"
+        @delete="openDeleteAccount"
+        @edit="openEditAccount"
+        @leave="openDeleteAccount"
+      >
         <template #footer>
           <AppLoadMoreFooter
             :label="infiniteStatusLabel()"
@@ -216,6 +236,7 @@ async function confirmDeleteAccount(): Promise<void> {
       :account="selectedAccount"
       :actions="deleteAccountActions"
       :delete-error="deleteError"
+      :mode="deleteModalMode"
       @close="closeDeleteAccount"
       @confirm="confirmDeleteAccount"
     />

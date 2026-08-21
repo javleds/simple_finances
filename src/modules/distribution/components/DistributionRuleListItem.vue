@@ -106,8 +106,8 @@ function openRuleDetails(): void {
 
         <AppActionMenu
           class="shrink-0"
-          @delete.prevent.stop="handleDelete"
-          @edit.prevent.stop="handleEdit"
+          @delete="handleDelete"
+          @edit="handleEdit"
         />
       </div>
 

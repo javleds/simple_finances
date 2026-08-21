@@ -142,6 +142,7 @@ export const accountFormSchema = z
 
 export const accountApiSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
+  user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   name: z.string(),
   description: z
     .string()
@@ -390,6 +391,7 @@ export function createDefaultAccountFormValues(
 export function mapAccountApiToDomain(payload: z.infer<typeof accountApiSchema>): Account {
   return {
     id: payload.id,
+    ownerId: payload.user_id,
     name: payload.name,
     description: payload.description,
     color: payload.color,

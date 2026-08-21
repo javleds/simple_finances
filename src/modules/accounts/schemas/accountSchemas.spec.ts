@@ -6,6 +6,7 @@ describe('account schemas', () => {
   it('maps member summaries returned in the account payload', () => {
     const parsedAccount = accountApiSchema.parse({
       id: 21,
+      user_id: 7,
       name: 'Cuenta compartida',
       description: null,
       color: null,
@@ -54,6 +55,7 @@ describe('account schemas', () => {
 
     expect(mapAccountApiToDomain(parsedAccount)).toMatchObject({
       id: '21',
+      ownerId: '7',
       custodyByUser: [
         {
           userId: '7',

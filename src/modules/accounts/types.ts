@@ -150,6 +150,7 @@ export type AccountMember = {
 
 export type Account = {
   id: string;
+  ownerId: string;
   name: string;
   description: string;
   color: string | null;

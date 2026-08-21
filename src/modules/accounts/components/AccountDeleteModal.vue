@@ -8,10 +8,12 @@ const props = withDefaults(
     account: Account | null;
     actions: ReadonlyArray<AppModalAction>;
     deleteError?: string | null;
+    mode?: 'delete' | 'leave';
     open: boolean;
   }>(),
   {
     deleteError: null,
+    mode: 'delete',
   },
 );
 
@@ -25,22 +27,26 @@ const emit = defineEmits<{
   <AppModal
     :open="props.open"
     :actions="props.actions"
-    title="Eliminar cuenta"
+    :title="props.mode === 'leave' ? 'Salir de la cuenta' : 'Eliminar cuenta'"
     variant="danger"
     @action="$event === 'confirm-delete-account' && emit('confirm')"
     @close="emit('close')"
   >
     <div class="space-y-3">
       <AppText v-if="props.account">
-        Vas a eliminar
+        <template v-if="props.mode === 'leave'">Vas a salir de </template>
+        <template v-else>Vas a eliminar </template>
         <strong>{{ props.account.name }}</strong
         >.
       </AppText>
       <AppText v-if="props.deleteError" class="text-(--app-color-danger)!">
         {{ props.deleteError }}
       </AppText>
-      <AppText size="sm" tone="subtle">
-        Esta acción seguirá el mismo flujo de confirmación antes de conectarse a persistencia real.
+      <AppText v-if="props.mode === 'leave'" size="sm" tone="subtle">
+        Solo puedes salir si no tienes porcentaje asignado, custodia ni reembolsos pendientes.
+      </AppText>
+      <AppText v-else size="sm" tone="subtle">
+        La cuenta quedará inactiva y podrá consultarse desde el filtro de cuentas inactivas.
       </AppText>
     </div>
   </AppModal>

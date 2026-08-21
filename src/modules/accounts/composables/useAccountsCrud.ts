@@ -84,6 +84,22 @@ export function useAccountsCrud() {
     }
   }
 
+  async function leaveAccount(accountId: string, userId: string): Promise<boolean> {
+    isDeleting.value = true;
+    deleteError.value = null;
+
+    try {
+      await accountsRepository.removeUser(accountId, userId);
+      accountsState.removeItem((account) => account.id === accountId);
+      return true;
+    } catch (error) {
+      deleteError.value = resolveApiErrorMessage(error, 'No fue posible salir de la cuenta.');
+      return false;
+    } finally {
+      isDeleting.value = false;
+    }
+  }
+
   function clearSaveError(): void {
     saveError.value = null;
   }
@@ -111,6 +127,7 @@ export function useAccountsCrud() {
     createAccount,
     updateAccount,
     deleteAccount,
+    leaveAccount,
     currentPage: accountsState.currentPage,
     lastPage: accountsState.lastPage,
     perPage: accountsState.perPage,

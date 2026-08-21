@@ -1,19 +1,60 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import {
+  ArrowRightStartOnRectangleIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from '@heroicons/vue/24/outline';
 
+import { canDeleteAccount, canLeaveAccount } from '@/modules/accounts/lib/accountPermissions';
 import type { Account } from '@/modules/accounts/types';
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 const props = defineProps<{
   account: Account;
+  currentUserId: string | null;
 }>();
 
 const emit = defineEmits<{
   edit: [accountId: string];
   delete: [accountId: string];
+  leave: [accountId: string];
 }>();
 
 const router = useRouter();
+
+const accountActions = computed(() => {
+  if (canDeleteAccount(props.account, props.currentUserId)) {
+    return [
+      {
+        key: 'edit',
+        label: 'Editar',
+        icon: PencilSquareIcon,
+        tone: 'default' as const,
+      },
+      {
+        key: 'delete',
+        label: 'Eliminar',
+        icon: TrashIcon,
+        tone: 'danger' as const,
+      },
+    ];
+  }
+
+  if (canLeaveAccount(props.account, props.currentUserId)) {
+    return [
+      {
+        key: 'leave',
+        label: 'Salir de la cuenta',
+        icon: ArrowRightStartOnRectangleIcon,
+        tone: 'danger' as const,
+      },
+    ];
+  }
+
+  return [];
+});
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-MX', {
@@ -46,6 +87,16 @@ function handleEdit(): void {
 
 function handleDelete(): void {
   emit('delete', props.account.id);
+}
+
+function handleLeave(): void {
+  emit('leave', props.account.id);
+}
+
+function handleAction(actionKey: string): void {
+  if (actionKey === 'leave') {
+    handleLeave();
+  }
 }
 
 function openAccountDetails(): void {
@@ -90,7 +141,14 @@ function openAccountDetails(): void {
           {{ formatCurrency(props.account.balance) }}
         </p>
 
-        <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
+        <AppActionMenu
+          v-if="accountActions.length > 0"
+          class="shrink-0"
+          :actions="accountActions"
+          @action="handleAction"
+          @delete="handleDelete"
+          @edit="handleEdit"
+        />
 
         <div class="col-span-3 flex min-w-0 items-center gap-2">
           <p

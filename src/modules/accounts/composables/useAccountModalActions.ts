@@ -2,6 +2,7 @@ import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { computed, type ComputedRef, type Ref } from 'vue';
 
 import type { AccountFormState } from '@/modules/accounts/composables/useAccountModals';
+import { canLeaveAccount } from '@/modules/accounts/lib/accountPermissions';
 import type { Account } from '@/modules/accounts/types';
 
 type UseAccountModalActionsOptions = {
@@ -9,6 +10,7 @@ type UseAccountModalActionsOptions = {
   editFormState: Ref<AccountFormState>;
   isDeleting: Ref<boolean>;
   isSaving: Ref<boolean>;
+  currentUserId: Ref<string | null>;
   selectedAccount: ComputedRef<Account | null>;
 };
 
@@ -43,7 +45,11 @@ export function useAccountModalActions(options: UseAccountModalActionsOptions) {
     { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
     {
       key: 'confirm-delete-account',
-      label: options.isDeleting.value ? 'Eliminando...' : 'Eliminar cuenta',
+      label: options.isDeleting.value
+        ? 'Procesando...'
+        : canLeaveAccount(options.selectedAccount.value, options.currentUserId.value)
+          ? 'Salir de la cuenta'
+          : 'Eliminar cuenta',
       tone: 'primary' as const,
       disabled: !options.selectedAccount.value || options.isDeleting.value,
       loading: options.isDeleting.value,
