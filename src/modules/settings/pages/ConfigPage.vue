@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useNotificationSettings } from '@/modules/settings/composables/useNotificationSettings';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
+import { CalculatorIcon } from '@heroicons/vue/24/outline';
+import { RouterLink } from 'vue-router';
 import {
   AppCard,
   AppSwitch,
@@ -85,6 +87,34 @@ function updateTheme(nextTheme: ThemeMode): void {
           </div>
         </AppCard>
       </div>
+    </section>
+
+    <section class="space-y-3" aria-labelledby="utilities-title">
+      <div class="space-y-1">
+        <AppTitle id="utilities-title" as="h2" size="sm">Utilidades</AppTitle>
+        <AppText>Herramientas rápidas para tomar decisiones sin guardar datos.</AppText>
+      </div>
+
+      <RouterLink
+        :to="{ name: 'admin.settings.utilities.credit-card-payoff' }"
+        class="block rounded-3xl border transition hover:border-(--app-color-border-strong) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+        :style="{ borderColor: 'var(--app-color-border)' }"
+      >
+        <AppCard :padded="false" class="rounded-3xl! p-4!">
+          <div class="flex items-center gap-4">
+            <div
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-(--app-color-primary)/10 text-(--app-color-primary)"
+            >
+              <CalculatorIcon class="h-6 w-6" />
+            </div>
+            <div class="min-w-0 flex-1 space-y-1">
+              <p class="text-sm font-semibold text-(--app-color-text)">Pago de tarjetas</p>
+              <AppText size="sm">Compara tu deuda con lo que ya has ahorrado.</AppText>
+            </div>
+            <span aria-hidden="true" class="text-xl text-(--app-color-text-subtle)">›</span>
+          </div>
+        </AppCard>
+      </RouterLink>
     </section>
 
     <section class="space-y-3">
