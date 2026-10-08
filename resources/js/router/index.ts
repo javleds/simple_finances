@@ -7,7 +7,7 @@ import authRoutes from '@/modules/auth/routes';
 import adminRoutes from '@/modules/admin/routes';
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory('/'),
   routes: [
     {
       path: '/',

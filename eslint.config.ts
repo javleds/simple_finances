@@ -16,14 +16,14 @@ export default defineConfigWithVueTs(
     files: ['**/*.{vue,ts,mts,tsx}'],
   },
 
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**', 'vendor/**', 'storage/**', 'public/build/**']),
 
   ...pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
 
   {
     ...pluginVitest.configs.recommended,
-    files: ['src/**/__tests__/*'],
+    files: ['resources/js/**/__tests__/*'],
   },
 
   ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),

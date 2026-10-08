@@ -1,8 +1,8 @@
 import path from 'node:path';
 
 export const defaultConfig = {
-  appBaseUrl: process.env.PW_APP_URL ?? 'http://localhost:5173',
-  apiBaseUrl: process.env.PW_API_URL ?? 'http://localhost:8000/api',
+  appBaseUrl: process.env.PW_APP_URL ?? 'http://127.0.0.1:8000',
+  apiBaseUrl: process.env.PW_API_URL ?? 'http://127.0.0.1:8000/api',
   email: process.env.PW_EMAIL ?? 'test@example.com',
   password: process.env.PW_PASSWORD ?? 'password',
   outputDir: process.env.PW_SCREENSHOT_DIR ?? path.join('tmp', 'playwright-facilities'),

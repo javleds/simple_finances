@@ -20,3 +20,11 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+/.env.*
+!/.env.example
+/coverage
+/tmp
+/.eslintcache
+*.tsbuildinfo
+*.timestamp-*-*.mjs

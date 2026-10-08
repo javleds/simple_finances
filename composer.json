@@ -2,7 +2,10 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
@@ -28,7 +31,9 @@
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         },
-        "files": ["./helpers.php"]
+        "files": [
+            "./helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -55,7 +60,11 @@
         "stan:baseline": "phpstan analyse --memory-limit=512M --generate-baseline=phpstan-baseline.neon",
         "pint": "pint",
         "format": "php-cs-fixer fix",
-        "format:check": "php-cs-fixer fix --dry-run --diff"
+        "format:check": "php-cs-fixer fix --dry-run --diff",
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx --no-install concurrently --kill-others --names=php,vite \"php artisan serve --host=127.0.0.1 --port=8000 --tries=1\" \"npm run dev\""
+        ]
     },
     "extra": {
         "laravel": {

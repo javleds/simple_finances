@@ -55,7 +55,7 @@ function redirectToLogin(): void {
 
   isRedirectingAfterUnauthorized = true;
   clearStoredAuthState();
-  window.location.assign(`${import.meta.env.BASE_URL}auth`);
+  window.location.assign('/auth');
 }
 
 export class ApiError extends Error {
@@ -72,11 +72,7 @@ export class ApiError extends Error {
 function resolveApiBaseUrl(): string {
   const baseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 
-  if (!baseUrl) {
-    throw new Error('Missing VITE_API_BASE_URL environment variable.');
-  }
-
-  return baseUrl.replace(/\/$/, '');
+  return (baseUrl || '/api').replace(/\/$/, '');
 }
 
 function resolveUrl(path: string): string {
