@@ -44,6 +44,7 @@ fi
 run git pull --ff-only
 run compose config --quiet
 run compose build --pull php
+run compose run --rm --no-deps php composer check-platform-reqs --no-dev --lock
 run compose run --rm --no-deps php composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 run compose --profile build run --rm --no-deps assets
 

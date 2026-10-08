@@ -2,7 +2,7 @@
 
 ## Preparación
 
-Trabaja desde la raíz del repositorio Laravel (`api` dentro del workspace anterior). Requiere PHP `^8.2`, Composer, Node 24 y npm. Habilita las extensiones requeridas por Composer y el driver de la base elegida; las pruebas necesitan SQLite/PDO SQLite.
+Trabaja desde la raíz del repositorio Laravel (`api` dentro del workspace anterior). Requiere PHP 8.4 (requerido por las dependencias del lockfile), Composer, Node 24 y npm. Habilita las extensiones requeridas por Composer y el driver de la base elegida; las pruebas necesitan SQLite/PDO SQLite.
 
 ```bash
 cp .env.example .env

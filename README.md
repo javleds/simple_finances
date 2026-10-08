@@ -4,7 +4,7 @@ Aplicación de finanzas personales y cuentas compartidas en un único repositori
 
 ## Inicio rápido
 
-Requiere PHP 8.2 o superior, Composer, Node 24 y npm. Desde la raíz de este repositorio:
+Requiere PHP 8.4 o superior, Composer, Node 24 y npm. Desde la raíz de este repositorio:
 
 ```bash
 cp .env.example .env

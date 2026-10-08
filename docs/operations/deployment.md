@@ -1,5 +1,9 @@
 # Despliegue integrado
 
+## Versión PHP
+
+La imagen usa `php:8.4-fpm` para satisfacer las dependencias Symfony 8 del lockfile probado. Mantener `composer.lock` sin regenerarlo en producción. Reconstruir PHP al desplegar y comprobar `composer check-platform-reqs --no-dev` dentro de esa imagen.
+
 ## Contrato operativo
 
 Un checkout de `simple_finances` contiene Laravel y Vue. `bash deploy.sh` actualiza ese repositorio; no despliega otro checkout ni reinicia Traefik. El wrapper del workspace anterior delega a `api/deploy.sh`.
