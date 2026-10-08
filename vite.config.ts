@@ -4,19 +4,22 @@ import vueDevTools from 'vite-plugin-vue-devtools';
 import sharedConfig from './vite.shared';
 
 export default mergeConfig(
-  sharedConfig,
-  defineConfig({
-    plugins: [
-      laravel({
-        input: ['resources/js/main.ts'],
-        refresh: ['resources/views/**', 'routes/**'],
-      }),
-      vueDevTools(),
-    ],
-    server: {
-      host: '127.0.0.1',
-      port: 5173,
-      strictPort: true,
-    },
-  }),
+    sharedConfig,
+    defineConfig({
+        plugins: [
+            laravel({
+                input: ['resources/js/main.ts'],
+                refresh: ['resources/views/**', 'routes/**'],
+            }),
+            vueDevTools(),
+        ],
+        server: {
+            host: '127.0.0.1',
+            port: 5173,
+            strictPort: true,
+        },
+        build: {
+            outDir: process.env.VITE_BUILD_OUT_DIR || 'public/build',
+        },
+    }),
 );

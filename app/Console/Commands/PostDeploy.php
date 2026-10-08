@@ -13,12 +13,20 @@ class PostDeploy extends Command
     public function handle(): int
     {
         if ($this->shouldRunMigrations()) {
-            $this->call('migrate', ['--force' => true]);
+            $status = $this->call('migrate', ['--force' => true]);
+
+            if ($status !== self::SUCCESS) {
+                return $status;
+            }
         }
 
-        $this->call('config:cache');
-        $this->call('route:cache');
-        $this->call('event:cache');
+        foreach (['config:cache', 'route:cache', 'event:cache'] as $command) {
+            $status = $this->call($command);
+
+            if ($status !== self::SUCCESS) {
+                return $status;
+            }
+        }
 
         return self::SUCCESS;
     }

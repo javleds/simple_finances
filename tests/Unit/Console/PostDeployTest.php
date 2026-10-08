@@ -92,3 +92,20 @@ function expectPostDeployStep(
         ->with($name, $arguments, Mockery::any())
         ->andReturn(0);
 }
+
+it('stops deployment when migrations fail', function (): void {
+    $command = buildPostDeployCommand();
+    $command->shouldReceive('option')->with('migrate')->andReturn(true);
+    $command->shouldReceive('call')->once()->with('migrate', ['--force' => true])->andReturn(1);
+
+    expect($command->handle())->toBe(PostDeploy::FAILURE);
+});
+
+it('stops deployment when cache generation fails', function (): void {
+    $command = buildPostDeployCommand();
+    $command->shouldReceive('option')->with('migrate')->andReturn(true);
+    $command->shouldReceive('call')->once()->with('migrate', ['--force' => true])->andReturn(0);
+    $command->shouldReceive('call')->once()->with('config:cache')->andReturn(2);
+
+    expect($command->handle())->toBe(2);
+});

@@ -1,10 +1,13 @@
-.PHONY: composer npm artisan
+.PHONY: dev composer npm artisan
+
+dev:
+	composer run dev
 
 composer:
-	docker compose -f docker-compose.prod.yml run --rm tooling composer $(ARGS)
+	composer $(ARGS)
 
 npm:
-	docker compose -f docker-compose.prod.yml run --rm tooling npm $(ARGS)
+	npm $(ARGS)
 
 artisan:
-	docker compose -f docker-compose.prod.yml exec php php artisan $(ARGS)
+	php artisan $(ARGS)
