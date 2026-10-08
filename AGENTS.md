@@ -1,12 +1,18 @@
 # Arquitectura y trabajo en este repositorio
 
+El repositorio activo es `api` (remote `simple_finances`); concentra el código y los historiales de Laravel y Vue. El directorio hermano `spa` es un checkout histórico: no desarrollar nuevas funcionalidades allí.
+
 Este repositorio contiene Laravel en la raíz y Vue en `resources/js`. Mantener las responsabilidades: Laravel administra dominio, persistencia, permisos, JWT y contratos `/api`; Vue conserva router, Pinia, TanStack Query y módulos. No introducir Inertia ni desarrollar UI Filament.
 
 La aplicación es mobile-first. Reutilizar componentes compartidos y consultar `resources/js/AGENTS.md`. Documentación: `docs/architecture/overview.md`, `docs/architecture/boundaries.md`, `docs/domain/shared-accounts.md`, `docs/shared-account-model.md`, `docs/operations/local-development.md` y `docs/operations/deployment.md`.
 
-Desarrollo en host: `composer run dev`, aplicación en http://127.0.0.1:8000. PHP y Vite también pueden iniciarse por separado. Antes de completar frontend: `npm run type-check`. Validar comportamiento con `php artisan test`, `npm run test:unit -- --run` y `npm run build`.
+Preparación en la raíz Laravel: `composer install` y `npm ci`. Desarrollo en host: `composer run dev`, aplicación en http://127.0.0.1:8000. PHP y Vite también pueden iniciarse por separado. Antes de completar frontend: `npm run type-check`. Validar comportamiento con `php artisan test`, `npm run test:unit -- --run` y `npm run build`.
 
-No incluir dumps, capturas ni archivos temporales. Cada cambio completado debe tener commits convencionales en inglés. No ejecutar despliegues remotos sin autorización específica.
+Mantener alineados los contratos Laravel y su consumo Vue. Evitar cambios de dominio o dependencias ajenos al objetivo. No incluir secretos, dumps, capturas ni archivos temporales. Cada cambio completado debe tener commits convencionales en inglés. Trabajar únicamente en local; no conectarse por SSH ni ejecutar acciones en el servidor remoto.
+
+## Documentación centralizada
+
+Las instrucciones de IA se mantienen en este archivo y en `resources/js/AGENTS.md`. La documentación vigente está en `docs`; los documentos anteriores del workspace se conservan en `docs/history/workspace` como referencia histórica. La propuesta original de casos de prueba está en `docs/testing/test-cases.md`; para reglas vigentes consultar `docs/shared-account-model.md`.
 
 ## Shared Account Domain Rules
 
