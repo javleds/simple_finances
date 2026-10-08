@@ -10,11 +10,21 @@ services:
             - php
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.${TRAEFIK_APP_NAME}.rule=Host(`${APP_DOMAIN}`)"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.${TRAEFIK_APP_NAME}.rule=Host(`${APP_DOMAIN:-fin-si.com}`) || Host(`${API_DOMAIN:-api.finsi.com}`)"
             - "traefik.http.routers.${TRAEFIK_APP_NAME}.entrypoints=websecure"
             - "traefik.http.routers.${TRAEFIK_APP_NAME}.tls=true"
             - "traefik.http.routers.${TRAEFIK_APP_NAME}.tls.certresolver=le"
             - "traefik.http.services.${TRAEFIK_APP_NAME}.loadbalancer.server.port=80"
+            - "traefik.http.routers.${TRAEFIK_APP_NAME}-legacy.rule=Host(`${SPA_LEGACY_DOMAIN:-v2.fin-si.com}`)"
+            - "traefik.http.routers.${TRAEFIK_APP_NAME}-legacy.entrypoints=websecure"
+            - "traefik.http.routers.${TRAEFIK_APP_NAME}-legacy.tls=true"
+            - "traefik.http.routers.${TRAEFIK_APP_NAME}-legacy.tls.certresolver=le"
+            - "traefik.http.routers.${TRAEFIK_APP_NAME}-legacy.middlewares=${TRAEFIK_APP_NAME}-legacy-redirect"
+            - "traefik.http.routers.${TRAEFIK_APP_NAME}-legacy.service=noop@internal"
+            - "traefik.http.middlewares.${TRAEFIK_APP_NAME}-legacy-redirect.redirectregex.regex=^https?://[^/]+/(.*)"
+            - "traefik.http.middlewares.${TRAEFIK_APP_NAME}-legacy-redirect.redirectregex.replacement=https://${APP_DOMAIN:-fin-si.com}/$${1}"
+            - "traefik.http.middlewares.${TRAEFIK_APP_NAME}-legacy-redirect.redirectregex.permanent=true"
         networks:
             - simple_finances_internal
             - proxy
@@ -33,16 +43,34 @@ services:
         volumes:
             - .:/app
         depends_on:
-            - mysql
+            mysql:
+                condition: service_healthy
         working_dir: /app
         networks:
             - simple_finances_internal
+
+    assets:
+        image: node:24-bookworm-slim
+        profiles: [build]
+        user: "1001:1001"
+        working_dir: /app
+        environment:
+            npm_config_cache: /tmp/npm-cache
+        volumes:
+            - .:/app
+        command: ["bash", "scripts/build-assets.sh"]
 
     mysql:
         container_name: simple_finances_db_prod
         image: mysql:8.0
         restart: always
         command: --default-authentication-plugin=mysql_native_password
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h127.0.0.1", "--silent"]
+            interval: 5s
+            timeout: 5s
+            retries: 20
+            start_period: 30s
         volumes:
             - simplefinancesdb:/var/lib/mysql
         environment:
