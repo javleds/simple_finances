@@ -2,62 +2,62 @@
 
 ## Shared Components Index
 
-Before creating new UI for features, review `src/modules/shared/components` and reuse these components when they fit the need.
+Before creating new UI for features, review `resources/js/modules/shared/components` and reuse these components when they fit the need.
 
 Reusing an existing shared component is mandatory when it already covers the need or can cover it with a small, reasonable extension. Do not create native UI elements or new components from scratch if a shared component already applies.
 
 Current shared components:
 
 - `AppActionMenu`: compact contextual actions menu for secondary item actions such as edit and delete.
-  Path: `src/modules/shared/components/AppActionMenu.vue`
+  Path: `resources/js/modules/shared/components/AppActionMenu.vue`
 - `AppAvatarValueRow`: compact row with circular initials avatar, primary label and right-aligned value for small summaries.
-  Path: `src/modules/shared/components/AppAvatarValueRow.vue`
+  Path: `resources/js/modules/shared/components/AppAvatarValueRow.vue`
 - `AppButton`: base button with variants `primary`, `secondary`, `ghost`.
-  Path: `src/modules/shared/components/AppButton.vue`
+  Path: `resources/js/modules/shared/components/AppButton.vue`
 - `AppCard`: bordered surface card with optional padding and muted surface mode.
-  Path: `src/modules/shared/components/AppCard.vue`
+  Path: `resources/js/modules/shared/components/AppCard.vue`
 - `AppContextTabs`: contextual horizontal tabs with optional icons and configurable top or bottom active indicator.
-  Path: `src/modules/shared/components/AppContextTabs.vue`
+  Path: `resources/js/modules/shared/components/AppContextTabs.vue`
 - `AppDatePicker`: app-styled wrapper around `@vuepic/vue-datepicker` for date fields that need to work well inside forms and modals.
-  Path: `src/modules/shared/components/AppDatePicker.vue`
+  Path: `resources/js/modules/shared/components/AppDatePicker.vue`
 - `AppEmptyState`: dashed empty-state surface for list sections with optional action slot.
-  Path: `src/modules/shared/components/AppEmptyState.vue`
+  Path: `resources/js/modules/shared/components/AppEmptyState.vue`
 - `AppHeroMetric`: hero-style metric block with small label, large value and optional adornment slot.
-  Path: `src/modules/shared/components/AppHeroMetric.vue`
+  Path: `resources/js/modules/shared/components/AppHeroMetric.vue`
 - `AppIconButton`: compact circular button for icon-only actions.
-  Path: `src/modules/shared/components/AppIconButton.vue`
+  Path: `resources/js/modules/shared/components/AppIconButton.vue`
 - `AppInput`: labeled input wrapper compatible with native input attributes via `$attrs`.
-  Path: `src/modules/shared/components/AppInput.vue`
+  Path: `resources/js/modules/shared/components/AppInput.vue`
 - `AppLink`: shared link component compatible with `href` and Vue Router `to`, with variants `primary`, `secondary`, `subtle`.
-  Path: `src/modules/shared/components/AppLink.vue`
+  Path: `resources/js/modules/shared/components/AppLink.vue`
 - `AppListState`: wrapper for initial loading and initial error states before rendering list content.
-  Path: `src/modules/shared/components/AppListState.vue`
+  Path: `resources/js/modules/shared/components/AppListState.vue`
 - `AppLoadMoreFooter`: dashed infinite-scroll footer with status label and optional retry action.
-  Path: `src/modules/shared/components/AppLoadMoreFooter.vue`
+  Path: `resources/js/modules/shared/components/AppLoadMoreFooter.vue`
 - `AppModal`: base modal mobile-first with header, content area and footer actions.
-  Path: `src/modules/shared/components/AppModal.vue`
+  Path: `resources/js/modules/shared/components/AppModal.vue`
 - `AppPasswordInput`: password input with show/hide action.
-  Path: `src/modules/shared/components/AppPasswordInput.vue`
+  Path: `resources/js/modules/shared/components/AppPasswordInput.vue`
 - `AppPercentageSplitEditor`: interactive horizontal percentage splitter with drag handles and exact numeric adjustment that keeps the total at 100%.
-  Path: `src/modules/shared/components/AppPercentageSplitEditor.vue`
+  Path: `resources/js/modules/shared/components/AppPercentageSplitEditor.vue`
 - `AppSearchSelect`: app-styled single-select searchable dropdown wrapper built on `@vueform/multiselect`.
-  Path: `src/modules/shared/components/AppSearchSelect.vue`
+  Path: `resources/js/modules/shared/components/AppSearchSelect.vue`
 - `AppSectionBar`: compact section heading row with title, actions slot and bottom divider.
-  Path: `src/modules/shared/components/AppSectionBar.vue`
+  Path: `resources/js/modules/shared/components/AppSectionBar.vue`
 - `AppSectionHeader`: reusable section header card with title, optional description, compact metrics area and actions slot.
-  Path: `src/modules/shared/components/AppSectionHeader.vue`
+  Path: `resources/js/modules/shared/components/AppSectionHeader.vue`
 - `AppSwitch`: boolean on/off switch for compact settings and per-item activation controls.
-  Path: `src/modules/shared/components/AppSwitch.vue`
+  Path: `resources/js/modules/shared/components/AppSwitch.vue`
 - `AppText`: shared paragraph/text primitive with tone and size options.
-  Path: `src/modules/shared/components/AppText.vue`
+  Path: `resources/js/modules/shared/components/AppText.vue`
 - `AppToggleButton`: segmented toggle button for selecting one option from a small set.
-  Path: `src/modules/shared/components/AppToggleButton.vue`
+  Path: `resources/js/modules/shared/components/AppToggleButton.vue`
 - `AppTitle`: shared heading primitive with semantic tag and size options.
-  Path: `src/modules/shared/components/AppTitle.vue`
+  Path: `resources/js/modules/shared/components/AppTitle.vue`
 
 Barrel export:
 
-- `src/modules/shared/components/index.ts`
+- `resources/js/modules/shared/components/index.ts`
 
 ## Icons
 

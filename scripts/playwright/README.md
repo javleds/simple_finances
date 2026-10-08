@@ -1,20 +1,18 @@
-# Playwright View Screenshots
+# Capturas de vistas con Playwright
 
-Internal Playwright helpers for opening existing SPA views and taking screenshots.
-These scripts are for product documentation and feature planning, not an E2E test suite, and are intentionally kept outside `src`.
+Helpers internos para abrir vistas de la SPA y capturarlas. Sirven para documentación de producto y planeación; no constituyen una suite E2E y permanecen fuera de `resources/js`.
 
-## Prerequisites
+## Requisitos
 
-Run the local backend and frontend:
+Desde la raíz Laravel, inicia la aplicación integrada:
 
 ```bash
-cd ../api && php artisan serve
-cd ../spa && npm run dev
+composer run dev
 ```
 
-The default login is `test@example.com` / `password`.
+Los scripts usan `test@example.com` / `password` por defecto; crea esa cuenta localmente o cambia las credenciales.
 
-## Usage
+## Uso
 
 List the available view keys:
 
@@ -62,10 +60,10 @@ npm run pw:facilities -- --all
 
 Those compatibility commands write to `tmp/playwright-facilities` unless `--output-dir` or `PW_SCREENSHOT_DIR` is set.
 
-## Environment Overrides
+## Variables de entorno
 
-- `PW_APP_URL`: SPA URL. Defaults to `http://localhost:5173`.
-- `PW_API_URL`: API URL. Defaults to `http://localhost:8000/api`.
+- `PW_APP_URL`: SPA URL. Defaults to `http://127.0.0.1:8000`.
+- `PW_API_URL`: API URL. Defaults to `http://127.0.0.1:8000/api`.
 - `PW_EMAIL`: login email. Defaults to `test@example.com`.
 - `PW_PASSWORD`: login password. Defaults to `password`.
 - `PW_SCREENSHOT_DIR`: screenshot output directory.

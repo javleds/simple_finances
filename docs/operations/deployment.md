@@ -1,0 +1,49 @@
+# Despliegue integrado
+
+## Contrato operativo
+
+Un checkout de `simple_finances` contiene Laravel y Vue. `bash deploy.sh` actualiza ese repositorio; no despliega otro checkout ni reinicia Traefik. El wrapper del workspace anterior delega a `api/deploy.sh`.
+
+Conserva el nombre del proyecto Docker Compose utilizado en producción: cambiar el directorio o `COMPOSE_PROJECT_NAME` puede seleccionar otro volumen de MySQL aunque el nombre lógico siga siendo `simplefinancesdb`. Verifica el volumen existente antes de iniciar un nuevo checkout. Se conservan nombres de contenedores y redes.
+
+PHP y el constructor Node 24 ejecutan como UID/GID 1001. El checkout, `vendor`, `node_modules`, `storage`, `bootstrap/cache` y `public/build` deben ser escribibles por ese usuario. Prepara permisos durante aprovisionamiento; el script no cambia propietarios.
+
+Configura `.env` con:
+
+```dotenv
+APP_DOMAIN=fin-si.com
+API_DOMAIN=api.finsi.com
+SPA_LEGACY_DOMAIN=v2.fin-si.com
+TRAEFIK_APP_NAME=simple-finances-api
+APP_URL=https://fin-si.com
+SPA_URL=https://fin-si.com
+FRONTEND_URL=https://fin-si.com
+```
+
+Conserva el identificador Traefik existente si es diferente, `APP_KEY`, secretos y configuración DB. La API antigua sigue respondiendo bajo su host sin redirección; `v2.fin-si.com` redirige al principal. Comprueba enlaces firmados emitidos antes del cambio y webhooks.
+
+## Secuencia
+
+El script valida configuración y Git limpio, registra el commit anterior, activa mantenimiento antes de `git pull --ff-only`, construye PHP, instala Composer sin dependencias de desarrollo y ejecuta el constructor Node bajo demanda. El código está montado: actualizar Git antes del mantenimiento expondría versiones mezcladas.
+
+`npm ci` y el build compilan a `storage/app/deploy-assets/build`. El publicador valida la entrada Vue y archivos del manifest, copia assets, conserva los anteriores, guarda `manifest.previous.json` y cambia el manifest mediante rename. Retira `public/hot`.
+
+Después inicia PHP/MySQL/Nginx. MySQL dispone de un healthcheck TCP con `mysqladmin ping`; PHP espera a que MySQL esté saludable y `compose up --wait` espera esta comprobación antes de ejecutar `app:post-deploy --migrate`. El healthcheck comprueba disponibilidad del servidor; las credenciales se validan al conectar Laravel. El script desactiva mantenimiento solo si todo termina correctamente. Un error posterior al mantenimiento deja la aplicación cerrada; consulta el log, corrige el fallo y repite el script. No limpies assets retenidos hasta cerrar la ventana de rollback.
+
+## Primera transición
+
+1. Guarda el commit backend anterior, configuración Compose/Traefik, imagen/contenedor SPA y respaldo de base de datos. No cambies nombre del proyecto Compose ni volumen.
+2. Prepara `.env`, permisos y red externa `proxy`. En una instalación nueva verifica credenciales y volumen MySQL; el healthcheck y la dependencia de PHP impiden ejecutar el post-deploy antes de que el servidor acepte conexiones.
+3. Verifica el build integrado y rutas en un entorno de ensayo. El checkout frontend original queda intacto; archívalo únicamente después de verificar producción.
+4. En la ventana de mantenimiento, retira el router/contenedor SPA antiguo antes de habilitar las nuevas etiquetas para `fin-si.com`; mantener ambos routers activos genera conflicto. Conserva su imagen y configuración para rollback.
+5. Ejecuta el despliegue integrado y verifica `/up`, login, rutas profundas, API antigua, assets y reembolsos. Mantén workers y scheduler existentes según su operación actual.
+
+El script no retira automáticamente el contenedor SPA de otro proyecto ni aprovisiona Traefik. No se ha ejecutado ningún despliegue remoto como parte de esta integración.
+
+## Recuperación
+
+Para fallos de build o post-deploy, mantén mantenimiento, corrige el problema y repite `bash deploy.sh`. El script registra el commit anterior en el log.
+
+Para volver a una versión integrada anterior, restaura primero ese commit mediante el procedimiento operativo habitual, instala sus dependencias y restaura el manifest correspondiente desde `public/build/manifest.previous.json` si corresponde a esa versión; de otro modo reconstruye sus assets. Regenera las caches de Laravel y desactiva mantenimiento tras verificar. No basta cambiar el manifest dejando PHP actualizado.
+
+Para volver a una versión anterior a la integración, restaura el backend y su configuración Compose/Traefik anterior, reinicia el contenedor SPA conservado y devuelve el dominio principal a su router. Esa versión no contiene Vue embebido: restaurar solo un manifest no recupera el frontend. La integración no añade migraciones, pero `post-deploy --migrate` puede ejecutar otras pendientes; evalúa su compatibilidad antes de revertir código y no reviertas datos automáticamente.
