@@ -1,0 +1,65 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where([data-vdt-mode='dark'], [data-vdt-mode='dark'] *, .dark, .dark *));
+
+:root {
+  color-scheme: light;
+  --app-color-page: #f5f7fb;
+  --app-color-page-glow: rgba(29, 78, 216, 0.1);
+  --app-color-surface: #ffffff;
+  --app-color-surface-muted: #f7faff;
+  --app-color-border: #dbe4f0;
+  --app-color-border-strong: #d8e3f2;
+  --app-color-text: #0f172a;
+  --app-color-text-muted: #475569;
+  --app-color-text-subtle: #64748b;
+  --app-color-label: #1e293b;
+  --app-color-input-bg: #ffffff;
+  --app-color-input-border: #cbd5e1;
+  --app-color-input-text: #0f172a;
+  --app-color-input-placeholder: #94a3b8;
+  --app-color-primary: #1d4ed8;
+  --app-color-primary-hover: #1e40af;
+  --app-color-primary-foreground: #eff6ff;
+  --app-color-success: #15803d;
+  --app-color-warning: #b45309;
+  --app-color-danger: #b91c1c;
+  --app-color-secondary: #0f172a;
+  --app-color-secondary-hover: #1e293b;
+  --app-color-secondary-foreground: #ffffff;
+  --app-color-link: #1d4ed8;
+  --app-color-link-hover: #1e3a8a;
+  --app-color-focus-ring: rgba(29, 78, 216, 0.12);
+  --app-shadow-card: 0 24px 80px -32px rgba(15, 23, 42, 0.22);
+}
+
+.dark {
+  color-scheme: dark;
+  --app-color-page: #101215;
+  --app-color-page-glow: rgba(59, 130, 246, 0.03);
+  --app-color-surface: #171a20;
+  --app-color-surface-muted: #1f232b;
+  --app-color-border: #2c313b;
+  --app-color-border-strong: #353b47;
+  --app-color-text: #f3f6fb;
+  --app-color-text-muted: #c2cad8;
+  --app-color-text-subtle: #8b95a7;
+  --app-color-label: #e4e9f2;
+  --app-color-input-bg: #12151b;
+  --app-color-input-border: #374050;
+  --app-color-input-text: #f8fbff;
+  --app-color-input-placeholder: #768194;
+  --app-color-primary: #1e40af;
+  --app-color-primary-hover: #1d4ed8;
+  --app-color-primary-foreground: #eff6ff;
+  --app-color-success: #4ade80;
+  --app-color-warning: #fbbf24;
+  --app-color-danger: #f87171;
+  --app-color-secondary: #dbe4ff;
+  --app-color-secondary-hover: #bfdbfe;
+  --app-color-secondary-foreground: #101215;
+  --app-color-link: #93c5fd;
+  --app-color-link-hover: #bfdbfe;
+  --app-color-focus-ring: rgba(37, 99, 235, 0.16);
+  --app-shadow-card: 0 32px 90px -42px rgba(0, 0, 0, 0.72);
+}

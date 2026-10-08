@@ -1,0 +1,169 @@
+<script setup lang="ts">
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import {
+  ArrowRightStartOnRectangleIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from '@heroicons/vue/24/outline';
+
+import { canDeleteAccount, canLeaveAccount } from '@/modules/accounts/lib/accountPermissions';
+import type { Account } from '@/modules/accounts/types';
+import { AppActionMenu, AppCard } from '@/modules/shared/components';
+
+const props = defineProps<{
+  account: Account;
+  currentUserId: string | null;
+}>();
+
+const emit = defineEmits<{
+  edit: [accountId: string];
+  delete: [accountId: string];
+  leave: [accountId: string];
+}>();
+
+const router = useRouter();
+
+const accountActions = computed(() => {
+  if (canDeleteAccount(props.account, props.currentUserId)) {
+    return [
+      {
+        key: 'edit',
+        label: 'Editar',
+        icon: PencilSquareIcon,
+        tone: 'default' as const,
+      },
+      {
+        key: 'delete',
+        label: 'Eliminar',
+        icon: TrashIcon,
+        tone: 'danger' as const,
+      },
+    ];
+  }
+
+  if (canLeaveAccount(props.account, props.currentUserId)) {
+    return [
+      {
+        key: 'leave',
+        label: 'Salir de la cuenta',
+        icon: ArrowRightStartOnRectangleIcon,
+        tone: 'danger' as const,
+      },
+    ];
+  }
+
+  return [];
+});
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function balanceClasses(amount: Account['balance']): string {
+  if (amount < 0) {
+    return 'text-red-700 dark:text-red-300';
+  }
+
+  return 'text-slate-600 dark:text-slate-300';
+}
+
+function statusClasses(status: Account['status']): string {
+  if (status === 'Activo') {
+    return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
+  }
+
+  return 'bg-slate-500/10 text-slate-600 dark:text-slate-300';
+}
+
+function handleEdit(): void {
+  emit('edit', props.account.id);
+}
+
+function handleDelete(): void {
+  emit('delete', props.account.id);
+}
+
+function handleLeave(): void {
+  emit('leave', props.account.id);
+}
+
+function handleAction(actionKey: string): void {
+  if (actionKey === 'leave') {
+    handleLeave();
+  }
+}
+
+function openAccountDetails(): void {
+  router.push({
+    name: 'admin.accounts.transactions',
+    params: { accountId: props.account.id },
+  });
+}
+</script>
+
+<template>
+  <AppCard
+    class="relative overflow-hidden rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
+  >
+    <div
+      class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
+      :style="{
+        background: `linear-gradient(90deg, color-mix(in srgb, ${props.account.color ?? '#94A3B8'} 14%, transparent), transparent 78%)`,
+      }"
+    />
+
+    <div class="relative grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-x-3 gap-y-2">
+      <button
+        type="button"
+        class="col-span-4 grid cursor-pointer grid-cols-subgrid gap-x-3 gap-y-2 rounded-xl text-left focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+        @click="openAccountDetails"
+        @keydown.enter.prevent="openAccountDetails"
+        @keydown.space.prevent="openAccountDetails"
+      >
+        <div class="min-w-0">
+          <p
+            class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+          >
+            {{ props.account.name }}
+          </p>
+        </div>
+
+        <p
+          class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap text-(--app-color-text) tabular-nums sm:text-base"
+          :class="balanceClasses(props.account.balance)"
+        >
+          {{ formatCurrency(props.account.balance) }}
+        </p>
+
+        <AppActionMenu
+          v-if="accountActions.length > 0"
+          class="shrink-0"
+          :actions="accountActions"
+          @action="handleAction"
+          @delete="handleDelete"
+          @edit="handleEdit"
+        />
+
+        <div class="col-span-3 flex min-w-0 items-center gap-2">
+          <p
+            class="truncate text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
+          >
+            {{ props.account.isVirtual ? 'Virtual' : 'Fisica' }}
+          </p>
+          <span
+            class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
+            :class="statusClasses(props.account.status)"
+          >
+            {{ props.account.status }}
+          </span>
+        </div>
+      </button>
+    </div>
+  </AppCard>
+</template>
