@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useNotificationSettings } from '@/modules/settings/composables/useNotificationSettings';
+import WhatsappConnectionCard from '@/modules/settings/components/WhatsappConnectionCard.vue';
 import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import { CalculatorIcon } from '@heroicons/vue/24/outline';
 import { RouterLink } from 'vue-router';
@@ -34,6 +35,7 @@ function updateTheme(nextTheme: ThemeMode): void {
 
 <template>
   <div class="space-y-5">
+    <WhatsappConnectionCard />
     <AppCard class="rounded-3xl">
       <div class="flex items-center justify-between gap-4">
         <div class="space-y-1">
