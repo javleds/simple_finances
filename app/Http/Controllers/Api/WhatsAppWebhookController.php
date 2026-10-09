@@ -23,7 +23,9 @@ class WhatsAppWebhookController extends Controller
             return response('Forbidden', 403);
         }
 
-        return response($challenge, 200)->header('Content-Type', 'text/plain');
+        return response($challenge, 200)
+            ->header('Content-Type', 'text/plain')
+            ->header('Content-Length', (string) strlen($challenge));
     }
 
     public function receive(Request $request, ReceiveWhatsAppWebhook $receiver): Response
