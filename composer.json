@@ -63,7 +63,7 @@
         "format:check": "php-cs-fixer fix --dry-run --diff",
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx --no-install concurrently --kill-others --names=php,vite \"php artisan serve --host=127.0.0.1 --port=8000 --tries=1\" \"npm run dev\""
+            "npx --no-install concurrently --kill-others --names=php,vite,queue \"php artisan serve --host=127.0.0.1 --port=8000 --tries=1\" \"npm run dev\" \"php artisan queue:listen --sleep=1 --tries=5 --timeout=60\""
         ]
     },
     "extra": {

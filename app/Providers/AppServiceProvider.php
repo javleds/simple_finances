@@ -48,6 +48,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('whatsapp-code', function (Request $request): array {
+            $userKey = 'whatsapp-user:'.$request->user()->getAuthIdentifier();
+            $phone = $request->input('phone_number');
+            $phoneKey = 'whatsapp-phone:'.hash('sha256', is_string($phone) ? $phone : '');
+
+            return [
+                Limit::perMinute(1)->by($userKey.':minute'),
+                Limit::perHour(5)->by($userKey.':hour'),
+                Limit::perMinute(1)->by($phoneKey.':minute'),
+                Limit::perHour(5)->by($phoneKey.':hour'),
+            ];
+        });
+
+        RateLimiter::for('whatsapp-confirm', fn (Request $request): Limit => Limit::perMinute(10)
+            ->by('whatsapp-confirm:'.$request->user()->getAuthIdentifier()));
+
         RateLimiter::for('auth-email-action', function (Request $request): Limit {
             $email = mb_strtolower((string) $request->input('email'));
 

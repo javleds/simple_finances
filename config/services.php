@@ -41,6 +41,16 @@ return [
         'verification_code_expiration_minutes' => env('TELEGRAM_VERIFICATION_CODE_EXPIRATION_MINUTES', 10),
     ],
 
+    'whatsapp' => [
+        'phone_number_id' => env('WA_PHONE_NUMBER_ID'),
+        'access_token' => env('WA_ACCESS_TOKEN'),
+        'verify_token' => env('WA_API_TOKEN'),
+        'app_secret' => env('WA_APP_SECRET'),
+        'graph_version' => 'v25.0',
+        'auth_template_name' => env('WA_AUTH_TEMPLATE_NAME'),
+        'auth_template_language' => env('WA_AUTH_TEMPLATE_LANGUAGE', 'es_MX'),
+    ],
+
     'openai' => [
         'api_token' => env('OPENAI_API_TOKEN'),
         'default_model' => env('OPENAI_DEFAULT_MODEL', 'gpt-4o-mini'),

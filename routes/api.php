@@ -38,7 +38,13 @@ use App\Http\Controllers\Api\SubscriptionPaymentController;
 use App\Http\Controllers\Api\TelegramVerificationCodeController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\VirtualAccountController;
+use App\Http\Controllers\Api\WhatsAppConnectionController;
+use App\Http\Controllers\Api\WhatsAppVerificationCodeController;
+use App\Http\Controllers\Api\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('whatsapp/webhook', [WhatsAppWebhookController::class, 'verify']);
+Route::post('whatsapp/webhook', [WhatsAppWebhookController::class, 'receive']);
 
 Route::prefix('auth')->group(function (): void {
     Route::post('register', [RegisterController::class, 'store'])
@@ -60,6 +66,12 @@ Route::prefix('auth')->group(function (): void {
 });
 
 Route::middleware('api.auth')->group(function (): void {
+    Route::get('whatsapp-connection', [WhatsAppConnectionController::class, 'show']);
+    Route::post('whatsapp-verification-codes', [WhatsAppVerificationCodeController::class, 'store'])
+        ->middleware('throttle:whatsapp-code');
+    Route::post('whatsapp-connection', [WhatsAppConnectionController::class, 'store'])
+        ->middleware('throttle:whatsapp-confirm');
+    Route::delete('whatsapp-connection', [WhatsAppConnectionController::class, 'delete']);
     Route::get('profile', [ProfileController::class, 'show']);
     Route::put('profile', [ProfileController::class, 'update']);
 
