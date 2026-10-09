@@ -30,7 +30,7 @@ class WhatsAppWebhookTest extends TestCase
     public function test_verification_returns_only_the_challenge(): void
     {
         $this->get('/api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=verify-secret&hub.challenge=00123')
-            ->assertOk()->assertContent('00123');
+            ->assertOk()->assertHeader('Content-Type', 'text/plain; charset=utf-8')->assertContent('00123');
         $this->get('/api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=00123')
             ->assertForbidden();
     }
