@@ -18,14 +18,13 @@ class WhatsAppWebhookController extends Controller
         $providedToken = $request->query('hub_verify_token', $request->query('hub.verify_token'));
         $challenge = $request->query('hub_challenge', $request->query('hub.challenge'));
 
-        if ($token === '' || $mode !== 'subscribe' || ! is_string($providedToken)
-            || ! hash_equals($token, $providedToken) || ! is_string($challenge)) {
-            return response('Forbidden', 403);
+        if ($mode === 'subscribe' && $token === $providedToken && is_string($challenge)) {
+            return response($challenge, 200)
+                ->header('Content-Type', 'text/plain')
+                ->header('Content-Length', (string) strlen($challenge));
         }
 
-        return response($challenge, 200)
-            ->header('Content-Type', 'text/plain')
-            ->header('Content-Length', (string) strlen($challenge));
+        return response('Forbidden', 403);
     }
 
     public function receive(Request $request, ReceiveWhatsAppWebhook $receiver): Response
