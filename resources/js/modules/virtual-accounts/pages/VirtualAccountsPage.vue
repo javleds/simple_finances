@@ -7,6 +7,7 @@ import Button from 'primevue/button';
 import { BanknotesIcon, PlusIcon } from '@heroicons/vue/24/outline';
 import { computed, onMounted, ref, watch } from 'vue';
 
+import VirtualBalanceBreakdown from '@/modules/virtual-accounts/components/VirtualBalanceBreakdown.vue';
 import { useVirtualAccounts } from '@/modules/virtual-accounts/composables/useVirtualAccounts';
 import type { VirtualAccountItem } from '@/modules/virtual-accounts/types';
 import {
@@ -198,29 +199,14 @@ function today(): string {
                             </template>
                         </AppHeroMetric>
 
-                        <div class="grid grid-cols-2 gap-3">
-                            <div
-                                class="min-w-0 py-2 sm:rounded-(--app-radius-control) sm:border sm:px-3 sm:py-3"
-                                :style="{ borderColor: 'var(--app-color-border)' }"
-                            >
-                                <AppText size="sm" tone="subtle">Capital neto</AppText>
-                                <p
-                                    class="text-base font-semibold text-(--app-color-text) tabular-nums"
-                                >
-                                    {{ formatCurrency(dashboard.summary.netCapital) }}
-                                </p>
-                            </div>
-                            <div
-                                class="min-w-0 py-2 sm:rounded-(--app-radius-control) sm:border sm:px-3 sm:py-3"
-                                :style="{ borderColor: 'var(--app-color-border)' }"
-                            >
-                                <AppText size="sm" tone="subtle">Rendimiento</AppText>
-                                <p
-                                    class="text-base font-semibold text-emerald-700 tabular-nums dark:text-emerald-300"
-                                >
-                                    {{ formatCurrency(dashboard.summary.observedYield) }}
-                                </p>
-                            </div>
+                        <VirtualBalanceBreakdown :balance="dashboard.summary" />
+                        <AppText size="sm" tone="subtle">
+                            Ahorro neto: aportaciones menos retiros. El rendimiento registrado
+                            refleja las variaciones de los cortes capturados, incluidas pérdidas o
+                            ajustes de saldo.
+                        </AppText>
+
+                        <div class="grid grid-cols-2 gap-3 border-t pt-3">
                             <div
                                 class="min-w-0 py-2 sm:rounded-(--app-radius-control) sm:border sm:px-3 sm:py-3"
                                 :style="{ borderColor: 'var(--app-color-border)' }"
@@ -267,7 +253,7 @@ function today(): string {
                             class="w-full justify-start! p-0! text-left"
                             @click="selectAccount(account)"
                         >
-                            <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div class="flex w-full flex-wrap items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <p
                                         class="text-sm font-semibold break-words text-(--app-color-text)"
@@ -275,7 +261,7 @@ function today(): string {
                                         {{ account.accountName }}
                                     </p>
                                     <AppText size="sm" tone="subtle">
-                                        Ultimo corte:
+                                        Último corte:
                                         {{ formatDate(account.latestSnapshot?.observedAt) }}
                                     </AppText>
                                 </div>
@@ -287,28 +273,30 @@ function today(): string {
                             </div>
                         </Button>
 
-                        <div class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-                            <div>
-                                <AppText size="sm" tone="subtle">Inicial</AppText>
-                                <p class="font-semibold tabular-nums">
+                        <VirtualBalanceBreakdown class="mt-4" :balance="account" />
+
+                        <dl
+                            class="mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-sm sm:grid-cols-3"
+                        >
+                            <div class="min-w-0">
+                                <dt class="text-(--app-color-text-subtle)">Inicial</dt>
+                                <dd class="font-semibold wrap-anywhere tabular-nums">
                                     {{ formatCurrency(account.initialBalance) }}
-                                </p>
+                                </dd>
                             </div>
-                            <div>
-                                <AppText size="sm" tone="subtle">Retirado</AppText>
-                                <p class="font-semibold tabular-nums">
+                            <div class="min-w-0">
+                                <dt class="text-(--app-color-text-subtle)">Aportado</dt>
+                                <dd class="font-semibold wrap-anywhere tabular-nums">
+                                    {{ formatCurrency(account.manualContributions) }}
+                                </dd>
+                            </div>
+                            <div class="min-w-0">
+                                <dt class="text-(--app-color-text-subtle)">Retirado</dt>
+                                <dd class="font-semibold wrap-anywhere tabular-nums">
                                     {{ formatCurrency(account.manualWithdrawals) }}
-                                </p>
+                                </dd>
                             </div>
-                            <div>
-                                <AppText size="sm" tone="subtle">Interes</AppText>
-                                <p
-                                    class="font-semibold text-emerald-700 tabular-nums dark:text-emerald-300"
-                                >
-                                    {{ formatCurrency(account.observedYield) }}
-                                </p>
-                            </div>
-                        </div>
+                        </dl>
 
                         <div class="mt-4">
                             <AppButton variant="secondary" full-width @click="openCapture(account)">
@@ -319,7 +307,10 @@ function today(): string {
                     </article>
                 </section>
 
-                <AppCard v-if="selectedAccount" class="rounded-(--app-radius-control) sm:rounded-(--app-radius-control)">
+                <AppCard
+                    v-if="selectedAccount"
+                    class="rounded-(--app-radius-control) sm:rounded-(--app-radius-control)"
+                >
                     <div class="space-y-4">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div class="min-w-0">
