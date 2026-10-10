@@ -256,7 +256,7 @@ async function handleLogout(): Promise<void> {
         </div>
 
         <nav
-            class="fixed bottom-0 left-1/2 z-20 h-(--app-bottom-nav-height) w-full max-w-[430px] -translate-x-1/2 border-t bg-(--app-color-surface) px-1 pb-[env(safe-area-inset-bottom)] sm:h-auto sm:border-x sm:px-2 sm:pt-1 sm:pb-2"
+            class="fixed bottom-0 left-1/2 z-20 h-(--app-bottom-nav-height) w-full max-w-[430px] -translate-x-1/2 border-t bg-(--app-color-surface) px-1 pb-[env(safe-area-inset-bottom)] sm:border-x sm:px-2"
             :style="{ borderColor: 'var(--app-color-border-strong)' }"
             aria-label="Navegación principal"
         >

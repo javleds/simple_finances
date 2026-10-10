@@ -93,7 +93,7 @@ function handleAccountUsersChange(nextUsers: AccountMember[]): void {
         </header>
 
         <div
-            class="sticky top-(--app-header-height) z-10 -mx-4 border-b border-(--app-color-border) bg-(--app-color-surface) sm:fixed sm:top-auto sm:bottom-[5rem] sm:left-1/2 sm:mx-0 sm:w-full sm:max-w-[430px] sm:-translate-x-1/2 sm:border-t"
+            class="sticky top-(--app-header-height) z-10 -mx-4 border-b border-(--app-color-border) bg-(--app-color-surface) sm:fixed sm:mb-0! sm:top-auto sm:bottom-(--app-bottom-nav-height) sm:left-1/2 sm:mx-0 sm:w-full sm:max-w-[430px] sm:-translate-x-1/2 sm:border-t"
         >
             <AppContextTabs
                 :model-value="activeSection"
