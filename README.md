@@ -1,6 +1,6 @@
 # Fin SI
 
-Aplicación de finanzas personales y cuentas compartidas en un único repositorio Laravel 12. Laravel sirve la SPA Vue 3 y la API HTTP; Vue conserva TypeScript, Vue Router, Pinia, TanStack Query y Tailwind 4.
+Aplicación de finanzas personales y cuentas compartidas en un único repositorio Laravel 12. Laravel sirve la SPA Vue 3 y la API HTTP; Vue conserva TypeScript, Vue Router, Pinia, TanStack Query y Tailwind 4. La interfaz usa PrimeVue 5, PrimeVue Forms con Zod y PrimeUI Charts.
 
 ## Inicio rápido
 
@@ -42,4 +42,4 @@ Configuración permite vincular un teléfono mexicano al usuario autenticado med
 
 El acceso a la SPA sigue usando correo, contraseña y JWT. El código de WhatsApp verifica la vinculación del teléfono; no inicia sesión. La prueba real de vinculación queda pendiente de disponer de una plantilla de autenticación aprobada. Consulta [configuración, contratos y pruebas de WhatsApp](docs/integrations/whatsapp.md).
 
-Consulta [desarrollo local](docs/operations/local-development.md), [despliegue](docs/operations/deployment.md), [arquitectura](docs/architecture/overview.md) y [pruebas](docs/testing/strategy.md). WhatsApp, Telegram, OpenAI y correo se configuran desde Laravel; no publiques tokens en variables `VITE_*`.
+Consulta [desarrollo local](docs/operations/local-development.md), [despliegue](docs/operations/deployment.md), [arquitectura](docs/architecture/overview.md) y [pruebas](docs/testing/strategy.md) e [interfaz PrimeVue](docs/frontend/primevue.md). WhatsApp, Telegram, OpenAI y correo se configuran desde Laravel; no publiques tokens en variables `VITE_*`.

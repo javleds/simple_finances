@@ -2,7 +2,7 @@
 
 Laravel 12 contiene backend y frontend en un solo repositorio. Laravel entrega el HTML de `resources/views/spa.blade.php`, y `@vite` carga `resources/js/main.ts`. Vue Router gestiona navegación desde `/`; la base de assets compilados no determina las rutas del navegador.
 
-Vue conserva módulos, componentes compartidos, TypeScript, Pinia para estado de cliente y TanStack Query para estado de servidor. Los repositorios llaman al cliente HTTP con `/api` por defecto y JWT Bearer. Laravel valida y autoriza cada petición y mantiene servicios, modelos Eloquent, migraciones e integraciones de correo, WhatsApp, Telegram y OpenAI. PrimeVue 5 aporta los controles de teléfono y código de WhatsApp, con Aura y Tailwind 4, respetando el selector `.dark` de la aplicación.
+Vue conserva módulos, componentes compartidos, TypeScript, Pinia para estado de cliente y TanStack Query para estado de servidor. Los repositorios llaman al cliente HTTP con `/api` por defecto y JWT Bearer. Laravel valida y autoriza cada petición y mantiene servicios, modelos Eloquent, migraciones e integraciones de correo, WhatsApp, Telegram y OpenAI. PrimeVue 5 aporta los controles compartidos y de los módulos, formularios, diálogos, menús y mensajes. Usa Aura adaptado en azul, Tailwind 4 y el selector `.dark`. PrimeVue Forms integra los esquemas Zod; el gráfico del dashboard usa PrimeUI Charts con renderer SVG. Consulta [la interfaz actual](../frontend/primevue.md) para los contratos que conservan los adaptadores y la cobertura de la migración.
 
 El catch-all web sirve GET/HEAD de navegación, excluyendo API, healthcheck y assets. Nginx entrega archivos estáticos y devuelve 404 para assets inexistentes. Los endpoints y las reglas financieras no cambian por integrar el frontend.
 

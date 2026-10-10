@@ -1,5 +1,7 @@
 # Validación de la integración SPA
 
+Este registro corresponde a la integración inicial. La validación posterior de la migración de interfaz está en [PrimeVue](../frontend/primevue.md#validación-realizada).
+
 ## Comprobaciones realizadas
 
 - Historial: los commits originales `5afa6e6` de Laravel y `1475175` de Vue son antecesores del HEAD integrado.
@@ -17,7 +19,7 @@
 
 ## Fallos previos conservados
 
-La suite Vue completa ya tenía tres fallos en `transactionsRepository.spec.ts`: expectativas desactualizadas para `ledgerRows` y `actionType`. La suite integrada conserva los mismos tres fallos; 41 de 44 pruebas pasan. No se cambió el parser financiero para acomodar esas expectativas.
+La suite Vue completa ya tenía tres fallos en `transactionsRepository.spec.ts`: expectativas desactualizadas para `ledgerRows` y `actionType`. En esa integración, 41 de 44 pruebas pasaban. Durante la migración a PrimeVue se actualizaron esas expectativas al contrato existente; la suite posterior pasa completa. No se cambió el parser financiero para acomodar las expectativas.
 
 `composer format:check` falla por una regla previa no admitida en `.php-cs-fixer.dist.php`: `align_single_space_minimal_by_indent`. Los archivos PHP afectados pasan comprobación de sintaxis. PHPStan no está instalado aunque existe el script `composer stan`.
 

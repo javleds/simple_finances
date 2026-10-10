@@ -34,3 +34,9 @@ npm run test:unit -- --run resources/js/modules/settings/components/WhatsappConn
 Verifica expiración de 24 horas, ceros iniciales, límites de solicitudes e intentos, conflictos de teléfonos, reenvío, fallos de envío y desvinculación. En el webhook, verifica firma, rechazo de eventos inválidos, persistencia y encolado atómicos, repetición del cuerpo, procesamiento y reintentos del worker. La UI debe conservar el aislamiento de datos al cambiar de sesión.
 
 Las pruebas automatizadas sustituyen las llamadas a Meta; no acreditan entrega de mensajes ni aprobación de plantillas. La prueba real del OTP permanece pendiente según el procedimiento de [WhatsApp](../integrations/whatsapp.md).
+
+## Interfaz PrimeVue
+
+Además del chequeo de tipos y las pruebas completas, verifica fechas locales, importes durante la edición, validación Zod entre campos, reinicio al cambiar de registro, envío desde el pie del modal y bloqueo de envíos duplicados. Las regresiones enfocadas están en `primeControls.spec.ts`, `primeForms.spec.ts`, `AccountUserEditModal.spec.ts`, `useAccountGoalPageActions.spec.ts` y `WhatsappConnectionCard.spec.ts`.
+
+En navegador, revisa menús, diálogos, filtros, búsquedas y scroll infinito en móvil y escritorio, con temas claro y oscuro. Dentro de una cuenta, comprueba las cinco pestañas inferiores, su desplazamiento horizontal y que cada icono quede junto a su título. Confirma primero si se está sirviendo HMR o un build actualizado. Consulta [la migración y el alcance de su validación](../frontend/primevue.md#validación-realizada).

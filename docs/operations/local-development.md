@@ -27,6 +27,12 @@ El cliente usa `/api` por defecto. `VITE_API_BASE_URL` permite un override públ
 
 Usa `QUEUE_CONNECTION=database` para WhatsApp y aplica las migraciones antes de iniciar la aplicación. La cola y `webhook_receipts` deben usar la misma conexión de base de datos; `sync` y Redis no satisfacen el contrato de recepción durable implementado. El scheduler se ejecuta por separado cuando se necesita. `composer run dev` no instala paquetes ni migra datos.
 
+## Assets de desarrollo y compilados
+
+Si la aplicación ya está levantada, reutiliza el servidor existente. Comprueba qué entrada carga el navegador: `/@vite/client` indica HMR; `/build/assets/…` indica el build compilado. Laravel usa `public/hot` para seleccionar Vite; sin ese archivo usa `public/build/manifest.json`.
+
+Cuando se sirve el build, editar un archivo Vue no actualiza la página: ejecuta `npm run build` y recarga el navegador. Esta comprobación evita atribuir a los componentes errores visuales de un build anterior. No crees `public/hot` manualmente ni elimines uno que pertenezca a un Vite activo.
+
 ## WhatsApp y PrimeVue
 
 Configura `VITE_PRIMEVUE_LICENSE_KEY` con la licencia PrimeVue; Vite la incorpora al frontend durante el arranque o el build. Las credenciales `WA_*` permanecen en Laravel. Reinicia Vite al cambiar la licencia y limpia la caché de configuración Laravel si cambias credenciales previamente cacheadas.

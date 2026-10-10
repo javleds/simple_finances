@@ -1,4 +1,6 @@
-# ABOUT
+# Análisis histórico de Filament
+
+Este documento conserva el análisis previo a la SPA y no describe la interfaz vigente. Para el estado actual consulta [arquitectura integrada](../architecture/overview.md), [interfaz PrimeVue](primevue.md) y [modelo de cuentas compartidas](../shared-account-model.md). Las rutas, bibliotecas y reglas históricas siguientes no sustituyen esas referencias.
 
 ## Objetivo de este documento
 
