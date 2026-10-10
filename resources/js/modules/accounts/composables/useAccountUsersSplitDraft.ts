@@ -5,7 +5,7 @@ import type { AccountMember } from '@/modules/accounts/types';
 type UseAccountUsersSplitDraftOptions = {
   hasMoreUsers: Ref<boolean>;
   onUsersChange: (users: AccountMember[]) => void;
-  setUsers: (users: AccountMember[]) => void;
+  savePercentages: (percentages: Record<string, number>) => Promise<boolean>;
   users: Ref<AccountMember[]>;
 };
 
@@ -26,10 +26,10 @@ export function useAccountUsersSplitDraft(options: UseAccountUsersSplitDraftOpti
 
   watch(
     () => options.users.value,
-    (nextUsers) => {
+    (nextUsers, previousUsers) => {
       const nextRecord = createAllocationRecord(nextUsers);
 
-      if (!hasSplitChanges.value) {
+      if (!previousUsers || areAllocationRecordsEqual(splitDraft.value, createAllocationRecord(previousUsers))) {
         splitDraft.value = nextRecord;
       } else {
         splitDraft.value = mergeAllocationRecords(splitDraft.value, nextRecord);
@@ -40,13 +40,10 @@ export function useAccountUsersSplitDraft(options: UseAccountUsersSplitDraftOpti
     { immediate: true, deep: true },
   );
 
-  function applySplitDraft(): void {
-    options.setUsers(
-      options.users.value.map((user) => ({
-        ...user,
-        allocationPercentage: splitDraft.value[user.id] ?? user.allocationPercentage,
-      })),
-    );
+  async function applySplitDraft(): Promise<void> {
+    if (!hasLoadedEveryUserForSplit.value || !hasSplitChanges.value) return;
+    const saved = await options.savePercentages({ ...splitDraft.value });
+    if (saved) resetSplitDraft();
   }
 
   function resetSplitDraft(): void {

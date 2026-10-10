@@ -64,6 +64,28 @@ export function useAccountUsersCrud(filters: Ref<AccountUsersListFilters>) {
     }
   }
 
+  async function updateUsersPercentages(
+    accountId: string,
+    percentages: Record<string, number>,
+  ): Promise<boolean> {
+    if (isSaving.value) return false;
+    isSaving.value = true;
+    saveError.value = null;
+    try {
+      const updatedUsers = await accountsRepository.updateUsersPercentages(accountId, percentages);
+      usersState.setItems(usersState.items.value.map((user) => ({
+        ...user,
+        allocationPercentage: updatedUsers.find((updated) => updated.id === user.id)?.allocationPercentage ?? user.allocationPercentage,
+      })));
+      return true;
+    } catch (error) {
+      saveError.value = resolveApiErrorMessage(error, 'No fue posible guardar la distribución.');
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
   async function removeUser(accountId: string, userId: string): Promise<boolean> {
     isDeleting.value = true;
     deleteError.value = null;
@@ -110,6 +132,7 @@ export function useAccountUsersCrud(filters: Ref<AccountUsersListFilters>) {
     saveError,
     setUsers,
     updateUserPercentage,
+    updateUsersPercentages,
     users: usersState.items,
   };
 }

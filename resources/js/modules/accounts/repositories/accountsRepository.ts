@@ -482,6 +482,19 @@ export function createAccountsRepository() {
         items: parsedResponse.items.map(mapAccountUserApiToDomain),
       };
     },
+    async updateUsersPercentages(
+      accountId: string,
+      percentages: Record<string, number>,
+    ): Promise<AccountMember[]> {
+      const response = await apiClient.put<unknown>(`${accountsPath}/${accountId}/users`, {
+        users: Object.entries(percentages).map(([userId, percentage]) => ({
+          user_id: Number(userId),
+          percentage,
+        })),
+      });
+      const payload = z.object({ data: z.array(accountUserApiSchema) }).parse(response);
+      return payload.data.map(mapAccountUserApiToDomain);
+    },
     async updateUserPercentage(
       accountId: string,
       userId: string,

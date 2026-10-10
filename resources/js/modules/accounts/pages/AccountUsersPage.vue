@@ -69,8 +69,8 @@ const {
     loadUsers: loadAccountUsers,
     removeUser,
     saveError,
-    setUsers,
     updateUserPercentage,
+    updateUsersPercentages,
     users,
 } = useAccountUsersCrud(activeFilters);
 
@@ -108,9 +108,9 @@ const {
     splitDraft,
     splitUsers,
 } = useAccountUsersSplitDraft({
-    hasMoreUsers,
+    hasMoreUsers: computed(() => hasMoreUsers.value || Boolean(searchTerm.value.trim())),
+    savePercentages: (percentages) => updateUsersPercentages(accountId.value, percentages),
     onUsersChange: (nextUsers) => emit('accountUsersChange', nextUsers),
-    setUsers,
     users,
 });
 
@@ -179,6 +179,8 @@ function reloadUsers(): void {
             v-if="canManage"
             v-model="splitDraft"
             :can-show="canShowSplitEditor"
+            :is-saving="isSaving"
+            :save-error="saveError"
             :has-changes="hasSplitChanges"
             :has-loaded-every-user="hasLoadedEveryUserForSplit"
             :users="splitUsers"
