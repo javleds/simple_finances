@@ -18,7 +18,7 @@ Current shared components:
   Path: `resources/js/modules/shared/components/AppCard.vue`
 - `AppContextTabs`: contextual horizontal tabs with optional icons and configurable top or bottom active indicator.
   Path: `resources/js/modules/shared/components/AppContextTabs.vue`
-- `AppDatePicker`: app-styled wrapper around `@vuepic/vue-datepicker` for date fields that need to work well inside forms and modals.
+- `AppDatePicker`: adaptador de PrimeVue DatePicker que conserva fechas locales como cadenas `yyyy-MM-dd` y valores vacíos como `null`.
   Path: `resources/js/modules/shared/components/AppDatePicker.vue`
 - `AppEmptyState`: dashed empty-state surface for list sections with optional action slot.
   Path: `resources/js/modules/shared/components/AppEmptyState.vue`
@@ -40,7 +40,7 @@ Current shared components:
   Path: `resources/js/modules/shared/components/AppPasswordInput.vue`
 - `AppPercentageSplitEditor`: interactive horizontal percentage splitter with drag handles and exact numeric adjustment that keeps the total at 100%.
   Path: `resources/js/modules/shared/components/AppPercentageSplitEditor.vue`
-- `AppSearchSelect`: app-styled single-select searchable dropdown wrapper built on `@vueform/multiselect`.
+- `AppSearchSelect`: adaptador de PrimeVue Select con búsqueda, limpieza, descripciones de opciones y etiquetas accesibles.
   Path: `resources/js/modules/shared/components/AppSearchSelect.vue`
 - `AppSectionBar`: compact section heading row with title, actions slot and bottom divider.
   Path: `resources/js/modules/shared/components/AppSectionBar.vue`
@@ -63,23 +63,16 @@ Barrel export:
 
 When a feature needs icons, use `@heroicons/vue` as the default icon library.
 
-## Preferred Feature Libraries
+## Bibliotecas de interfaz
 
-When a new feature needs one of these capabilities, prefer these installed libraries before introducing alternatives:
-
-- Date picker: use `@vuepic/vue-datepicker`.
-  Prefer it for date selection inside forms and modals. It supports teleport/overlay scenarios and can be themed to match the app.
-
-- Searchable select / single select with search: use `@vueform/multiselect`.
-  Prefer it for searchable selectors such as financial goals and similar fields that need option filtering inside forms or modals.
-
-- Form validation: use `vee-validate` with `zod` and `@vee-validate/zod`.
-  Prefer this stack for new form validation work, including required fields, typed schemas, error messages, and integration with existing Vue form components.
-
-- Charts: use `vue-echarts` with `echarts`.
-  Prefer this stack for dashboard charts, especially bar charts and other analytic visualizations that need theming and responsive behavior.
-
-Before adding a different library for any of these concerns, justify why the installed option is not a fit.
+- Usar PrimeVue 5 con el preset Aura adaptado y la configuración española de `resources/js/lib/primevue.ts`. Conservar el selector `.dark` y las capas CSS existentes.
+- Reutilizar los adaptadores `App*` antes de importar un control directamente. `AppModal` conserva las acciones y formularios externos sobre PrimeVue Dialog; `AppInput` conserva la normalización de importes como cadenas.
+- Usar `AppDatePicker` para fechas y `AppSearchSelect` para selección con búsqueda. No cambiar los tipos de los valores enviados a los mapeadores de API.
+- Validar con Zod y PrimeVue Forms. Los formularios existentes usan `usePrimeForm`, basado en la API oficial `@primevue/forms/useform`, para conservar contratos tipados, validación cruzada, reinicio y estado de interacción. Los formularios locales pueden usar `Form` y `FormField` con `zodResolver`.
+- Mantener un único propietario del estado de validación. Con `FormField`, sincronizar los adaptadores mediante `$field.props.onChange({ value: nextValue })` y reiniciar el formulario cuando cambie el registro o desafío representado.
+- Usar `@primeui/vue-chart` y `@primeui/chart-style` para gráficos, con renderer SVG y tema PrimeOne. Conservar datos, cálculos, formatos monetarios y colores de cuentas.
+- Mantener búsquedas, filtros, estados y scroll infinito de los composables existentes. Los componentes PrimeVue no sustituyen la lógica de dominio ni los permisos.
+- Proteger también los manejadores de mutación contra envíos repetidos mientras guardan; deshabilitar únicamente el botón del modal no bloquea Enter dentro del formulario.
 
 ## Maintenance Rule
 

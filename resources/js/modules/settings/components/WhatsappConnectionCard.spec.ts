@@ -8,10 +8,10 @@ import WhatsappConnectionCard from './WhatsappConnectionCard.vue';
 import type { WhatsappConnection } from '../repositories/whatsappConnectionRepository';
 
 const repository = vi.hoisted(() => ({
-    get: vi.fn(),
-    requestCode: vi.fn(),
-    verify: vi.fn(),
-    unlink: vi.fn(),
+    get: vi.fn<(...args: string[]) => Promise<WhatsappConnection>>(),
+    requestCode: vi.fn<(...args: string[]) => Promise<WhatsappConnection>>(),
+    verify: vi.fn<(...args: string[]) => Promise<WhatsappConnection>>(),
+    unlink: vi.fn<(...args: string[]) => Promise<WhatsappConnection>>(),
 }));
 
 vi.mock('../repositories/whatsappConnectionRepository', () => ({
@@ -131,6 +131,7 @@ describe('WhatsApp connection settings', () => {
         await wrapper.get('button').trigger('click');
         await wrapper.get('#whatsapp-phone').setValue('123');
         await wrapper.get('form').trigger('submit');
+        await flushPromises();
 
         expect(repository.requestCode).not.toHaveBeenCalled();
         expect(wrapper.get('[role="alert"]').text()).toContain('diez dígitos');
@@ -243,5 +244,27 @@ describe('WhatsApp connection settings', () => {
         await wrapper.get('button').trigger('click');
         await flushPromises();
         expect(wrapper.text()).toContain('Ligar cuenta con WhatsApp');
+    });
+    it('discards the previous code when resending creates a new challenge', async () => {
+        const initial = {
+            ...pending(),
+            resend_available_at: new Date(Date.now() - 1000).toISOString(),
+        };
+        await render(initial);
+        await wrapper.get('input').trigger('paste', {
+            clipboardData: { getData: () => '012345' },
+        });
+        const next = { ...pending(), expires_at: new Date(Date.now() + 172_800_000).toISOString() };
+        repository.requestCode.mockResolvedValue(next);
+        repository.get.mockResolvedValue(next);
+        const resend = wrapper
+            .findAll('button')
+            .find((button) => button.text() === 'Reenviar código');
+        await resend?.trigger('click');
+        await flushPromises();
+        await wrapper.get('form').trigger('submit');
+        await flushPromises();
+        expect(repository.verify).not.toHaveBeenCalled();
+        expect(wrapper.get('[role="alert"]').text()).toContain('seis dígitos');
     });
 });

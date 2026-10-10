@@ -1,32 +1,34 @@
-import { computed, ref, type ComputedRef } from 'vue';
-import { useFormErrors, useSubmitCount } from 'vee-validate';
+import { computed, type ComputedRef } from 'vue';
+
+import { getPrimeFormContext } from './usePrimeForm';
 
 type UseFormFieldInteractionResult = {
-  error: ComputedRef<string | undefined>;
-  touch: () => void;
+    error: ComputedRef<string | undefined>;
+    touch: () => void;
 };
 
 export function useFormFieldInteraction(fieldName: string): UseFormFieldInteractionResult {
-  const formErrors = useFormErrors<Record<string, string>>();
-  const submitCount = useSubmitCount();
-  const isTouched = ref(false);
+    const { errors: formErrors, submitCount, getFieldState } = getPrimeFormContext();
 
-  const error = computed(() => {
-    const fieldError = formErrors.value[fieldName];
+    const error = computed(() => {
+        const fieldError = formErrors.value[fieldName];
 
-    if (!fieldError) {
-      return undefined;
+        if (!fieldError) {
+            return undefined;
+        }
+
+        return getFieldState(fieldName)?.touched || submitCount.value > 0 ? fieldError : undefined;
+    });
+
+    function touch(): void {
+        const state = getFieldState(fieldName);
+        if (state) {
+            state.touched = true;
+        }
     }
 
-    return isTouched.value || submitCount.value > 0 ? fieldError : undefined;
-  });
-
-  function touch(): void {
-    isTouched.value = true;
-  }
-
-  return {
-    error,
-    touch,
-  };
+    return {
+        error,
+        touch,
+    };
 }

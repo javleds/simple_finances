@@ -1,30 +1,42 @@
 <script setup lang="ts">
+import Avatar from 'primevue/avatar';
+import { computed } from 'vue';
 const props = defineProps<{
-  name: string;
-  value: string;
-  helperText?: string;
+    name: string;
+    value: string;
+    helperText?: string;
 }>();
+const initials = computed(() =>
+    props.name
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((word) => word[0] ?? '')
+        .join('')
+        .toUpperCase(),
+);
 </script>
 
 <template>
-  <div
-    class="flex min-h-16 items-center gap-3 rounded-2xl bg-(--app-color-surface-muted) px-3 py-2.5"
-  >
-    <div class="min-w-0 flex-1">
-      <p class="truncate text-sm font-medium text-(--app-color-text)">
-        {{ props.name }}
-      </p>
-      <p v-if="props.helperText" class="text-xs text-(--app-color-text-subtle)">
-        {{ props.helperText }}
-      </p>
-    </div>
+    <div
+        class="flex min-h-16 items-center gap-3 rounded-2xl bg-(--app-color-surface-muted) px-3 py-2.5"
+    >
+        <Avatar :label="initials" shape="circle" aria-hidden="true" class="shrink-0" />
+        <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-medium text-(--app-color-text)">
+                {{ props.name }}
+            </p>
+            <p v-if="props.helperText" class="text-xs text-(--app-color-text-subtle)">
+                {{ props.helperText }}
+            </p>
+        </div>
 
-    <div class="flex shrink-0 items-center gap-2">
-      <slot name="action" />
+        <div class="flex shrink-0 items-center gap-2">
+            <slot name="action" />
 
-      <span class="text-sm font-semibold text-(--app-color-text)">
-        {{ props.value }}
-      </span>
+            <span class="text-sm font-semibold text-(--app-color-text)">
+                {{ props.value }}
+            </span>
+        </div>
     </div>
-  </div>
 </template>

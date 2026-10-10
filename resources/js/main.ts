@@ -2,10 +2,10 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import { VueQueryPlugin } from '@tanstack/vue-query';
 import PrimeVue from 'primevue/config';
-import Aura from '@primeuix/themes/aura';
+import { appPreset, spanishLocale } from './lib/primevue';
 import './main.css';
-import '@vueform/multiselect/themes/default.css';
-import '@vuepic/vue-datepicker/dist/main.css';
+import '@primeui/chart-style/style.css';
+import '@primeui/chart-style/themes/primeone.css';
 
 import App from './App.vue';
 import router from './router';
@@ -18,8 +18,9 @@ const pinia = createPinia();
 app.use(pinia);
 app.use(PrimeVue, {
     license: import.meta.env.VITE_PRIMEVUE_LICENSE_KEY,
+    locale: spanishLocale,
     theme: {
-        preset: Aura,
+        preset: appPreset,
         options: {
             darkModeSelector: '.dark',
             cssLayer: {

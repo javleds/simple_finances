@@ -14,7 +14,7 @@ afterEach(() => {
 
 describe('integrated API transport', () => {
     it('uses the Laravel API on the current origin by default', async () => {
-        const fetchMock = vi.fn().mockResolvedValue(
+        const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
             new Response('{}', {
                 headers: { 'Content-Type': 'application/json' },
             }),
@@ -34,7 +34,7 @@ describe('integrated API transport', () => {
     it('preserves explicit API origins and Bearer authentication', async () => {
         vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.com/api/');
         setStoredAuthToken('test-token');
-        const fetchMock = vi.fn().mockResolvedValue(
+        const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
             new Response('{}', {
                 headers: { 'Content-Type': 'application/json' },
             }),
@@ -53,7 +53,7 @@ describe('integrated API transport', () => {
 
     it('redirects expired sessions to the application login, independent of asset base', async () => {
         vi.stubEnv('BASE_URL', '/build/');
-        const assign = vi.fn();
+        const assign = vi.fn<(url: string) => void>();
         const localStorage = window.localStorage;
         vi.stubGlobal('window', { localStorage, location: { assign } });
         setStoredAuthToken('expired-token');
