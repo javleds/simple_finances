@@ -55,7 +55,7 @@ function handleDelete(): void {
 
 <template>
   <AppCard
-    class="relative overflow-hidden rounded-2xl p-4! shadow-none transition hover:border-(--app-color-border-strong) sm:rounded-xl sm:p-3.5!"
+    class="relative overflow-hidden rounded-(--app-radius-control) p-4! shadow-none transition hover:border-(--app-color-border-strong) sm:rounded-(--app-radius-control) sm:p-3.5!"
   >
     <div class="relative space-y-3">
       <div
@@ -95,7 +95,7 @@ function handleDelete(): void {
       <div class="flex items-center justify-between gap-3">
         <div class="flex min-w-0 items-center gap-2">
           <span
-            class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
+            class="inline-flex shrink-0 items-center rounded-(--app-radius-control) px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
             :class="statusClasses(props.status)"
           >
             {{ statusLabel(props.status) }}

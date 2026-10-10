@@ -99,14 +99,14 @@ const resolvedActions = computed<ReadonlyArray<AppModalAction>>(() => {
 
 const presentationClasses = computed(() => {
     if (props.presentation === 'fullscreen') {
-        return 'm-0! h-dvh max-h-dvh! w-screen max-w-none! rounded-none! border-0! sm:m-4! sm:h-auto sm:max-h-[90dvh]! sm:w-[calc(100%-2rem)] sm:max-w-xl! sm:rounded-2xl! sm:border!';
+        return 'm-0! h-dvh max-h-dvh! w-screen max-w-none! rounded-none! border-0! sm:m-4! sm:h-auto sm:max-h-[90dvh]! sm:w-[calc(100%-2rem)] sm:max-w-xl! sm:rounded-(--app-radius-overlay)! sm:border!';
     }
 
     if (props.presentation === 'sheet') {
-        return 'm-0! max-h-[90dvh]! w-full max-w-xl rounded-t-[1.25rem]! rounded-b-none! sm:m-4! sm:w-[calc(100%-2rem)] sm:rounded-2xl!';
+        return 'm-0! max-h-[90dvh]! w-full max-w-xl rounded-t-(--app-radius-overlay)! rounded-b-none! sm:m-4! sm:w-[calc(100%-2rem)] sm:rounded-(--app-radius-overlay)!';
     }
 
-    return 'm-4! max-h-[calc(100dvh-2rem)]! w-[calc(100%-2rem)] max-w-xl rounded-2xl!';
+    return 'm-4! max-h-[calc(100dvh-2rem)]! w-[calc(100%-2rem)] max-w-xl rounded-(--app-radius-overlay)!';
 });
 
 function closeModal(): void {
@@ -176,7 +176,7 @@ function isCloseAction(action: AppModalAction): boolean {
             <div class="flex min-w-0 flex-1 items-center gap-3">
                 <div
                     v-if="props.presentation !== 'sheet'"
-                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-(--app-radius-control)"
                     :style="modalStyle.iconStyle"
                 >
                     <component :is="modalStyle.icon" class="h-5 w-5" />

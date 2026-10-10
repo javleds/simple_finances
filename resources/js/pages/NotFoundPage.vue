@@ -21,7 +21,7 @@ const primaryLabel = computed(() => (hasSession.value ? 'Ir al dashboard' : 'Ir 
     >
         <div class="w-full max-w-lg">
             <AppCard
-                class="border-0! bg-transparent! p-0! sm:rounded-3xl sm:border! sm:bg-(--app-color-surface)! sm:p-8!"
+                class="border-0! bg-transparent! p-0! sm:rounded-(--app-radius-control) sm:border! sm:bg-(--app-color-surface)! sm:p-8!"
             >
                 <div class="space-y-6 text-left sm:text-center">
                     <div class="space-y-2">
@@ -38,7 +38,7 @@ const primaryLabel = computed(() => (hasSession.value ? 'Ir al dashboard' : 'Ir 
                     </div>
 
                     <div
-                        class="border-l-2 pl-4 text-left sm:rounded-2xl sm:border sm:bg-(--app-color-surface-muted) sm:px-4 sm:py-3"
+                        class="border-l-2 pl-4 text-left sm:rounded-(--app-radius-control) sm:border sm:bg-(--app-color-surface-muted) sm:px-4 sm:py-3"
                         :style="{ borderColor: 'var(--app-color-border)' }"
                     >
                         <AppText size="sm" tone="subtle">Ruta solicitada</AppText>

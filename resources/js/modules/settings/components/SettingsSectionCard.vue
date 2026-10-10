@@ -10,7 +10,7 @@ defineProps<{
 </script>
 
 <template>
-  <AppCard class="rounded-2xl sm:rounded-3xl">
+  <AppCard class="rounded-(--app-radius-control) sm:rounded-(--app-radius-control)">
     <div class="flex items-center gap-4">
       <div class="min-w-0 flex-1 space-y-1">
         <p class="text-sm font-semibold text-(--app-color-text)">{{ title }}</p>

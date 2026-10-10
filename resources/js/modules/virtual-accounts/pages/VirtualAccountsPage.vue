@@ -187,7 +187,7 @@ function today(): string {
             @retry="loadDashboard"
         >
             <div class="space-y-4 sm:space-y-5">
-                <AppCard class="rounded-2xl sm:rounded-3xl">
+                <AppCard class="rounded-(--app-radius-control) sm:rounded-(--app-radius-control)">
                     <div class="space-y-4 sm:space-y-5">
                         <AppHeroMetric
                             label="Total actual"
@@ -200,7 +200,7 @@ function today(): string {
 
                         <div class="grid grid-cols-2 gap-3">
                             <div
-                                class="min-w-0 py-2 sm:rounded-xl sm:border sm:px-3 sm:py-3"
+                                class="min-w-0 py-2 sm:rounded-(--app-radius-control) sm:border sm:px-3 sm:py-3"
                                 :style="{ borderColor: 'var(--app-color-border)' }"
                             >
                                 <AppText size="sm" tone="subtle">Capital neto</AppText>
@@ -211,7 +211,7 @@ function today(): string {
                                 </p>
                             </div>
                             <div
-                                class="min-w-0 py-2 sm:rounded-xl sm:border sm:px-3 sm:py-3"
+                                class="min-w-0 py-2 sm:rounded-(--app-radius-control) sm:border sm:px-3 sm:py-3"
                                 :style="{ borderColor: 'var(--app-color-border)' }"
                             >
                                 <AppText size="sm" tone="subtle">Rendimiento</AppText>
@@ -222,7 +222,7 @@ function today(): string {
                                 </p>
                             </div>
                             <div
-                                class="min-w-0 py-2 sm:rounded-xl sm:border sm:px-3 sm:py-3"
+                                class="min-w-0 py-2 sm:rounded-(--app-radius-control) sm:border sm:px-3 sm:py-3"
                                 :style="{ borderColor: 'var(--app-color-border)' }"
                             >
                                 <AppText size="sm" tone="subtle">Aportado</AppText>
@@ -233,7 +233,7 @@ function today(): string {
                                 </p>
                             </div>
                             <div
-                                class="min-w-0 py-2 sm:rounded-xl sm:border sm:px-3 sm:py-3"
+                                class="min-w-0 py-2 sm:rounded-(--app-radius-control) sm:border sm:px-3 sm:py-3"
                                 :style="{ borderColor: 'var(--app-color-border)' }"
                             >
                                 <AppText size="sm" tone="subtle">Retirado</AppText>
@@ -253,7 +253,7 @@ function today(): string {
                     <article
                         v-for="account in dashboard.accounts"
                         :key="account.accountId"
-                        class="rounded-xl border bg-(--app-color-surface) px-4 py-4 transition"
+                        class="rounded-(--app-radius-control) border bg-(--app-color-surface) px-4 py-4 transition"
                         :class="
                             selectedAccount?.accountId === account.accountId
                                 ? 'border-(--app-color-primary)'
@@ -319,7 +319,7 @@ function today(): string {
                     </article>
                 </section>
 
-                <AppCard v-if="selectedAccount" class="rounded-2xl sm:rounded-3xl">
+                <AppCard v-if="selectedAccount" class="rounded-(--app-radius-control) sm:rounded-(--app-radius-control)">
                     <div class="space-y-4">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div class="min-w-0">
@@ -334,7 +334,7 @@ function today(): string {
 
                         <div
                             v-else-if="selectedSnapshots.length === 0"
-                            class="rounded-xl border px-4 py-5 text-center"
+                            class="rounded-(--app-radius-control) border px-4 py-5 text-center"
                             :style="{ borderColor: 'var(--app-color-border)' }"
                         >
                             <AppText>Sin cortes capturados.</AppText>
@@ -344,7 +344,7 @@ function today(): string {
                             <div
                                 v-for="snapshot in selectedSnapshots"
                                 :key="snapshot.id"
-                                class="border-b px-0 py-3 sm:rounded-xl sm:border sm:px-4"
+                                class="border-b px-0 py-3 sm:rounded-(--app-radius-control) sm:border sm:px-4"
                                 :style="{ borderColor: 'var(--app-color-border)' }"
                             >
                                 <div class="flex flex-wrap items-start justify-between gap-3">

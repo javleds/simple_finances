@@ -391,7 +391,7 @@ watch(
             </AppText>
         </header>
 
-        <AppCard v-if="loadError" class="rounded-2xl border-(--app-color-danger)">
+        <AppCard v-if="loadError" class="rounded-(--app-radius-control) border-(--app-color-danger)">
             <div class="space-y-3">
                 <Message severity="error">{{ loadError }}</Message>
                 <AppButton variant="outline" @click="loadLedger()">Reintentar</AppButton>
@@ -402,15 +402,15 @@ watch(
             <div
                 v-for="index in 4"
                 :key="index"
-                class="h-32 animate-pulse rounded-2xl bg-(--app-color-surface-muted)"
+                class="h-32 animate-pulse rounded-(--app-radius-control) bg-(--app-color-surface-muted)"
             />
         </div>
 
-        <AppCard v-else-if="rows.length === 0" class="rounded-2xl">
+        <AppCard v-else-if="rows.length === 0" class="rounded-(--app-radius-control)">
             <AppText>No hay movimientos en el libro de esta cuenta.</AppText>
         </AppCard>
 
-        <div v-else class="overflow-hidden rounded-2xl border border-(--app-color-border)">
+        <div v-else class="overflow-hidden rounded-(--app-radius-control) border border-(--app-color-border)">
             <article
                 v-for="row in rows"
                 :key="row.id"
@@ -446,7 +446,7 @@ watch(
                     <span
                         v-for="allocation in row.allocations"
                         :key="`${row.id}-${allocation.userId}`"
-                        class="rounded-full bg-(--app-color-surface-muted) px-3 py-1 text-xs font-semibold text-(--app-color-text-subtle)"
+                        class="rounded-(--app-radius-control) bg-(--app-color-surface-muted) px-3 py-1 text-xs font-semibold text-(--app-color-text-subtle)"
                     >
                         {{ allocation.userName ?? 'Usuario' }}
                         {{ formatCurrency(allocation.amount) }}
@@ -512,10 +512,10 @@ watch(
 
             <div
                 v-if="isLoadingDiagnostics"
-                class="h-20 animate-pulse rounded-2xl bg-(--app-color-surface-muted)"
+                class="h-20 animate-pulse rounded-(--app-radius-control) bg-(--app-color-surface-muted)"
             />
 
-            <div v-else class="overflow-hidden rounded-2xl border border-(--app-color-border)">
+            <div v-else class="overflow-hidden rounded-(--app-radius-control) border border-(--app-color-border)">
                 <article
                     v-if="openDiagnostics.length === 0"
                     class="bg-(--app-color-surface) px-4 py-4"
@@ -552,7 +552,7 @@ watch(
 
             <div
                 v-if="recentReversibleRepairs.length"
-                class="overflow-hidden rounded-2xl border border-(--app-color-border)"
+                class="overflow-hidden rounded-(--app-radius-control) border border-(--app-color-border)"
             >
                 <article
                     v-for="repair in recentReversibleRepairs"
@@ -608,7 +608,7 @@ watch(
                     ref="custodyForm"
                     :resolver="custodyResolver"
                     @submit="submitCustody"
-                    class="space-y-3 rounded-2xl border border-(--app-color-border) bg-(--app-color-surface-muted) p-3"
+                    class="space-y-3 rounded-(--app-radius-control) border border-(--app-color-border) bg-(--app-color-surface-muted) p-3"
                 >
                     <label
                         class="block text-xs font-semibold text-(--app-color-text-subtle)"
@@ -661,7 +661,7 @@ watch(
                 </Form>
 
                 <div
-                    class="rounded-2xl border border-(--app-color-border) bg-(--app-color-surface-muted) p-3"
+                    class="rounded-(--app-radius-control) border border-(--app-color-border) bg-(--app-color-surface-muted) p-3"
                 >
                     <p class="text-sm font-semibold text-(--app-color-text)">
                         {{ selectedDiagnostic.preview.summary }}
@@ -706,7 +706,7 @@ watch(
                     {{ selectedRepair.actorUserName }}. El movimiento original no se modifica.
                 </p>
                 <div
-                    class="rounded-2xl border border-(--app-color-border) bg-(--app-color-surface-muted) p-3"
+                    class="rounded-(--app-radius-control) border border-(--app-color-border) bg-(--app-color-surface-muted) p-3"
                 >
                     <p class="text-sm font-bold text-(--app-color-text)">
                         {{ selectedRepair.description }}

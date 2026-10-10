@@ -117,7 +117,7 @@ function resetCards(): void {
         <div class="flex items-center gap-3">
             <RouterLink
                 :to="{ name: 'admin.settings' }"
-                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-(--app-color-surface-muted) text-(--app-color-text) transition hover:bg-(--app-color-surface) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-(--app-radius-control) border bg-(--app-color-surface-muted) text-(--app-color-text) transition hover:bg-(--app-color-surface) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
                 :style="{ borderColor: 'var(--app-color-border)' }"
                 aria-label="Volver a configuración"
             >
@@ -129,7 +129,7 @@ function resetCards(): void {
             </div>
         </div>
 
-        <AppCard muted class="rounded-2xl! p-4! sm:rounded-3xl! sm:p-5!">
+        <AppCard muted class="rounded-(--app-radius-control)! p-4! sm:rounded-(--app-radius-control)! sm:p-5!">
             <div class="space-y-2">
                 <AppText size="sm" tone="muted">Solo es una ayuda temporal</AppText>
                 <AppText size="sm"
@@ -151,7 +151,7 @@ function resetCards(): void {
                     variant="text"
                     severity="secondary"
                     type="button"
-                    class="inline-flex shrink-0 items-center gap-1.5 rounded-xl px-2 py-2 text-sm font-semibold text-(--app-color-link) transition hover:bg-(--app-color-surface-muted) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                    class="inline-flex shrink-0 items-center gap-1.5 rounded-(--app-radius-control) px-2 py-2 text-sm font-semibold text-(--app-color-link) transition hover:bg-(--app-color-surface-muted) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
                     @click="addCard"
                 >
                     <PlusIcon class="h-5 w-5" />
@@ -163,7 +163,7 @@ function resetCards(): void {
                 <AppCard
                     v-for="(card, index) in cards"
                     :key="card.id"
-                    class="rounded-2xl! p-4! sm:rounded-3xl! sm:p-5!"
+                    class="rounded-(--app-radius-control)! p-4! sm:rounded-(--app-radius-control)! sm:p-5!"
                 >
                     <div class="space-y-4">
                         <div class="flex items-center justify-between gap-3">
@@ -174,7 +174,7 @@ function resetCards(): void {
                                 variant="text"
                                 severity="secondary"
                                 type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-full text-(--app-color-text-subtle) transition hover:bg-(--app-color-surface-muted) hover:text-(--app-color-danger) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-(--app-radius-control) text-(--app-color-text-subtle) transition hover:bg-(--app-color-surface-muted) hover:text-(--app-color-danger) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
                                 :aria-label="`Limpiar tarjeta ${index + 1}`"
                                 @click="removeCard(card.id)"
                             >
@@ -212,7 +212,7 @@ function resetCards(): void {
                         </div>
 
                         <div
-                            class="border-t pt-4 sm:rounded-2xl sm:border sm:px-4 sm:pb-4"
+                            class="border-t pt-4 sm:rounded-(--app-radius-control) sm:border sm:px-4 sm:pb-4"
                             :class="{
                                 'border-(--app-color-border) bg-(--app-color-surface-muted)':
                                     statusFor(card) === 'empty',
@@ -247,7 +247,7 @@ function resetCards(): void {
         </section>
 
         <AppCard
-            class="rounded-2xl! p-4! sm:bg-(--app-color-primary)! sm:p-5! sm:text-(--app-color-primary-foreground)!"
+            class="rounded-(--app-radius-control)! p-4! sm:bg-(--app-color-primary)! sm:p-5! sm:text-(--app-color-primary-foreground)!"
         >
             <div class="space-y-4">
                 <div>

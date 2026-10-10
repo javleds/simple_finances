@@ -19,7 +19,7 @@ const initials = computed(() =>
 
 <template>
     <div
-        class="flex min-h-16 items-center gap-3 rounded-2xl bg-(--app-color-surface-muted) px-3 py-2.5"
+        class="flex min-h-16 items-center gap-3 rounded-(--app-radius-control) bg-(--app-color-surface-muted) px-3 py-2.5"
     >
         <Avatar :label="initials" shape="circle" aria-hidden="true" class="shrink-0" />
         <div class="min-w-0 flex-1">

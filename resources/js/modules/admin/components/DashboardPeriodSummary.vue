@@ -83,7 +83,7 @@ const transactionsRoute = computed(() => ({
 
             <div
                 v-if="props.loadError"
-                class="space-y-3 rounded-2xl border border-(--app-color-danger) px-4 py-3"
+                class="space-y-3 rounded-(--app-radius-control) border border-(--app-color-danger) px-4 py-3"
             >
                 <Message severity="error">{{ props.loadError }}</Message>
                 <AppButton variant="secondary" full-width @click="emit('retry')"
@@ -93,7 +93,7 @@ const transactionsRoute = computed(() => ({
 
             <div
                 v-else-if="props.isLoading && !props.summary"
-                class="rounded-2xl border px-4 py-8 text-center"
+                class="rounded-(--app-radius-control) border px-4 py-8 text-center"
                 :style="{ borderColor: 'var(--app-color-border)' }"
             >
                 <AppText>Cargando resumen...</AppText>

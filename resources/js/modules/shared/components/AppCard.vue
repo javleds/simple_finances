@@ -14,7 +14,7 @@ const props = withDefaults(
 
 <template>
     <Card
-        class="rounded-2xl border border-(--app-color-border) shadow-(--app-shadow-card)"
+        class="rounded-(--app-radius-control) border border-(--app-color-border) shadow-(--app-shadow-card)"
         :class="[
             props.padded ? 'p-4 sm:p-8' : '',
             props.muted ? 'bg-(--app-color-surface-muted)!' : '',

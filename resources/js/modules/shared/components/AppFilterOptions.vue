@@ -20,7 +20,7 @@ const selected = defineModel<T[]>({ required: true });
 <style scoped>
 @reference "../../../main.css";
 .filter-option {
-    @apply flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-(--app-color-border) bg-(--app-color-surface) px-3 py-3 text-sm font-medium text-(--app-color-text) transition;
+    @apply flex min-h-12 cursor-pointer items-center gap-3 rounded-(--app-radius-control) border border-(--app-color-border) bg-(--app-color-surface) px-3 py-3 text-sm font-medium text-(--app-color-text) transition;
 }
 .filter-option:has(input:checked) {
     border-color: var(--app-color-primary);

@@ -86,7 +86,7 @@ function handleUnlinkAction(action: string): void {
 </script>
 
 <template>
-    <AppCard class="rounded-2xl sm:rounded-3xl" aria-labelledby="whatsapp-title">
+    <AppCard class="rounded-(--app-radius-control) sm:rounded-(--app-radius-control)" aria-labelledby="whatsapp-title">
         <div class="space-y-4">
             <div class="space-y-1">
                 <AppTitle id="whatsapp-title" as="h2" size="sm">WhatsApp</AppTitle>

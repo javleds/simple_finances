@@ -140,7 +140,7 @@ async function handleSubmit(): Promise<void> {
         </section>
 
         <section
-            class="space-y-4 border-y py-4 sm:rounded-xl sm:border sm:bg-(--app-color-surface-muted) sm:px-4"
+            class="space-y-4 border-y py-4 sm:rounded-(--app-radius-control) sm:border sm:bg-(--app-color-surface-muted) sm:px-4"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
             <div class="space-y-1">

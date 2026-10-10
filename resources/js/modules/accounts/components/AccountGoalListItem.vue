@@ -73,7 +73,7 @@ function handleDelete(): void {
 
 <template>
     <AppCard
-        class="relative overflow-hidden rounded-xl p-4! shadow-none transition hover:border-(--app-color-border-strong)"
+        class="relative overflow-hidden rounded-(--app-radius-control) p-4! shadow-none transition hover:border-(--app-color-border-strong)"
     >
         <div
             class="pointer-events-none absolute inset-y-0 left-0 w-1"
@@ -115,9 +115,9 @@ function handleDelete(): void {
                 </p>
             </div>
 
-            <div class="relative h-7 overflow-hidden rounded-full bg-(--app-color-surface-muted)">
+            <div class="relative h-7 overflow-hidden rounded-(--app-radius-control) bg-(--app-color-surface-muted)">
                 <div
-                    class="h-full rounded-full"
+                    class="h-full rounded-(--app-radius-control)"
                     :style="{
                         width: progressWidth(props.progress),
                         backgroundColor: progressBarStyle(props.status),

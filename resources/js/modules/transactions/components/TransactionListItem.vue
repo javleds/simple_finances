@@ -108,7 +108,7 @@ function handleDelete(): void {
 
 <template>
     <AppCard
-        class="relative overflow-hidden rounded-xl px-4! py-3! shadow-none transition hover:border-(--app-color-border-strong)"
+        class="relative overflow-hidden rounded-(--app-radius-control) px-4! py-3! shadow-none transition hover:border-(--app-color-border-strong)"
     >
         <div
             class="pointer-events-none absolute inset-y-0 left-0 w-1"
@@ -146,14 +146,14 @@ function handleDelete(): void {
                 >
                     <p
                         v-if="hasPendingReimbursement()"
-                        class="inline-flex rounded-full bg-[color-mix(in_srgb,var(--app-color-warning)_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold break-words text-(--app-color-warning)"
+                        class="inline-flex rounded-(--app-radius-control) bg-[color-mix(in_srgb,var(--app-color-warning)_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold break-words text-(--app-color-warning)"
                     >
                         Por pagar {{ formattedAmount(props.pendingReimbursementAmount ?? 0) }}
                     </p>
 
                     <p
                         v-if="hasReceivableReimbursement()"
-                        class="inline-flex rounded-full bg-[color-mix(in_srgb,var(--app-color-success)_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold break-words text-(--app-color-success)"
+                        class="inline-flex rounded-(--app-radius-control) bg-[color-mix(in_srgb,var(--app-color-success)_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold break-words text-(--app-color-success)"
                     >
                         Por recibir {{ formattedAmount(props.receivableReimbursementAmount ?? 0) }}
                     </p>

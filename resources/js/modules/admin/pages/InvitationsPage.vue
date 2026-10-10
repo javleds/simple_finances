@@ -118,7 +118,7 @@ watch(
 
         <section
             v-if="invitationsState.loadError.value && invitationsState.items.value.length > 0"
-            class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+            class="rounded-(--app-radius-control) border border-(--app-color-danger) px-4 py-3"
         >
             <Message severity="error">{{ invitationsState.loadError.value }}</Message>
         </section>

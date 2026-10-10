@@ -7,6 +7,8 @@
 
 :root {
     color-scheme: light;
+    --app-radius-control: 4px;
+    --app-radius-overlay: 6px;
     --app-color-page: #f4f7f7;
     --app-color-page-glow: transparent;
     --app-color-surface: #ffffff;

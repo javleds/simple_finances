@@ -110,7 +110,7 @@ function openAccountDetails(): void {
 
 <template>
     <AppCard
-        class="relative overflow-hidden rounded-xl p-4! shadow-none transition hover:border-(--app-color-border-strong)"
+        class="relative overflow-hidden rounded-(--app-radius-control) p-4! shadow-none transition hover:border-(--app-color-border-strong)"
     >
         <div
             class="pointer-events-none absolute inset-y-0 left-0 w-1"
@@ -124,7 +124,7 @@ function openAccountDetails(): void {
                 variant="text"
                 severity="secondary"
                 type="button"
-                class="col-start-1 row-start-1 grid min-w-0 cursor-pointer grid-cols-1 gap-x-3 gap-y-2 rounded-xl p-0! text-left focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none sm:grid-cols-[minmax(0,1fr)_auto]"
+                class="col-start-1 row-start-1 grid min-w-0 cursor-pointer grid-cols-1 gap-x-3 gap-y-2 rounded-(--app-radius-control) p-0! text-left focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none sm:grid-cols-[minmax(0,1fr)_auto]"
                 @click="openAccountDetails"
                 @keydown.enter.prevent="openAccountDetails"
                 @keydown.space.prevent="openAccountDetails"
@@ -149,7 +149,7 @@ function openAccountDetails(): void {
                         {{ props.account.isVirtual ? 'Virtual' : 'Fisica' }}
                     </p>
                     <span
-                        class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
+                        class="inline-flex shrink-0 items-center rounded-(--app-radius-control) px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
                         :class="statusClasses(props.account.status)"
                     >
                         {{ props.account.status }}

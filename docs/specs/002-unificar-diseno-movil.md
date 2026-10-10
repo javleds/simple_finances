@@ -34,7 +34,7 @@ Sin cambios. Preservar custodia, liquidaciones, ledger, balances y autorizacione
 
 ## Frontend
 
-Escala 4/8/12/16/24/32 px; controles de 48 px y objetivos de iconos de 44 px. Tipografía 24/30 para página, 18/24 para sección, 16/24 para cuerpo y campos. Una superficie por grupo funcional. Mantener navegación global y mover las cinco pestañas de cuenta bajo su encabezado.
+Radios sutiles: 4 px en controles, tarjetas y estados; 6 px en modales y paneles. Avatares circulares y spinners conservados. Tokens compartidos --app-radius-control y --app-radius-overlay. Escala 4/8/12/16/24/32 px; controles de 48 px y objetivos de iconos de 44 px. Tipografía 24/30 para página, 18/24 para sección, 16/24 para cuerpo y campos. Una superficie por grupo funcional. Mantener navegación global y mover las cinco pestañas de cuenta bajo su encabezado.
 
 ## Persistencia
 

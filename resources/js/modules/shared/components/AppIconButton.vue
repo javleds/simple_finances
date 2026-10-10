@@ -21,7 +21,7 @@ const props = withDefaults(
         :aria-label="props.ariaLabel"
         :disabled="props.disabled || props.loading"
         :aria-busy="props.loading ? 'true' : undefined"
-        rounded
+
         outlined
         icon-only
         severity="secondary"

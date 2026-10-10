@@ -25,7 +25,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <AppCard v-if="props.canShow" class="rounded-2xl p-4!">
+    <AppCard v-if="props.canShow" class="rounded-(--app-radius-control) p-4!">
         <div class="space-y-4">
             <fieldset :disabled="props.isSaving || !props.hasLoadedEveryUser" class="min-w-0">
                 <AppPercentageSplitEditor v-model="splitDraft" :users="props.users" />

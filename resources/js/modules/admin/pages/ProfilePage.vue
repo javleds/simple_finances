@@ -45,13 +45,13 @@ function handleFormStateChange(state: FormState): void {
 
         <Message v-if="loadError && hasProfile" severity="error">{{ loadError }}</Message>
 
-        <section v-if="isLoading && !hasProfile" class="rounded-2xl border px-4 py-10 text-center">
+        <section v-if="isLoading && !hasProfile" class="rounded-(--app-radius-control) border px-4 py-10 text-center">
             <AppText>Cargando perfil...</AppText>
         </section>
 
         <section
             v-else-if="loadError && !hasProfile"
-            class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+            class="space-y-3 rounded-(--app-radius-control) border px-4 py-6 text-center"
         >
             <AppText>{{ loadError }}</AppText>
             <div class="flex justify-center">

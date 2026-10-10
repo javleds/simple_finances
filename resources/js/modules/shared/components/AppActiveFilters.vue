@@ -12,7 +12,7 @@ const props = defineProps<{ filters: readonly ActiveFilter[] }>();
             v-for="filter in props.filters"
             :key="filter.key"
             variant="outline"
-            class="min-h-9! rounded-full! px-3! py-1! text-xs!"
+            class="min-h-9! rounded-(--app-radius-control)! px-3! py-1! text-xs!"
             :aria-label="`Quitar filtro: ${filter.label}`"
             @click="filter.remove()"
         >

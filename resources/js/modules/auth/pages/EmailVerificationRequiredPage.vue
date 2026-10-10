@@ -134,7 +134,7 @@ onMounted(() => {
                     </div>
 
                     <div
-                        class="rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
+                        class="rounded-(--app-radius-control) border bg-(--app-color-surface-muted) px-4 py-4"
                         :style="{ borderColor: 'var(--app-color-border)' }"
                     >
                         <AppText v-if="email">

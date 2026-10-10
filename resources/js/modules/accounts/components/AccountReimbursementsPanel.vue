@@ -298,7 +298,7 @@ function itemDateLabel(date: string | null): string {
 </script>
 
 <template>
-    <AppCard v-if="accountsWithReimbursements.length > 0" class="rounded-2xl">
+    <AppCard v-if="accountsWithReimbursements.length > 0" class="rounded-(--app-radius-control)">
         <div class="space-y-5">
             <div class="flex items-start gap-3">
                 <div class="min-w-0 flex-1 space-y-1">
@@ -331,7 +331,7 @@ function itemDateLabel(date: string | null): string {
                     </AppButton>
 
                     <div
-                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-(--app-color-surface-muted)"
+                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-(--app-radius-control) bg-(--app-color-surface-muted)"
                     >
                         <BanknotesIcon class="h-5 w-5 text-(--app-color-text-subtle)" />
                     </div>
@@ -339,7 +339,7 @@ function itemDateLabel(date: string | null): string {
             </div>
 
             <div
-                class="divide-y divide-(--app-color-border) overflow-hidden rounded-2xl border border-(--app-color-border)"
+                class="divide-y divide-(--app-color-border) overflow-hidden rounded-(--app-radius-control) border border-(--app-color-border)"
             >
                 <div
                     v-for="account in accountsWithReimbursements"
@@ -445,7 +445,7 @@ function itemDateLabel(date: string | null): string {
 
             <div
                 v-if="selectedReimbursement.reimbursement.items.length > 0"
-                class="divide-y divide-(--app-color-border) overflow-hidden rounded-2xl bg-(--app-color-surface-muted)"
+                class="divide-y divide-(--app-color-border) overflow-hidden rounded-(--app-radius-control) bg-(--app-color-surface-muted)"
             >
                 <div
                     v-for="item in selectedReimbursement.reimbursement.items"

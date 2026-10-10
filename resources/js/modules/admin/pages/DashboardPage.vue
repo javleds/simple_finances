@@ -64,7 +64,7 @@ const filteredGraphAccounts = computed(() =>
         </header>
         <section
             v-if="loadError && !hasDashboardData"
-            class="space-y-3 rounded-2xl border px-4 py-6 text-center"
+            class="space-y-3 rounded-(--app-radius-control) border px-4 py-6 text-center"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
             <AppText>{{ loadError }}</AppText>
@@ -75,7 +75,7 @@ const filteredGraphAccounts = computed(() =>
 
         <section
             v-else-if="isLoading && !hasDashboardData"
-            class="rounded-2xl border px-4 py-10 text-center"
+            class="rounded-(--app-radius-control) border px-4 py-10 text-center"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
             <AppText>Cargando dashboard...</AppText>

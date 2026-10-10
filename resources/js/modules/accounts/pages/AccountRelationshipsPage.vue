@@ -76,7 +76,7 @@ function handleAccountUsersChange(nextUsers: AccountMember[]): void {
 
 <template>
     <div v-if="isLoadingAccount && !account" class="space-y-6 sm:space-y-5 sm:pb-16">
-        <AppCard class="rounded-2xl">
+        <AppCard class="rounded-(--app-radius-control)">
             <div class="space-y-3">
                 <AppTitle as="h2" size="sm">Cargando cuenta</AppTitle>
                 <AppText>Estamos consultando el detalle más reciente de esta cuenta.</AppText>
@@ -118,7 +118,7 @@ function handleAccountUsersChange(nextUsers: AccountMember[]): void {
         </RouterView>
     </div>
 
-    <AppCard v-else class="rounded-2xl">
+    <AppCard v-else class="rounded-(--app-radius-control)">
         <div class="space-y-3">
             <AppTitle as="h2" size="sm">Cuenta no encontrada</AppTitle>
             <AppText>

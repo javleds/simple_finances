@@ -3,6 +3,16 @@ import Aura from '@primeuix/themes/aura';
 import type { PrimeVueLocaleOptions } from 'primevue/config';
 
 export const appPreset = definePreset(Aura, {
+    primitive: {
+        borderRadius: {
+            none: '0',
+            xs: '2px',
+            sm: 'var(--app-radius-control)',
+            md: 'var(--app-radius-control)',
+            lg: 'var(--app-radius-overlay)',
+            xl: 'var(--app-radius-overlay)',
+        },
+    },
     semantic: {
         primary: {
             50: '#eff8f9',
@@ -22,7 +32,7 @@ export const appPreset = definePreset(Aura, {
             activeColor: 'var(--app-color-primary-active)',
         },
         formField: {
-            borderRadius: '0.75rem',
+            borderRadius: 'var(--app-radius-control)',
             fontSize: '1rem',
             paddingX: '0.875rem',
             paddingY: '0.625rem',
@@ -65,13 +75,13 @@ export const appPreset = definePreset(Aura, {
                 background: 'var(--app-color-surface)',
                 color: 'var(--app-color-text)',
                 borderColor: 'var(--app-color-border)',
-                borderRadius: '0.75rem',
+                borderRadius: 'var(--app-radius-control)',
             },
             modal: {
                 background: 'var(--app-color-surface)',
                 color: 'var(--app-color-text)',
                 borderColor: 'var(--app-color-border)',
-                borderRadius: '1rem',
+                borderRadius: 'var(--app-radius-overlay)',
             },
         },
         focusRing: {
@@ -81,6 +91,10 @@ export const appPreset = definePreset(Aura, {
         },
     },
     components: {
+        toggleswitch: {
+            root: { borderRadius: 'var(--app-radius-control)' },
+            handle: { borderRadius: '2px' },
+        },
         button: {
             root: {
                 danger: {

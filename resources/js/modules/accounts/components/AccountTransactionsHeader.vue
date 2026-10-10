@@ -25,12 +25,12 @@ function formatCurrency(value: number): string {
 </script>
 
 <template>
-    <AppCard class="rounded-2xl">
+    <AppCard class="rounded-(--app-radius-control)">
         <div class="space-y-5">
             <AppHeroMetric label="Balance" :value="formatCurrency(props.balance)">
                 <template #adornment>
                     <div
-                        class="flex h-12 w-12 items-center justify-center rounded-full border bg-(--app-color-surface-muted)"
+                        class="flex h-12 w-12 items-center justify-center rounded-(--app-radius-control) border bg-(--app-color-surface-muted)"
                         :style="{ borderColor: 'var(--app-color-border)' }"
                     >
                         <ArrowPathIcon class="h-5 w-5 text-(--app-color-text-subtle)" />

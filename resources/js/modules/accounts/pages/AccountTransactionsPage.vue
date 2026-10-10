@@ -241,7 +241,7 @@ async function handleSettleAllAccountReimbursements(
 
         <section
             v-if="transferError"
-            class="rounded-2xl border border-(--app-color-danger) px-4 py-3"
+            class="rounded-(--app-radius-control) border border-(--app-color-danger) px-4 py-3"
         >
             <p class="text-sm font-medium text-(--app-color-danger)">{{ transferError }}</p>
         </section>

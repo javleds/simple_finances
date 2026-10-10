@@ -36,7 +36,7 @@ const {
             <Message v-if="saveError" severity="error">{{ saveError }}</Message>
             <AppText v-if="isSaving" role="status" size="sm">Guardando preferencias...</AppText>
 
-            <div v-if="isLoading" class="rounded-2xl border px-4 py-6 text-center">
+            <div v-if="isLoading" class="rounded-(--app-radius-control) border px-4 py-6 text-center">
                 <AppText>Cargando configuración...</AppText>
             </div>
 
@@ -84,13 +84,13 @@ const {
 
             <RouterLink
                 :to="{ name: 'admin.settings.utilities.credit-card-payoff' }"
-                class="block rounded-2xl transition hover:border-(--app-color-border-strong) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                class="block rounded-(--app-radius-control) transition hover:border-(--app-color-border-strong) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
                 :style="{ borderColor: 'var(--app-color-border)' }"
             >
-                <AppCard :padded="false" class="rounded-2xl! p-4!">
+                <AppCard :padded="false" class="rounded-(--app-radius-control)! p-4!">
                     <div class="flex items-center gap-4">
                         <div
-                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-(--app-color-primary)/10 text-(--app-color-primary)"
+                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-(--app-radius-control) bg-(--app-color-primary)/10 text-(--app-color-primary)"
                         >
                             <CalculatorIcon class="h-6 w-6" />
                         </div>

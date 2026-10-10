@@ -77,7 +77,7 @@ function settlementLabel(value: number): string {
 
 <template>
     <AppCard
-        class="relative overflow-hidden rounded-xl p-4! shadow-none transition hover:border-(--app-color-border-strong)"
+        class="relative overflow-hidden rounded-(--app-radius-control) p-4! shadow-none transition hover:border-(--app-color-border-strong)"
     >
         <div
             class="pointer-events-none absolute inset-y-0 left-0 w-1"
@@ -119,7 +119,7 @@ function settlementLabel(value: number): string {
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex min-w-0 flex-wrap items-center gap-2">
                     <span
-                        class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
+                        class="inline-flex shrink-0 items-center rounded-(--app-radius-control) px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] uppercase"
                         :class="statusClasses(props.status)"
                     >
                         {{ statusLabel(props.status) }}

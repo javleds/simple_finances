@@ -129,7 +129,7 @@ async function handleSubmit(): Promise<void> {
                         v-model="description"
                         rows="4"
                         placeholder="Describe el propósito y contexto de la cuenta"
-                        class="w-full rounded-lg border bg-(--app-color-input-bg) px-4 py-3 text-sm text-(--app-color-input-text) transition outline-none placeholder:text-(--app-color-input-placeholder) focus:ring-4 focus:ring-(--app-color-focus-ring)"
+                        class="w-full rounded-(--app-radius-control) border bg-(--app-color-input-bg) px-4 py-3 text-sm text-(--app-color-input-text) transition outline-none placeholder:text-(--app-color-input-placeholder) focus:ring-4 focus:ring-(--app-color-focus-ring)"
                         :class="
                             descriptionError
                                 ? 'border-(--app-color-danger) focus:border-(--app-color-danger)'
@@ -161,7 +161,7 @@ async function handleSubmit(): Promise<void> {
                     </div>
 
                     <div
-                        class="flex h-12 items-center gap-3 rounded-lg border bg-(--app-color-input-bg) px-3"
+                        class="flex h-12 items-center gap-3 rounded-(--app-radius-control) border bg-(--app-color-input-bg) px-3"
                         :class="
                             colorError
                                 ? 'border-(--app-color-danger)'

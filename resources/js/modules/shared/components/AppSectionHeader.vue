@@ -16,7 +16,7 @@ const props = withDefaults(
 
 <template>
     <AppCard
-        class="border-0! bg-transparent! p-0! shadow-none! sm:rounded-3xl sm:border! sm:bg-(--app-color-surface)! sm:p-8!"
+        class="border-0! bg-transparent! p-0! shadow-none! sm:rounded-(--app-radius-control) sm:border! sm:bg-(--app-color-surface)! sm:p-8!"
     >
         <div class="space-y-4">
             <div class="flex items-start justify-between gap-4">
@@ -34,7 +34,7 @@ const props = withDefaults(
 
             <div
                 v-if="$slots['primary-metric']"
-                class="py-2 sm:rounded-2xl sm:border sm:bg-(--app-color-surface-muted) sm:px-4 sm:py-4"
+                class="py-2 sm:rounded-(--app-radius-control) sm:border sm:bg-(--app-color-surface-muted) sm:px-4 sm:py-4"
                 :style="{ borderColor: 'var(--app-color-border)' }"
             >
                 <slot name="primary-metric" />

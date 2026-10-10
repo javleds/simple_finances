@@ -33,7 +33,7 @@ function updatePrivacyPolicyAccepted(value: boolean): void {
 
 <template>
     <div
-        class="space-y-3 rounded-xl border px-4 py-4"
+        class="space-y-3 rounded-(--app-radius-control) border px-4 py-4"
         :style="{ borderColor: 'var(--app-color-border)' }"
     >
         <label class="flex items-start gap-3">

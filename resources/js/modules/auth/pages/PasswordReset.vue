@@ -87,7 +87,7 @@ async function handleSubmit(): Promise<void> {
           <form class="space-y-4 sm:space-y-5" @submit.prevent="handleSubmit">
             <section
               v-if="serverError"
-              class="rounded-xl border border-(--app-color-danger) px-4 py-3"
+              class="rounded-(--app-radius-control) border border-(--app-color-danger) px-4 py-3"
             >
               <AppText size="sm" class="text-(--app-color-danger)!">
                 {{ serverError }}

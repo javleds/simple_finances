@@ -178,7 +178,7 @@ async function handleLogout(): Promise<void> {
                                   ? { name: 'admin.dashboard' }
                                   : { name: 'admin.accounts' }
                         "
-                        class="flex h-11 w-11 items-center justify-center rounded-full border bg-(--app-color-surface-muted) text-(--app-color-text) transition hover:bg-(--app-color-surface) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                        class="flex h-11 w-11 items-center justify-center rounded-(--app-radius-control) border bg-(--app-color-surface-muted) text-(--app-color-text) transition hover:bg-(--app-color-surface) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
                         :style="{ borderColor: 'var(--app-color-border)' }"
                         :aria-label="
                             route.name === 'admin.distribution.detail'
@@ -212,7 +212,7 @@ async function handleLogout(): Promise<void> {
                         aria-label="Perfil de usuario"
                         aria-haspopup="true"
                         aria-controls="profile-menu"
-                        class="flex h-11 w-11 items-center justify-center rounded-full border bg-(--app-color-surface-muted) text-(--app-color-text) transition hover:bg-(--app-color-surface) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                        class="flex h-11 w-11 items-center justify-center rounded-(--app-radius-control) border bg-(--app-color-surface-muted) text-(--app-color-text) transition hover:bg-(--app-color-surface) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
                         :style="{ borderColor: 'var(--app-color-border)' }"
                         @click.stop="toggleProfileMenu"
                     >
@@ -246,7 +246,7 @@ async function handleLogout(): Promise<void> {
             class="relative mx-auto flex min-h-[calc(100dvh-var(--app-header-height)-var(--app-bottom-nav-height))] max-w-[430px] pt-6 sm:min-h-[820px] sm:pt-[5.5rem]"
         >
             <div
-                class="flex w-full min-w-0 flex-col sm:overflow-hidden sm:rounded-[32px] sm:border sm:bg-(--app-color-surface) sm:shadow-(--app-shadow-card)"
+                class="flex w-full min-w-0 flex-col sm:overflow-hidden sm:rounded-(--app-radius-control) sm:border sm:bg-(--app-color-surface) sm:shadow-(--app-shadow-card)"
                 :style="{ borderColor: 'var(--app-color-border-strong)' }"
             >
                 <main class="min-w-0 flex-1 sm:overflow-y-auto sm:px-5 sm:pt-5 sm:pb-8">
@@ -264,7 +264,7 @@ async function handleLogout(): Promise<void> {
                 <li v-for="item in navigationItems" :key="item.routeName">
                     <RouterLink
                         :to="{ name: item.routeName }"
-                        class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl px-0.5 py-2 text-center transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none sm:rounded-2xl sm:px-1"
+                        class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-(--app-radius-control) px-0.5 py-2 text-center transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none sm:rounded-(--app-radius-control) sm:px-1"
                         :class="
                             isActiveRoute(item.routeName)
                                 ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'

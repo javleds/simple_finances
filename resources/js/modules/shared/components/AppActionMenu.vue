@@ -53,7 +53,6 @@ function handleAction(key: string): void {
         <Button
             type="button"
             text
-            rounded
             icon-only
             severity="secondary"
             aria-label="Abrir acciones"

@@ -449,7 +449,7 @@ onBeforeUnmount(() => {
         <div class="space-y-3">
             <div
                 ref="trackRef"
-                class="relative mx-[1.375rem] h-4 touch-none overflow-visible rounded-full bg-(--app-color-surface-muted) select-none"
+                class="relative mx-[1.375rem] h-4 touch-none overflow-visible rounded-(--app-radius-control) bg-(--app-color-surface-muted) select-none"
             >
                 <div
                     v-for="(user, index) in userItems"
@@ -466,11 +466,10 @@ onBeforeUnmount(() => {
                     v-for="(user, index) in userItems.slice(0, -1)"
                     :key="`${user.id}-handle`"
                     type="button"
-                    rounded
                     outlined
                     icon-only
                     severity="secondary"
-                    class="absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 touch-none items-center justify-center rounded-full border bg-(--app-color-surface) transition select-none focus:ring-2 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                    class="absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 touch-none items-center justify-center rounded-(--app-radius-control) border bg-(--app-color-surface) transition select-none focus:ring-2 focus:ring-(--app-color-focus-ring) focus:outline-none"
                     :style="{
                         left: `calc(${cumulativeBoundaries[index] ?? 0}% - ${HANDLE_WIDTH_PX / 2}px)`,
                         borderColor: 'var(--app-color-border-strong)',
@@ -478,7 +477,7 @@ onBeforeUnmount(() => {
                     :aria-label="`Ajustar límite entre ${user.name} y ${userItems[index + 1]?.name ?? ''}`"
                     @pointerdown.prevent="startHandleDrag(index, $event)"
                 >
-                    <span class="h-2.5 w-0.5 rounded-full bg-(--app-color-text-subtle)" />
+                    <span class="h-2.5 w-0.5 rounded-(--app-radius-control) bg-(--app-color-text-subtle)" />
                 </Button>
             </div>
 
@@ -486,7 +485,7 @@ onBeforeUnmount(() => {
                 <div
                     v-for="user in userItems"
                     :key="user.id"
-                    class="border-b px-0 py-3 sm:rounded-xl sm:border sm:bg-(--app-color-surface-muted) sm:px-3 sm:py-2.5"
+                    class="border-b px-0 py-3 sm:rounded-(--app-radius-control) sm:border sm:bg-(--app-color-surface-muted) sm:px-3 sm:py-2.5"
                     :style="{ borderColor: 'var(--app-color-border)' }"
                 >
                     <div class="grid grid-cols-[minmax(0,1fr)_6.5rem] items-center gap-3">
