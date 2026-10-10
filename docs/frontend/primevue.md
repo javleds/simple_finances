@@ -19,6 +19,7 @@ Los componentes de `resources/js/modules/shared/components` adaptan PrimeVue a l
 | `AppSearchSelect` | Select; búsqueda, limpieza, descripciones y asociación accesible de etiquetas y errores |
 | `AppSwitch`, `AppToggleButton` | ToggleSwitch y SelectButton; valores y eventos del consumidor |
 | `AppModal` | Dialog; cierre, variantes, acciones, pie personalizable y presentación inferior en móvil mediante `presentation="sheet"` |
+| `AppThemeMenu` | Menu; selección persistida de Claro, Oscuro o Sistema desde los layouts |
 | `AppActionMenu`, `AppContextTabs` | Menu y Tabs; acciones y navegación contextual existentes |
 | `AppCard` | Card; padding configurable desde el contenedor y contenido espaciado dentro del slot |
 | `AppFilterPanel` | Composición de `AppModal` y `AppButton`; formulario y pie fijo con limpiar y aplicar |
@@ -27,6 +28,24 @@ Los componentes de `resources/js/modules/shared/components` adaptan PrimeVue a l
 | `AppActiveFilters` | Etiquetas removibles de selecciones aplicadas; conserva los callbacks de cada módulo |
 
 Las pestañas inferiores de cuentas presentan el icono y el título en una misma fila. El listado de pestañas conserva su desplazamiento horizontal en pantallas estrechas. Los mensajes de error, confirmación y estado usan componentes PrimeVue donde corresponde.
+
+## Selector de tema
+
+`AppThemeMenu` aparece arriba a la derecha en autenticación y antes del botón de Perfil en el encabezado autenticado. Sustituye los selectores de los formularios de autenticación; Configuración ya no incluye una sección de tema visual.
+
+El menú ofrece **Claro**, **Oscuro** y **Sistema** y muestra la opción seleccionada. `stores/theme.ts` conserva la preferencia en `localStorage` bajo `theme-mode` y restaura las preferencias explícitas existentes. Sin una preferencia válida usa Sistema. Esta opción sigue los cambios de apariencia del dispositivo en vivo; Claro y Oscuro prevalecen sobre el dispositivo. El tema resuelto actualiza `.dark` y `color-scheme`.
+
+## Porcentajes predeterminados de miembros
+
+En Usuarios de una cuenta, el propietario puede ajustar la distribución con `AppPercentageSplitEditor`. El borrador permanece separado de los porcentajes guardados: **Aplicar** envía toda la distribución a `PUT /api/accounts/{account}/users`; **Restablecer** descarta las modificaciones pendientes y recupera la última distribución guardada.
+
+El endpoint existente exige exactamente todos los miembros y una suma de 100.00 tras normalizar a dos decimales. La interfaz bloquea el editor y la aplicación cuando hay búsqueda o faltan páginas por cargar. Mientras guarda bloquea los controles y los envíos repetidos. Un fallo conserva el borrador y muestra el error; un éxito actualiza los porcentajes de la lista sin perder sus importes de custodia y liquidación.
+
+## Preferencias de notificaciones
+
+Configuración distingue cada preferencia con un selector, texto **Activada/Desactivada** y borde y fondo destacados cuando está activa. Los cambios se guardan automáticamente y los controles se deshabilitan durante el envío. Si falla, se recupera el estado previo y el mensaje de error permanece visible.
+
+`GET /api/notification-settings` devuelve la selección en `checked`; el repositorio la convierte al booleano `enabled` utilizado por la interfaz. `PUT /api/notification-settings` recibe `notification_type_ids` y `account_ids`: ambos campos deben estar presentes y ser arreglos, pero admiten listas vacías para desactivar todas las preferencias de su grupo. Omitir un campo sigue produciendo 422. El servidor conserva el filtro de cuentas visibles para el usuario.
 
 ## Filtros de listas
 

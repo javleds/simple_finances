@@ -66,3 +66,18 @@ Para revisar el flujo completo en navegador:
 5. En transacciones anidadas, activar un tipo y verificar que las etiquetas estén debajo del buscador y antes del listado, sin intercalarse en el resumen de saldo, custodia o reembolsos.
 
 La implantación se revisó en las siete vistas a anchos de 390 y 1440 píxeles. La corrección de ubicación se comprobó además en transacciones anidadas con un filtro aplicado. Pasaron las suites PHP y Vue, el chequeo de tipos, ESLint y el build; tras la corrección pasó también su prueba de regresión específica. Estas revisiones puntuales no sustituyen una suite E2E ni acreditan todos los flujos privados o temas. Las capturas temporales permanecen fuera de los commits.
+
+## Tema, porcentajes y notificaciones
+
+| Área | Regresión automatizada |
+| --- | --- |
+| Tema persistido y seguimiento del dispositivo | `resources/js/__tests__/theme.spec.ts`: preferencias explícitas, Sistema, cambios en vivo y limpieza de listeners |
+| Distribución de miembros | `useAccountUsersSplitDraft.spec.ts`: aplicar, restablecer, error de guardado, lista incompleta y actualización de porcentajes guardados |
+| Lectura y envío de notificaciones | `notificationSettingsRepository.spec.ts`: conversión de `checked`, conservación de identificadores activos y arreglos vacíos |
+| Validación de notificaciones | `ApiEndpointsTest.php`: guardado, desactivación total y rechazo de campos omitidos; `EndpointAuthorizationTest.php`: filtro de cuentas visibles |
+
+En navegador, comprobar el menú de tema en autenticación y antes de Perfil, persistencia al recargar y seguimiento del dispositivo. En Usuarios, modificar porcentajes, restablecer, aplicar y recargar; comprobar bloqueo con búsqueda o miembros pendientes de cargar. En Configuración, distinguir estados claros y oscuros, desactivar todas las preferencias de un grupo y comprobar recuperación del estado previo ante un fallo de guardado.
+
+La revisión puntual del tema cubrió anchos de 320, 390 y 1440 píxeles, persistencia y cambios del dispositivo. Las notificaciones se revisaron en claro y oscuro a 390 píxeles; se simuló un error de guardado en el navegador para comprobar la recuperación del estado sin modificar preferencias reales. La aceptación de arreglos vacíos se verificó mediante pruebas de API. Estas comprobaciones no constituyen una suite E2E completa.
+
+Tras estos cambios pasaron 197 pruebas backend, 108 frontend, chequeo de tipos, ESLint de los archivos modificados y build. Los totales describen esa ejecución y pueden crecer con cambios posteriores.

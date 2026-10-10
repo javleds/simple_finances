@@ -256,6 +256,7 @@
       "put": {
         "tags": ["Notification Settings"],
         "summary": "Update notification settings",
+        "description": "Ambos arreglos son obligatorios y admiten valores vacíos para desactivar todas las preferencias del grupo. Los campos omitidos producen 422; las cuentas se limitan a las visibles para el usuario.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2992,10 +2993,12 @@
         "properties": {
           "notification_type_ids": {
             "type": "array",
+            "minItems": 0,
             "items": { "type": "integer" }
           },
           "account_ids": {
             "type": "array",
+            "minItems": 0,
             "items": { "type": "integer" }
           }
         },
