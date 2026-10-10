@@ -48,6 +48,7 @@ async function render(state: WhatsappConnection = unlinked): Promise<void> {
     wrapper = mount(WhatsappConnectionCard, {
         attachTo: document.body,
         global: {
+            stubs: { teleport: true },
             plugins: [
                 [VueQueryPlugin, { queryClient }],
                 [PrimeVue, { unstyled: true }],
@@ -109,6 +110,19 @@ describe('WhatsApp connection settings', () => {
         expect(wrapper.text()).not.toContain('+525512345678');
     });
 
+    it('closes the phone sheet without requesting a code', async () => {
+        await render();
+        await wrapper.get('button').trigger('click');
+        await wrapper.get('#whatsapp-phone').setValue('5512345678');
+        const cancel = wrapper.findAll('button').find((button) => button.text() === 'Cancelar');
+        await cancel?.trigger('click');
+        await flushPromises();
+
+        expect(repository.requestCode).not.toHaveBeenCalled();
+        expect(wrapper.find('#whatsapp-phone').exists()).toBe(false);
+        expect(wrapper.text()).toContain('Ligar cuenta con WhatsApp');
+    });
+
     it('requests a code with the Mexican prefix and refreshes server state', async () => {
         await render();
         await wrapper.get('button').trigger('click');
@@ -117,7 +131,8 @@ describe('WhatsApp connection settings', () => {
         repository.requestCode.mockResolvedValue(next);
         repository.get.mockResolvedValue(next);
 
-        await wrapper.get('form').trigger('submit');
+        const send = wrapper.findAll('button').find((button) => button.text() === 'Enviar código');
+        await send?.trigger('click');
         await flushPromises();
 
         expect(repository.requestCode).toHaveBeenCalledWith('+525512345678');

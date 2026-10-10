@@ -68,7 +68,7 @@ const {
 });
 
 const actionModalActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+    { key: 'close', label: 'Cancelar', tone: 'neutral' as const, icon: XMarkIcon, autoClose: true },
     {
         key: 'confirm-invitation-action',
         label: isSaving.value
@@ -76,7 +76,7 @@ const actionModalActions = computed(() => [
             : pendingAction.value === 'accepted'
               ? 'Aceptar invitación'
               : 'Rechazar invitación',
-        tone: 'primary' as const,
+        tone: pendingAction.value === 'declined' ? ('danger' as const) : ('primary' as const),
         disabled: !selectedInvitation.value || !pendingAction.value || isSaving.value,
         loading: isSaving.value,
     },

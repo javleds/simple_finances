@@ -49,6 +49,7 @@ function submitPercentage(event: FormSubmitEvent): void {
 
 <template>
     <AppModal
+        presentation="sheet"
         :open="props.open"
         :actions="props.actions"
         title="Editar porcentaje"
@@ -60,7 +61,7 @@ function submitPercentage(event: FormSubmitEvent): void {
             :key="`${props.open}-${props.selectedUser?.id}`"
             ref="percentageForm"
             :resolver="resolver"
-            class="space-y-5"
+            class="space-y-4"
             @submit="submitPercentage"
         >
             <AppText v-if="props.selectedUser">

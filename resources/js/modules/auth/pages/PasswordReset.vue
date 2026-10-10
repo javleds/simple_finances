@@ -68,23 +68,23 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <section
-    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-(--app-color-page) px-4 pt-24 pb-10 text-(--app-color-text) sm:px-6 lg:px-8"
+    class="relative flex min-h-dvh items-start justify-center bg-(--app-color-page) px-4 pt-20 pb-8 text-(--app-color-text) sm:items-center sm:px-6 sm:pt-24 sm:pb-10 lg:px-8"
   >
-    <div
-      class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--app-color-page-glow),_transparent_48%)]"
-    />
-
     <div class="w-full max-w-md">
-      <AppCard>
+      <AppCard
+        :padded="false"
+        class="border-0! bg-transparent! shadow-none! sm:border! sm:bg-(--app-color-surface)! sm:p-8!"
+      >
         <div class="space-y-6">
           <div class="space-y-2">
             <AppTitle as="h1" size="md">Restablecer contraseña</AppTitle>
             <AppText>
-              Define una nueva contraseña para la cuenta asociada al enlace de recuperación.
+              Define una nueva contraseña para la cuenta asociada al enlace de
+              recuperación.
             </AppText>
           </div>
 
-          <form class="space-y-5" @submit.prevent="handleSubmit">
+          <form class="space-y-4 sm:space-y-5" @submit.prevent="handleSubmit">
             <section
               v-if="serverError"
               class="rounded-xl border border-(--app-color-danger) px-4 py-3"
@@ -124,7 +124,11 @@ async function handleSubmit(): Promise<void> {
               :loading="isSubmitting || isResetPending"
               :disabled="isSubmitDisabled || isSubmitting || isResetPending"
             >
-              {{ isSubmitting || isResetPending ? 'Actualizando...' : 'Actualizar contraseña' }}
+              {{
+                isSubmitting || isResetPending
+                  ? 'Actualizando...'
+                  : 'Actualizar contraseña'
+              }}
             </AppButton>
           </form>
 
@@ -132,7 +136,11 @@ async function handleSubmit(): Promise<void> {
             <AppText>
               ¿Recordaste tu contraseña?
               {{ ' ' }}
-              <AppLink :to="{ name: 'auth.login' }" variant="primary" class="font-semibold">
+              <AppLink
+                :to="{ name: 'auth.login' }"
+                variant="primary"
+                class="font-semibold"
+              >
                 Volver al login
               </AppLink>
             </AppText>

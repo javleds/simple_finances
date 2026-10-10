@@ -150,7 +150,7 @@ async function confirmDeleteSubscription(): Promise<void> {
 </script>
 
 <template>
-    <div class="space-y-5">
+    <div class="space-y-4 sm:space-y-5">
         <SubscriptionsToolbar
             v-model:search-term="searchTerm"
             :active-filter-count="activeFilterChips.length"

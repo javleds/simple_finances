@@ -54,7 +54,7 @@ function renderTooltip(context: TooltipRenderContext): VNode {
 </script>
 
 <template>
-    <div class="min-h-[250px] w-full">
+    <div class="min-h-[250px] w-full min-w-0">
         <ChartSvg :height="250" locale="es-MX" :number-format="currencyOptions" class="w-full">
             <ChartBar
                 :data="props.accounts"
@@ -72,5 +72,27 @@ function renderTooltip(context: TooltipRenderContext): VNode {
             <ChartTooltip :render="renderTooltip" />
             <ChartAccessibility description="Balance por cuenta, expresado en pesos mexicanos." />
         </ChartSvg>
+        <ul
+            class="mt-4 divide-y divide-(--app-color-border) sm:hidden"
+            aria-label="Balances por cuenta"
+        >
+            <li
+                v-for="account in props.accounts"
+                :key="account.accountId"
+                class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 py-2 text-sm"
+            >
+                <span class="flex min-w-0 flex-1 items-start gap-2">
+                    <span
+                        class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                        :style="{ backgroundColor: account.color ?? 'var(--app-color-text-muted)' }"
+                        aria-hidden="true"
+                    />
+                    <span class="wrap-anywhere">{{ account.accountName }}</span>
+                </span>
+                <span class="font-semibold tabular-nums">{{
+                    currencyFormatter.format(account.balance)
+                }}</span>
+            </li>
+        </ul>
     </div>
 </template>

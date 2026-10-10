@@ -18,7 +18,11 @@ const {
 </script>
 
 <template>
-    <div class="space-y-5">
+    <div class="space-y-6">
+        <header class="space-y-1">
+            <AppTitle as="h1">Configuración</AppTitle>
+            <AppText>Administra tus conexiones, avisos y herramientas.</AppText>
+        </header>
         <WhatsappConnectionCard />
         <section class="space-y-3">
             <div class="space-y-1">
@@ -36,16 +40,11 @@ const {
                 <AppText>Cargando configuración...</AppText>
             </div>
 
-            <div v-else class="space-y-4">
-                <AppCard
+            <AppCard v-else :padded="false" class="divide-y divide-(--app-color-border)">
+                <div
                     v-for="setting in globalNotificationSettings"
                     :key="setting.id"
-                    class="rounded-2xl p-4! shadow-none"
-                    :class="
-                        setting.enabled
-                            ? 'border-(--app-color-primary)! bg-(--app-color-primary)/5!'
-                            : ''
-                    "
+                    class="px-4 py-3"
                 >
                     <div class="flex items-center justify-between gap-4">
                         <div class="min-w-0 space-y-1">
@@ -73,8 +72,8 @@ const {
                             >
                         </div>
                     </div>
-                </AppCard>
-            </div>
+                </div>
+            </AppCard>
         </section>
 
         <section class="space-y-3" aria-labelledby="utilities-title">
@@ -85,10 +84,10 @@ const {
 
             <RouterLink
                 :to="{ name: 'admin.settings.utilities.credit-card-payoff' }"
-                class="block rounded-3xl border transition hover:border-(--app-color-border-strong) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                class="block rounded-2xl transition hover:border-(--app-color-border-strong) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
                 :style="{ borderColor: 'var(--app-color-border)' }"
             >
-                <AppCard :padded="false" class="rounded-3xl! p-4!">
+                <AppCard :padded="false" class="rounded-2xl! p-4!">
                     <div class="flex items-center gap-4">
                         <div
                             class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-(--app-color-primary)/10 text-(--app-color-primary)"
@@ -119,21 +118,16 @@ const {
                 >
             </div>
 
-            <div v-if="!isLoading" class="space-y-4">
-                <AppCard
+            <AppCard v-if="!isLoading" :padded="false" class="divide-y divide-(--app-color-border)">
+                <div
                     v-for="setting in accountNotificationSettings"
                     :key="setting.id"
-                    class="rounded-2xl p-4! shadow-none"
-                    :class="
-                        setting.enabled
-                            ? 'border-(--app-color-primary)! bg-(--app-color-primary)/5!'
-                            : ''
-                    "
+                    class="px-4 py-3"
                 >
                     <div class="flex items-center justify-between gap-4">
                         <div class="min-w-0">
                             <p
-                                class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                                class="text-sm leading-5 font-semibold break-words text-(--app-color-text)"
                             >
                                 {{ setting.accountName }}
                             </p>
@@ -157,8 +151,8 @@ const {
                             >
                         </div>
                     </div>
-                </AppCard>
-            </div>
+                </div>
+            </AppCard>
         </section>
     </div>
 </template>

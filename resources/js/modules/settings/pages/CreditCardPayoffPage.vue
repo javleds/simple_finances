@@ -113,23 +113,23 @@ function resetCards(): void {
 </script>
 
 <template>
-    <div class="space-y-5">
+    <div class="space-y-6">
         <div class="flex items-center gap-3">
             <RouterLink
                 :to="{ name: 'admin.settings' }"
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-(--app-color-surface-muted) text-(--app-color-text) transition hover:bg-(--app-color-surface) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-(--app-color-surface-muted) text-(--app-color-text) transition hover:bg-(--app-color-surface) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
                 :style="{ borderColor: 'var(--app-color-border)' }"
                 aria-label="Volver a configuración"
             >
                 <ArrowLeftIcon class="h-5 w-5" />
             </RouterLink>
             <div class="min-w-0 space-y-1">
-                <AppTitle as="h1" size="sm">Pago de tarjetas</AppTitle>
+                <AppTitle as="h1">Pago de tarjetas</AppTitle>
                 <AppText>Compara tu deuda con el dinero que ya tienes apartado.</AppText>
             </div>
         </div>
 
-        <AppCard muted class="rounded-3xl! p-4! sm:p-5!">
+        <AppCard muted class="rounded-2xl! p-4! sm:rounded-3xl! sm:p-5!">
             <div class="space-y-2">
                 <AppText size="sm" tone="muted">Solo es una ayuda temporal</AppText>
                 <AppText size="sm"
@@ -163,7 +163,7 @@ function resetCards(): void {
                 <AppCard
                     v-for="(card, index) in cards"
                     :key="card.id"
-                    class="rounded-3xl! p-4! sm:p-5!"
+                    class="rounded-2xl! p-4! sm:rounded-3xl! sm:p-5!"
                 >
                     <div class="space-y-4">
                         <div class="flex items-center justify-between gap-3">
@@ -174,7 +174,7 @@ function resetCards(): void {
                                 variant="text"
                                 severity="secondary"
                                 type="button"
-                                class="inline-flex h-9 w-9 items-center justify-center rounded-full text-(--app-color-text-subtle) transition hover:bg-(--app-color-surface-muted) hover:text-(--app-color-danger) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-full text-(--app-color-text-subtle) transition hover:bg-(--app-color-surface-muted) hover:text-(--app-color-danger) focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
                                 :aria-label="`Limpiar tarjeta ${index + 1}`"
                                 @click="removeCard(card.id)"
                             >
@@ -212,7 +212,7 @@ function resetCards(): void {
                         </div>
 
                         <div
-                            class="rounded-2xl border px-4 py-4"
+                            class="border-t pt-4 sm:rounded-2xl sm:border sm:px-4 sm:pb-4"
                             :class="{
                                 'border-(--app-color-border) bg-(--app-color-surface-muted)':
                                     statusFor(card) === 'empty',
@@ -247,7 +247,7 @@ function resetCards(): void {
         </section>
 
         <AppCard
-            class="rounded-3xl! bg-(--app-color-primary)! p-5! text-(--app-color-primary-foreground)!"
+            class="rounded-2xl! p-4! sm:bg-(--app-color-primary)! sm:p-5! sm:text-(--app-color-primary-foreground)!"
         >
             <div class="space-y-4">
                 <div>
@@ -257,7 +257,9 @@ function resetCards(): void {
                     </p>
                     <p class="mt-1 text-sm opacity-80">{{ totalStatusLabel }}</p>
                 </div>
-                <div class="grid grid-cols-2 gap-3 border-t border-white/20 pt-4 text-sm">
+                <div
+                    class="grid grid-cols-2 gap-3 border-t border-(--app-color-border) pt-4 text-sm sm:border-white/20"
+                >
                     <div>
                         <p class="opacity-75">Deuda total</p>
                         <p class="mt-1 font-semibold">{{ formatCurrency(totalDebt) }}</p>

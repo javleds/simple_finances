@@ -12,7 +12,7 @@ import { useDashboardPeriodSummary } from '@/modules/admin/composables/useDashbo
 import { useAccountMemberTransfers } from '@/modules/accounts/composables/useAccountMemberTransfers';
 import { useSharedAccountReimbursements } from '@/modules/accounts/composables/useSharedAccountReimbursements';
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
-import { AppButton, AppText } from '@/modules/shared/components';
+import { AppButton, AppText, AppTitle } from '@/modules/shared/components';
 
 type SavingsCadence = 'monthly' | 'biweekly';
 type AccountGraphMode = 'physical' | 'virtual';
@@ -57,7 +57,11 @@ const filteredGraphAccounts = computed(() =>
 </script>
 
 <template>
-    <div class="space-y-5">
+    <div class="space-y-6">
+        <header class="space-y-1">
+            <AppTitle as="h1" size="md">Resumen financiero</AppTitle>
+            <AppText>Balances, reembolsos y planeación de tus cuentas.</AppText>
+        </header>
         <section
             v-if="loadError && !hasDashboardData"
             class="space-y-3 rounded-2xl border px-4 py-6 text-center"

@@ -15,6 +15,12 @@ function renderToolbar(filterChips: { key: string; label: string; remove: () => 
 }
 
 describe('account filter toolbar', () => {
+    it('exposes the create action by its accessible name', async () => {
+        const wrapper = renderToolbar();
+        await wrapper.get('button[aria-label="Crear cuenta"]').trigger('click');
+        expect(wrapper.emitted('create')).toHaveLength(1);
+    });
+
     it('shows the applied count and removes individual filters', async () => {
         const removeStatus = vi.fn();
         const removeKind = vi.fn();

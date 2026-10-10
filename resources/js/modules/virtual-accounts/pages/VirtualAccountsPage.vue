@@ -169,7 +169,7 @@ function today(): string {
 </script>
 
 <template>
-    <section class="space-y-5">
+    <section class="space-y-4 sm:space-y-5">
         <header class="flex items-start justify-between gap-4 px-1">
             <div class="min-w-0 space-y-1">
                 <AppTitle as="h1">Cuentas virtuales</AppTitle>
@@ -186,9 +186,9 @@ function today(): string {
             loading-label="Cargando cuentas virtuales..."
             @retry="loadDashboard"
         >
-            <div class="space-y-5">
-                <AppCard class="rounded-3xl">
-                    <div class="space-y-5">
+            <div class="space-y-4 sm:space-y-5">
+                <AppCard class="rounded-2xl sm:rounded-3xl">
+                    <div class="space-y-4 sm:space-y-5">
                         <AppHeroMetric
                             label="Total actual"
                             :value="formatCurrency(dashboard.summary.currentBalance)"
@@ -200,7 +200,7 @@ function today(): string {
 
                         <div class="grid grid-cols-2 gap-3">
                             <div
-                                class="rounded-xl border px-3 py-3"
+                                class="min-w-0 py-2 sm:rounded-xl sm:border sm:px-3 sm:py-3"
                                 :style="{ borderColor: 'var(--app-color-border)' }"
                             >
                                 <AppText size="sm" tone="subtle">Capital neto</AppText>
@@ -211,7 +211,7 @@ function today(): string {
                                 </p>
                             </div>
                             <div
-                                class="rounded-xl border px-3 py-3"
+                                class="min-w-0 py-2 sm:rounded-xl sm:border sm:px-3 sm:py-3"
                                 :style="{ borderColor: 'var(--app-color-border)' }"
                             >
                                 <AppText size="sm" tone="subtle">Rendimiento</AppText>
@@ -222,7 +222,7 @@ function today(): string {
                                 </p>
                             </div>
                             <div
-                                class="rounded-xl border px-3 py-3"
+                                class="min-w-0 py-2 sm:rounded-xl sm:border sm:px-3 sm:py-3"
                                 :style="{ borderColor: 'var(--app-color-border)' }"
                             >
                                 <AppText size="sm" tone="subtle">Aportado</AppText>
@@ -233,7 +233,7 @@ function today(): string {
                                 </p>
                             </div>
                             <div
-                                class="rounded-xl border px-3 py-3"
+                                class="min-w-0 py-2 sm:rounded-xl sm:border sm:px-3 sm:py-3"
                                 :style="{ borderColor: 'var(--app-color-border)' }"
                             >
                                 <AppText size="sm" tone="subtle">Retirado</AppText>
@@ -264,13 +264,13 @@ function today(): string {
                             variant="text"
                             severity="secondary"
                             type="button"
-                            class="w-full text-left"
+                            class="w-full justify-start! p-0! text-left"
                             @click="selectAccount(account)"
                         >
-                            <div class="flex items-start justify-between gap-3">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <p
-                                        class="truncate text-sm font-semibold text-(--app-color-text)"
+                                        class="text-sm font-semibold break-words text-(--app-color-text)"
                                     >
                                         {{ account.accountName }}
                                     </p>
@@ -287,7 +287,7 @@ function today(): string {
                             </div>
                         </Button>
 
-                        <div class="mt-4 grid grid-cols-3 gap-2 text-xs">
+                        <div class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
                             <div>
                                 <AppText size="sm" tone="subtle">Inicial</AppText>
                                 <p class="font-semibold tabular-nums">
@@ -319,9 +319,9 @@ function today(): string {
                     </article>
                 </section>
 
-                <AppCard v-if="selectedAccount" class="rounded-3xl">
+                <AppCard v-if="selectedAccount" class="rounded-2xl sm:rounded-3xl">
                     <div class="space-y-4">
-                        <div class="flex items-start justify-between gap-3">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <AppTitle as="h2" size="sm">Historial observado</AppTitle>
                                 <AppText tone="subtle">{{ selectedAccount.accountName }}</AppText>
@@ -344,10 +344,10 @@ function today(): string {
                             <div
                                 v-for="snapshot in selectedSnapshots"
                                 :key="snapshot.id"
-                                class="rounded-xl border px-4 py-3"
+                                class="border-b px-0 py-3 sm:rounded-xl sm:border sm:px-4"
                                 :style="{ borderColor: 'var(--app-color-border)' }"
                             >
-                                <div class="flex items-start justify-between gap-3">
+                                <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div>
                                         <p class="text-sm font-semibold text-(--app-color-text)">
                                             {{ formatDate(snapshot.observedAt) }}
@@ -386,6 +386,7 @@ function today(): string {
         </AppListState>
 
         <AppModal
+            presentation="sheet"
             :open="isCaptureOpen"
             title="Capturar saldo observado"
             :actions="captureActions"
@@ -396,7 +397,7 @@ function today(): string {
                 :key="`${isCaptureOpen}-${selectedAccountId}`"
                 ref="captureForm"
                 :resolver="captureResolver"
-                class="space-y-5"
+                class="space-y-4 sm:space-y-5"
                 @submit="submitCapture"
             >
                 <Message v-if="saveError" severity="error">{{ saveError }}</Message>

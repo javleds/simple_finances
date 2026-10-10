@@ -16,6 +16,7 @@ const emit = defineEmits<{
 
 <template>
   <AppModal
+    presentation="fullscreen"
     :open="props.activeDocument === 'terms'"
     title="Términos y condiciones"
     close-label="Cerrar"
@@ -25,6 +26,7 @@ const emit = defineEmits<{
   </AppModal>
 
   <AppModal
+    presentation="fullscreen"
     :open="props.activeDocument === 'privacy'"
     title="Política de privacidad"
     close-label="Cerrar"

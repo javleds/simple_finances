@@ -39,6 +39,7 @@ const emit = defineEmits<{
 
 <template>
   <AppModal
+    presentation="sheet"
     :open="props.open"
     :actions="props.actions"
     :title="props.title"

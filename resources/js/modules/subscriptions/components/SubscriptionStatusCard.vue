@@ -12,7 +12,7 @@ defineProps<{
 </script>
 
 <template>
-  <AppCard class="rounded-3xl">
+  <AppCard class="rounded-2xl sm:rounded-3xl">
     <div class="flex items-start gap-4">
       <div
         class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--app-color-primary)_12%,transparent)] text-(--app-color-primary)"

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
-  ArrowsRightLeftIcon,
-  BookOpenIcon,
-  EnvelopeIcon,
-  FlagIcon,
-  UsersIcon,
+    ArrowsRightLeftIcon,
+    BookOpenIcon,
+    EnvelopeIcon,
+    FlagIcon,
+    UsersIcon,
 } from '@heroicons/vue/24/outline';
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -19,112 +19,115 @@ const route = useRoute();
 const router = useRouter();
 
 const accountId = computed(() =>
-  typeof route.params.accountId === 'string' ? route.params.accountId : '',
+    typeof route.params.accountId === 'string' ? route.params.accountId : '',
 );
 const { account, isLoadingAccount, loadError, setAccountUsers } =
-  useAccountRelationshipAccount(accountId);
+    useAccountRelationshipAccount(accountId);
 
 const relationshipSections = [
-  {
-    value: 'transactions',
-    label: 'Transacciones',
-    icon: ArrowsRightLeftIcon,
-  },
-  {
-    value: 'ledger',
-    label: 'Libro',
-    icon: BookOpenIcon,
-  },
-  {
-    value: 'invitations',
-    label: 'Invitaciones',
-    icon: EnvelopeIcon,
-  },
-  {
-    value: 'goals',
-    label: 'Metas',
-    icon: FlagIcon,
-  },
-  {
-    value: 'users',
-    label: 'Usuarios',
-    icon: UsersIcon,
-  },
+    {
+        value: 'transactions',
+        label: 'Transacciones',
+        icon: ArrowsRightLeftIcon,
+    },
+    {
+        value: 'ledger',
+        label: 'Libro',
+        icon: BookOpenIcon,
+    },
+    {
+        value: 'invitations',
+        label: 'Invitaciones',
+        icon: EnvelopeIcon,
+    },
+    {
+        value: 'goals',
+        label: 'Metas',
+        icon: FlagIcon,
+    },
+    {
+        value: 'users',
+        label: 'Usuarios',
+        icon: UsersIcon,
+    },
 ] as const;
 
 const activeSection = computed<AccountRelationSection>(
-  () => (String(route.name).split('.').pop() as AccountRelationSection) || 'transactions',
+    () => (String(route.name).split('.').pop() as AccountRelationSection) || 'transactions',
 );
 
 function updateActiveSection(nextSection: string): void {
-  if (!accountId.value) {
-    return;
-  }
+    if (!accountId.value) {
+        return;
+    }
 
-  router.push({
-    name: `admin.accounts.${nextSection}`,
-    params: {
-      accountId: accountId.value,
-    },
-  });
+    router.push({
+        name: `admin.accounts.${nextSection}`,
+        params: {
+            accountId: accountId.value,
+        },
+    });
 }
 
 function handleAccountUsersChange(nextUsers: AccountMember[]): void {
-  setAccountUsers(nextUsers);
+    setAccountUsers(nextUsers);
 }
 </script>
 
 <template>
-  <div v-if="isLoadingAccount && !account" class="space-y-5 pb-16">
-    <AppCard class="rounded-3xl">
-      <div class="space-y-3">
-        <AppTitle as="h2" size="sm">Cargando cuenta</AppTitle>
-        <AppText>Estamos consultando el detalle más reciente de esta cuenta.</AppText>
-      </div>
+    <div v-if="isLoadingAccount && !account" class="space-y-6 sm:space-y-5 sm:pb-16">
+        <AppCard class="rounded-2xl">
+            <div class="space-y-3">
+                <AppTitle as="h2" size="sm">Cargando cuenta</AppTitle>
+                <AppText>Estamos consultando el detalle más reciente de esta cuenta.</AppText>
+            </div>
+        </AppCard>
+    </div>
+
+    <div v-else-if="account" class="space-y-6 sm:space-y-5 sm:pb-16">
+        <header class="space-y-1">
+            <AppTitle as="h1" class="break-words">{{ account.name }}</AppTitle>
+            <AppText v-if="account.description" tone="subtle">
+                {{ account.description }}
+            </AppText>
+        </header>
+
+        <div
+            class="sticky top-(--app-header-height) z-10 -mx-4 border-b border-(--app-color-border) bg-(--app-color-surface) sm:fixed sm:top-auto sm:bottom-[5rem] sm:left-1/2 sm:mx-0 sm:w-full sm:max-w-[430px] sm:-translate-x-1/2 sm:border-t"
+        >
+            <AppContextTabs
+                :model-value="activeSection"
+                :options="relationshipSections"
+                indicator-position="top"
+                @update:model-value="updateActiveSection"
+            />
+        </div>
+
+        <RouterView v-slot="{ Component }">
+            <component
+                :is="Component"
+                :account="account"
+                :is-loading-account="isLoadingAccount"
+                :account-load-error="loadError"
+                v-bind="
+                    activeSection === 'users'
+                        ? { onAccountUsersChange: handleAccountUsersChange }
+                        : undefined
+                "
+            />
+        </RouterView>
+    </div>
+
+    <AppCard v-else class="rounded-2xl">
+        <div class="space-y-3">
+            <AppTitle as="h2" size="sm">Cuenta no encontrada</AppTitle>
+            <AppText>
+                {{
+                    loadError ??
+                    'La cuenta solicitada no existe o ya no está disponible en esta facility.'
+                }}
+            </AppText>
+            <AppLink :to="{ name: 'admin.accounts' }" variant="primary">Volver a la lista</AppLink>
+        </div>
     </AppCard>
-  </div>
-
-  <div v-else-if="account" class="space-y-5 pb-16">
-    <header class="space-y-1 px-1">
-      <AppTitle as="h1">{{ account.name }}</AppTitle>
-      <AppText v-if="account.description" tone="subtle">
-        {{ account.description }}
-      </AppText>
-    </header>
-
-    <RouterView v-slot="{ Component }">
-      <component
-        :is="Component"
-        :account="account"
-        :is-loading-account="isLoadingAccount"
-        :account-load-error="loadError"
-        v-bind="
-          activeSection === 'users' ? { onAccountUsersChange: handleAccountUsersChange } : undefined
-        "
-      />
-    </RouterView>
-
-    <div
-      class="fixed bottom-[5rem] left-1/2 z-10 w-full max-w-[430px] -translate-x-1/2 border-t border-(--app-color-border) bg-[color-mix(in_srgb,var(--app-color-surface)_96%,transparent)] backdrop-blur"
-    >
-      <AppContextTabs
-        :model-value="activeSection"
-        :options="relationshipSections"
-        indicator-position="top"
-        @update:model-value="updateActiveSection"
-      />
-    </div>
-  </div>
-
-  <AppCard v-else class="rounded-3xl">
-    <div class="space-y-3">
-      <AppTitle as="h2" size="sm">Cuenta no encontrada</AppTitle>
-      <AppText>
-        {{
-          loadError ?? 'La cuenta solicitada no existe o ya no está disponible en esta facility.'
-        }}
-      </AppText>
-      <AppLink :to="{ name: 'admin.accounts' }" variant="primary">Volver a la lista</AppLink>
-    </div>
-  </AppCard>
 </template>

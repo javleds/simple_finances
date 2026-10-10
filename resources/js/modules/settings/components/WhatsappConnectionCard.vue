@@ -51,6 +51,24 @@ const expirationLabel = computed(() => {
         new Date(connection.value.expires_at),
     );
 });
+const phoneActions = computed<AppModalAction[]>(() => [
+    {
+        key: 'cancel',
+        label: 'Cancelar',
+        tone: 'neutral',
+        autoClose: true,
+        disabled: isSaving.value,
+    },
+    {
+        key: 'submit',
+        label: 'Enviar código',
+        tone: 'primary',
+        type: 'submit',
+        form: 'whatsapp-phone-form',
+        loading: isSaving.value,
+    },
+]);
+
 const unlinkActions = computed<AppModalAction[]>(() => [
     {
         key: 'cancel',
@@ -68,7 +86,7 @@ function handleUnlinkAction(action: string): void {
 </script>
 
 <template>
-    <AppCard class="rounded-3xl" aria-labelledby="whatsapp-title">
+    <AppCard class="rounded-2xl sm:rounded-3xl" aria-labelledby="whatsapp-title">
         <div class="space-y-4">
             <div class="space-y-1">
                 <AppTitle id="whatsapp-title" as="h2" size="sm">WhatsApp</AppTitle>
@@ -171,56 +189,58 @@ function handleUnlinkAction(action: string): void {
                     Ligar cuenta con WhatsApp
                 </AppButton>
 
-                <Form
-                    :resolver="phoneResolver"
-                    v-if="isLinkFormOpen && connection.status !== 'linked'"
-                    class="space-y-3"
-                    @submit="submitPhone"
+                <AppModal
+                    :open="isLinkFormOpen && connection.status !== 'linked'"
+                    title="Vincular WhatsApp"
+                    presentation="sheet"
+                    :actions="phoneActions"
+                    @close="isLinkFormOpen = false"
                 >
-                    <label
-                        for="whatsapp-phone"
-                        class="block text-sm font-medium text-(--app-color-label)"
-                        >Número de teléfono</label
+                    <Form
+                        :resolver="phoneResolver"
+                        id="whatsapp-phone-form"
+                        class="space-y-4"
+                        @submit="submitPhone"
                     >
-                    <FormField v-slot="$field" name="phone" :initial-value="phone">
-                        <div class="flex max-w-sm items-center gap-3">
-                            <span class="shrink-0 font-medium text-(--app-color-text)">+52</span>
-                            <InputText
-                                id="whatsapp-phone"
-                                v-model="phone"
-                                @update:model-value="$field.props.onChange({ value: $event })"
-                                type="tel"
-                                inputmode="numeric"
-                                autocomplete="tel-national"
-                                pattern="[0-9]{10}"
-                                maxlength="10"
-                                required
-                                aria-describedby="whatsapp-phone-help"
-                                :disabled="isSaving"
-                                class="min-w-0 flex-1"
-                            />
-                        </div>
-                        <Message
-                            v-if="$field.invalid"
-                            severity="error"
-                            size="small"
-                            variant="simple"
-                            >{{ $field.error?.message }}</Message
+                        <Message v-if="error" severity="error" role="alert">{{ error }}</Message>
+                        <label
+                            for="whatsapp-phone"
+                            class="block text-sm font-medium text-(--app-color-label)"
+                            >Número de teléfono</label
                         >
-                    </FormField>
-                    <AppText id="whatsapp-phone-help" size="sm"
-                        >México (+52). Ingresa diez dígitos.</AppText
-                    >
-                    <div class="flex flex-wrap gap-2">
-                        <AppButton type="submit" :loading="isSaving">Enviar código</AppButton>
-                        <AppButton
-                            variant="ghost"
-                            :disabled="isSaving"
-                            @click="isLinkFormOpen = false"
-                            >Cancelar</AppButton
+                        <FormField v-slot="$field" name="phone" :initial-value="phone">
+                            <div class="flex max-w-sm items-center gap-3">
+                                <span class="shrink-0 font-medium text-(--app-color-text)"
+                                    >+52</span
+                                >
+                                <InputText
+                                    id="whatsapp-phone"
+                                    v-model="phone"
+                                    @update:model-value="$field.props.onChange({ value: $event })"
+                                    type="tel"
+                                    inputmode="numeric"
+                                    autocomplete="tel-national"
+                                    pattern="[0-9]{10}"
+                                    maxlength="10"
+                                    required
+                                    aria-describedby="whatsapp-phone-help"
+                                    :disabled="isSaving"
+                                    class="min-w-0 flex-1"
+                                />
+                            </div>
+                            <Message
+                                v-if="$field.invalid"
+                                severity="error"
+                                size="small"
+                                variant="simple"
+                                >{{ $field.error?.message }}</Message
+                            >
+                        </FormField>
+                        <AppText id="whatsapp-phone-help" size="sm"
+                            >México (+52). Ingresa diez dígitos.</AppText
                         >
-                    </div>
-                </Form>
+                    </Form>
+                </AppModal>
             </template>
 
             <AppModal

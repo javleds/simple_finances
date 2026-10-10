@@ -190,7 +190,7 @@ async function confirmDeleteRelation(): Promise<void> {
         />
     </section>
 
-    <AppCard v-else class="rounded-3xl">
+    <AppCard v-else class="rounded-2xl sm:rounded-3xl">
         <div v-if="loadError" class="space-y-2">
             <AppTitle as="h2" size="sm">No fue posible cargar la regla</AppTitle>
             <AppText>{{ loadError }}</AppText>

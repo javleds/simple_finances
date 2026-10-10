@@ -35,10 +35,10 @@ function typeLabel(type: DistributionRelationType): string {
 
 function typeClasses(type: DistributionRelationType): string {
   if (type === 'savings') {
-    return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
+    return 'bg-[color-mix(in_srgb,var(--app-color-success)_10%,transparent)] text-(--app-color-success)';
   }
 
-  return 'bg-sky-500/10 text-sky-700 dark:text-sky-300';
+  return 'bg-[color-mix(in_srgb,var(--app-color-primary)_10%,transparent)] text-(--app-color-primary)';
 }
 
 function handleEdit(): void {
@@ -52,29 +52,21 @@ function handleDelete(): void {
 
 <template>
   <AppCard
-    class="relative overflow-hidden rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
+    class="relative overflow-hidden rounded-2xl p-4! shadow-none transition hover:border-(--app-color-border-strong) sm:rounded-xl sm:p-3.5!"
   >
-    <div
-      class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
-      :style="{
-        background:
-          props.type === 'savings'
-            ? 'linear-gradient(90deg, color-mix(in srgb, #10b981 14%, transparent), transparent 78%)'
-            : 'linear-gradient(90deg, color-mix(in srgb, var(--app-color-primary) 10%, transparent), transparent 78%)',
-      }"
-    />
-
     <div class="relative space-y-3">
-      <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3">
+      <div
+        class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+      >
         <div class="min-w-0">
-          <p
-            class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-          >
+          <p class="text-sm leading-5 font-semibold break-words text-(--app-color-text)">
             {{ props.concept }}
           </p>
         </div>
 
-        <div class="space-y-1 text-right">
+        <div
+          class="col-start-1 row-start-2 space-y-1 sm:col-start-auto sm:row-start-auto sm:text-right"
+        >
           <p
             class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums sm:text-base"
           >
@@ -82,7 +74,11 @@ function handleDelete(): void {
           </p>
         </div>
 
-        <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
+        <AppActionMenu
+          class="col-start-2 row-start-1 shrink-0 sm:col-start-auto sm:row-start-auto"
+          @delete="handleDelete"
+          @edit="handleEdit"
+        />
       </div>
 
       <div class="flex items-center gap-2">

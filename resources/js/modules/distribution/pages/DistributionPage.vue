@@ -129,7 +129,7 @@ async function confirmDeleteRule(): Promise<void> {
 </script>
 
 <template>
-    <div class="space-y-5">
+    <div class="space-y-4 sm:space-y-5">
         <DistributionRulesToolbar
             v-model:search-term="searchTerm"
             :active-filter-count="activeFilterChips.length"

@@ -14,7 +14,13 @@ type UseDistributionRuleModalActionsOptions = {
 
 export function useDistributionRuleModalActions(options: UseDistributionRuleModalActionsOptions) {
   const createRuleActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+    {
+      key: 'close',
+      label: 'Cancelar',
+      tone: 'neutral' as const,
+      icon: XMarkIcon,
+      autoClose: true,
+    },
     {
       key: 'submit-rule',
       label: options.isSaving.value ? 'Guardando...' : 'Crear regla',
@@ -27,7 +33,13 @@ export function useDistributionRuleModalActions(options: UseDistributionRuleModa
   ]);
 
   const editRuleActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+    {
+      key: 'close',
+      label: 'Cancelar',
+      tone: 'neutral' as const,
+      icon: XMarkIcon,
+      autoClose: true,
+    },
     {
       key: 'submit-edit-rule',
       label: options.isSaving.value ? 'Guardando...' : 'Guardar cambios',
@@ -40,11 +52,17 @@ export function useDistributionRuleModalActions(options: UseDistributionRuleModa
   ]);
 
   const deleteRuleActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+    {
+      key: 'close',
+      label: 'Cancelar',
+      tone: 'neutral' as const,
+      icon: XMarkIcon,
+      autoClose: true,
+    },
     {
       key: 'confirm-delete-rule',
       label: options.isDeleting.value ? 'Eliminando...' : 'Eliminar regla',
-      tone: 'primary' as const,
+      tone: 'danger' as const,
       disabled: !options.selectedRule.value || options.isDeleting.value,
       loading: options.isDeleting.value,
     },

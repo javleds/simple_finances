@@ -416,16 +416,16 @@ watch(
                 :key="row.id"
                 class="space-y-3 border-b border-(--app-color-border) bg-(--app-color-surface) px-4 py-4 last:border-b-0"
             >
-                <div class="flex items-start justify-between gap-3">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="min-w-0">
-                        <h3 class="truncate text-base font-semibold text-(--app-color-text)">
+                        <h3 class="text-base font-semibold break-words text-(--app-color-text)">
                             {{ row.label }}
                         </h3>
                         <p class="mt-1 text-xs font-medium text-(--app-color-text-subtle)">
                             {{ formatDate(row.occurredAt) }} · {{ row.description }}
                         </p>
                     </div>
-                    <div class="shrink-0 text-right">
+                    <div class="min-w-0 sm:shrink-0 sm:text-right">
                         <p
                             class="text-sm font-bold"
                             :class="
@@ -463,7 +463,7 @@ watch(
                             :key="`${row.id}-custody-${custody.userId}`"
                             class="flex justify-between gap-3 text-xs text-(--app-color-text-subtle)"
                         >
-                            <span class="truncate">{{ custody.userName }}</span>
+                            <span class="break-words">{{ custody.userName }}</span>
                             <span class="shrink-0 font-semibold">{{
                                 formatCurrency(custody.amount)
                             }}</span>
@@ -479,7 +479,7 @@ watch(
                             :key="`${row.id}-settlement-${settlement.userId}`"
                             class="flex justify-between gap-3 text-xs text-(--app-color-text-subtle)"
                         >
-                            <span class="truncate">{{ settlement.userName }}</span>
+                            <span class="break-words">{{ settlement.userName }}</span>
                             <span class="shrink-0 font-semibold">{{
                                 formatCurrency(settlement.amount)
                             }}</span>
@@ -490,7 +490,7 @@ watch(
         </div>
 
         <section class="space-y-3">
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="min-w-0">
                     <AppTitle as="h3" size="sm" class="text-base!">Integridad</AppTitle>
                     <AppText tone="subtle">
@@ -534,7 +534,7 @@ watch(
                     :key="diagnostic.id"
                     class="border-b border-(--app-color-border) bg-(--app-color-surface) px-4 py-4 last:border-b-0"
                 >
-                    <div class="flex items-start justify-between gap-3">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0">
                             <p class="text-sm font-bold text-(--app-color-text)">
                                 {{ diagnostic.title }}
@@ -561,7 +561,7 @@ watch(
                 >
                     <div class="flex items-center justify-between gap-3">
                         <div class="min-w-0">
-                            <p class="truncate text-sm font-bold text-(--app-color-text)">
+                            <p class="text-sm font-bold break-words text-(--app-color-text)">
                                 {{ repair.description }}
                             </p>
                             <p class="mt-1 text-xs text-(--app-color-text-subtle)">
@@ -675,7 +675,7 @@ watch(
                             :key="`${entry.userId}-${entry.relatedUserId}-${entry.amount}`"
                             class="flex justify-between gap-3 py-2 text-xs text-(--app-color-text-subtle)"
                         >
-                            <span class="min-w-0 truncate">
+                            <span class="min-w-0 break-words">
                                 {{ entry.userName ?? 'Usuario' }}
                                 <template v-if="entry.relatedUserName">
                                     / {{ entry.relatedUserName }}</template

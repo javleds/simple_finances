@@ -74,7 +74,7 @@ async function handleSubmit(): Promise<void> {
     <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
         <Message v-if="props.serverError" severity="error">{{ props.serverError }}</Message>
 
-        <section class="space-y-5">
+        <section class="space-y-4">
             <AppInput
                 id="profile-name"
                 v-model="name"
@@ -98,7 +98,7 @@ async function handleSubmit(): Promise<void> {
         </section>
 
         <section
-            class="space-y-4 rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
+            class="space-y-4 border-t pt-6"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
             <div class="space-y-1">

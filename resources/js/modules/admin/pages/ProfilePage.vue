@@ -35,16 +35,13 @@ function handleFormStateChange(state: FormState): void {
 </script>
 
 <template>
-    <section class="space-y-4">
-        <AppCard class="rounded-3xl">
-            <div class="space-y-1">
-                <AppTitle as="h2" size="sm">Perfil</AppTitle>
-                <AppText>
-                    Administra tus datos personales y actualiza tu contraseña desde una sola
-                    pantalla.
-                </AppText>
-            </div>
-        </AppCard>
+    <section class="space-y-6">
+        <header class="space-y-1">
+            <AppTitle as="h1" size="md">Perfil</AppTitle>
+            <AppText>
+                Administra tus datos personales y actualiza tu contraseña desde una sola pantalla.
+            </AppText>
+        </header>
 
         <Message v-if="loadError && hasProfile" severity="error">{{ loadError }}</Message>
 
@@ -63,7 +60,7 @@ function handleFormStateChange(state: FormState): void {
         </section>
 
         <section v-else-if="profile" class="space-y-4">
-            <AppCard class="rounded-3xl">
+            <AppCard>
                 <ProfileForm
                     :initial-values="profile"
                     :server-error="saveError"
@@ -74,6 +71,7 @@ function handleFormStateChange(state: FormState): void {
 
             <div class="flex justify-end">
                 <AppButton
+                    class="w-full sm:w-auto"
                     form="profile-form"
                     type="submit"
                     variant="primary"

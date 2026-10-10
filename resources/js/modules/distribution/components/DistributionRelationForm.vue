@@ -70,7 +70,7 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <template>
-    <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
+    <form :id="props.formId" class="space-y-4 sm:space-y-6" @submit.prevent="handleSubmit">
         <Message v-if="props.serverError" severity="error">{{ props.serverError }}</Message>
 
         <AppInput

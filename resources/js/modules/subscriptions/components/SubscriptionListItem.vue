@@ -34,18 +34,10 @@ function statusLabel(status: SubscriptionStatus): string {
 
 function statusClasses(status: SubscriptionStatus): string {
   if (status === 'cancelled') {
-    return 'bg-slate-500/10 text-slate-600 dark:text-slate-300';
+    return 'bg-(--app-color-surface-muted) text-(--app-color-text-muted)';
   }
 
-  return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
-}
-
-function accentStyle(status: SubscriptionStatus): string {
-  if (status === 'cancelled') {
-    return 'linear-gradient(90deg, color-mix(in srgb, #64748b 14%, transparent), transparent 78%)';
-  }
-
-  return 'linear-gradient(90deg, color-mix(in srgb, #0f766e 18%, transparent), transparent 78%)';
+  return 'bg-[color-mix(in_srgb,var(--app-color-success)_10%,transparent)] text-(--app-color-success)';
 }
 
 function formattedAmount(amount: number): string {
@@ -63,28 +55,27 @@ function handleDelete(): void {
 
 <template>
   <AppCard
-    class="relative overflow-hidden rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
+    class="relative overflow-hidden rounded-2xl p-4! shadow-none transition hover:border-(--app-color-border-strong) sm:rounded-xl sm:p-3.5!"
   >
-    <div
-      class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
-      :style="{ background: accentStyle(props.status) }"
-    />
-
     <div class="relative space-y-3">
-      <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3">
+      <div
+        class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+      >
         <div class="min-w-0 space-y-1">
-          <p
-            class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-          >
+          <p class="text-sm leading-5 font-semibold break-words text-(--app-color-text)">
             {{ props.plan }}
           </p>
-          <p class="truncate text-sm leading-5 text-(--app-color-text-muted)">
+          <p class="text-sm leading-5 break-words text-(--app-color-text-muted)">
             {{ props.cycle }}
           </p>
         </div>
 
-        <div class="space-y-1 text-right">
-          <p class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums">
+        <div
+          class="col-start-1 row-start-2 space-y-1 sm:col-start-auto sm:row-start-auto sm:text-right"
+        >
+          <p
+            class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums"
+          >
             {{ formattedAmount(props.amount) }}
           </p>
           <p
@@ -94,7 +85,11 @@ function handleDelete(): void {
           </p>
         </div>
 
-        <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
+        <AppActionMenu
+          class="col-start-2 row-start-1 shrink-0 sm:col-start-auto sm:row-start-auto"
+          @delete="handleDelete"
+          @edit="handleEdit"
+        />
       </div>
 
       <div class="flex items-center justify-between gap-3">
@@ -106,7 +101,7 @@ function handleDelete(): void {
             {{ statusLabel(props.status) }}
           </span>
           <p
-            class="truncate text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
+            class="text-[11px] font-medium tracking-[0.04em] break-words text-(--app-color-text-subtle) uppercase"
           >
             {{ props.nextCharge }}
           </p>

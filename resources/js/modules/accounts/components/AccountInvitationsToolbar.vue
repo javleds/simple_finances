@@ -23,7 +23,12 @@ const emit = defineEmits<{
         description="Invita usuarios a colaborar dentro de esta cuenta."
     >
         <template #actions>
-            <AppButton v-if="props.canManage !== false" variant="primary" @click="emit('create')">
+            <AppButton
+                v-if="props.canManage !== false"
+                variant="primary"
+                aria-label="Crear invitación"
+                @click="emit('create')"
+            >
                 <PlusIcon class="h-4 w-4" />
             </AppButton>
         </template>

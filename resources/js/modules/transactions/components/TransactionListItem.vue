@@ -7,177 +7,185 @@ import { AppActionMenu, AppCard } from '@/modules/shared/components';
 type TransactionItemType = 'income' | 'expense';
 
 const props = defineProps<{
-  itemId: string;
-  concept: string;
-  amount: number;
-  type: TransactionItemType;
-  dateLabel: string;
-  creatorName: string | null;
-  accountName?: string | null;
-  metaLabel?: string | null;
-  showActions?: boolean;
-  pendingReimbursementAmount?: number;
-  receivableReimbursementAmount?: number;
+    itemId: string;
+    concept: string;
+    amount: number;
+    type: TransactionItemType;
+    dateLabel: string;
+    creatorName: string | null;
+    accountName?: string | null;
+    metaLabel?: string | null;
+    showActions?: boolean;
+    pendingReimbursementAmount?: number;
+    receivableReimbursementAmount?: number;
 }>();
 
 const emit = defineEmits<{
-  edit: [itemId: string];
-  delete: [itemId: string];
+    edit: [itemId: string];
+    delete: [itemId: string];
 }>();
 
 const currencyFormatter = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
 });
 
 const actionMenuItems = computed(() => {
-  return [
-    {
-      key: 'edit',
-      label: 'Editar',
-      icon: PencilSquareIcon,
-      tone: 'default' as const,
-    },
-    {
-      key: 'delete',
-      label: 'Eliminar',
-      icon: TrashIcon,
-      tone: 'danger' as const,
-    },
-  ];
+    return [
+        {
+            key: 'edit',
+            label: 'Editar',
+            icon: PencilSquareIcon,
+            tone: 'default' as const,
+        },
+        {
+            key: 'delete',
+            label: 'Eliminar',
+            icon: TrashIcon,
+            tone: 'danger' as const,
+        },
+    ];
 });
 
 function formattedAmount(amount: number): string {
-  return currencyFormatter.format(amount);
+    return currencyFormatter.format(amount);
 }
 
 function amountClasses(type: TransactionItemType): string {
-  if (type === 'income') {
-    return 'text-emerald-700 dark:text-emerald-300';
-  }
+    if (type === 'income') {
+        return 'text-(--app-color-success)';
+    }
 
-  return 'text-red-700 dark:text-red-300';
+    return 'text-(--app-color-danger)';
 }
 
 function signLabel(type: TransactionItemType): string {
-  if (type === 'income') {
-    return '+';
-  }
+    if (type === 'income') {
+        return '+';
+    }
 
-  return '−';
+    return '−';
 }
 
 function creatorLabel(): string {
-  return props.creatorName?.trim() || 'Usuario no disponible';
+    return props.creatorName?.trim() || 'Usuario no disponible';
 }
 
 function secondaryLabel(): string {
-  const metaLabel = props.metaLabel?.trim();
+    const metaLabel = props.metaLabel?.trim();
 
-  if (metaLabel) {
-    return metaLabel;
-  }
+    if (metaLabel) {
+        return metaLabel;
+    }
 
-  const accountName = props.accountName?.trim();
+    const accountName = props.accountName?.trim();
 
-  if (accountName) {
-    return `${accountName} · ${creatorLabel()}`;
-  }
+    if (accountName) {
+        return `${accountName} · ${creatorLabel()}`;
+    }
 
-  return creatorLabel();
+    return creatorLabel();
 }
 
 function hasPendingReimbursement(): boolean {
-  return Boolean(props.pendingReimbursementAmount && props.pendingReimbursementAmount > 0);
+    return Boolean(props.pendingReimbursementAmount && props.pendingReimbursementAmount > 0);
 }
 
 function hasReceivableReimbursement(): boolean {
-  return Boolean(props.receivableReimbursementAmount && props.receivableReimbursementAmount > 0);
+    return Boolean(props.receivableReimbursementAmount && props.receivableReimbursementAmount > 0);
 }
 
 function handleEdit(): void {
-  emit('edit', props.itemId);
+    emit('edit', props.itemId);
 }
 
 function handleDelete(): void {
-  emit('delete', props.itemId);
+    emit('delete', props.itemId);
 }
 </script>
 
 <template>
-  <AppCard
-    class="relative overflow-hidden rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
-  >
-    <div
-      class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
-      :style="{
-        background:
-          type === 'income'
-            ? 'linear-gradient(90deg, color-mix(in srgb, #10b981 14%, transparent), transparent 78%)'
-            : 'linear-gradient(90deg, color-mix(in srgb, var(--app-color-primary) 10%, transparent), transparent 78%)',
-      }"
-    />
-
-    <div class="relative grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-x-3 gap-y-2">
-      <div class="min-w-0">
-        <p
-          class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-        >
-          {{ props.concept }}
-        </p>
-      </div>
-
-      <div class="flex flex-col items-end gap-1.5">
-        <p
-          class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap tabular-nums sm:text-base"
-          :class="amountClasses(props.type)"
-        >
-          <span class="mr-1">{{ signLabel(props.type) }}</span
-          >{{ formattedAmount(props.amount) }}
-        </p>
+    <AppCard
+        class="relative overflow-hidden rounded-xl p-4! shadow-none transition hover:border-(--app-color-border-strong)"
+    >
+        <div
+            class="pointer-events-none absolute inset-y-0 left-0 w-1"
+            :style="{
+                background:
+                    type === 'income'
+                        ? 'color-mix(in srgb, #10b981 14%, transparent)'
+                        : 'color-mix(in srgb, var(--app-color-primary) 10%, transparent)',
+            }"
+        />
 
         <div
-          v-if="hasPendingReimbursement() || hasReceivableReimbursement()"
-          class="flex max-w-34 flex-col items-end gap-1"
+            class="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
         >
-          <p
-            v-if="hasPendingReimbursement()"
-            class="inline-flex rounded-full bg-[color-mix(in_srgb,var(--app-color-warning)_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold whitespace-nowrap text-(--app-color-warning)"
-          >
-            Por pagar {{ formattedAmount(props.pendingReimbursementAmount ?? 0) }}
-          </p>
+            <div class="min-w-0">
+                <p class="text-sm leading-5 font-semibold break-words text-(--app-color-text)">
+                    {{ props.concept }}
+                </p>
+            </div>
 
-          <p
-            v-if="hasReceivableReimbursement()"
-            class="inline-flex rounded-full bg-[color-mix(in_srgb,#10b981_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold whitespace-nowrap text-emerald-700 dark:text-emerald-300"
-          >
-            Por recibir {{ formattedAmount(props.receivableReimbursementAmount ?? 0) }}
-          </p>
+            <div
+                class="col-span-2 col-start-1 row-start-2 flex min-w-0 flex-col items-start gap-1.5 sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:items-end"
+            >
+                <p
+                    class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap tabular-nums sm:text-base"
+                    :class="amountClasses(props.type)"
+                >
+                    <span class="mr-1">{{ signLabel(props.type) }}</span
+                    >{{ formattedAmount(props.amount) }}
+                </p>
+
+                <div
+                    v-if="hasPendingReimbursement() || hasReceivableReimbursement()"
+                    class="flex max-w-full flex-col items-start gap-1 sm:items-end"
+                >
+                    <p
+                        v-if="hasPendingReimbursement()"
+                        class="inline-flex rounded-full bg-[color-mix(in_srgb,var(--app-color-warning)_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold break-words text-(--app-color-warning)"
+                    >
+                        Por pagar {{ formattedAmount(props.pendingReimbursementAmount ?? 0) }}
+                    </p>
+
+                    <p
+                        v-if="hasReceivableReimbursement()"
+                        class="inline-flex rounded-full bg-[color-mix(in_srgb,var(--app-color-success)_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold break-words text-(--app-color-success)"
+                    >
+                        Por recibir {{ formattedAmount(props.receivableReimbursementAmount ?? 0) }}
+                    </p>
+                </div>
+            </div>
+
+            <AppActionMenu
+                v-if="props.showActions"
+                class="col-start-2 row-start-1 shrink-0 sm:col-start-3"
+                :actions="actionMenuItems"
+                @delete="handleDelete"
+                @edit="handleEdit"
+            />
+            <div
+                v-else
+                class="col-start-2 row-start-1 h-6 w-7 shrink-0 sm:col-start-3"
+                aria-hidden="true"
+            />
+
+            <p
+                class="col-start-1 row-start-3 min-w-0 text-[11px] font-medium break-words text-(--app-color-text-subtle)"
+            >
+                {{ secondaryLabel() }}
+            </p>
+
+            <p
+                class="col-start-2 row-start-3 justify-self-end text-[11px] font-medium tracking-[0.04em] whitespace-nowrap text-(--app-color-text-subtle) uppercase sm:col-start-2 sm:row-start-2 sm:justify-self-end"
+            >
+                {{ props.dateLabel }}
+            </p>
+
+            <div class="hidden h-1 w-7 shrink-0 sm:block" aria-hidden="true" />
         </div>
-      </div>
-
-      <AppActionMenu
-        v-if="props.showActions"
-        class="shrink-0"
-        :actions="actionMenuItems"
-        @delete="handleDelete"
-        @edit="handleEdit"
-      />
-      <div v-else class="h-6 w-7 shrink-0" aria-hidden="true" />
-
-      <p class="min-w-0 truncate text-[11px] font-medium text-(--app-color-text-subtle)">
-        {{ secondaryLabel() }}
-      </p>
-
-      <p
-        class="justify-self-end text-[11px] font-medium tracking-[0.04em] whitespace-nowrap text-(--app-color-text-subtle) uppercase"
-      >
-        {{ props.dateLabel }}
-      </p>
-
-      <div class="h-1 w-7 shrink-0" aria-hidden="true" />
-    </div>
-  </AppCard>
+    </AppCard>
 </template>

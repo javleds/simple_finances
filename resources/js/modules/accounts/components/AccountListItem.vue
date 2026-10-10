@@ -68,18 +68,18 @@ function formatCurrency(value: number): string {
 
 function balanceClasses(amount: Account['balance']): string {
     if (amount < 0) {
-        return 'text-red-700 dark:text-red-300';
+        return 'text-(--app-color-danger)';
     }
 
-    return 'text-slate-600 dark:text-slate-300';
+    return 'text-(--app-color-text-muted)';
 }
 
 function statusClasses(status: Account['status']): string {
     if (status === 'Activo') {
-        return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
+        return 'bg-[color-mix(in_srgb,var(--app-color-success)_10%,transparent)] text-(--app-color-success)';
     }
 
-    return 'bg-slate-500/10 text-slate-600 dark:text-slate-300';
+    return 'bg-(--app-color-surface-muted) text-(--app-color-text-muted)';
 }
 
 function handleEdit(): void {
@@ -110,29 +110,27 @@ function openAccountDetails(): void {
 
 <template>
     <AppCard
-        class="relative overflow-hidden rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
+        class="relative overflow-hidden rounded-xl p-4! shadow-none transition hover:border-(--app-color-border-strong)"
     >
         <div
-            class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
+            class="pointer-events-none absolute inset-y-0 left-0 w-1"
             :style="{
-                background: `linear-gradient(90deg, color-mix(in srgb, ${props.account.color ?? '#94A3B8'} 14%, transparent), transparent 78%)`,
+                background: `color-mix(in srgb, ${props.account.color ?? '#94A3B8'} 14%, transparent)`,
             }"
         />
 
-        <div class="relative grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-x-3 gap-y-2">
+        <div class="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2">
             <Button
                 variant="text"
                 severity="secondary"
                 type="button"
-                class="col-span-4 grid cursor-pointer grid-cols-subgrid gap-x-3 gap-y-2 rounded-xl text-left focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                class="col-start-1 row-start-1 grid min-w-0 cursor-pointer grid-cols-1 gap-x-3 gap-y-2 rounded-xl p-0! text-left focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none sm:grid-cols-[minmax(0,1fr)_auto]"
                 @click="openAccountDetails"
                 @keydown.enter.prevent="openAccountDetails"
                 @keydown.space.prevent="openAccountDetails"
             >
                 <div class="min-w-0">
-                    <p
-                        class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-                    >
+                    <p class="text-sm leading-5 font-semibold break-words text-(--app-color-text)">
                         {{ props.account.name }}
                     </p>
                 </div>
@@ -144,16 +142,7 @@ function openAccountDetails(): void {
                     {{ formatCurrency(props.account.balance) }}
                 </p>
 
-                <AppActionMenu
-                    v-if="accountActions.length > 0"
-                    class="shrink-0"
-                    :actions="accountActions"
-                    @action="handleAction"
-                    @delete="handleDelete"
-                    @edit="handleEdit"
-                />
-
-                <div class="col-span-3 flex min-w-0 items-center gap-2">
+                <div class="flex min-w-0 flex-wrap items-center gap-2 sm:col-span-2">
                     <p
                         class="truncate text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
                     >
@@ -167,6 +156,14 @@ function openAccountDetails(): void {
                     </span>
                 </div>
             </Button>
+            <AppActionMenu
+                v-if="accountActions.length > 0"
+                class="col-start-2 row-start-1 shrink-0"
+                :actions="accountActions"
+                @action="handleAction"
+                @delete="handleDelete"
+                @edit="handleEdit"
+            />
         </div>
     </AppCard>
 </template>

@@ -149,18 +149,23 @@ async function handleLogout(): Promise<void> {
 
 <template>
     <section
-        class="relative min-h-screen overflow-hidden bg-(--app-color-page) px-3 pt-4 pb-28 text-(--app-color-text) sm:px-6 sm:pt-8 sm:pb-32"
+        class="relative min-h-dvh bg-(--app-color-page) px-4 pt-(--app-header-height) pb-[calc(var(--app-bottom-nav-height)+1.5rem)] text-(--app-color-text) sm:overflow-hidden sm:px-6 sm:pt-8 sm:pb-32"
     >
         <div
             class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--app-color-page-glow),_transparent_52%)]"
         />
 
         <header
-            class="fixed top-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-b bg-[color-mix(in_srgb,var(--app-color-surface)_94%,transparent)] px-5 pt-5 pb-4 backdrop-blur"
+            class="fixed top-0 left-1/2 z-20 flex h-(--app-header-height) w-full max-w-[430px] -translate-x-1/2 items-center border-b bg-(--app-color-surface) px-4 pt-[env(safe-area-inset-top)] sm:h-auto sm:px-5 sm:pt-5 sm:pb-4"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
-            <div class="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3">
-                <div class="flex justify-start">
+            <div
+                class="flex w-full items-center gap-2 sm:grid sm:grid-cols-[2.75rem_minmax(0,1fr)_auto] sm:gap-3"
+            >
+                <div
+                    class="shrink-0 justify-start sm:flex"
+                    :class="showBackButton() ? 'flex' : 'hidden'"
+                >
                     <RouterLink
                         v-if="showBackButton()"
                         :to="
@@ -190,12 +195,12 @@ async function handleLogout(): Promise<void> {
                     </RouterLink>
                 </div>
 
-                <div class="min-w-0">
-                    <h1
-                        class="truncate text-left text-lg font-semibold tracking-tight text-(--app-color-text)"
+                <div class="min-w-0 flex-1">
+                    <p
+                        class="text-left text-base font-semibold tracking-tight text-(--app-color-text) sm:text-lg"
                     >
                         {{ activeFacilityName }}
-                    </h1>
+                    </p>
                 </div>
 
                 <div class="relative flex items-center justify-end gap-2">
@@ -211,7 +216,7 @@ async function handleLogout(): Promise<void> {
                         :style="{ borderColor: 'var(--app-color-border)' }"
                         @click.stop="toggleProfileMenu"
                     >
-                        <UserCircleIcon class="h-7 w-7" />
+                        <UserCircleIcon class="h-5 w-5" />
                     </Button>
 
                     <Menu id="profile-menu" ref="profileMenuRef" :model="profileMenuActions" popup>
@@ -238,28 +243,28 @@ async function handleLogout(): Promise<void> {
         </header>
 
         <div
-            class="relative mx-auto flex min-h-[calc(100vh-9rem)] max-w-[430px] pt-[5.5rem] sm:min-h-[820px]"
+            class="relative mx-auto flex min-h-[calc(100dvh-var(--app-header-height)-var(--app-bottom-nav-height))] max-w-[430px] pt-6 sm:min-h-[820px] sm:pt-[5.5rem]"
         >
             <div
-                class="flex w-full flex-col overflow-hidden rounded-[32px] border bg-(--app-color-surface) shadow-(--app-shadow-card)"
+                class="flex w-full min-w-0 flex-col sm:overflow-hidden sm:rounded-[32px] sm:border sm:bg-(--app-color-surface) sm:shadow-(--app-shadow-card)"
                 :style="{ borderColor: 'var(--app-color-border-strong)' }"
             >
-                <main class="flex-1 overflow-y-auto px-5 pt-5 pb-8">
+                <main class="min-w-0 flex-1 sm:overflow-y-auto sm:px-5 sm:pt-5 sm:pb-8">
                     <RouterView />
                 </main>
             </div>
         </div>
 
         <nav
-            class="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-x border-t bg-[color-mix(in_srgb,var(--app-color-surface)_92%,transparent)] px-2 pt-1 pb-2 backdrop-blur"
+            class="fixed bottom-0 left-1/2 z-20 h-(--app-bottom-nav-height) w-full max-w-[430px] -translate-x-1/2 border-t bg-(--app-color-surface) px-1 pb-[env(safe-area-inset-bottom)] sm:h-auto sm:border-x sm:px-2 sm:pt-1 sm:pb-2"
             :style="{ borderColor: 'var(--app-color-border-strong)' }"
-            aria-label="Primary"
+            aria-label="Navegación principal"
         >
-            <ul class="grid grid-cols-6 gap-1">
+            <ul class="grid grid-cols-6 sm:gap-1">
                 <li v-for="item in navigationItems" :key="item.routeName">
                     <RouterLink
                         :to="{ name: item.routeName }"
-                        class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                        class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl px-0.5 py-2 text-center transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none sm:rounded-2xl sm:px-1"
                         :class="
                             isActiveRoute(item.routeName)
                                 ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
@@ -270,7 +275,7 @@ async function handleLogout(): Promise<void> {
                             :is="isActiveRoute(item.routeName) ? item.activeIcon : item.icon"
                             class="h-5 w-5 shrink-0"
                         />
-                        <span class="text-[11px] leading-4 font-medium">{{ item.label }}</span>
+                        <span class="text-xs leading-4 font-medium">{{ item.label }}</span>
                     </RouterLink>
                 </li>
             </ul>

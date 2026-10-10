@@ -5,14 +5,13 @@ import { AppCard } from '@/modules/shared/components';
 
 <template>
   <section
-    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-(--app-color-page) px-4 pt-24 pb-10 text-(--app-color-text) sm:px-6 lg:px-8"
+    class="relative flex min-h-dvh items-start justify-center bg-(--app-color-page) px-4 pt-20 pb-8 text-(--app-color-text) sm:items-center sm:px-6 sm:pt-24 sm:pb-10 lg:px-8"
   >
-    <div
-      class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--app-color-page-glow),_transparent_48%)]"
-    />
-
     <div class="w-full max-w-2xl">
-      <AppCard>
+      <AppCard
+        :padded="false"
+        class="border-0! bg-transparent! shadow-none! sm:border! sm:bg-(--app-color-surface)! sm:p-8!"
+      >
         <PrivacyPolicyContent />
       </AppCard>
     </div>

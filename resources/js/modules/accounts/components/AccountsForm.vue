@@ -97,7 +97,7 @@ async function handleSubmit(): Promise<void> {
     <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
         <Message v-if="props.serverError" severity="error">{{ props.serverError }}</Message>
 
-        <section class="space-y-5">
+        <section class="space-y-4">
             <AppInput
                 id="account-name"
                 v-model="name"
@@ -109,7 +109,7 @@ async function handleSubmit(): Promise<void> {
             />
 
             <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
-                <div class="space-y-2.5">
+                <div class="space-y-2">
                     <div class="flex min-h-5 items-center">
                         <label
                             for="account-description"
@@ -145,7 +145,7 @@ async function handleSubmit(): Promise<void> {
                     </p>
                 </div>
 
-                <div class="space-y-2.5">
+                <div class="space-y-2">
                     <div class="flex min-h-5 items-center">
                         <label
                             for="account-color"
@@ -190,7 +190,7 @@ async function handleSubmit(): Promise<void> {
         </section>
 
         <section
-            class="space-y-4 rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
+            class="space-y-4 border-t border-(--app-color-border) pt-4"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
             <div class="grid gap-4 sm:grid-cols-2">
@@ -238,7 +238,7 @@ async function handleSubmit(): Promise<void> {
 
         <section
             v-if="showCreditFields"
-            class="space-y-4 rounded-xl border px-4 py-4"
+            class="space-y-4 border-t border-(--app-color-border) pt-4"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
             <div class="space-y-1">

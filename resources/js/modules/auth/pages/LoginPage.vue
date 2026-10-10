@@ -85,7 +85,8 @@ async function handleSubmit(): Promise<void> {
   } catch (error) {
     if (error instanceof ApiError) {
       if (error.status === 401 || error.status === 422) {
-        submitError.value = 'Las credenciales no son correctas. Verifica tu correo y contraseña.';
+        submitError.value =
+          'Las credenciales no son correctas. Verifica tu correo y contraseña.';
         return;
       }
 
@@ -99,7 +100,8 @@ async function handleSubmit(): Promise<void> {
       return;
     }
 
-    submitError.value = 'No fue posible iniciar sesión. Revisa tu conexión e inténtalo de nuevo.';
+    submitError.value =
+      'No fue posible iniciar sesión. Revisa tu conexión e inténtalo de nuevo.';
   } finally {
     isLoginPending.value = false;
   }
@@ -108,22 +110,25 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <section
-    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-(--app-color-page) px-4 pt-24 pb-10 text-(--app-color-text) sm:px-6 lg:px-8"
+    class="relative flex min-h-dvh items-start justify-center bg-(--app-color-page) px-4 pt-20 pb-8 text-(--app-color-text) sm:items-center sm:px-6 sm:pt-24 sm:pb-10 lg:px-8"
   >
-    <div
-      class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,var(--app-color-page-glow),transparent_48%)]"
-    />
-
     <div class="w-full max-w-md">
-      <AppCard>
+      <AppCard
+        :padded="false"
+        class="border-0! bg-transparent! shadow-none! sm:border! sm:bg-(--app-color-surface)! sm:p-8!"
+      >
         <div class="space-y-6">
           <div class="space-y-2">
             <AppTitle as="h1" size="md">Iniciar sesión</AppTitle>
             <AppText>Ingresa con tus credenciales para continuar.</AppText>
           </div>
 
-          <form class="space-y-5" @submit.prevent="handleSubmit">
-            <AuthFeedbackBanner v-if="submitError" :message="submitError" tone="danger" />
+          <form class="space-y-4 sm:space-y-5" @submit.prevent="handleSubmit">
+            <AuthFeedbackBanner
+              v-if="submitError"
+              :message="submitError"
+              tone="danger"
+            />
 
             <AppInput
               id="email"
@@ -149,7 +154,11 @@ async function handleSubmit(): Promise<void> {
               />
 
               <div class="flex items-center justify-end gap-4">
-                <AppLink :to="{ name: 'auth.password-recovery' }" variant="subtle" class="text-sm">
+                <AppLink
+                  :to="{ name: 'auth.password-recovery' }"
+                  variant="subtle"
+                  class="text-sm"
+                >
                   ¿Olvidaste tu contraseña?
                 </AppLink>
               </div>
@@ -162,7 +171,9 @@ async function handleSubmit(): Promise<void> {
               :loading="isSubmitting || isLoginPending"
               :disabled="isSubmitDisabled || isSubmitting || isLoginPending"
             >
-              {{ isSubmitting || isLoginPending ? 'Ingresando...' : 'Iniciar sesión' }}
+              {{
+                isSubmitting || isLoginPending ? 'Ingresando...' : 'Iniciar sesión'
+              }}
             </AppButton>
           </form>
 

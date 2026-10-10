@@ -16,7 +16,13 @@ export function useDistributionRelationModalActions(
   options: UseDistributionRelationModalActionsOptions,
 ) {
   const createRelationActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+    {
+      key: 'close',
+      label: 'Cancelar',
+      tone: 'neutral' as const,
+      icon: XMarkIcon,
+      autoClose: true,
+    },
     {
       key: 'submit-relation',
       label: options.isSaving.value ? 'Guardando...' : 'Crear relación',
@@ -29,7 +35,13 @@ export function useDistributionRelationModalActions(
   ]);
 
   const editRelationActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+    {
+      key: 'close',
+      label: 'Cancelar',
+      tone: 'neutral' as const,
+      icon: XMarkIcon,
+      autoClose: true,
+    },
     {
       key: 'submit-edit-relation',
       label: options.isSaving.value ? 'Guardando...' : 'Guardar cambios',
@@ -42,11 +54,17 @@ export function useDistributionRelationModalActions(
   ]);
 
   const deleteRelationActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+    {
+      key: 'close',
+      label: 'Cancelar',
+      tone: 'neutral' as const,
+      icon: XMarkIcon,
+      autoClose: true,
+    },
     {
       key: 'confirm-delete-relation',
       label: options.isDeleting.value ? 'Eliminando...' : 'Eliminar relación',
-      tone: 'primary' as const,
+      tone: 'danger' as const,
       disabled: !options.selectedRelation.value || options.isDeleting.value,
       loading: options.isDeleting.value,
     },

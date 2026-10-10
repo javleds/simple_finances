@@ -32,18 +32,10 @@ function frequencyLabel(frequency: DistributionFrequency): string {
 
 function frequencyClasses(frequency: DistributionFrequency): string {
   if (frequency === 'semi_monthly') {
-    return 'bg-amber-500/12 text-amber-700 dark:text-amber-300';
+    return 'bg-[color-mix(in_srgb,var(--app-color-warning)_12%,transparent)] text-(--app-color-warning)';
   }
 
-  return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
-}
-
-function accentStyle(frequency: DistributionFrequency): string {
-  if (frequency === 'semi_monthly') {
-    return 'linear-gradient(90deg, color-mix(in srgb, #f59e0b 16%, transparent), transparent 78%)';
-  }
-
-  return 'linear-gradient(90deg, color-mix(in srgb, var(--app-color-primary) 12%, transparent), transparent 78%)';
+  return 'bg-[color-mix(in_srgb,var(--app-color-success)_10%,transparent)] text-(--app-color-success)';
 }
 
 function formattedAmount(amount: number): string {
@@ -68,24 +60,19 @@ function openRuleDetails(): void {
 
 <template>
   <AppCard
-    class="relative cursor-pointer overflow-hidden rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
+    class="relative cursor-pointer overflow-hidden rounded-2xl p-4! shadow-none transition hover:border-(--app-color-border-strong) sm:rounded-xl sm:p-3.5!"
     role="link"
     tabindex="0"
     @click="openRuleDetails"
     @keydown.enter="openRuleDetails"
     @keydown.space.prevent="openRuleDetails"
   >
-    <div
-      class="pointer-events-none absolute inset-y-0 left-0 w-24 opacity-90"
-      :style="{ background: accentStyle(props.frequency) }"
-    />
-
     <div class="relative space-y-3">
-      <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3">
+      <div
+        class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+      >
         <div class="min-w-0 space-y-1">
-          <p
-            class="[display:-webkit-box] overflow-hidden text-sm leading-5 font-semibold text-(--app-color-text) [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-          >
+          <p class="text-sm leading-5 font-semibold break-words text-(--app-color-text)">
             {{ props.name }}
           </p>
           <p class="text-sm leading-5 text-(--app-color-text-muted)">
@@ -93,8 +80,12 @@ function openRuleDetails(): void {
           </p>
         </div>
 
-        <div class="space-y-1 text-right">
-          <p class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums">
+        <div
+          class="col-start-1 row-start-2 space-y-1 sm:col-start-auto sm:row-start-auto sm:text-right"
+        >
+          <p
+            class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums"
+          >
             {{ formattedAmount(props.totalAmount) }}
           </p>
           <p
@@ -105,7 +96,7 @@ function openRuleDetails(): void {
         </div>
 
         <AppActionMenu
-          class="shrink-0"
+          class="col-start-2 row-start-1 shrink-0 sm:col-start-auto sm:row-start-auto"
           @delete="handleDelete"
           @edit="handleEdit"
         />

@@ -17,7 +17,7 @@ const emit = defineEmits<{
     <div class="space-y-4">
         <AppSectionBar title="Transacciones">
             <template #actions>
-                <AppButton variant="primary" @click="emit('create')">
+                <AppButton variant="primary" aria-label="Crear transacción" @click="emit('create')">
                     <PlusIcon class="h-4 w-4" />
                 </AppButton>
             </template>

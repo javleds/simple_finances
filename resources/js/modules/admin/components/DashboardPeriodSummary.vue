@@ -50,7 +50,7 @@ const transactionsRoute = computed(() => ({
 </script>
 
 <template>
-    <AppCard class="rounded-3xl">
+    <AppCard>
         <div class="space-y-4">
             <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1">
@@ -99,31 +99,33 @@ const transactionsRoute = computed(() => ({
                 <AppText>Cargando resumen...</AppText>
             </div>
 
-            <section v-else class="space-y-3">
-                <AppCard
-                    class="border-0 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--app-color-primary)_12%,transparent),transparent)] text-center"
-                >
+            <section v-else class="space-y-4 border-t border-(--app-color-border) pt-4">
+                <div class="space-y-1">
                     <AppText size="sm" tone="subtle">Balance</AppText>
-                    <p class="mt-1 text-3xl font-semibold text-(--app-color-text)">
+                    <p
+                        class="text-[2rem] leading-[1.2] font-semibold wrap-anywhere text-(--app-color-text) tabular-nums"
+                    >
                         {{ formatCurrency(props.summary?.balance ?? 0) }}
                     </p>
-                </AppCard>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <AppCard class="border-0 text-center">
-                        <AppText size="sm" tone="subtle">Ingresos</AppText>
-                        <p class="mt-1 text-xl font-semibold text-(--app-color-success)">
-                            {{ formatCurrency(props.summary?.incomeTotal ?? 0) }}
-                        </p>
-                    </AppCard>
-
-                    <AppCard class="border-0 text-center">
-                        <AppText size="sm" tone="subtle">Egresos</AppText>
-                        <p class="mt-1 text-xl font-semibold text-(--app-color-warning)">
-                            {{ formatCurrency(props.summary?.outcomeTotal ?? 0) }}
-                        </p>
-                    </AppCard>
                 </div>
+                <dl class="space-y-3">
+                    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <dt class="text-sm text-(--app-color-text-subtle)">Ingresos</dt>
+                        <dd
+                            class="text-xl font-semibold wrap-anywhere text-(--app-color-success) tabular-nums"
+                        >
+                            {{ formatCurrency(props.summary?.incomeTotal ?? 0) }}
+                        </dd>
+                    </div>
+                    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <dt class="text-sm text-(--app-color-text-subtle)">Egresos</dt>
+                        <dd
+                            class="text-xl font-semibold wrap-anywhere text-(--app-color-danger) tabular-nums"
+                        >
+                            {{ formatCurrency(props.summary?.outcomeTotal ?? 0) }}
+                        </dd>
+                    </div>
+                </dl>
             </section>
 
             <div class="flex justify-end">

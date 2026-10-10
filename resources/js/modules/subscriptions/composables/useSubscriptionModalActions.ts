@@ -14,7 +14,13 @@ type UseSubscriptionModalActionsOptions = {
 
 export function useSubscriptionModalActions(options: UseSubscriptionModalActionsOptions) {
   const createSubscriptionActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+    {
+      key: 'close',
+      label: 'Cancelar',
+      tone: 'neutral' as const,
+      icon: XMarkIcon,
+      autoClose: true,
+    },
     {
       key: 'submit-subscription',
       label: options.isSaving.value ? 'Guardando...' : 'Crear suscripción',
@@ -27,7 +33,13 @@ export function useSubscriptionModalActions(options: UseSubscriptionModalActions
   ]);
 
   const editSubscriptionActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+    {
+      key: 'close',
+      label: 'Cancelar',
+      tone: 'neutral' as const,
+      icon: XMarkIcon,
+      autoClose: true,
+    },
     {
       key: 'submit-edit-subscription',
       label: options.isSaving.value ? 'Guardando...' : 'Guardar cambios',
@@ -40,11 +52,17 @@ export function useSubscriptionModalActions(options: UseSubscriptionModalActions
   ]);
 
   const deleteSubscriptionActions = computed(() => [
-    { key: 'close', label: 'Cancelar', tone: 'danger' as const, icon: XMarkIcon, autoClose: true },
+    {
+      key: 'close',
+      label: 'Cancelar',
+      tone: 'neutral' as const,
+      icon: XMarkIcon,
+      autoClose: true,
+    },
     {
       key: 'confirm-delete-subscription',
       label: options.isDeleting.value ? 'Eliminando...' : 'Eliminar suscripción',
-      tone: 'primary' as const,
+      tone: 'danger' as const,
       disabled: !options.selectedSubscription.value || options.isDeleting.value,
       loading: options.isDeleting.value,
     },

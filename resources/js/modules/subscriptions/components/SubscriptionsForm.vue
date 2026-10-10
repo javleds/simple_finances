@@ -96,10 +96,10 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <template>
-    <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
+    <form :id="props.formId" class="space-y-4 sm:space-y-6" @submit.prevent="handleSubmit">
         <Message v-if="props.serverError" severity="error">{{ props.serverError }}</Message>
 
-        <section class="space-y-5">
+        <section class="space-y-4 sm:space-y-5">
             <AppInput
                 id="subscription-name"
                 v-model="name"
@@ -140,7 +140,7 @@ async function handleSubmit(): Promise<void> {
         </section>
 
         <section
-            class="space-y-4 rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
+            class="space-y-4 border-y py-4 sm:rounded-xl sm:border sm:bg-(--app-color-surface-muted) sm:px-4"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
             <div class="space-y-1">
@@ -150,7 +150,7 @@ async function handleSubmit(): Promise<void> {
 
             <div class="grid gap-4 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                 <AppInput
-                    id="subscription-frequency-unit"
+                    id="subscription-frequency-every"
                     v-model="frequencyEvery"
                     label="Cada"
                     type="number"
@@ -182,7 +182,7 @@ async function handleSubmit(): Promise<void> {
             </div>
         </section>
 
-        <section class="space-y-5">
+        <section class="space-y-4 sm:space-y-5">
             <AppDatePicker
                 id="subscription-finished-at"
                 v-model="cancellationDate"

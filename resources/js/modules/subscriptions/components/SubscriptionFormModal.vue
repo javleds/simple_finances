@@ -42,6 +42,7 @@ const emit = defineEmits<{
 
 <template>
   <AppModal
+    presentation="fullscreen"
     :open="props.open"
     :actions="props.actions"
     :title="props.title"

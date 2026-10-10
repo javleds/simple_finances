@@ -199,11 +199,8 @@ async function handleSubmit(): Promise<void> {
     <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
         <Message v-if="props.serverError" severity="error">{{ props.serverError }}</Message>
 
-        <section
-            class="space-y-4 rounded-xl border bg-(--app-color-surface-muted) px-4 py-4"
-            :style="{ borderColor: 'var(--app-color-border)' }"
-        >
-            <div class="flex items-center justify-between space-y-2">
+        <section class="space-y-4" :style="{ borderColor: 'var(--app-color-border)' }">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <label for="transaction-type" class="text-sm font-medium text-(--app-color-label)">
                     Tipo
                 </label>
@@ -216,7 +213,7 @@ async function handleSubmit(): Promise<void> {
             </div>
         </section>
 
-        <section class="space-y-5">
+        <section class="space-y-4">
             <AppInput
                 id="transaction-concept"
                 v-model="concept"
@@ -243,10 +240,10 @@ async function handleSubmit(): Promise<void> {
 
                     <section
                         v-if="isExpense"
-                        class="space-y-3 rounded-xl border px-4 py-4"
+                        class="space-y-3"
                         :style="{ borderColor: 'var(--app-color-border)' }"
                     >
-                        <div class="flex items-center justify-between gap-3">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
                             <div class="space-y-1">
                                 <label
                                     for="transaction-payment-source"
@@ -281,7 +278,7 @@ async function handleSubmit(): Promise<void> {
 
                     <section
                         v-if="showUserSplitToggle"
-                        class="space-y-4 rounded-xl border px-4 py-4"
+                        class="space-y-4 border-t border-(--app-color-border) pt-4"
                         :style="{ borderColor: 'var(--app-color-border)' }"
                     >
                         <label class="flex items-start gap-3">
@@ -296,7 +293,7 @@ async function handleSubmit(): Promise<void> {
                                     Dividir entre usuarios de la cuenta
                                 </span>
                                 <AppText size="sm">
-                                    Usa los porcentajes del pivote `account_user` como base y
+                                    Usa los porcentajes de participación de los miembros como base y
                                     ajústalos si hace falta.
                                 </AppText>
                             </div>
@@ -369,7 +366,7 @@ async function handleSubmit(): Promise<void> {
 
         <section
             v-if="props.enableCreateAndAddAnother"
-            class="rounded-xl border px-4 py-4"
+            class="border-t border-(--app-color-border) pt-4"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
             <div class="flex items-center justify-between gap-4">

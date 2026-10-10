@@ -12,7 +12,7 @@ defineProps<{
 </script>
 
 <template>
-  <AppCard muted class="rounded-3xl">
+  <AppCard muted class="rounded-2xl sm:rounded-3xl">
     <div class="space-y-4">
       <div class="flex items-start gap-4">
         <div
@@ -27,7 +27,9 @@ defineProps<{
               <p class="text-sm font-semibold text-(--app-color-text)">{{ name }}</p>
               <AppText size="sm">{{ description }}</AppText>
             </div>
-            <p class="text-sm font-semibold text-(--app-color-text)">{{ allocation }}%</p>
+            <p class="text-sm font-semibold text-(--app-color-text)">
+              {{ allocation }}%
+            </p>
           </div>
         </div>
       </div>
