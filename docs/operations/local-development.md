@@ -37,6 +37,8 @@ Cuando se sirve el build, editar un archivo Vue no actualiza la página: ejecuta
 
 Configura `VITE_PRIMEVUE_LICENSE_KEY` con la licencia PrimeVue; Vite la incorpora al frontend durante el arranque o el build. Las credenciales `WA_*` permanecen en Laravel. Reinicia Vite al cambiar la licencia y limpia la caché de configuración Laravel si cambias credenciales previamente cacheadas.
 
+La aplicación puede utilizarse sin configurar WhatsApp: en ese caso no aparece la sección de vinculación en `/admin/settings` ni se consulta su estado. Para mostrarla, completa los valores de envío y webhook indicados en [WhatsApp](../integrations/whatsapp.md#configuración). El idioma usa `es_MX` por defecto; valores vacíos o solo espacios deshabilitan la sección. Si la configuración estaba cacheada, ejecuta `php artisan config:clear` y recarga la página completa. Cambiar estas variables no requiere reiniciar Vite ni recompilar assets.
+
 Para verificar el webhook desde Meta, reenvía el puerto `8000` mediante un túnel HTTPS público y registra `https://<túnel>/api/whatsapp/webhook`. El token de verificación debe coincidir con `WA_API_TOKEN`. Mantén el servidor y el túnel encendidos; para procesar eventos también debe ejecutarse el worker. El puerto de Vite no es el endpoint del webhook.
 
 El GET debe responder solo el challenge, con `Content-Type: text/plain` y `Content-Length` correcto. HTML de Debugbar rompe la verificación; la longitud explícita evita que el túnel probado mantenga abierta la respuesta. La publicación de la app en Meta y el acceso público al backend son requisitos distintos: el panel puede restringir una app sin publicar a eventos de prueba.

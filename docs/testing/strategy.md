@@ -28,10 +28,14 @@ La cobertura enfocada se ejecuta con:
 
 ```bash
 php artisan test --filter=WhatsApp
-npm run test:unit -- --run resources/js/modules/settings/components/WhatsappConnectionCard.spec.ts
+npm run test:unit -- --run resources/js/modules/settings/components/WhatsappConnectionCard.spec.ts resources/js/modules/settings/pages/ConfigPage.spec.ts
 ```
 
 Verifica expiración de 24 horas, ceros iniciales, límites de solicitudes e intentos, conflictos de teléfonos, reenvío, fallos de envío y desvinculación. En el webhook, verifica firma, rechazo de eventos inválidos, persistencia y encolado atómicos, repetición del cuerpo, procesamiento y reintentos del worker. La UI debe conservar el aislamiento de datos al cambiar de sesión.
+
+`IsWhatsAppConfiguredTest.php` comprueba configuración completa, cada valor requerido ausente, vacío, con espacios o no textual, y el indicador del HTML sin secretos. `ConfigPage.spec.ts` verifica que un indicador ausente, falso o inválido oculta WhatsApp sin consultar la vinculación, conserva notificaciones y utilidades, y monta la tarjeta cuando está habilitada. La prueba del componente mantiene la cobertura del flujo de vinculación.
+
+Validación del cambio de visibilidad: 224 pruebas backend con 1232 aserciones y 126 pruebas frontend en 41 archivos; type-check, build y ESLint de los archivos modificados correctos. PHP CS Fixer no pudo ejecutarse por la regla preexistente inválida `align_single_space_minimal_by_indent`; la sintaxis PHP pasó.
 
 Las pruebas automatizadas sustituyen las llamadas a Meta; no acreditan entrega de mensajes ni aprobación de plantillas. La prueba real del OTP permanece pendiente según el procedimiento de [WhatsApp](../integrations/whatsapp.md).
 
