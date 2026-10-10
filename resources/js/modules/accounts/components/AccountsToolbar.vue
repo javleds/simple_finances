@@ -3,12 +3,15 @@ import {
   AdjustmentsHorizontalIcon,
   MagnifyingGlassIcon,
   PlusIcon,
+  XMarkIcon,
 } from '@heroicons/vue/24/outline';
 
-import { AppButton, AppIconButton, AppInput, AppSectionBar } from '@/modules/shared/components';
+import { AppButton, AppInput, AppSectionBar } from '@/modules/shared/components';
 
 const props = defineProps<{
   searchTerm: string;
+  filterChips: ReadonlyArray<{ key: string; label: string; remove: () => void }>;
+  isFiltersOpen: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -47,8 +50,29 @@ const emit = defineEmits<{
       />
     </div>
 
-    <AppIconButton ariaLabel="Abrir filtros avanzados" @click="emit('openFilters')">
+    <AppButton
+      variant="outline"
+      aria-controls="account-filters"
+      :aria-expanded="props.isFiltersOpen"
+      @click="emit('openFilters')"
+    >
       <AdjustmentsHorizontalIcon class="h-5 w-5" />
-    </AppIconButton>
+      <span
+        >Filtros<span v-if="props.filterChips.length"> · {{ props.filterChips.length }}</span></span
+      >
+    </AppButton>
+  </div>
+  <div v-if="props.filterChips.length" class="flex flex-wrap gap-2" aria-label="Filtros aplicados">
+    <AppButton
+      v-for="chip in props.filterChips"
+      :key="chip.key"
+      variant="outline"
+      class="min-h-9! rounded-full! px-3! py-1! text-xs!"
+      :aria-label="`Quitar filtro: ${chip.label}`"
+      @click="chip.remove()"
+    >
+      {{ chip.label }}
+      <XMarkIcon class="h-3.5 w-3.5" aria-hidden="true" />
+    </AppButton>
   </div>
 </template>

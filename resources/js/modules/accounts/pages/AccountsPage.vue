@@ -29,7 +29,7 @@ const surfaceOptions = [
 const currentUserId = computed(() => getStoredAuthSession()?.user.id ?? null);
 const {
     activeFilters,
-    clearFilters,
+    applyFilters,
     searchTerm,
     selectedKinds,
     selectedStatuses,
@@ -111,6 +111,24 @@ const { handleLoadMoreRetry, infiniteStatusLabel, loadMoreSentinel, reloadAccoun
         loadMoreAccounts,
     });
 
+const filterChips = computed(() => [
+    ...selectedStatuses.value.map((value) => ({
+        key: `status-${value}`,
+        label: value === 'Activo' ? 'Activas' : 'Inactivas',
+        remove: () => toggleStatus(value),
+    })),
+    ...selectedKinds.value.map((value) => ({
+        key: `kind-${value}`,
+        label: kindOptions.find((option) => option.value === value)?.label ?? value,
+        remove: () => toggleKind(value),
+    })),
+    ...selectedSurfaces.value.map((value) => ({
+        key: `surface-${value}`,
+        label: surfaceOptions.find((option) => option.value === value)?.label ?? value,
+        remove: () => toggleSurface(value),
+    })),
+]);
+
 async function handleCreateAccountSubmit(payload: AccountWritePayload): Promise<void> {
     if (isSaving.value) return;
     const wasCreated = await createAccount(payload);
@@ -153,6 +171,8 @@ async function confirmDeleteAccount(): Promise<void> {
     <div class="space-y-5">
         <AccountsToolbar
             v-model:search-term="searchTerm"
+            :filter-chips="filterChips"
+            :is-filters-open="isFiltersOpen"
             @create="openCreateAccount"
             @open-filters="openFilters"
         />
@@ -198,11 +218,8 @@ async function confirmDeleteAccount(): Promise<void> {
             :selected-surfaces="selectedSurfaces"
             :status-options="statusOptions"
             :surface-options="surfaceOptions"
-            @clear="clearFilters"
+            @apply="applyFilters"
             @close="closeFilters"
-            @toggle-kind="toggleKind"
-            @toggle-status="toggleStatus"
-            @toggle-surface="toggleSurface"
         />
 
         <AccountFormModal

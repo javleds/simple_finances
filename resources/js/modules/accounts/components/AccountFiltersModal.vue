@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import Button from 'primevue/button';
-import { ArrowPathIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { ref, watch } from 'vue';
 
 import type {
+    AccountFilterSelection,
     AccountKindFilter,
-    AccountSurfaceFilter,
     AccountStatus,
+    AccountSurfaceFilter,
 } from '@/modules/accounts/types';
-import { AppModal, AppText, AppTitle } from '@/modules/shared/components';
+import { AppButton, AppModal } from '@/modules/shared/components';
 
-type FilterOption<TValue extends string> = {
-    value: TValue;
-    label: string;
-};
+type FilterOption<TValue extends string> = { value: TValue; label: string };
 
 const props = defineProps<{
     kindOptions: readonly FilterOption<AccountKindFilter>[];
@@ -25,104 +22,118 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    clear: [];
+    apply: [selection: AccountFilterSelection];
     close: [];
-    toggleKind: [kind: AccountKindFilter];
-    toggleStatus: [status: AccountStatus];
-    toggleSurface: [surface: AccountSurfaceFilter];
 }>();
+
+const draft = ref<AccountFilterSelection>({ statuses: [], kinds: [], surfaces: [] });
+
+watch(
+    () => props.open,
+    (open) => {
+        if (!open) return;
+        draft.value = {
+            statuses: [...props.selectedStatuses],
+            kinds: [...props.selectedKinds],
+            surfaces: [...props.selectedSurfaces],
+        };
+    },
+    { immediate: true },
+);
+
+function clearDraft(): void {
+    draft.value = { statuses: [], kinds: [], surfaces: [] };
+}
+
+function applyDraft(): void {
+    emit('apply', {
+        statuses: [...draft.value.statuses],
+        kinds: [...draft.value.kinds],
+        surfaces: [...draft.value.surfaces],
+    });
+    emit('close');
+}
 </script>
 
 <template>
     <AppModal
+        id="account-filters"
         :open="props.open"
-        :actions="[
-            { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-            { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        ]"
-        title="Filtros avanzados"
-        variant="default"
-        @action="$event === 'clear' ? emit('clear') : emit('close')"
+        title="Filtros"
+        presentation="sheet"
         @close="emit('close')"
     >
-        <div class="space-y-5">
-            <div class="space-y-2">
-                <AppTitle as="h2" size="sm">Estatus</AppTitle>
-                <AppText>Refina la lista usando el estado operativo de la cuenta.</AppText>
+        <form id="account-filters-form" class="grid gap-6 pt-2" @submit.prevent="applyDraft">
+            <fieldset class="m-0 min-w-0 border-0 p-0">
+                <legend class="mb-3 text-sm font-semibold text-(--app-color-text)">Estado</legend>
+                <div class="grid grid-cols-2 gap-2">
+                    <label
+                        v-for="status in props.statusOptions"
+                        :key="status"
+                        class="filter-option"
+                    >
+                        <input v-model="draft.statuses" type="checkbox" :value="status" />
+                        <span>{{ status === 'Activo' ? 'Activas' : 'Inactivas' }}</span>
+                    </label>
+                </div>
+            </fieldset>
+            <fieldset class="m-0 min-w-0 border-0 p-0">
+                <legend class="mb-3 text-sm font-semibold text-(--app-color-text)">
+                    Tipo de cuenta
+                </legend>
+                <div class="grid grid-cols-2 gap-2">
+                    <label
+                        v-for="kind in props.kindOptions"
+                        :key="kind.value"
+                        class="filter-option"
+                    >
+                        <input v-model="draft.kinds" type="checkbox" :value="kind.value" />
+                        <span>{{ kind.label }}</span>
+                    </label>
+                </div>
+            </fieldset>
+            <fieldset class="m-0 min-w-0 border-0 p-0">
+                <legend class="mb-3 text-sm font-semibold text-(--app-color-text)">Formato</legend>
+                <div class="grid grid-cols-2 gap-2">
+                    <label
+                        v-for="surface in props.surfaceOptions"
+                        :key="surface.value"
+                        class="filter-option"
+                    >
+                        <input v-model="draft.surfaces" type="checkbox" :value="surface.value" />
+                        <span>{{ surface.label }}</span>
+                    </label>
+                </div>
+            </fieldset>
+        </form>
+        <template #footer>
+            <div
+                class="flex w-full items-center justify-between gap-3 pb-[env(safe-area-inset-bottom)]"
+            >
+                <AppButton variant="ghost" @click="clearDraft">Limpiar filtros</AppButton>
+                <AppButton type="submit" form="account-filters-form">Aplicar filtros</AppButton>
             </div>
-
-            <div class="flex flex-wrap gap-2">
-                <Button
-                    v-for="status in props.statusOptions"
-                    :key="status"
-                    severity="secondary"
-                    variant="outlined"
-                    type="button"
-                    class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-                    :aria-pressed="props.selectedStatuses.includes(status)"
-                    :class="
-                        props.selectedStatuses.includes(status)
-                            ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                            : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-                    "
-                    :style="{ borderColor: 'var(--app-color-border)' }"
-                    @click="emit('toggleStatus', status)"
-                >
-                    {{ status }}
-                </Button>
-            </div>
-
-            <div class="space-y-2">
-                <AppTitle as="h2" size="sm">Tipo de cuenta</AppTitle>
-                <AppText>Filtra entre cuentas de crédito y débito.</AppText>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-                <Button
-                    v-for="kind in props.kindOptions"
-                    :key="kind.value"
-                    severity="secondary"
-                    variant="outlined"
-                    type="button"
-                    class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-                    :aria-pressed="props.selectedKinds.includes(kind.value)"
-                    :class="
-                        props.selectedKinds.includes(kind.value)
-                            ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                            : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-                    "
-                    :style="{ borderColor: 'var(--app-color-border)' }"
-                    @click="emit('toggleKind', kind.value)"
-                >
-                    {{ kind.label }}
-                </Button>
-            </div>
-
-            <div class="space-y-2">
-                <AppTitle as="h2" size="sm">Superficie</AppTitle>
-                <AppText>Filtra entre cuentas virtuales y físicas.</AppText>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-                <Button
-                    v-for="surface in props.surfaceOptions"
-                    :key="surface.value"
-                    severity="secondary"
-                    variant="outlined"
-                    type="button"
-                    class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-                    :aria-pressed="props.selectedSurfaces.includes(surface.value)"
-                    :class="
-                        props.selectedSurfaces.includes(surface.value)
-                            ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                            : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-                    "
-                    :style="{ borderColor: 'var(--app-color-border)' }"
-                    @click="emit('toggleSurface', surface.value)"
-                >
-                    {{ surface.label }}
-                </Button>
-            </div>
-        </div>
+        </template>
     </AppModal>
 </template>
+
+<style scoped>
+@reference "../../../main.css";
+.filter-option {
+    @apply flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-(--app-color-border) bg-(--app-color-surface) px-3 py-3 text-sm font-medium text-(--app-color-text) transition;
+}
+.filter-option:has(input:checked) {
+    border-color: var(--app-color-primary);
+    background: color-mix(in srgb, var(--app-color-primary) 8%, var(--app-color-surface));
+}
+.filter-option:focus-within {
+    outline: 2px solid var(--app-color-primary);
+    outline-offset: 2px;
+}
+.filter-option input {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    accent-color: var(--app-color-primary);
+}
+</style>

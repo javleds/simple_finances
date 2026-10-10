@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import type {
+  AccountFilterSelection,
   AccountKindFilter,
   AccountListFilters,
   AccountSurfaceFilter,
@@ -69,6 +70,12 @@ export function useAccountFilters() {
     { deep: true, immediate: true },
   );
 
+  function applyFilters(selection: AccountFilterSelection): void {
+    selectedStatuses.value = [...selection.statuses];
+    selectedKinds.value = [...selection.kinds];
+    selectedSurfaces.value = [...selection.surfaces];
+  }
+
   function clearFilters(): void {
     searchTerm.value = '';
     selectedStatuses.value = [];
@@ -105,6 +112,7 @@ export function useAccountFilters() {
 
   return {
     activeFilters,
+    applyFilters,
     clearFilters,
     searchTerm,
     selectedKinds,

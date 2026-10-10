@@ -199,3 +199,9 @@ export type AccountListFilters = {
 export type AccountUsersListFilters = {
   search?: string;
 };
+
+export type AccountFilterSelection = {
+  statuses: AccountStatus[];
+  kinds: AccountKindFilter[];
+  surfaces: AccountSurfaceFilter[];
+};

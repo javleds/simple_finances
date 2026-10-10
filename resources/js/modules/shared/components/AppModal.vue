@@ -19,11 +19,13 @@ const props = withDefaults(
         variant?: AppModalVariant;
         actions?: ReadonlyArray<AppModalAction>;
         closeLabel?: string;
+        presentation?: 'dialog' | 'sheet';
     }>(),
     {
         variant: 'default',
         actions: () => [],
         closeLabel: 'Cerrar',
+        presentation: 'dialog',
     },
 );
 
@@ -139,9 +141,21 @@ function isCloseAction(action: AppModalAction): boolean {
         block-scroll
         :draggable="false"
         :close-button-props="{ 'aria-label': 'Cerrar modal' }"
-        class="w-[calc(100%-2rem)] max-w-xl"
+        :class="
+            props.presentation === 'sheet'
+                ? 'm-0! max-h-[90dvh] overflow-hidden w-full max-w-xl rounded-t-3xl! rounded-b-none! sm:m-4! sm:w-[calc(100%-2rem)] sm:rounded-3xl!'
+                : 'w-[calc(100%-2rem)] max-w-xl'
+        "
         :pt="{
-            header: { class: modalStyle.headerClass },
+            mask: {
+                class: props.presentation === 'sheet' ? 'items-end! sm:items-center!' : undefined,
+            },
+            header: {
+                class:
+                    props.presentation === 'sheet'
+                        ? 'bg-(--app-color-surface)'
+                        : modalStyle.headerClass,
+            },
             content: { class: 'min-h-0 overflow-y-auto' },
             footer: { class: 'flex border-t border-(--app-color-border) pt-4' },
         }"
@@ -150,6 +164,7 @@ function isCloseAction(action: AppModalAction): boolean {
         <template #header>
             <div class="flex min-w-0 flex-1 items-center gap-3">
                 <div
+                    v-if="props.presentation !== 'sheet'"
                     class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
                     :style="modalStyle.iconStyle"
                 >
@@ -165,32 +180,34 @@ function isCloseAction(action: AppModalAction): boolean {
         </template>
         <slot />
         <template #footer>
-            <Button
-                v-for="action in resolvedActions"
-                :key="action.key"
-                :type="action.type ?? 'button'"
-                :form="action.form"
-                :disabled="action.disabled || action.loading"
-                :aria-busy="action.loading ? 'true' : undefined"
-                :severity="
-                    action.tone === 'danger'
-                        ? 'danger'
-                        : action.tone === 'neutral'
-                          ? 'secondary'
-                          : undefined
-                "
-                :text="action.tone === 'neutral'"
-                class="min-h-11 min-w-0 flex-1"
-                @click="handleAction(action)"
-            >
-                <span
-                    v-if="action.loading"
-                    aria-hidden="true"
-                    class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
-                />
-                <component :is="action.icon" v-else-if="action.icon" class="h-5 w-5 shrink-0" />
-                <span>{{ action.label }}</span>
-            </Button>
+            <slot name="footer">
+                <Button
+                    v-for="action in resolvedActions"
+                    :key="action.key"
+                    :type="action.type ?? 'button'"
+                    :form="action.form"
+                    :disabled="action.disabled || action.loading"
+                    :aria-busy="action.loading ? 'true' : undefined"
+                    :severity="
+                        action.tone === 'danger'
+                            ? 'danger'
+                            : action.tone === 'neutral'
+                              ? 'secondary'
+                              : undefined
+                    "
+                    :text="action.tone === 'neutral'"
+                    class="min-h-11 min-w-0 flex-1"
+                    @click="handleAction(action)"
+                >
+                    <span
+                        v-if="action.loading"
+                        aria-hidden="true"
+                        class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+                    />
+                    <component :is="action.icon" v-else-if="action.icon" class="h-5 w-5 shrink-0" />
+                    <span>{{ action.label }}</span>
+                </Button>
+            </slot>
         </template>
     </Dialog>
 </template>
