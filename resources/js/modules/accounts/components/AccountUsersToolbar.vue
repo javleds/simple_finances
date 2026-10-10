@@ -3,6 +3,8 @@ import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
 import { AppButton, AppInput, AppSectionBar } from '@/modules/shared/components';
 
+const props = defineProps<{ canManage?: boolean }>();
+
 const searchTerm = defineModel<string>('searchTerm', { required: true });
 
 const emit = defineEmits<{
@@ -17,7 +19,7 @@ const emit = defineEmits<{
       description="Miembros reales compartidos en la cuenta y su porcentaje asignado."
     >
       <template #actions>
-        <AppButton variant="primary" @click="emit('create')">
+        <AppButton v-if="props.canManage !== false" variant="primary" @click="emit('create')">
           <PlusIcon class="h-4 w-4" />
         </AppButton>
       </template>

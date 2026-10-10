@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/vue/24/outline';
 
-import { AppActionMenu, AppCard } from '@/modules/shared/components';
+import type { AccountInviteStatus } from '@/modules/accounts/schemas/accountInviteSchemas';
 
-type FacilityInvitationStatus = 'pending' | 'expiring';
+import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 const props = defineProps<{
   itemId: string;
   accountName: string;
   invitedBy: string;
-  status: FacilityInvitationStatus;
+  status: AccountInviteStatus;
   metaLabel: string;
 }>();
 
@@ -33,24 +33,32 @@ const menuActions = [
   },
 ] as const;
 
-function statusLabel(status: FacilityInvitationStatus): string {
-  if (status === 'expiring') {
-    return 'Expira pronto';
+function statusLabel(status: AccountInviteStatus): string {
+  if (status === 'accepted') {
+    return 'Aceptada';
+  }
+
+  if (status === 'declined') {
+    return 'Rechazada';
   }
 
   return 'Pendiente';
 }
 
-function statusClasses(status: FacilityInvitationStatus): string {
-  if (status === 'expiring') {
-    return 'bg-amber-500/12 text-amber-700 dark:text-amber-300';
+function statusClasses(status: AccountInviteStatus): string {
+  if (status === 'accepted') {
+    return 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300';
+  }
+
+  if (status === 'declined') {
+    return 'bg-red-500/12 text-red-700 dark:text-red-300';
   }
 
   return 'bg-sky-500/10 text-sky-700 dark:text-sky-300';
 }
 
-function accentStyle(status: FacilityInvitationStatus): string {
-  if (status === 'expiring') {
+function accentStyle(status: AccountInviteStatus): string {
+  if (status === 'declined') {
     return 'linear-gradient(90deg, color-mix(in srgb, #f59e0b 16%, transparent), transparent 78%)';
   }
 
@@ -58,6 +66,10 @@ function accentStyle(status: FacilityInvitationStatus): string {
 }
 
 function handleAction(actionKey: string): void {
+  if (props.status !== 'pending') {
+    return;
+  }
+
   if (actionKey === 'accept') {
     emit('accept', props.itemId);
     return;
@@ -91,7 +103,12 @@ function handleAction(actionKey: string): void {
           </p>
         </div>
 
-        <AppActionMenu :actions="menuActions" class="shrink-0" @action="handleAction" />
+        <AppActionMenu
+          v-if="props.status === 'pending'"
+          :actions="menuActions"
+          class="shrink-0"
+          @action="handleAction"
+        />
       </div>
 
       <div class="flex items-center justify-between gap-3">

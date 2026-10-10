@@ -8,6 +8,7 @@ import { AppActionMenu, AppCard } from '@/modules/shared/components';
 type InvitationStatus = 'pending' | 'accepted' | 'declined';
 
 const props = defineProps<{
+  canManage?: boolean;
   itemId: string;
   email: string;
   percentageLabel: string;
@@ -21,7 +22,9 @@ const emit = defineEmits<{
   resend: [itemId: string];
 }>();
 
-const canManageInvitation = computed(() => props.status !== 'accepted');
+const canManageInvitation = computed(
+  () => props.canManage !== false && props.status !== 'accepted',
+);
 const declinedActions: ReadonlyArray<ActionMenuItem> = [
   {
     key: 'resend',

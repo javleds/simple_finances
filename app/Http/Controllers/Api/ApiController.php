@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Services\Api\ModelIndexCriteria;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -57,7 +58,7 @@ abstract class ApiController extends Controller
     }
 
     protected function respondPaginated(
-        Builder $query,
+        Builder|BelongsToMany $query,
         Request $request,
         array $nullableBooleanFilters = [],
         array $searchColumns = [],
@@ -65,14 +66,14 @@ abstract class ApiController extends Controller
     ): JsonResponse
     {
         $perPage = min(100, max(1, (int) $request->integer('per_page', 20)));
-        $paginator = app(ModelIndexCriteria::class)
-            ->apply($query, new ApiIndexCriteriaDto(
+        app(ModelIndexCriteria::class)
+            ->apply($query instanceof BelongsToMany ? $query->getQuery() : $query, new ApiIndexCriteriaDto(
                 request: $request,
                 filterColumns: $filterColumns,
                 nullableBooleanFilters: $nullableBooleanFilters,
                 searchColumns: $searchColumns,
-            ))
-            ->paginate($perPage)
+            ));
+        $paginator = $query->paginate($perPage)
             ->withQueryString();
 
         return $this->respond([

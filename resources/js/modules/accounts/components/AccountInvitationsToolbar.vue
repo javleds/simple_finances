@@ -8,6 +8,7 @@ import {
 import { AppButton, AppIconButton, AppInput, AppSectionBar } from '@/modules/shared/components';
 
 const props = defineProps<{
+  canManage?: boolean;
   searchTerm: string;
 }>();
 
@@ -24,7 +25,7 @@ const emit = defineEmits<{
     description="Invita usuarios a colaborar dentro de esta cuenta."
   >
     <template #actions>
-      <AppButton variant="primary" @click="emit('create')">
+      <AppButton v-if="props.canManage !== false" variant="primary" @click="emit('create')">
         <PlusIcon class="h-4 w-4" />
       </AppButton>
     </template>

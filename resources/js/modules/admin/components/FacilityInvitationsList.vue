@@ -30,13 +30,13 @@ function resolveInvitedBy(invitation: AccountInvite): string {
 
 function resolveMetaLabel(invitation: AccountInvite): string {
   if (!invitation.invitedAt) {
-    return 'Invitación pendiente';
+    return 'Fecha no disponible';
   }
 
   const invitedAt = new Date(invitation.invitedAt);
 
   if (Number.isNaN(invitedAt.getTime())) {
-    return 'Invitación pendiente';
+    return 'Fecha no disponible';
   }
 
   return `Recibida ${new Intl.DateTimeFormat('es-MX', {
@@ -64,14 +64,14 @@ function resolveMetaLabel(invitation: AccountInvite): string {
         :invited-by="resolveInvitedBy(invitation)"
         :item-id="invitation.id"
         :meta-label="resolveMetaLabel(invitation)"
-        status="pending"
+        :status="invitation.status"
         @accept="emit('accept', $event)"
         @reject="emit('reject', $event)"
       />
 
       <AppEmptyState
         v-if="props.invitations.length === 0"
-        message="No hay invitaciones pendientes que coincidan con la búsqueda."
+        message="No hay invitaciones que coincidan con la búsqueda."
       />
 
       <slot name="footer" />

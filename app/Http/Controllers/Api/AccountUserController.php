@@ -23,7 +23,7 @@ class AccountUserController extends ApiController
 
     public function index(Account $account, Request $request): JsonResponse
     {
-        $this->ensureOwner($account);
+        $this->authorizeAccountAccess->ensureMember($account);
 
         $relation = $account->users()->withPivot('percentage')->orderBy('users.name');
 
@@ -31,7 +31,7 @@ class AccountUserController extends ApiController
             $relation->wherePivot('percentage', (float) $request->query('percentage'));
         }
 
-        $response = $this->respondPaginated($relation->getQuery(), $request);
+        $response = $this->respondPaginated($relation, $request, searchColumns: ['users.name', 'users.email']);
         $payload = $response->getData(true);
         $memberSummary = $this->buildAccountMemberSummary->execute($account);
         $summaryByUserId = collect($memberSummary['settlements_by_user'])
@@ -78,7 +78,7 @@ class AccountUserController extends ApiController
 
     public function show(Account $account, User $user): JsonResponse
     {
-        $this->ensureOwner($account);
+        $this->authorizeAccountAccess->ensureMember($account);
 
         return $this->respondModel(
             $account->users()->withPivot('percentage')->findOrFail($user->id)

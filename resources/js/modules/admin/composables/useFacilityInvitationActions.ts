@@ -9,7 +9,6 @@ export type PendingInvitationAction = 'accepted' | 'declined';
 
 type UseFacilityInvitationActionsOptions = {
   invitations: Ref<AccountInvite[]>;
-  removeInvitation: (matcher: (invitation: AccountInvite) => boolean) => void;
   replaceInvitation: (
     matcher: (invitation: AccountInvite) => boolean,
     invitation: AccountInvite,
@@ -54,6 +53,15 @@ export function useFacilityInvitationActions(options: UseFacilityInvitationActio
   const isSaving = computed(() => respondMutation.isPending.value);
 
   function openInvitationAction(inviteId: string, action: PendingInvitationAction): void {
+    if (
+      isSaving.value ||
+      !options.invitations.value.some(
+        (invitation) => invitation.id === inviteId && invitation.status === 'pending',
+      )
+    ) {
+      return;
+    }
+
     saveError.value = null;
     selectedInvitationId.value = inviteId;
     pendingAction.value = action;
@@ -66,7 +74,12 @@ export function useFacilityInvitationActions(options: UseFacilityInvitationActio
   }
 
   async function confirmInvitationAction(): Promise<void> {
-    if (!selectedInvitation.value || !pendingAction.value) {
+    if (
+      isSaving.value ||
+      !selectedInvitation.value ||
+      selectedInvitation.value.status !== 'pending' ||
+      !pendingAction.value
+    ) {
       return;
     }
 
@@ -78,14 +91,10 @@ export function useFacilityInvitationActions(options: UseFacilityInvitationActio
         status: pendingAction.value,
       });
 
-      if (updatedInvitation.status !== 'pending') {
-        options.removeInvitation((invitation) => invitation.id === updatedInvitation.id);
-      } else {
-        options.replaceInvitation(
-          (invitation) => invitation.id === updatedInvitation.id,
-          updatedInvitation,
-        );
-      }
+      options.replaceInvitation(
+        (invitation) => invitation.id === updatedInvitation.id,
+        updatedInvitation,
+      );
 
       closeInvitationAction();
     } catch (error) {

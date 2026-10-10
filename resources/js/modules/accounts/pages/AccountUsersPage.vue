@@ -15,9 +15,15 @@ import { useAccountUserModalActions } from '@/modules/accounts/composables/useAc
 import { useAccountUserModals } from '@/modules/accounts/composables/useAccountUserModals';
 import { useAccountUsersCrud } from '@/modules/accounts/composables/useAccountUsersCrud';
 import { useAccountUsersSplitDraft } from '@/modules/accounts/composables/useAccountUsersSplitDraft';
-import type { AccountMember } from '@/modules/accounts/types';
+import type { Account, AccountMember } from '@/modules/accounts/types';
+import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
+
+const props = defineProps<{ account: Account | null }>();
+const canManage = computed(() =>
+    Boolean(props.account && props.account.ownerId === getStoredAuthSession()?.user.id),
+);
 
 const route = useRoute();
 const defaultUsersPerPage = 20;
@@ -163,9 +169,14 @@ function reloadUsers(): void {
 
 <template>
     <section class="space-y-4">
-        <AccountUsersToolbar v-model:search-term="searchTerm" @create="openCreateUser" />
+        <AccountUsersToolbar
+            :can-manage="canManage"
+            v-model:search-term="searchTerm"
+            @create="openCreateUser"
+        />
 
         <AccountUsersSplitEditor
+            v-if="canManage"
             v-model="splitDraft"
             :can-show="canShowSplitEditor"
             :has-changes="hasSplitChanges"
@@ -184,7 +195,12 @@ function reloadUsers(): void {
             loading-label="Cargando usuarios..."
             @retry="reloadUsers"
         >
-            <AccountUsersList :users="users" @delete="openDeleteUser" @edit="openEditUser">
+            <AccountUsersList
+                :can-manage="canManage"
+                :users="users"
+                @delete="openDeleteUser"
+                @edit="openEditUser"
+            >
                 <template #footer>
                     <div ref="loadMoreSentinel">
                         <AppLoadMoreFooter

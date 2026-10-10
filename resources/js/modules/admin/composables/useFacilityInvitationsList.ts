@@ -21,7 +21,6 @@ export function useFacilityInvitationsList(options: UseFacilityInvitationsListOp
         ...pageOptions,
         filters: {
           search: options.searchTerm.value.trim() || undefined,
-          status: ['pending'],
         },
       }),
     resolveErrorMessage: resolveApiErrorMessage,

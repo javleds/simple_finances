@@ -4,6 +4,7 @@ import type { AccountMember } from '@/modules/accounts/types';
 import { AppEmptyState, AppText } from '@/modules/shared/components';
 
 const props = defineProps<{
+  canManage?: boolean;
   users: AccountMember[];
 }>();
 
@@ -24,6 +25,7 @@ const emit = defineEmits<{
       <AccountUserListItem
         v-for="user in props.users"
         :key="user.id"
+        :can-manage="props.canManage"
         access-label="Cuenta compartida"
         :allocation-percentage="user.allocationPercentage"
         :email="user.email"

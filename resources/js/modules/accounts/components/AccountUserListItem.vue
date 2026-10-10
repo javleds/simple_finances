@@ -4,6 +4,7 @@ import { AppActionMenu, AppCard } from '@/modules/shared/components';
 type UserAccessStatus = 'active' | 'invited';
 
 const props = defineProps<{
+  canManage?: boolean;
   itemId: string;
   name: string;
   email: string;
@@ -107,7 +108,12 @@ function settlementLabel(value: number): string {
           </p>
         </div>
 
-        <AppActionMenu class="shrink-0" @delete="handleDelete" @edit="handleEdit" />
+        <AppActionMenu
+          v-if="props.canManage !== false"
+          class="shrink-0"
+          @delete="handleDelete"
+          @edit="handleEdit"
+        />
       </div>
 
       <div class="flex items-center justify-between gap-3">

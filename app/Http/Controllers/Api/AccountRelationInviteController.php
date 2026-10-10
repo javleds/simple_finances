@@ -22,7 +22,7 @@ class AccountRelationInviteController extends ApiController
 
     public function index(Account $account, Request $request): JsonResponse
     {
-        $this->ensureOwner($account);
+        $this->authorizeAccountAccess->ensureMember($account);
 
         $query = $account->invites()
             ->with(['account', 'user'])
@@ -53,7 +53,8 @@ class AccountRelationInviteController extends ApiController
 
     public function show(Account $account, AccountInvite $invite): JsonResponse
     {
-        $this->ensureAccountInvite($account, $invite);
+        $this->authorizeAccountAccess->ensureMember($account);
+        $this->authorizeAccountAccess->ensureBelongsToAccount($account, $invite->account_id);
 
         return $this->respondModel($invite, ['account', 'user']);
     }

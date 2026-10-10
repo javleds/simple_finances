@@ -4,6 +4,7 @@ import type { AccountInvite } from '@/modules/accounts/schemas/accountInviteSche
 import { AppEmptyState, AppText } from '@/modules/shared/components';
 
 const props = defineProps<{
+  canManage?: boolean;
   invitations: AccountInvite[];
 }>();
 
@@ -39,6 +40,7 @@ function formatDateLabel(date: string | null): string {
       <AccountInvitationListItem
         v-for="invitation in props.invitations"
         :key="invitation.id"
+        :can-manage="props.canManage"
         :email="invitation.email"
         :item-id="invitation.id"
         :meta-label="formatDateLabel(invitation.invitedAt)"

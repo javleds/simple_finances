@@ -64,7 +64,6 @@ const {
     confirmInvitationAction,
 } = useFacilityInvitationActions({
     invitations: invitationsState.items,
-    removeInvitation: invitationsState.removeItem,
     replaceInvitation: invitationsState.replaceItem,
 });
 

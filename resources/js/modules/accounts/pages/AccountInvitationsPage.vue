@@ -13,9 +13,16 @@ import { useAccountInvitationFilters } from '@/modules/accounts/composables/useA
 import { useAccountInvitationModalActions } from '@/modules/accounts/composables/useAccountInvitationModalActions';
 import { useAccountInvitationModals } from '@/modules/accounts/composables/useAccountInvitationModals';
 import { useAccountInvitesCrud } from '@/modules/accounts/composables/useAccountInvitesCrud';
+import type { Account } from '@/modules/accounts/types';
 import type { AccountInviteStatus } from '@/modules/accounts/schemas/accountInviteSchemas';
+import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 import { AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
+
+const props = defineProps<{ account: Account | null }>();
+const canManage = computed(() =>
+    Boolean(props.account && props.account.ownerId === getStoredAuthSession()?.user.id),
+);
 
 const route = useRoute();
 const { activeFilters, clearFilters, searchTerm, selectedStatuses, toggleStatus } =
@@ -152,6 +159,7 @@ watch(
 <template>
     <section class="space-y-4">
         <AccountInvitationsToolbar
+            :can-manage="canManage"
             v-model:search-term="searchTerm"
             @create="openCreateInvitation"
             @open-filters="openFilters"
@@ -173,6 +181,7 @@ watch(
             @retry="reloadInvitations"
         >
             <AccountInvitationsList
+                :can-manage="canManage"
                 :invitations="invites"
                 @delete="openDeleteInvitation"
                 @edit="openEditInvitation"
