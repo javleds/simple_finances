@@ -16,8 +16,9 @@ import {
 const themeStore = useThemeStore();
 
 const themeOptions = [
-    { value: THEME_MODE.LIGHT, label: 'Light' },
-    { value: THEME_MODE.DARK, label: 'Dark' },
+    { value: THEME_MODE.LIGHT, label: 'Claro' },
+    { value: THEME_MODE.DARK, label: 'Oscuro' },
+    { value: THEME_MODE.SYSTEM, label: 'Sistema' },
 ] as const;
 
 const {
@@ -38,12 +39,11 @@ function updateTheme(nextTheme: ThemeMode): void {
     <div class="space-y-5">
         <WhatsappConnectionCard />
         <AppCard class="rounded-3xl">
-            <div class="flex items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="space-y-1">
                     <AppTitle as="h2" size="sm">Tema visual</AppTitle>
                     <AppText
-                        >Cambia entre light y dark mode para toda la experiencia
-                        administrativa.</AppText
+                        >Elige un tema claro, oscuro o según tu dispositivo.</AppText
                     >
                 </div>
 

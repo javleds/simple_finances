@@ -2,7 +2,6 @@
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import AuthThemeSelector from '@/modules/auth/components/AuthThemeSelector.vue';
 import RegisterLegalFields from '@/modules/auth/components/RegisterLegalFields.vue';
 import RegisterLegalModals, {
   type RegisterLegalDocument,
@@ -15,7 +14,6 @@ import {
 } from '@/modules/auth/lib/postAuthRedirect';
 import type { AuthSession } from '@/modules/auth/schemas/authSchemas';
 import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
-import { useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
   AppCard,
@@ -26,7 +24,6 @@ import {
   AppTitle,
 } from '@/modules/shared/components';
 
-const themeStore = useThemeStore();
 const route = useRoute();
 const router = useRouter();
 const authRepository = createAuthRepository();
@@ -63,10 +60,6 @@ watch(
   },
   { immediate: true },
 );
-
-function updateTheme(nextTheme: ThemeMode): void {
-  themeStore.setTheme(nextTheme);
-}
 
 function openDocument(document: Exclude<RegisterLegalDocument, null>): void {
   activeDocument.value = document;
@@ -122,7 +115,7 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <section
-    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-(--app-color-page) px-4 py-10 text-(--app-color-text) sm:px-6 lg:px-8"
+    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-(--app-color-page) px-4 pt-24 pb-10 text-(--app-color-text) sm:px-6 lg:px-8"
   >
     <div
       class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--app-color-page-glow),_transparent_48%)]"
@@ -131,8 +124,6 @@ async function handleSubmit(): Promise<void> {
     <div class="w-full max-w-md">
       <AppCard>
         <div class="space-y-6">
-          <AuthThemeSelector :mode="themeStore.mode" @update:mode="updateTheme" />
-
           <div class="space-y-2">
             <AppTitle as="h1" size="md">Crear cuenta</AppTitle>
             <AppText>Completa tus datos para registrarte y comenzar.</AppText>

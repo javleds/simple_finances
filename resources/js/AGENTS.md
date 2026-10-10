@@ -64,6 +64,9 @@ Current shared components:
 - `AppActiveFilters`: etiquetas removibles de filtros aplicados.
   Path: `resources/js/modules/shared/components/AppActiveFilters.vue`
 
+- `AppThemeMenu`: botón con menú Claro, Oscuro y Sistema; comparte la preferencia persistida de Pinia entre autenticación y el encabezado de la aplicación.
+  Path: `resources/js/modules/shared/components/AppThemeMenu.vue`
+
 Barrel export:
 
 - `resources/js/modules/shared/components/index.ts`

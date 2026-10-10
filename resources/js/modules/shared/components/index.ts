@@ -26,3 +26,4 @@ export { default as AppFilterPanel } from './AppFilterPanel.vue';
 export { default as AppFilterOptions } from './AppFilterOptions.vue';
 export { default as AppFilterTrigger } from './AppFilterTrigger.vue';
 export { default as AppActiveFilters } from './AppActiveFilters.vue';
+export { default as AppThemeMenu } from './AppThemeMenu.vue';

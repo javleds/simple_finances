@@ -7,27 +7,19 @@ import { clearPendingVerificationEmail } from '@/modules/auth/lib/authSession';
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { usePasswordResetForm } from '@/modules/auth/composables/usePasswordResetForm';
 import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
-import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import {
   AppButton,
   AppCard,
   AppLink,
   AppPasswordInput,
   AppText,
-  AppToggleButton,
   AppTitle,
 } from '@/modules/shared/components';
 
-const themeStore = useThemeStore();
 const router = useRouter();
 const route = useRoute();
 const authRepository = createAuthRepository();
 const serverError = ref<string | null>(null);
-
-const themeOptions = [
-  { value: THEME_MODE.LIGHT, label: 'Light' },
-  { value: THEME_MODE.DARK, label: 'Dark' },
-] as const;
 
 const initialToken = computed(() =>
   typeof route.query.token === 'string' ? route.query.token : '',
@@ -45,10 +37,6 @@ const { error: passwordError, touch: touchPassword } = useFormFieldInteraction('
 const { error: passwordConfirmationError, touch: touchPasswordConfirmation } =
   useFormFieldInteraction('passwordConfirmation');
 const isResetPending = ref(false);
-
-function updateTheme(nextTheme: ThemeMode): void {
-  themeStore.setTheme(nextTheme);
-}
 
 async function handleSubmit(): Promise<void> {
   if (isResetPending.value) {
@@ -80,7 +68,7 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <section
-    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-(--app-color-page) px-4 py-10 text-(--app-color-text) sm:px-6 lg:px-8"
+    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-(--app-color-page) px-4 pt-24 pb-10 text-(--app-color-text) sm:px-6 lg:px-8"
   >
     <div
       class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--app-color-page-glow),_transparent_48%)]"
@@ -89,28 +77,6 @@ async function handleSubmit(): Promise<void> {
     <div class="w-full max-w-md">
       <AppCard>
         <div class="space-y-6">
-          <AppCard
-            muted
-            :padded="false"
-            class="rounded-xl px-4 py-3"
-            :style="{ borderColor: 'var(--app-color-border-strong)' }"
-          >
-            <div class="flex items-center justify-between gap-4">
-              <div class="space-y-1">
-                <AppText as="div" tone="muted" class="font-medium text-(--app-color-text)">
-                  Tema visual
-                </AppText>
-                <AppText size="sm" tone="subtle"> Cambia entre light y dark mode. </AppText>
-              </div>
-
-              <AppToggleButton
-                :model-value="themeStore.mode"
-                :options="themeOptions"
-                @update:model-value="updateTheme"
-              />
-            </div>
-          </AppCard>
-
           <div class="space-y-2">
             <AppTitle as="h1" size="md">Restablecer contraseña</AppTitle>
             <AppText>

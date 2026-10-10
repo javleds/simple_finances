@@ -25,6 +25,7 @@ import {
 } from '@heroicons/vue/24/solid';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 
+import { AppThemeMenu } from '@/modules/shared/components';
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 
 type AdminNavigationItem = {
@@ -158,7 +159,7 @@ async function handleLogout(): Promise<void> {
             class="fixed top-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-b bg-[color-mix(in_srgb,var(--app-color-surface)_94%,transparent)] px-5 pt-5 pb-4 backdrop-blur"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
-            <div class="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-3">
+            <div class="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3">
                 <div class="flex justify-start">
                     <RouterLink
                         v-if="showBackButton()"
@@ -197,7 +198,8 @@ async function handleLogout(): Promise<void> {
                     </h1>
                 </div>
 
-                <div class="relative flex justify-end">
+                <div class="relative flex items-center justify-end gap-2">
+                    <AppThemeMenu />
                     <Button
                         variant="text"
                         severity="secondary"
