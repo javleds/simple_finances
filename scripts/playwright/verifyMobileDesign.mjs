@@ -32,7 +32,18 @@ const account = {
     cutoff_day: null,
 };
 const fixtures = new Map([
-    ['/api/accounts', [account]],
+    [
+        '/api/accounts',
+        [
+            account,
+            { ...account, id: 2, name: 'Second account' },
+            { ...account, id: 3, name: 'Third account' },
+        ],
+    ],
+    ['/api/accounts/1', { data: account }],
+    ['/api/accounts/1/users', []],
+    ['/api/accounts/1/transactions', []],
+    ['/api/accounts/1/financial-goals', []],
     [
         '/api/subscriptions',
         [
@@ -50,6 +61,127 @@ const fixtures = new Map([
     ['/api/fixed-incomes', [{ id: 1, name: 'Fixture rule', frequency: 'monthly' }]],
     ['/api/fixed-outcomes', []],
 ]);
+const transaction = {
+    id: 1,
+    account_id: 1,
+    user_id: 1,
+    concept: 'Desktop movement',
+    financial_goal_id: null,
+    amount: '123456.78',
+    type: 'outcome',
+    scheduled_at: '2026-10-10',
+    status: 'completed',
+    current_user_pending_reimbursement_amount: 120,
+    current_user_receivable_reimbursement_amount: 50,
+};
+fixtures.set('/api/accounts/1/transactions', [transaction]);
+for (const [pathname, payload] of [
+    [
+        '/api/dashboard/graph',
+        { data: [{ account_id: 1, account_name: 'Daily account', balance: 2500 }] },
+    ],
+    [
+        '/api/dashboard/accounts',
+        { data: { summary: { active_accounts: 3, shared_accounts: 1, virtual_accounts: 1 } } },
+    ],
+    [
+        '/api/dashboard/subscriptions',
+        {
+            data: {
+                annual_total: 1500,
+                savings_target_today: 500,
+                upcoming_commitment: 1500,
+                subscriptions_count: 1,
+            },
+        },
+    ],
+    [
+        '/api/dashboard/period-summary',
+        {
+            data: {
+                period: { start_date: '2026-10-01', end_date: '2026-10-31' },
+                income_total: 5000,
+                outcome_total: 2500,
+                balance: 2500,
+            },
+        },
+    ],
+    [
+        '/api/virtual-accounts',
+        {
+            data: {
+                summary: {
+                    current_balance: 2500,
+                    initial_balance: 2000,
+                    manual_contributions: 500,
+                    manual_withdrawals: 0,
+                    net_capital: 2500,
+                    observed_yield: 0,
+                    accounts_count: 1,
+                },
+                accounts: [
+                    {
+                        account_id: 1,
+                        account_name: 'Savings reserve',
+                        current_balance: 2500,
+                        initial_balance: 2000,
+                        manual_contributions: 500,
+                        manual_withdrawals: 0,
+                        net_capital: 2500,
+                        observed_yield: 0,
+                        accounts_count: 1,
+                    },
+                ],
+            },
+        },
+    ],
+    ['/api/accounts/1/balance-snapshots', { data: [] }],
+    ['/api/account-invites', []],
+    ['/api/accounts/1/account-invites', []],
+    ['/api/accounts/1/invites', []],
+    [
+        '/api/accounts/1/ledger',
+        [
+            {
+                id: 1,
+                source_type: 'transaction',
+                label: 'Opening balance',
+                description: 'Initial account funding',
+                amount: 2500,
+                balance_after: 2500,
+            },
+        ],
+    ],
+    ['/api/accounts/1/ledger/diagnostics', { data: { diagnostics: [], repairs: [] } }],
+    ['/api/fixed-incomes/1', { id: 1, name: 'Fixture rule', frequency: 'monthly' }],
+    [
+        '/api/profile',
+        {
+            id: 1,
+            name: 'Desktop Fixture',
+            email: 'fixture@example.test',
+            is_email_verified: true,
+            telegram_chat_id: null,
+        },
+    ],
+    [
+        '/api/notification-settings',
+        {
+            data: {
+                notification_types: [{ id: 1, name: 'Weekly summary', checked: true }],
+                accounts: [{ id: 1, name: 'Daily account', checked: true }],
+            },
+        },
+    ],
+    [
+        '/api/transactions',
+        {
+            data: [transaction],
+            meta: { summary: { income_total: 0, outcome_total: 123456.78, balance: -123456.78 } },
+        },
+    ],
+])
+    fixtures.set(pathname, payload);
 const failures = [];
 let cases = 0;
 const browser = await chromium.launch();
@@ -69,7 +201,7 @@ async function prepare(width, height, theme, authenticated = true) {
     });
     await page.addInitScript((mode) => localStorage.setItem('theme-mode', mode), theme);
     if (authenticated) await installAuthSession(page, session);
-    await context.route('**/api/**', async (route) => {
+    await context.route(`${appUrl}/api/**`, async (route) => {
         const request = route.request();
         const pathname = new URL(request.url()).pathname;
         if (request.method() !== 'GET') {
@@ -127,9 +259,9 @@ async function dialogReady(page, name) {
 async function closeWithFocus(page, trigger, dialog) {
     await page.keyboard.press('Escape');
     await dialog.waitFor({ state: 'hidden' });
-    assert.ok(
-        await trigger.evaluate((element) => element === document.activeElement),
-        'Focus did not return to the opening control',
+    await page.waitForFunction(
+        (element) => element === document.activeElement,
+        await trigger.elementHandle(),
     );
 }
 
@@ -265,7 +397,7 @@ async function runCase(label, action) {
 }
 
 try {
-    for (const width of [360, 390, 430]) {
+    for (const width of process.env.PW_DESKTOP_ONLY ? [] : [360, 390, 430]) {
         for (const height of [640, 844]) {
             for (const theme of ['light', 'dark']) {
                 const label = `${width}x${height} ${theme}`;
@@ -287,26 +419,144 @@ try {
             }
         }
     }
-    const desktop = await prepare(1440, 1000, 'light');
-    try {
-        await runCase('desktop root header compatibility', async () => {
-            await desktop.page.goto(`${appUrl}/admin/subscriptions`);
-            const brand = desktop.page
-                .locator('header')
-                .getByText('Finanzas Simples', { exact: true });
-            await brand.waitFor();
-            assert.ok((await brand.boundingBox()).width > 100, 'Desktop brand is compressed');
-            assert.equal(
-                await desktop.page
-                    .getByRole('navigation', { name: 'Navegación principal' })
-                    .getByRole('link')
-                    .count(),
-                6,
-                'Primary navigation destinations changed',
-            );
-        });
-    } finally {
-        await desktop.context.close();
+    for (const width of [1023, 1024, 1280, 1440, 1920]) {
+        for (const theme of ['light', 'dark']) {
+            const desktop = await prepare(width, 1000, theme);
+            try {
+                await runCase(`${width}px ${theme} responsive layout`, async () => {
+                    const page = desktop.page;
+                    await page.goto(`${appUrl}/admin/accounts`);
+                    const first = page.getByRole('button').filter({ hasText: account.name });
+                    const second = page.getByRole('button').filter({ hasText: 'Second account' });
+                    await first.waitFor();
+                    await second.waitFor();
+                    const navigation = page.getByRole('navigation', {
+                        name: 'Navegación principal',
+                    });
+                    assert.equal(await navigation.getByRole('link').count(), 6);
+                    const navBox = await navigation.boundingBox();
+                    const mainBox = await page.locator('main').boundingBox();
+                    if (width >= 1024) {
+                        assert.equal(navBox.x, 0);
+                        assert.equal(navBox.y, 0);
+                        assert.equal(navBox.width, 240);
+                        assert.ok(mainBox.x >= 240 && mainBox.width > 430);
+                        const firstBox = await first.boundingBox();
+                        const secondBox = await second.boundingBox();
+                        assert.ok(
+                            Math.abs(firstBox.y - secondBox.y) < 2,
+                            'Account cards are not side by side',
+                        );
+                    } else {
+                        assert.ok(mainBox.width <= 430);
+                        assert.ok(navBox.y >= 900, 'Mobile navigation moved from the bottom');
+                    }
+                    if (width >= 1440) {
+                        const thirdBox = await page
+                            .getByRole('button')
+                            .filter({ hasText: 'Third account' })
+                            .boundingBox();
+                        assert.ok(
+                            Math.abs((await first.boundingBox()).y - thirdBox.y) < 2,
+                            'Third account is not on the first row',
+                        );
+                    }
+                    await noOverflow(page);
+                    await page.goto(`${appUrl}/admin/accounts/1/transactions`);
+                    const tabs = page.getByRole('tablist');
+                    await tabs.waitFor();
+                    if (width >= 1024) {
+                        const titleBox = await page
+                            .getByRole('heading', { name: account.name, exact: true })
+                            .locator('..')
+                            .boundingBox();
+                        const tabsBox = await tabs.boundingBox();
+                        assert.ok(
+                            tabsBox.y >= titleBox.y + titleBox.height &&
+                                tabsBox.y < titleBox.y + titleBox.height + 100,
+                            'Account tabs are not below the account heading',
+                        );
+                    }
+                    await noOverflow(page);
+                    for (const path of [
+                        '/admin/dashboard',
+                        '/admin/virtual-accounts',
+                        '/admin/distribution',
+                        '/admin/distribution/1',
+                        '/admin/settings',
+                        '/admin/settings/utilities/credit-card-payoff',
+                        '/admin/profile',
+                        '/admin/invitations',
+                        '/transactions',
+                        '/admin/accounts/1/ledger',
+                        '/admin/accounts/1/goals',
+                        '/admin/accounts/1/users',
+                        '/admin/accounts/1/invitations',
+                    ]) {
+                        await page.goto(`${appUrl}${path}`);
+                        await page.locator('main').waitFor();
+                        await page.waitForLoadState('networkidle');
+                        await page.waitForFunction(
+                            () => !document.querySelector('main')?.innerText.includes('Cargando'),
+                        );
+                        assert.equal(
+                            await page.locator('main .p-message-error').count(),
+                            0,
+                            `Page error at ${path}: ${await page.locator('main').innerText()}`,
+                        );
+                        assert.ok(
+                            !(await page.locator('main').innerText()).includes('invalid_type'),
+                            `Invalid fixture at ${path}`,
+                        );
+                        await noOverflow(page);
+                        if (width === 1440 && process.env.PW_SCREENSHOT_DIR)
+                            await page.screenshot({
+                                path: `${process.env.PW_SCREENSHOT_DIR}/${path.replaceAll('/', '-')}-${theme}.png`,
+                                fullPage: true,
+                            });
+                    }
+                    await page.goto(`${appUrl}/admin/subscriptions`);
+                    await page.getByText('Fixture subscription', { exact: true }).waitFor();
+                    const trigger = page.getByRole('button', {
+                        name: 'Crear suscripción',
+                        exact: true,
+                    });
+                    await trigger.click();
+                    const dialog = await dialogReady(page, 'Nueva suscripción');
+                    await dialog
+                        .getByLabel('Nombre', { exact: true })
+                        .fill('Preserved resize draft');
+                    await page.setViewportSize({ width: 390, height: 844 });
+                    assert.equal(
+                        await dialog.getByLabel('Nombre', { exact: true }).inputValue(),
+                        'Preserved resize draft',
+                    );
+                    await withinViewport(page, dialog);
+                    await page.setViewportSize({ width, height: 1000 });
+                    assert.equal(
+                        await dialog.getByLabel('Nombre', { exact: true }).inputValue(),
+                        'Preserved resize draft',
+                    );
+                    await withinViewport(page, dialog);
+                    await closeWithFocus(page, trigger, dialog);
+                    await noOverflow(page);
+                    if (width === 1440 && process.env.PW_SCREENSHOT_DIR) {
+                        await page.screenshot({
+                            path: `${process.env.PW_SCREENSHOT_DIR}/subscriptions-${theme}.png`,
+                            fullPage: true,
+                        });
+                        await page.goto(`${appUrl}/admin/accounts`);
+                        await first.waitFor();
+                        await page.screenshot({
+                            path: `${process.env.PW_SCREENSHOT_DIR}/accounts-${theme}.png`,
+                            fullPage: true,
+                        });
+                    }
+                });
+            } finally {
+                await desktop.context.close();
+            }
+        }
     }
 } finally {
     await browser.close();
