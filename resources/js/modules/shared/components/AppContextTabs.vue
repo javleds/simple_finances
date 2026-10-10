@@ -39,9 +39,9 @@ function selectTab(value: string | number): void {
                 v-for="option in props.options"
                 :key="option.value"
                 :value="option.value"
-                class="gap-2 whitespace-nowrap"
+                class="inline-flex flex-row items-center gap-2 whitespace-nowrap"
             >
-                <component :is="option.icon" v-if="option.icon" class="h-4 w-4" />
+                <component :is="option.icon" v-if="option.icon" class="h-4 w-4 shrink-0" />
                 <span>{{ option.label }}</span>
             </Tab>
         </TabList>
