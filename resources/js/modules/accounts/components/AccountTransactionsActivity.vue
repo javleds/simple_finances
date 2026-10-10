@@ -39,6 +39,8 @@ const emit = defineEmits<{
         @update:search-term="emit('update:searchTerm', $event)"
     />
 
+    <slot name="filters" />
+
     <Message v-if="props.loadError && props.hasTransactions" severity="error">{{
         props.loadError
     }}</Message>

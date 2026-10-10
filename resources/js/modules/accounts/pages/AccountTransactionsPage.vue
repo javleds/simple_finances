@@ -257,16 +257,6 @@ async function handleSettleAllAccountReimbursements(
             @settle-account="handleSettleAccountReimbursements"
         />
 
-        <AppActiveFilters
-            :filters="
-                selectedTypes.map((type) => ({
-                    key: type,
-                    label: type === 'income' ? 'Ingreso' : 'Egreso',
-                    remove: () => toggleType(type),
-                }))
-            "
-        />
-
         <AccountTransactionsActivity
             :active-filter-count="selectedTypes.length"
             :filters-open="isFiltersOpen"
@@ -285,6 +275,17 @@ async function handleSettleAllAccountReimbursements(
             @open-filters="openFilters"
             @retry="reloadTransactions"
         >
+            <template #filters>
+                <AppActiveFilters
+                    :filters="
+                        selectedTypes.map((type) => ({
+                            key: type,
+                            label: type === 'income' ? 'Ingreso' : 'Egreso',
+                            remove: () => toggleType(type),
+                        }))
+                    "
+                />
+            </template>
             <template #loadMoreSentinel>
                 <div ref="loadMoreSentinel" class="h-1 w-full" aria-hidden="true" />
             </template>
