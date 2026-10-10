@@ -75,7 +75,9 @@ function handleAction(actionKey: string): void {
 
 <template>
     <AppCard class="p-4! transition hover:border-(--app-color-border-strong)">
-        <div class="relative space-y-3">
+        <div
+            class="relative space-y-3 lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-center lg:gap-6 lg:space-y-0"
+        >
             <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                 <div class="min-w-0 space-y-1">
                     <p

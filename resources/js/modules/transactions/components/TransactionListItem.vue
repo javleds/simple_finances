@@ -121,7 +121,7 @@ function handleDelete(): void {
         />
 
         <div
-            class="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+            class="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 sm:grid-cols-[minmax(0,1fr)_auto_auto] lg:grid-cols-[minmax(0,1fr)_7rem_minmax(8rem,auto)_2.75rem] lg:items-center lg:gap-x-4"
         >
             <div class="min-w-0">
                 <p class="text-sm leading-5 font-semibold break-words text-(--app-color-text)">
@@ -130,7 +130,7 @@ function handleDelete(): void {
             </div>
 
             <div
-                class="col-start-1 row-start-2 flex min-w-0 flex-col items-start gap-1.5 sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:items-end"
+                class="col-start-1 row-start-2 flex min-w-0 flex-col items-start gap-1.5 sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:items-end lg:col-start-3 lg:row-span-2"
             >
                 <p
                     class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap tabular-nums sm:text-base"
@@ -162,14 +162,14 @@ function handleDelete(): void {
 
             <AppActionMenu
                 v-if="props.showActions"
-                class="col-start-2 row-span-2 row-start-1 shrink-0 sm:col-start-3"
+                class="col-start-2 row-span-2 row-start-1 shrink-0 sm:col-start-3 lg:col-start-4"
                 :actions="actionMenuItems"
                 @delete="handleDelete"
                 @edit="handleEdit"
             />
             <div
                 v-else
-                class="col-start-2 row-span-2 row-start-1 w-11 shrink-0 sm:col-start-3 sm:h-6 sm:w-7"
+                class="col-start-2 row-span-2 row-start-1 w-11 shrink-0 sm:col-start-3 sm:h-6 sm:w-7 lg:col-start-4"
                 aria-hidden="true"
             />
 
@@ -180,11 +180,10 @@ function handleDelete(): void {
             </p>
 
             <p
-                class="col-start-2 row-start-3 justify-self-end text-[11px] font-medium tracking-[0.04em] whitespace-nowrap text-(--app-color-text-subtle) uppercase sm:col-start-2 sm:row-start-2 sm:justify-self-end"
+                class="col-start-2 row-start-3 justify-self-end text-[11px] font-medium tracking-[0.04em] whitespace-nowrap text-(--app-color-text-subtle) uppercase sm:col-start-2 sm:row-start-2 sm:justify-self-end lg:row-span-2 lg:row-start-1 lg:self-center"
             >
                 {{ props.dateLabel }}
             </p>
-
         </div>
     </AppCard>
 </template>

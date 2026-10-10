@@ -84,7 +84,9 @@ function settlementLabel(value: number): string {
             :style="{ background: accentStyle(props.status) }"
         />
 
-        <div class="relative space-y-3">
+        <div
+            class="relative space-y-3 lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-center lg:gap-6 lg:space-y-0"
+        >
             <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3">
                 <div class="min-w-0 space-y-1">
                     <p class="text-sm leading-5 font-semibold break-words text-(--app-color-text)">

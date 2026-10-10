@@ -20,7 +20,7 @@ const emit = defineEmits<{
       <AppText size="sm" tone="subtle">Scroll continuo</AppText>
     </div>
 
-    <div class="space-y-4">
+    <div class="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
       <DistributionRelationListItem
         v-for="relation in props.relations"
         :key="relation.id"
@@ -32,11 +32,12 @@ const emit = defineEmits<{
       />
 
       <AppEmptyState
+        class="lg:col-span-full"
         v-if="props.relations.length === 0"
         message="Esta regla todavía no tiene relaciones registradas."
       />
 
-      <slot name="footer" />
+      <div v-if="$slots.footer" class="lg:col-span-full"><slot name="footer" /></div>
     </div>
   </section>
 </template>

@@ -108,7 +108,9 @@ function handleAction(actionKey: string): void {
             :style="{ background: accentStyle(props.status) }"
         />
 
-        <div class="relative space-y-3">
+        <div
+            class="relative space-y-3 lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-center lg:gap-6 lg:space-y-0"
+        >
             <div
                 class="grid items-start gap-3"
                 :class="

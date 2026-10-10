@@ -42,7 +42,7 @@ function formatDateLabel(date: string | null | undefined): string {
       <AppText size="sm" tone="subtle">Scroll continuo</AppText>
     </div>
 
-    <div class="space-y-4">
+    <div class="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
       <SubscriptionListItem
         v-for="subscription in props.subscriptions"
         :key="subscription.id"
@@ -57,11 +57,12 @@ function formatDateLabel(date: string | null | undefined): string {
       />
 
       <AppEmptyState
+        class="lg:col-span-full"
         v-if="props.subscriptions.length === 0"
         message="No hay suscripciones que coincidan con la búsqueda o los filtros actuales."
       />
 
-      <slot name="footer" />
+      <div v-if="$slots.footer" class="lg:col-span-full"><slot name="footer" /></div>
     </div>
   </section>
 </template>

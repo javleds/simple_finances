@@ -35,7 +35,7 @@ function handleFormStateChange(state: FormState): void {
 </script>
 
 <template>
-    <section class="space-y-6">
+    <section class="space-y-6 lg:max-w-3xl">
         <header class="space-y-1">
             <AppTitle as="h1" size="md">Perfil</AppTitle>
             <AppText>
@@ -45,7 +45,10 @@ function handleFormStateChange(state: FormState): void {
 
         <Message v-if="loadError && hasProfile" severity="error">{{ loadError }}</Message>
 
-        <section v-if="isLoading && !hasProfile" class="rounded-(--app-radius-control) border px-4 py-10 text-center">
+        <section
+            v-if="isLoading && !hasProfile"
+            class="rounded-(--app-radius-control) border px-4 py-10 text-center"
+        >
             <AppText>Cargando perfil...</AppText>
         </section>
 

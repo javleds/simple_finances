@@ -236,60 +236,65 @@ async function handleSettleAllAccountReimbursements(
 </script>
 
 <template>
-    <section class="space-y-4">
-        <AccountTransactionsHeader :balance="accountBalance" :custody-by-user="custodyByUser" />
+    <section
+        class="space-y-4 xl:grid xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start xl:gap-5 xl:space-y-0"
+    >
+        <div class="space-y-4 xl:col-start-2 xl:row-start-1">
+            <AccountTransactionsHeader :balance="accountBalance" :custody-by-user="custodyByUser" />
 
-        <section
-            v-if="transferError"
-            class="rounded-(--app-radius-control) border border-(--app-color-danger) px-4 py-3"
-        >
-            <p class="text-sm font-medium text-(--app-color-danger)">{{ transferError }}</p>
-        </section>
+            <section
+                v-if="transferError"
+                class="rounded-(--app-radius-control) border border-(--app-color-danger) px-4 py-3"
+            >
+                <p class="text-sm font-medium text-(--app-color-danger)">{{ transferError }}</p>
+            </section>
 
-        <AccountReimbursementsPanel
-            :accounts="reimbursementAccounts"
-            :active-transfer-key="activeTransferKey"
-            :current-user-id="currentUserId"
-            :is-transferring="isTransferring"
-            title="Acciones pendientes"
-            @settle="handleSettleReimbursement"
-            @settle-all="handleSettleAllAccountReimbursements"
-            @settle-account="handleSettleAccountReimbursements"
-        />
-
-        <AccountTransactionsActivity
-            :active-filter-count="selectedTypes.length"
-            :filters-open="isFiltersOpen"
-            v-model:search-term="searchTerm"
-            :current-user-id="currentUserId"
-            :has-transactions="hasTransactions"
-            :infinite-status-label="infiniteStatusLabel()"
-            :is-loading="isLoading"
-            :load-error="loadError"
-            :show-load-more-retry="Boolean(loadError && hasTransactions)"
-            :transactions="transactions"
-            @create="openCreateTransactionModal"
-            @delete="openDeleteTransaction"
-            @edit="openEditTransaction"
-            @load-more-retry="handleLoadMoreRetry"
-            @open-filters="openFilters"
-            @retry="reloadTransactions"
-        >
-            <template #filters>
-                <AppActiveFilters
-                    :filters="
-                        selectedTypes.map((type) => ({
-                            key: type,
-                            label: type === 'income' ? 'Ingreso' : 'Egreso',
-                            remove: () => toggleType(type),
-                        }))
-                    "
-                />
-            </template>
-            <template #loadMoreSentinel>
-                <div ref="loadMoreSentinel" class="h-1 w-full" aria-hidden="true" />
-            </template>
-        </AccountTransactionsActivity>
+            <AccountReimbursementsPanel
+                :accounts="reimbursementAccounts"
+                :active-transfer-key="activeTransferKey"
+                :current-user-id="currentUserId"
+                :is-transferring="isTransferring"
+                title="Acciones pendientes"
+                @settle="handleSettleReimbursement"
+                @settle-all="handleSettleAllAccountReimbursements"
+                @settle-account="handleSettleAccountReimbursements"
+            />
+        </div>
+        <div class="min-w-0 space-y-4 xl:col-start-1 xl:row-start-1">
+            <AccountTransactionsActivity
+                :active-filter-count="selectedTypes.length"
+                :filters-open="isFiltersOpen"
+                v-model:search-term="searchTerm"
+                :current-user-id="currentUserId"
+                :has-transactions="hasTransactions"
+                :infinite-status-label="infiniteStatusLabel()"
+                :is-loading="isLoading"
+                :load-error="loadError"
+                :show-load-more-retry="Boolean(loadError && hasTransactions)"
+                :transactions="transactions"
+                @create="openCreateTransactionModal"
+                @delete="openDeleteTransaction"
+                @edit="openEditTransaction"
+                @load-more-retry="handleLoadMoreRetry"
+                @open-filters="openFilters"
+                @retry="reloadTransactions"
+            >
+                <template #filters>
+                    <AppActiveFilters
+                        :filters="
+                            selectedTypes.map((type) => ({
+                                key: type,
+                                label: type === 'income' ? 'Ingreso' : 'Egreso',
+                                remove: () => toggleType(type),
+                            }))
+                        "
+                    />
+                </template>
+                <template #loadMoreSentinel>
+                    <div ref="loadMoreSentinel" class="h-1 w-full" aria-hidden="true" />
+                </template>
+            </AccountTransactionsActivity>
+        </div>
 
         <AccountTransactionsFilters
             :open="isFiltersOpen"

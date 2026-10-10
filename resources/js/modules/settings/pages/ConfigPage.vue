@@ -22,8 +22,8 @@ const {
 </script>
 
 <template>
-    <div class="space-y-6">
-        <header class="space-y-1">
+    <div class="space-y-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
+        <header class="space-y-1 lg:col-span-full">
             <AppTitle as="h1">Configuración</AppTitle>
             <AppText>Administra tus conexiones, avisos y herramientas.</AppText>
         </header>

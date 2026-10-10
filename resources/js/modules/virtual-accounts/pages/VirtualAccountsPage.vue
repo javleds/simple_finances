@@ -187,7 +187,9 @@ function today(): string {
             loading-label="Cargando cuentas virtuales..."
             @retry="loadDashboard"
         >
-            <div class="space-y-4 sm:space-y-5">
+            <div
+                class="space-y-4 sm:space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0"
+            >
                 <AppCard class="rounded-(--app-radius-control) sm:rounded-(--app-radius-control)">
                     <div class="space-y-4 sm:space-y-5">
                         <AppHeroMetric
@@ -233,7 +235,7 @@ function today(): string {
                     </div>
                 </AppCard>
 
-                <section class="space-y-3">
+                <section class="space-y-3 lg:row-span-2">
                     <AppTitle as="h2" size="sm">Apartados</AppTitle>
 
                     <article

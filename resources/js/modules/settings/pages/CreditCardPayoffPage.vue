@@ -113,7 +113,7 @@ function resetCards(): void {
 </script>
 
 <template>
-    <div class="space-y-6">
+    <div class="space-y-6 lg:max-w-5xl">
         <div class="flex items-center gap-3">
             <RouterLink
                 :to="{ name: 'admin.settings' }"
@@ -129,7 +129,10 @@ function resetCards(): void {
             </div>
         </div>
 
-        <AppCard muted class="rounded-(--app-radius-control)! p-4! sm:rounded-(--app-radius-control)! sm:p-5!">
+        <AppCard
+            muted
+            class="rounded-(--app-radius-control)! p-4! sm:rounded-(--app-radius-control)! sm:p-5!"
+        >
             <div class="space-y-2">
                 <AppText size="sm" tone="muted">Solo es una ayuda temporal</AppText>
                 <AppText size="sm"
@@ -159,7 +162,7 @@ function resetCards(): void {
                 </Button>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
                 <AppCard
                     v-for="(card, index) in cards"
                     :key="card.id"

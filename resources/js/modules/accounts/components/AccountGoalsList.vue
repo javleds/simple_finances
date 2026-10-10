@@ -53,7 +53,7 @@ function formatDateLabel(date: string | null): string {
       <AppText size="sm" tone="subtle">Scroll continuo</AppText>
     </div>
 
-    <div class="space-y-4">
+    <div class="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
       <AccountGoalListItem
         v-for="goal in props.goals"
         :key="goal.id"
@@ -70,11 +70,12 @@ function formatDateLabel(date: string | null): string {
       />
 
       <AppEmptyState
+        class="lg:col-span-full"
         v-if="props.goals.length === 0"
         message="No hay metas que coincidan con la búsqueda o los filtros actuales."
       />
 
-      <slot name="footer" />
+      <div v-if="$slots.footer" class="lg:col-span-full"><slot name="footer" /></div>
     </div>
   </section>
 </template>
