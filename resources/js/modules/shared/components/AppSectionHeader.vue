@@ -44,7 +44,7 @@ const props = withDefaults(
                 v-if="$slots['secondary-metrics']"
                 class="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"
             >
-                <div class="flex min-w-max items-stretch gap-2">
+                <div class="flex min-w-max items-stretch gap-2 lg:min-w-0 lg:flex-wrap lg:gap-4">
                     <slot name="secondary-metrics" />
                 </div>
             </div>

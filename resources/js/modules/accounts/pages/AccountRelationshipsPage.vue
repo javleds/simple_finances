@@ -75,7 +75,7 @@ function handleAccountUsersChange(nextUsers: AccountMember[]): void {
 </script>
 
 <template>
-    <div v-if="isLoadingAccount && !account" class="space-y-6 sm:space-y-5 sm:pb-16">
+    <div v-if="isLoadingAccount && !account" class="space-y-6 sm:space-y-5 sm:pb-16 lg:pb-0">
         <AppCard class="rounded-(--app-radius-control)">
             <div class="space-y-3">
                 <AppTitle as="h2" size="sm">Cargando cuenta</AppTitle>
@@ -84,7 +84,7 @@ function handleAccountUsersChange(nextUsers: AccountMember[]): void {
         </AppCard>
     </div>
 
-    <div v-else-if="account" class="space-y-6 sm:space-y-5 sm:pb-16">
+    <div v-else-if="account" class="space-y-6 sm:space-y-5 sm:pb-16 lg:pb-0">
         <header class="space-y-1">
             <AppTitle as="h1" class="break-words">{{ account.name }}</AppTitle>
             <AppText v-if="account.description" tone="subtle">
@@ -93,7 +93,7 @@ function handleAccountUsersChange(nextUsers: AccountMember[]): void {
         </header>
 
         <div
-            class="sticky top-(--app-header-height) z-10 -mx-4 border-b border-(--app-color-border) bg-(--app-color-surface) sm:fixed sm:mb-0! sm:top-auto sm:bottom-(--app-bottom-nav-height) sm:left-1/2 sm:mx-0 sm:w-full sm:max-w-[430px] sm:-translate-x-1/2 sm:border-t"
+            class="sticky top-(--app-header-height) z-10 -mx-4 border-b border-(--app-color-border) bg-(--app-color-surface) sm:fixed sm:top-auto sm:bottom-(--app-bottom-nav-height) sm:left-1/2 sm:mx-0 sm:mb-0! sm:w-full sm:max-w-[430px] sm:-translate-x-1/2 sm:border-t lg:static lg:w-auto lg:max-w-none lg:translate-x-0 lg:border-t-0"
         >
             <AppContextTabs
                 :model-value="activeSection"

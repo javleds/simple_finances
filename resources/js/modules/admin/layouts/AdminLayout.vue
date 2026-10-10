@@ -33,6 +33,7 @@ type AdminNavigationItem = {
     routeName: string;
     icon: typeof HomeIcon;
     activeIcon: typeof HomeSolidIcon;
+    desktopLabel?: string;
 };
 
 type ProfileMenuAction = {
@@ -81,6 +82,7 @@ const navigationItems: AdminNavigationItem[] = [
     },
     {
         label: 'Subs',
+        desktopLabel: 'Suscripciones',
         routeName: 'admin.subscriptions',
         icon: CreditCardIcon,
         activeIcon: CreditCardSolidIcon,
@@ -93,12 +95,14 @@ const navigationItems: AdminNavigationItem[] = [
     },
     {
         label: 'Distro',
+        desktopLabel: 'Distribución',
         routeName: 'admin.distribution',
         icon: Squares2X2Icon,
         activeIcon: Squares2X2SolidIcon,
     },
     {
         label: 'Config',
+        desktopLabel: 'Configuración',
         routeName: 'admin.settings',
         icon: AdjustmentsHorizontalIcon,
         activeIcon: AdjustmentsHorizontalSolidIcon,
@@ -149,14 +153,14 @@ async function handleLogout(): Promise<void> {
 
 <template>
     <section
-        class="relative min-h-dvh bg-(--app-color-page) px-4 pt-(--app-header-height) pb-[calc(var(--app-bottom-nav-height)+1.5rem)] text-(--app-color-text) sm:overflow-hidden sm:px-6 sm:pt-8 sm:pb-32"
+        class="relative min-h-dvh bg-(--app-color-page) px-4 pt-(--app-header-height) pb-[calc(var(--app-bottom-nav-height)+1.5rem)] text-(--app-color-text) sm:overflow-hidden sm:px-6 sm:pt-8 sm:pb-32 lg:overflow-visible lg:pt-(--app-header-height) lg:pr-6 lg:pb-8 lg:pl-[264px]"
     >
         <div
             class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--app-color-page-glow),_transparent_52%)]"
         />
 
         <header
-            class="fixed top-0 left-1/2 z-20 flex h-(--app-header-height) w-full max-w-[430px] -translate-x-1/2 items-center border-b bg-(--app-color-surface) px-4 pt-[env(safe-area-inset-top)] sm:h-auto sm:px-5 sm:pt-5 sm:pb-4"
+            class="fixed top-0 left-1/2 z-20 flex h-(--app-header-height) w-full max-w-[430px] -translate-x-1/2 items-center border-b bg-(--app-color-surface) px-4 pt-[env(safe-area-inset-top)] sm:h-auto sm:px-5 sm:pt-5 sm:pb-4 lg:left-60 lg:h-(--app-header-height) lg:w-[calc(100%-15rem)] lg:max-w-none lg:translate-x-0 lg:px-8 lg:py-0"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
             <div
@@ -243,28 +247,31 @@ async function handleLogout(): Promise<void> {
         </header>
 
         <div
-            class="relative mx-auto flex min-h-[calc(100dvh-var(--app-header-height)-var(--app-bottom-nav-height))] max-w-[430px] pt-6 sm:min-h-[820px] sm:pt-[5.5rem]"
+            class="relative mx-auto flex min-h-[calc(100dvh-var(--app-header-height)-var(--app-bottom-nav-height))] max-w-[430px] pt-6 sm:min-h-[820px] sm:pt-[5.5rem] lg:min-h-[calc(100dvh-var(--app-header-height)-2rem)] lg:max-w-[1440px] lg:pt-8"
         >
             <div
-                class="flex w-full min-w-0 flex-col sm:overflow-hidden sm:rounded-(--app-radius-control) sm:border sm:bg-(--app-color-surface) sm:shadow-(--app-shadow-card)"
+                class="flex w-full min-w-0 flex-col sm:overflow-hidden sm:rounded-(--app-radius-control) sm:border sm:bg-(--app-color-surface) sm:shadow-(--app-shadow-card) lg:overflow-visible lg:border-0 lg:bg-transparent"
                 :style="{ borderColor: 'var(--app-color-border-strong)' }"
             >
-                <main class="min-w-0 flex-1 sm:overflow-y-auto sm:px-5 sm:pt-5 sm:pb-8">
+                <main
+                    class="min-w-0 flex-1 sm:overflow-y-auto sm:px-5 sm:pt-5 sm:pb-8 lg:overflow-visible lg:p-0"
+                >
                     <RouterView />
                 </main>
             </div>
         </div>
 
         <nav
-            class="fixed bottom-0 left-1/2 z-20 h-(--app-bottom-nav-height) w-full max-w-[430px] -translate-x-1/2 border-t bg-(--app-color-surface) px-1 pb-[env(safe-area-inset-bottom)] sm:border-x sm:px-2"
+            class="fixed bottom-0 left-1/2 z-20 h-(--app-bottom-nav-height) w-full max-w-[430px] -translate-x-1/2 border-t bg-(--app-color-surface) px-1 pb-[env(safe-area-inset-bottom)] sm:border-x sm:px-2 lg:top-0 lg:bottom-auto lg:left-0 lg:h-dvh lg:w-60 lg:max-w-none lg:translate-x-0 lg:overflow-y-auto lg:border-0 lg:border-r lg:px-4 lg:py-6"
             :style="{ borderColor: 'var(--app-color-border-strong)' }"
             aria-label="Navegación principal"
         >
-            <ul class="grid grid-cols-6 sm:gap-1">
+            <p class="mb-8 hidden px-3 text-lg font-semibold lg:block">Finanzas Simples</p>
+            <ul class="grid grid-cols-6 sm:gap-1 lg:flex lg:flex-col lg:gap-2">
                 <li v-for="item in navigationItems" :key="item.routeName">
                     <RouterLink
                         :to="{ name: item.routeName }"
-                        class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-(--app-radius-control) px-0.5 py-2 text-center transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none sm:rounded-(--app-radius-control) sm:px-1"
+                        class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-(--app-radius-control) px-0.5 py-2 text-center transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none sm:rounded-(--app-radius-control) sm:px-1 lg:min-h-12 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-left"
                         :class="
                             isActiveRoute(item.routeName)
                                 ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
@@ -275,7 +282,12 @@ async function handleLogout(): Promise<void> {
                             :is="isActiveRoute(item.routeName) ? item.activeIcon : item.icon"
                             class="h-5 w-5 shrink-0"
                         />
-                        <span class="text-xs leading-4 font-medium">{{ item.label }}</span>
+                        <span class="text-xs leading-4 font-medium lg:hidden">{{
+                            item.label
+                        }}</span>
+                        <span class="hidden text-sm font-medium lg:inline">{{
+                            item.desktopLabel ?? item.label
+                        }}</span>
                     </RouterLink>
                 </li>
             </ul>
