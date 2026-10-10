@@ -25,18 +25,20 @@ const currencyOptions: Intl.NumberFormatOptions = {
 };
 const currencyFormatter = new Intl.NumberFormat('es-MX', currencyOptions);
 const colors = computed(() => props.accounts.map((account) => account.color ?? '#64748b'));
+const chartKey = computed(() => props.accounts.map((account) => account.accountId).join(','));
+const chartHeight = computed(() => Math.max(220, props.accounts.length * 36 + 48));
 
 function accountLabel(value: TickValue): string {
     const account = props.accounts.find((item) => item.accountId === String(value));
     const label = account?.accountName ?? String(value);
 
-    return label.length > 14 ? `${label.slice(0, 12)}...` : label;
+    return label.length > 28 ? `${label.slice(0, 26)}…` : label;
 }
 
 function compactCurrency(value: TickValue): string {
     const amount = Number(value);
 
-    if (amount >= 1000) {
+    if (Math.abs(amount) >= 1000) {
         return `$${(amount / 1000).toFixed(0)}k`;
     }
 
@@ -54,28 +56,31 @@ function renderTooltip(context: TooltipRenderContext): VNode {
 </script>
 
 <template>
-    <div class="min-h-[250px] w-full min-w-0">
-        <ChartSvg :height="250" locale="es-MX" :number-format="currencyOptions" class="w-full">
+    <div class="w-full min-w-0">
+        <ChartSvg
+            :key="chartKey"
+            :height="chartHeight"
+            locale="es-MX"
+            :number-format="currencyOptions"
+            class="w-full"
+        >
             <ChartBar
                 :data="props.accounts"
-                category-x-field="accountId"
-                value-y-field="balance"
+                category-y-field="accountId"
+                value-x-field="balance"
                 key-field="accountId"
                 name="Balance"
-                color="transparent"
+                :color="colors"
                 :border-color="colors"
                 :border-stroke-width="2"
-                :max-bar-thickness="13"
+                :max-bar-thickness="16"
             />
-            <ChartXAxis :tick-format="accountLabel" :tick-rotation="90" :grid-lines="false" />
-            <ChartYAxis :tick-format="compactCurrency" :grid-lines="true" />
+            <ChartXAxis :tick-format="compactCurrency" :tick-count="3" :grid-lines="true" />
+            <ChartYAxis :tick-format="accountLabel" :grid-lines="false" />
             <ChartTooltip :render="renderTooltip" />
             <ChartAccessibility description="Balance por cuenta, expresado en pesos mexicanos." />
         </ChartSvg>
-        <ul
-            class="mt-4 divide-y divide-(--app-color-border) sm:hidden"
-            aria-label="Balances por cuenta"
-        >
+        <ul class="mt-4 divide-y divide-(--app-color-border)" aria-label="Balances por cuenta">
             <li
                 v-for="account in props.accounts"
                 :key="account.accountId"
