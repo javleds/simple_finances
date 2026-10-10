@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Message from 'primevue/message';
 import Checkbox from 'primevue/checkbox';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, watchEffect } from 'vue';
 
 import type { AccountMember } from '@/modules/accounts/types';
 import { useTransactionForm } from '@/modules/transactions/composables/useTransactionForm';
@@ -101,9 +101,17 @@ const accountUserOptions = computed(() =>
         description: user.email,
     })),
 );
+const hasNoAccountFunds = computed(
+    () => hasSharedAccount.value && props.accountBalance !== null && props.accountBalance <= 0,
+);
+const requiresPersonalPayment = computed(() => hasNoAccountFunds.value && !props.initialValues?.id);
 const paymentSourceOptions = computed(() => [
-    { value: 'account_fund' as const, label: 'Fondo', disabled: false },
-    { value: 'member_out_of_pocket' as const, label: 'Bolsillo' },
+    {
+        value: 'account_fund' as const,
+        label: 'Dinero de la cuenta',
+        disabled: requiresPersonalPayment.value,
+    },
+    { value: 'member_out_of_pocket' as const, label: 'Dinero personal' },
 ]);
 const createAndAddAnother = ref(false);
 const { error: conceptError, touch: touchConcept } = useFormFieldInteraction('concept');
@@ -173,6 +181,21 @@ watch(
     { immediate: true },
 );
 
+watchEffect(() => {
+    if (props.accountUsers.length === 1) {
+        const ownerId = props.accountUsers[0]!.id;
+        if (paidByUserId.value !== ownerId) paidByUserId.value = ownerId;
+        if (custodianUserId.value !== ownerId) custodianUserId.value = ownerId;
+        if (paymentSource.value !== 'account_fund') paymentSource.value = 'account_fund';
+        if (splitBetweenUsers.value) splitBetweenUsers.value = false;
+        return;
+    }
+
+    if (isExpense.value && requiresPersonalPayment.value) {
+        paymentSource.value = 'member_out_of_pocket';
+    }
+});
+
 watch(showUserSplitToggle, (isVisible) => {
     if (!isVisible) {
         splitBetweenUsers.value = false;
@@ -227,7 +250,7 @@ async function handleSubmit(): Promise<void> {
             <div class="grid gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
                 <div class="space-y-4">
                     <AppSearchSelect
-                        v-if="isExpense"
+                        v-if="isExpense && hasSharedAccount"
                         id="transaction-paid-by"
                         v-model="paidByUserId"
                         label="Pagado por"
@@ -239,7 +262,7 @@ async function handleSubmit(): Promise<void> {
                     />
 
                     <section
-                        v-if="isExpense"
+                        v-if="isExpense && hasSharedAccount"
                         class="space-y-3"
                         :style="{ borderColor: 'var(--app-color-border)' }"
                     >
@@ -249,7 +272,7 @@ async function handleSubmit(): Promise<void> {
                                     for="transaction-payment-source"
                                     class="text-sm font-medium text-(--app-color-label)"
                                 >
-                                    Fuente del pago
+                                    ¿Con qué dinero se pagó?
                                 </label>
                             </div>
                             <AppToggleButton
@@ -259,6 +282,10 @@ async function handleSubmit(): Promise<void> {
                                 @update:model-value="paymentSource = $event"
                             />
                         </div>
+                        <AppText v-if="requiresPersonalPayment" size="sm" tone="subtle">
+                            La cuenta no tiene saldo disponible. Registra el pago con dinero
+                            personal.
+                        </AppText>
                     </section>
 
                     <AppInput
@@ -330,9 +357,10 @@ async function handleSubmit(): Promise<void> {
 
         <section v-if="isIncome" class="space-y-3">
             <AppSearchSelect
+                v-if="hasSharedAccount"
                 id="transaction-custodian"
                 v-model="custodianUserId"
-                label="Custodiado por"
+                label="¿Quién recibió el dinero?"
                 :options="accountUserOptions"
                 placeholder="Selecciona usuario"
                 search-placeholder="Buscar usuario"
