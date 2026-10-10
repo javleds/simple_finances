@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import Message from 'primevue/message';
 import SubscriptionDeleteModal from '@/modules/subscriptions/components/SubscriptionDeleteModal.vue';
 import SubscriptionFiltersModal from '@/modules/subscriptions/components/SubscriptionFiltersModal.vue';
@@ -12,7 +13,7 @@ import { useSubscriptionModalActions } from '@/modules/subscriptions/composables
 import { useSubscriptionModals } from '@/modules/subscriptions/composables/useSubscriptionModals';
 import { useSubscriptionsCrud } from '@/modules/subscriptions/composables/useSubscriptionsCrud';
 import type { SubscriptionWritePayload } from '@/modules/subscriptions/types';
-import { AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
+import { AppActiveFilters, AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
 
 const subscriptionStatusOptions = [
     { value: 'active', label: 'Activa' },
@@ -27,13 +28,26 @@ const subscriptionUnitOptions = [
 const { fundingAccountOptions } = useSubscriptionFundingAccounts();
 const {
     activeFilters,
-    clearFilters,
+    applyFilters,
     searchTerm,
     selectedStatuses,
     selectedUnits,
     toggleStatus,
     toggleUnit,
 } = useSubscriptionFilters();
+
+const activeFilterChips = computed(() => [
+    ...selectedStatuses.value.map((value) => ({
+        key: `selectedStatuses-${value}`,
+        label: subscriptionStatusOptions.find((option) => option.value === value)?.label ?? value,
+        remove: () => toggleStatus(value),
+    })),
+    ...selectedUnits.value.map((value) => ({
+        key: `selectedUnits-${value}`,
+        label: subscriptionUnitOptions.find((option) => option.value === value)?.label ?? value,
+        remove: () => toggleUnit(value),
+    })),
+]);
 
 const {
     subscriptions,
@@ -139,9 +153,12 @@ async function confirmDeleteSubscription(): Promise<void> {
     <div class="space-y-5">
         <SubscriptionsToolbar
             v-model:search-term="searchTerm"
+            :active-filter-count="activeFilterChips.length"
+            :filters-open="isFiltersOpen"
             @create="openCreateSubscription"
             @open-filters="openFilters"
         />
+        <AppActiveFilters :filters="activeFilterChips" />
 
         <Message v-if="loadError && hasSubscriptions" severity="error">
             {{ loadError }}
@@ -177,10 +194,8 @@ async function confirmDeleteSubscription(): Promise<void> {
             :selected-units="selectedUnits"
             :status-options="subscriptionStatusOptions"
             :unit-options="subscriptionUnitOptions"
-            @clear="clearFilters"
+            @apply="applyFilters"
             @close="closeFilters"
-            @toggle-status="toggleStatus"
-            @toggle-unit="toggleUnit"
         />
 
         <SubscriptionFormModal

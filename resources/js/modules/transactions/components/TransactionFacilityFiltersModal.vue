@@ -1,68 +1,68 @@
 <script setup lang="ts">
-import { ArrowPathIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { computed, ref, watch } from 'vue';
+import {
+  currentMonthRange,
+  validateTransactionPeriod,
+  type TransactionPeriod,
+} from '@/modules/transactions/lib/transactionPeriod';
+import { AppDatePicker, AppFilterPanel } from '@/modules/shared/components';
 
-import { AppDatePicker, AppModal, AppText, AppTitle } from '@/modules/shared/components';
+const props = defineProps<{ open: boolean; startDate: string | null; endDate: string | null }>();
+const emit = defineEmits<{ apply: [period: TransactionPeriod]; close: [] }>();
+const draftStart = ref<string | null>(null);
+const draftEnd = ref<string | null>(null);
+const validationError = computed(() => validateTransactionPeriod(draftStart.value, draftEnd.value));
 
-const startDate = defineModel<string | null>('startDate', { required: true });
-const endDate = defineModel<string | null>('endDate', { required: true });
+watch(
+  () => props.open,
+  (open) => {
+    if (!open) return;
+    draftStart.value = props.startDate;
+    draftEnd.value = props.endDate;
+  },
+  { immediate: true },
+);
 
-const props = defineProps<{
-  open: boolean;
-  validationError: string | null;
-}>();
+function resetDraft(): void {
+  const range = currentMonthRange();
+  draftStart.value = range.startDate;
+  draftEnd.value = range.endDate;
+}
 
-const emit = defineEmits<{
-  clear: [];
-  close: [];
-}>();
-
-function handleAction(actionKey: string): void {
-  if (actionKey === 'clear') {
-    emit('clear');
-    return;
-  }
-
-  if (actionKey === 'close') {
-    emit('close');
-  }
+function applyDraft(): void {
+  if (validationError.value || !draftStart.value || !draftEnd.value) return;
+  emit('apply', { startDate: draftStart.value, endDate: draftEnd.value });
+  emit('close');
 }
 </script>
 
 <template>
-  <AppModal
+  <AppFilterPanel
+    id="transaction-period-filters"
     :open="props.open"
-    :actions="[
-      { key: 'clear', label: 'Mes actual', tone: 'neutral', icon: ArrowPathIcon },
-      { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-    ]"
-    title="Filtros"
-    variant="default"
-    @action="handleAction"
+    :apply-disabled="Boolean(validationError)"
+    clear-label="Mes actual"
+    @apply="applyDraft"
+    @clear="resetDraft"
     @close="emit('close')"
   >
-    <div class="space-y-5">
-      <div class="space-y-2">
-        <AppTitle as="h2" size="sm">Periodo</AppTitle>
-        <AppText>Selecciona el rango de movimientos completados que quieres revisar.</AppText>
-      </div>
-
-      <div class="grid gap-3">
+    <fieldset class="m-0 min-w-0 border-0 p-0">
+      <legend class="mb-3 text-sm font-semibold text-(--app-color-text)">Periodo</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
         <AppDatePicker
           id="transaction-facility-start-date"
-          v-model="startDate"
+          v-model="draftStart"
           label="Desde"
           :clearable="false"
-          :error="props.validationError ?? undefined"
         />
-
         <AppDatePicker
           id="transaction-facility-end-date"
-          v-model="endDate"
+          v-model="draftEnd"
           label="Hasta"
           :clearable="false"
-          :error="props.validationError ?? undefined"
+          :error="validationError ?? undefined"
         />
       </div>
-    </div>
-  </AppModal>
+    </fieldset>
+  </AppFilterPanel>
 </template>

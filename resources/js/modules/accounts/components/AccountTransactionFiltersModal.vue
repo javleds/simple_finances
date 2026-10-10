@@ -1,77 +1,43 @@
 <script setup lang="ts">
-import Button from 'primevue/button';
-import { ArrowPathIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-
+import { ref, watch } from 'vue';
 import type { TransactionType } from '@/modules/transactions/types';
-import { AppModal, AppText, AppTitle } from '@/modules/shared/components';
-
-type FilterOption<TValue extends string> = {
-    value: TValue;
-    label: string;
-};
+import { AppFilterPanel, AppFilterOptions } from '@/modules/shared/components';
 
 const props = defineProps<{
     open: boolean;
     selectedTypes: TransactionType[];
-    typeOptions: ReadonlyArray<FilterOption<TransactionType>>;
+    typeOptions: readonly { value: TransactionType; label: string }[];
 }>();
 
 const emit = defineEmits<{
-    clear: [];
+    apply: [values: TransactionType[]];
     close: [];
-    toggleType: [type: TransactionType];
 }>();
 
-function handleAction(actionKey: string): void {
-    if (actionKey === 'clear') {
-        emit('clear');
-        return;
-    }
+const draft = ref<TransactionType[]>([]);
 
-    if (actionKey === 'close') {
-        emit('close');
-    }
+watch(
+    () => props.open,
+    (open) => {
+        if (open) draft.value = [...props.selectedTypes];
+    },
+    { immediate: true },
+);
+
+function apply(): void {
+    emit('apply', [...draft.value]);
+    emit('close');
 }
 </script>
 
 <template>
-    <AppModal
+    <AppFilterPanel
+        id="account-transaction-filters"
         :open="props.open"
-        :actions="[
-            { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-            { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        ]"
-        title="Filtros avanzados"
-        variant="default"
-        @action="handleAction"
+        @apply="apply"
+        @clear="draft = []"
         @close="emit('close')"
     >
-        <div class="space-y-5">
-            <div class="space-y-2">
-                <AppTitle as="h2" size="sm">Tipo</AppTitle>
-                <AppText>Filtra entre ingresos y egresos.</AppText>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-                <Button
-                    v-for="type in props.typeOptions"
-                    :key="type.value"
-                    severity="secondary"
-                    variant="outlined"
-                    type="button"
-                    class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-                    :aria-pressed="props.selectedTypes.includes(type.value)"
-                    :class="
-                        props.selectedTypes.includes(type.value)
-                            ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                            : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-                    "
-                    :style="{ borderColor: 'var(--app-color-border)' }"
-                    @click="emit('toggleType', type.value)"
-                >
-                    {{ type.label }}
-                </Button>
-            </div>
-        </div>
-    </AppModal>
+        <AppFilterOptions v-model="draft" label="Tipo" :options="props.typeOptions" />
+    </AppFilterPanel>
 </template>

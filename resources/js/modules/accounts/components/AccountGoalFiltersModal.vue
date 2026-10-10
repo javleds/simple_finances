@@ -1,76 +1,43 @@
 <script setup lang="ts">
-import Button from 'primevue/button';
-import { ArrowPathIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-
-import { AppModal, AppText, AppTitle } from '@/modules/shared/components';
-
-type GoalStatusOption = {
-    value: string;
-    label: string;
-};
+import { ref, watch } from 'vue';
+import type { AccountGoalStatusFilter } from '@/modules/accounts/composables/useAccountGoalFilters';
+import { AppFilterPanel, AppFilterOptions } from '@/modules/shared/components';
 
 const props = defineProps<{
     open: boolean;
-    options: ReadonlyArray<GoalStatusOption>;
-    selectedStatuses: string[];
+    selectedStatuses: AccountGoalStatusFilter[];
+    options: readonly { value: AccountGoalStatusFilter; label: string }[];
 }>();
 
 const emit = defineEmits<{
-    clear: [];
+    apply: [values: AccountGoalStatusFilter[]];
     close: [];
-    toggleStatus: [status: string];
 }>();
 
-function handleAction(actionKey: string): void {
-    if (actionKey === 'clear') {
-        emit('clear');
-        return;
-    }
+const draft = ref<AccountGoalStatusFilter[]>([]);
 
-    if (actionKey === 'close') {
-        emit('close');
-    }
+watch(
+    () => props.open,
+    (open) => {
+        if (open) draft.value = [...props.selectedStatuses];
+    },
+    { immediate: true },
+);
+
+function apply(): void {
+    emit('apply', [...draft.value]);
+    emit('close');
 }
 </script>
 
 <template>
-    <AppModal
+    <AppFilterPanel
+        id="account-goal-filters"
         :open="props.open"
-        :actions="[
-            { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-            { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        ]"
-        title="Filtros avanzados"
-        variant="default"
-        @action="handleAction"
+        @apply="apply"
+        @clear="draft = []"
         @close="emit('close')"
     >
-        <div class="space-y-5">
-            <div class="space-y-2">
-                <AppTitle as="h2" size="sm">Estatus</AppTitle>
-                <AppText>Filtra metas según su nivel de avance.</AppText>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-                <Button
-                    v-for="status in props.options"
-                    :key="status.value"
-                    severity="secondary"
-                    variant="outlined"
-                    type="button"
-                    class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-                    :aria-pressed="props.selectedStatuses.includes(status.value)"
-                    :class="
-                        props.selectedStatuses.includes(status.value)
-                            ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                            : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-                    "
-                    :style="{ borderColor: 'var(--app-color-border)' }"
-                    @click="emit('toggleStatus', status.value)"
-                >
-                    {{ status.label }}
-                </Button>
-            </div>
-        </div>
-    </AppModal>
+        <AppFilterOptions v-model="draft" label="Estatus" :options="props.options" />
+    </AppFilterPanel>
 </template>

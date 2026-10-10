@@ -6,6 +6,8 @@ import { AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
 import type { Transaction } from '@/modules/transactions/types';
 
 const props = defineProps<{
+    activeFilterCount: number;
+    filtersOpen: boolean;
     currentUserId: string | null;
     hasTransactions: boolean;
     infiniteStatusLabel: string;
@@ -30,6 +32,8 @@ const emit = defineEmits<{
 <template>
     <AccountTransactionsToolbar
         :search-term="props.searchTerm"
+        :active-filter-count="props.activeFilterCount"
+        :filters-open="props.filtersOpen"
         @create="emit('create')"
         @open-filters="emit('openFilters')"
         @update:search-term="emit('update:searchTerm', $event)"

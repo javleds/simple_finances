@@ -3,29 +3,27 @@ import AccountTransactionFiltersModal from '@/modules/accounts/components/Accoun
 import type { TransactionType } from '@/modules/transactions/types';
 
 const props = defineProps<{
-  open: boolean;
-  selectedTypes: TransactionType[];
+    open: boolean;
+    selectedTypes: TransactionType[];
 }>();
 
 const emit = defineEmits<{
-  clear: [];
-  close: [];
-  toggleType: [type: TransactionType];
+    apply: [types: TransactionType[]];
+    close: [];
 }>();
 
 const transactionTypeOptions = [
-  { value: 'income', label: 'Ingreso' },
-  { value: 'expense', label: 'Egreso' },
+    { value: 'income', label: 'Ingreso' },
+    { value: 'expense', label: 'Egreso' },
 ] as const;
 </script>
 
 <template>
-  <AccountTransactionFiltersModal
-    :open="props.open"
-    :selected-types="props.selectedTypes"
-    :type-options="transactionTypeOptions"
-    @clear="emit('clear')"
-    @close="emit('close')"
-    @toggle-type="emit('toggleType', $event)"
-  />
+    <AccountTransactionFiltersModal
+        :open="props.open"
+        :selected-types="props.selectedTypes"
+        :type-options="transactionTypeOptions"
+        @apply="emit('apply', $event)"
+        @close="emit('close')"
+    />
 </template>

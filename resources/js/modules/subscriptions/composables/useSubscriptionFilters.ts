@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import type {
+  SubscriptionFilterSelection,
   SubscriptionFrequencyType,
   SubscriptionListFilters,
   SubscriptionStatusFilter,
@@ -65,6 +66,11 @@ export function useSubscriptionFilters() {
     { deep: true, immediate: true },
   );
 
+  function applyFilters(selection: SubscriptionFilterSelection): void {
+    selectedStatuses.value = [...selection.statuses];
+    selectedUnits.value = [...selection.units];
+  }
+
   function clearFilters(): void {
     selectedStatuses.value = [];
     selectedUnits.value = [];
@@ -90,6 +96,7 @@ export function useSubscriptionFilters() {
 
   return {
     activeFilters,
+    applyFilters,
     clearFilters,
     searchTerm,
     selectedStatuses,

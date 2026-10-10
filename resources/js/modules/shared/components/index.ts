@@ -21,3 +21,8 @@ export { default as AppSwitch } from './AppSwitch.vue';
 export { default as AppText } from './AppText.vue';
 export { default as AppToggleButton } from './AppToggleButton.vue';
 export { default as AppTitle } from './AppTitle.vue';
+
+export { default as AppFilterPanel } from './AppFilterPanel.vue';
+export { default as AppFilterOptions } from './AppFilterOptions.vue';
+export { default as AppFilterTrigger } from './AppFilterTrigger.vue';
+export { default as AppActiveFilters } from './AppActiveFilters.vue';

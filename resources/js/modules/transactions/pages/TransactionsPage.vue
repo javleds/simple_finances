@@ -15,10 +15,24 @@ import type { AccountPendingReimbursement } from '@/modules/accounts/types';
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
 
+import { currentMonthRange } from '@/modules/transactions/lib/transactionPeriod';
+
 const route = useRoute();
 const isFiltersModalOpen = ref(false);
-const { activeFilters, endDate, resetPeriod, searchTerm, startDate, validationError } =
+const { activeFilters, applyPeriod, endDate, resetPeriod, searchTerm, startDate, validationError } =
     useTransactionFacilityFilters();
+const periodChips = computed(() => {
+    const defaultRange = currentMonthRange();
+    if (startDate.value === defaultRange.startDate && endDate.value === defaultRange.endDate)
+        return [];
+    return [
+        {
+            key: 'period',
+            label: `${startDate.value ?? 'Sin fecha'} → ${endDate.value ?? 'Sin fecha'}`,
+            remove: resetPeriod,
+        },
+    ];
+});
 const {
     transactions,
     summary,
@@ -153,6 +167,8 @@ function infiniteStatusLabel(): string {
 
         <TransactionFacilityActivity
             v-model:search-term="searchTerm"
+            :filter-chips="periodChips"
+            :is-filters-open="isFiltersModalOpen"
             :has-transactions="hasTransactions"
             :infinite-status-label="infiniteStatusLabel()"
             :is-loading="isLoading"
@@ -170,11 +186,10 @@ function infiniteStatusLabel(): string {
         </TransactionFacilityActivity>
 
         <TransactionFacilityFiltersModal
-            v-model:start-date="startDate"
-            v-model:end-date="endDate"
+            :start-date="startDate"
+            :end-date="endDate"
             :open="isFiltersModalOpen"
-            :validation-error="validationError"
-            @clear="resetPeriod"
+            @apply="applyPeriod"
             @close="closeFiltersModal"
         />
     </div>

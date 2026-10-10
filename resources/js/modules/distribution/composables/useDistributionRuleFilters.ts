@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import type {
+  DistributionRuleFilterSelection,
   DistributionFrequency,
   DistributionRuleListFilters,
 } from '@/modules/distribution/types';
@@ -46,6 +47,10 @@ export function useDistributionRuleFilters() {
     { deep: true },
   );
 
+  function applyFilters(selection: DistributionRuleFilterSelection): void {
+    selectedFrequencies.value = [...selection.frequencies];
+  }
+
   function clearFilters(): void {
     selectedFrequencies.value = [];
   }
@@ -61,6 +66,7 @@ export function useDistributionRuleFilters() {
 
   return {
     activeFilters,
+    applyFilters,
     clearFilters,
     searchTerm,
     selectedFrequencies,

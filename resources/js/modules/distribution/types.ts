@@ -43,3 +43,7 @@ export type DistributionRelationWritePayload = {
   amount: number;
   type: DistributionRelationType;
 };
+
+export type DistributionRuleFilterSelection = {
+  frequencies: DistributionFrequency[];
+};

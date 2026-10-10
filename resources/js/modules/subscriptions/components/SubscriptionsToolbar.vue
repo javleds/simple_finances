@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import {
-  AdjustmentsHorizontalIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
-} from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
-import { AppButton, AppIconButton, AppInput, AppSectionBar } from '@/modules/shared/components';
+import { AppButton, AppFilterTrigger, AppInput, AppSectionBar } from '@/modules/shared/components';
 
 const props = defineProps<{
   searchTerm: string;
+  activeFilterCount: number;
+  filtersOpen: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -44,8 +42,11 @@ const emit = defineEmits<{
       />
     </div>
 
-    <AppIconButton ariaLabel="Abrir filtros avanzados" @click="emit('openFilters')">
-      <AdjustmentsHorizontalIcon class="h-5 w-5" />
-    </AppIconButton>
+    <AppFilterTrigger
+      :count="props.activeFilterCount"
+      :open="props.filtersOpen"
+      controls="subscription-filters"
+      @click="emit('openFilters')"
+    />
   </div>
 </template>

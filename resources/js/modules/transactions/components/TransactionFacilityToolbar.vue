@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import { AdjustmentsHorizontalIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
 
-import { AppIconButton, AppInput, AppSectionBar } from '@/modules/shared/components';
+import {
+  AppActiveFilters,
+  AppFilterTrigger,
+  AppInput,
+  AppSectionBar,
+  AppText,
+} from '@/modules/shared/components';
+
+import type { ActiveFilter } from '@/modules/shared/types/filters';
+
+const props = defineProps<{ filterChips: readonly ActiveFilter[]; isFiltersOpen: boolean }>();
 
 const searchTerm = defineModel<string>('searchTerm', { required: true });
 
@@ -30,9 +40,14 @@ const emit = defineEmits<{
         />
       </div>
 
-      <AppIconButton ariaLabel="Abrir filtros de periodo" @click="emit('openFilters')">
-        <AdjustmentsHorizontalIcon class="h-5 w-5" />
-      </AppIconButton>
+      <AppFilterTrigger
+        :count="props.filterChips.length"
+        :open="props.isFiltersOpen"
+        controls="transaction-period-filters"
+        @click="emit('openFilters')"
+      />
     </div>
+    <AppActiveFilters :filters="props.filterChips" />
+    <AppText v-if="!props.filterChips.length" size="sm" tone="subtle">Periodo: mes actual</AppText>
   </div>
 </template>

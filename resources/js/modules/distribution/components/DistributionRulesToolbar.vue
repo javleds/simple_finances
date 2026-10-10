@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
-import { AppButton, AppInput, AppSectionBar } from '@/modules/shared/components';
+import { AppButton, AppFilterTrigger, AppInput, AppSectionBar } from '@/modules/shared/components';
 
 const props = defineProps<{
   searchTerm: string;
+  activeFilterCount: number;
+  filtersOpen: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -43,6 +45,11 @@ const emit = defineEmits<{
       />
     </div>
 
-    <AppButton variant="secondary" @click="emit('openFilters')">Filtros</AppButton>
+    <AppFilterTrigger
+      :count="props.activeFilterCount"
+      :open="props.filtersOpen"
+      controls="distribution-filters"
+      @click="emit('openFilters')"
+    />
   </div>
 </template>

@@ -5,7 +5,11 @@ import TransactionFacilityToolbar from '@/modules/transactions/components/Transa
 import { AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
 import type { Transaction } from '@/modules/transactions/types';
 
+import type { ActiveFilter } from '@/modules/shared/types/filters';
+
 const props = defineProps<{
+    filterChips: readonly ActiveFilter[];
+    isFiltersOpen: boolean;
     hasTransactions: boolean;
     infiniteStatusLabel: string;
     isLoading: boolean;
@@ -27,6 +31,8 @@ const emit = defineEmits<{
 <template>
     <TransactionFacilityToolbar
         :search-term="props.searchTerm"
+        :filter-chips="props.filterChips"
+        :is-filters-open="props.isFiltersOpen"
         @open-filters="emit('openFilters')"
         @update:search-term="emit('update:searchTerm', $event)"
     />

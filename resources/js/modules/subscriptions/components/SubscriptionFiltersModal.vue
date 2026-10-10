@@ -1,18 +1,13 @@
 <script setup lang="ts">
-import Button from 'primevue/button';
-import { ArrowPathIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-
+import { ref, watch } from 'vue';
 import type {
+    SubscriptionFilterSelection,
     SubscriptionFrequencyType,
     SubscriptionStatusFilter,
 } from '@/modules/subscriptions/types';
-import { AppModal, AppText, AppTitle } from '@/modules/shared/components';
+import { AppFilterPanel, AppFilterOptions } from '@/modules/shared/components';
 
-type FilterOption<TValue extends string> = {
-    value: TValue;
-    label: string;
-};
-
+type FilterOption<T extends string> = { value: T; label: string };
 const props = defineProps<{
     open: boolean;
     selectedStatuses: SubscriptionStatusFilter[];
@@ -20,81 +15,41 @@ const props = defineProps<{
     statusOptions: readonly FilterOption<SubscriptionStatusFilter>[];
     unitOptions: readonly FilterOption<SubscriptionFrequencyType>[];
 }>();
-
-const emit = defineEmits<{
-    clear: [];
-    close: [];
-    toggleStatus: [status: SubscriptionStatusFilter];
-    toggleUnit: [unit: SubscriptionFrequencyType];
-}>();
+const emit = defineEmits<{ apply: [selection: SubscriptionFilterSelection]; close: [] }>();
+const draft = ref<SubscriptionFilterSelection>({ statuses: [], units: [] });
+watch(
+    () => props.open,
+    (open) => {
+        if (!open) return;
+        draft.value = { statuses: [...props.selectedStatuses], units: [...props.selectedUnits] };
+    },
+    { immediate: true },
+);
+function clearDraft(): void {
+    draft.value = { statuses: [], units: [] };
+}
+function selectStatuses(statuses: SubscriptionStatusFilter[]): void {
+    draft.value.statuses = statuses.slice(-1);
+}
+function applyDraft(): void {
+    emit('apply', { statuses: [...draft.value.statuses], units: [...draft.value.units] });
+    emit('close');
+}
 </script>
-
 <template>
-    <AppModal
+    <AppFilterPanel
+        id="subscription-filters"
         :open="props.open"
-        :actions="[
-            { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-            { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        ]"
-        title="Filtros avanzados"
-        variant="default"
-        @action="$event === 'clear' ? emit('clear') : emit('close')"
+        @clear="clearDraft"
+        @apply="applyDraft"
         @close="emit('close')"
     >
-        <div class="space-y-5">
-            <div class="space-y-2">
-                <AppTitle as="h2" size="sm">Estatus</AppTitle>
-                <AppText
-                    >Filtra la cobertura según el estado operativo de cada suscripción.</AppText
-                >
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-                <Button
-                    v-for="status in props.statusOptions"
-                    :key="status.value"
-                    severity="secondary"
-                    variant="outlined"
-                    type="button"
-                    class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-                    :aria-pressed="props.selectedStatuses.includes(status.value)"
-                    :class="
-                        props.selectedStatuses.includes(status.value)
-                            ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                            : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-                    "
-                    :style="{ borderColor: 'var(--app-color-border)' }"
-                    @click="emit('toggleStatus', status.value)"
-                >
-                    {{ status.label }}
-                </Button>
-            </div>
-
-            <div class="space-y-2">
-                <AppTitle as="h2" size="sm">Frecuencia</AppTitle>
-                <AppText>Refina la lista por la unidad principal de recurrencia.</AppText>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-                <Button
-                    v-for="unit in props.unitOptions"
-                    :key="unit.value"
-                    severity="secondary"
-                    variant="outlined"
-                    type="button"
-                    class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-                    :aria-pressed="props.selectedUnits.includes(unit.value)"
-                    :class="
-                        props.selectedUnits.includes(unit.value)
-                            ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                            : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-                    "
-                    :style="{ borderColor: 'var(--app-color-border)' }"
-                    @click="emit('toggleUnit', unit.value)"
-                >
-                    {{ unit.label }}
-                </Button>
-            </div>
-        </div>
-    </AppModal>
+        <AppFilterOptions
+            label="Estatus"
+            :model-value="draft.statuses"
+            :options="props.statusOptions"
+            @update:model-value="selectStatuses"
+        />
+        <AppFilterOptions v-model="draft.units" label="Frecuencia" :options="props.unitOptions" />
+    </AppFilterPanel>
 </template>

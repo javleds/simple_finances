@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { AppActiveFilters } from '@/modules/shared/components';
 import { computed, ref, watch } from 'vue';
 
 import type {
@@ -25,8 +26,7 @@ import type { TransactionMutationMeta } from '@/modules/transactions/types';
 
 const props = defineProps<{ account?: Account }>();
 
-const { activeFilters, clearFilters, searchTerm, selectedTypes, toggleType } =
-    useAccountTransactionFilters();
+const { activeFilters, searchTerm, selectedTypes, toggleType } = useAccountTransactionFilters();
 
 const account = computed(() => props.account);
 const accountBalance = ref(account.value?.balance ?? 0);
@@ -257,7 +257,19 @@ async function handleSettleAllAccountReimbursements(
             @settle-account="handleSettleAccountReimbursements"
         />
 
+        <AppActiveFilters
+            :filters="
+                selectedTypes.map((type) => ({
+                    key: type,
+                    label: type === 'income' ? 'Ingreso' : 'Egreso',
+                    remove: () => toggleType(type),
+                }))
+            "
+        />
+
         <AccountTransactionsActivity
+            :active-filter-count="selectedTypes.length"
+            :filters-open="isFiltersOpen"
             v-model:search-term="searchTerm"
             :current-user-id="currentUserId"
             :has-transactions="hasTransactions"
@@ -281,9 +293,8 @@ async function handleSettleAllAccountReimbursements(
         <AccountTransactionsFilters
             :open="isFiltersOpen"
             :selected-types="selectedTypes"
-            @clear="clearFilters"
             @close="closeFilters"
-            @toggle-type="toggleType"
+            @apply="selectedTypes = $event"
         />
 
         <AccountTransactionsModals

@@ -1,67 +1,38 @@
 <script setup lang="ts">
-import Button from 'primevue/button';
-import { ArrowPathIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-
-import { formatDistributionFrequency } from '@/modules/distribution/schemas/distributionSchemas';
-import type { DistributionFrequency } from '@/modules/distribution/types';
-import { AppModal, AppText, AppTitle } from '@/modules/shared/components';
-
-type FrequencyOption = {
-    value: DistributionFrequency;
-    label: string;
-};
-
+import { ref, watch } from 'vue';
+import type {
+    DistributionFrequency,
+    DistributionRuleFilterSelection,
+} from '@/modules/distribution/types';
+import { AppFilterPanel, AppFilterOptions } from '@/modules/shared/components';
 const props = defineProps<{
-    frequencyOptions: readonly FrequencyOption[];
+    frequencyOptions: readonly { value: DistributionFrequency; label: string }[];
     open: boolean;
     selectedFrequencies: DistributionFrequency[];
 }>();
-
-const emit = defineEmits<{
-    clear: [];
-    close: [];
-    toggleFrequency: [frequency: DistributionFrequency];
-}>();
+const emit = defineEmits<{ apply: [selection: DistributionRuleFilterSelection]; close: [] }>();
+const draft = ref<DistributionFrequency[]>([]);
+watch(
+    () => props.open,
+    (open) => {
+        if (!open) return;
+        draft.value = [...props.selectedFrequencies];
+    },
+    { immediate: true },
+);
+function applyDraft(): void {
+    emit('apply', { frequencies: [...draft.value] });
+    emit('close');
+}
 </script>
-
 <template>
-    <AppModal
+    <AppFilterPanel
+        id="distribution-filters"
         :open="props.open"
-        :actions="[
-            { key: 'clear', label: 'Limpiar filtros', tone: 'neutral', icon: ArrowPathIcon },
-            { key: 'close', label: 'Cerrar', tone: 'danger', icon: XMarkIcon, autoClose: true },
-        ]"
-        title="Filtros"
-        variant="default"
-        @action="$event === 'clear' ? emit('clear') : emit('close')"
+        @clear="draft = []"
+        @apply="applyDraft"
         @close="emit('close')"
     >
-        <div class="space-y-5">
-            <div class="space-y-2">
-                <AppTitle as="h2" size="sm">Frecuencia</AppTitle>
-                <AppText>Filtra las reglas según su recurrencia.</AppText>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-                <Button
-                    v-for="option in props.frequencyOptions"
-                    :key="option.value"
-                    severity="secondary"
-                    variant="outlined"
-                    type="button"
-                    class="rounded-full border px-4 py-2 text-sm font-medium transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
-                    :aria-pressed="props.selectedFrequencies.includes(option.value)"
-                    :class="
-                        props.selectedFrequencies.includes(option.value)
-                            ? 'bg-(--app-color-primary) text-(--app-color-primary-foreground)'
-                            : 'bg-(--app-color-surface-muted) text-(--app-color-text)'
-                    "
-                    :style="{ borderColor: 'var(--app-color-border)' }"
-                    @click="emit('toggleFrequency', option.value)"
-                >
-                    {{ formatDistributionFrequency(option.value) }}
-                </Button>
-            </div>
-        </div>
-    </AppModal>
+        <AppFilterOptions v-model="draft" label="Frecuencia" :options="props.frequencyOptions" />
+    </AppFilterPanel>
 </template>

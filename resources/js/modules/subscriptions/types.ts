@@ -39,3 +39,8 @@ export type SubscriptionWritePayload = {
   finishedAt: string | null;
   fundingAccountId: string | null;
 };
+
+export type SubscriptionFilterSelection = {
+  statuses: SubscriptionStatusFilter[];
+  units: SubscriptionFrequencyType[];
+};

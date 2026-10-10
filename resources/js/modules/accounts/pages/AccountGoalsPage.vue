@@ -8,21 +8,17 @@ import AccountGoalFiltersModal from '@/modules/accounts/components/AccountGoalFi
 import AccountGoalFormModal from '@/modules/accounts/components/AccountGoalFormModal.vue';
 import AccountGoalsList from '@/modules/accounts/components/AccountGoalsList.vue';
 import AccountGoalsToolbar from '@/modules/accounts/components/AccountGoalsToolbar.vue';
-import {
-    useAccountGoalFilters,
-    type AccountGoalStatusFilter,
-} from '@/modules/accounts/composables/useAccountGoalFilters';
+import { useAccountGoalFilters } from '@/modules/accounts/composables/useAccountGoalFilters';
 import { useAccountGoalModalActions } from '@/modules/accounts/composables/useAccountGoalModalActions';
 import { useAccountGoalModals } from '@/modules/accounts/composables/useAccountGoalModals';
 import { useAccountGoalPageActions } from '@/modules/accounts/composables/useAccountGoalPageActions';
 import { useAccountGoalPresentation } from '@/modules/accounts/composables/useAccountGoalPresentation';
 import { useAccountGoalsCrud } from '@/modules/accounts/composables/useAccountGoalsCrud';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
+import { AppActiveFilters, AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
 
 const route = useRoute();
-const { activeFilters, clearFilters, searchTerm, selectedStatuses, toggleStatus } =
-    useAccountGoalFilters();
+const { activeFilters, searchTerm, selectedStatuses, toggleStatus } = useAccountGoalFilters();
 
 const goalStatusOptions = [
     { value: 'on-track', label: 'En curso' },
@@ -152,9 +148,23 @@ watch(
 <template>
     <section class="space-y-4">
         <AccountGoalsToolbar
+            :active-filter-count="selectedStatuses.length"
+            :filters-open="isFiltersOpen"
             v-model:search-term="searchTerm"
             @create="openCreateGoal"
             @open-filters="openFilters"
+        />
+
+        <AppActiveFilters
+            :filters="
+                selectedStatuses.map((status) => ({
+                    key: status,
+                    label:
+                        goalStatusOptions.find((option) => option.value === status)?.label ??
+                        status,
+                    remove: () => toggleStatus(status),
+                }))
+            "
         />
 
         <Message v-if="loadError && hasGoals" severity="error">{{ loadError }}</Message>
@@ -187,9 +197,8 @@ watch(
             :open="isFiltersOpen"
             :options="goalStatusOptions"
             :selected-statuses="selectedStatuses"
-            @clear="clearFilters"
             @close="closeFilters"
-            @toggle-status="toggleStatus($event as AccountGoalStatusFilter)"
+            @apply="selectedStatuses = $event"
         />
 
         <AccountGoalFormModal

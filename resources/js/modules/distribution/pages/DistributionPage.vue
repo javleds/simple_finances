@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import Message from 'primevue/message';
 import DistributionRuleDeleteModal from '@/modules/distribution/components/DistributionRuleDeleteModal.vue';
 import DistributionRuleFiltersModal from '@/modules/distribution/components/DistributionRuleFiltersModal.vue';
@@ -11,14 +12,22 @@ import { useDistributionRuleModalActions } from '@/modules/distribution/composab
 import { useDistributionRuleModals } from '@/modules/distribution/composables/useDistributionRuleModals';
 import { useDistributionRulesCrud } from '@/modules/distribution/composables/useDistributionRulesCrud';
 import type { DistributionRuleWritePayload } from '@/modules/distribution/types';
-import { AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
+import { AppActiveFilters, AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
 
 const frequencyOptions = [
     { value: 'monthly', label: 'Mensual' },
     { value: 'semi_monthly', label: 'Quincenal' },
 ] as const;
-const { activeFilters, clearFilters, searchTerm, selectedFrequencies, toggleFrequency } =
+const { activeFilters, applyFilters, searchTerm, selectedFrequencies, toggleFrequency } =
     useDistributionRuleFilters();
+
+const activeFilterChips = computed(() => [
+    ...selectedFrequencies.value.map((value) => ({
+        key: `selectedFrequencies-${value}`,
+        label: frequencyOptions.find((option) => option.value === value)?.label ?? value,
+        remove: () => toggleFrequency(value),
+    })),
+]);
 
 const {
     rules,
@@ -123,9 +132,12 @@ async function confirmDeleteRule(): Promise<void> {
     <div class="space-y-5">
         <DistributionRulesToolbar
             v-model:search-term="searchTerm"
+            :active-filter-count="activeFilterChips.length"
+            :filters-open="isFiltersOpen"
             @create="openCreateRule"
             @open-filters="openFilters"
         />
+        <AppActiveFilters :filters="activeFilterChips" />
 
         <Message v-if="loadError && hasRules" severity="error">{{ loadError }}</Message>
 
@@ -153,9 +165,8 @@ async function confirmDeleteRule(): Promise<void> {
             :open="isFiltersOpen"
             :frequency-options="frequencyOptions"
             :selected-frequencies="selectedFrequencies"
-            @clear="clearFilters"
+            @apply="applyFilters"
             @close="closeFilters"
-            @toggle-frequency="toggleFrequency"
         />
 
         <DistributionRuleFormModal

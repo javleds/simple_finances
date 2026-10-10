@@ -14,10 +14,9 @@ import { useAccountInvitationModalActions } from '@/modules/accounts/composables
 import { useAccountInvitationModals } from '@/modules/accounts/composables/useAccountInvitationModals';
 import { useAccountInvitesCrud } from '@/modules/accounts/composables/useAccountInvitesCrud';
 import type { Account } from '@/modules/accounts/types';
-import type { AccountInviteStatus } from '@/modules/accounts/schemas/accountInviteSchemas';
 import { getStoredAuthSession } from '@/modules/auth/lib/authSession';
 import { useInfiniteScroll } from '@/modules/shared/composables/useInfiniteScroll';
-import { AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
+import { AppActiveFilters, AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
 
 const props = defineProps<{ account: Account | null }>();
 const canManage = computed(() =>
@@ -25,8 +24,7 @@ const canManage = computed(() =>
 );
 
 const route = useRoute();
-const { activeFilters, clearFilters, searchTerm, selectedStatuses, toggleStatus } =
-    useAccountInvitationFilters();
+const { activeFilters, searchTerm, selectedStatuses, toggleStatus } = useAccountInvitationFilters();
 
 const invitationStatusOptions = [
     { value: 'pending', label: 'Pendiente' },
@@ -159,10 +157,24 @@ watch(
 <template>
     <section class="space-y-4">
         <AccountInvitationsToolbar
+            :active-filter-count="selectedStatuses.length"
+            :filters-open="isFiltersOpen"
             :can-manage="canManage"
             v-model:search-term="searchTerm"
             @create="openCreateInvitation"
             @open-filters="openFilters"
+        />
+
+        <AppActiveFilters
+            :filters="
+                selectedStatuses.map((status) => ({
+                    key: status,
+                    label:
+                        invitationStatusOptions.find((option) => option.value === status)?.label ??
+                        status,
+                    remove: () => toggleStatus(status),
+                }))
+            "
         />
 
         <Message v-if="loadError && hasInvites" severity="error">{{ loadError }}</Message>
@@ -203,9 +215,8 @@ watch(
             :open="isFiltersOpen"
             :options="invitationStatusOptions"
             :selected-statuses="selectedStatuses"
-            @clear="clearFilters"
             @close="closeFilters"
-            @toggle-status="toggleStatus($event as AccountInviteStatus)"
+            @apply="selectedStatuses = $event"
         />
 
         <AccountInvitationFormModal

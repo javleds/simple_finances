@@ -55,6 +55,15 @@ Current shared components:
 - `AppTitle`: shared heading primitive with semantic tag and size options.
   Path: `resources/js/modules/shared/components/AppTitle.vue`
 
+- `AppFilterPanel`: panel de filtros inferior en móvil y modal centrada en escritorio; conserva el pie con limpiar y aplicar y admite validación de borradores.
+  Path: `resources/js/modules/shared/components/AppFilterPanel.vue`
+- `AppFilterOptions`: grupo de casillas tipadas en dos columnas para selección múltiple.
+  Path: `resources/js/modules/shared/components/AppFilterOptions.vue`
+- `AppFilterTrigger`: botón compacto con icono, contador y estado accesible del panel.
+  Path: `resources/js/modules/shared/components/AppFilterTrigger.vue`
+- `AppActiveFilters`: etiquetas removibles de filtros aplicados.
+  Path: `resources/js/modules/shared/components/AppActiveFilters.vue`
+
 Barrel export:
 
 - `resources/js/modules/shared/components/index.ts`

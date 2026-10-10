@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import {
-  AdjustmentsHorizontalIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
-  XMarkIcon,
-} from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
-import { AppButton, AppInput, AppSectionBar } from '@/modules/shared/components';
+import {
+  AppActiveFilters,
+  AppButton,
+  AppFilterTrigger,
+  AppInput,
+  AppSectionBar,
+} from '@/modules/shared/components';
 
 const props = defineProps<{
   searchTerm: string;
@@ -50,33 +51,12 @@ const emit = defineEmits<{
       />
     </div>
 
-    <AppButton
-      variant="outline"
-      class="shrink-0"
-      :aria-label="
-        props.filterChips.length
-          ? `Abrir filtros, ${props.filterChips.length} activos`
-          : 'Abrir filtros'
-      "
-      aria-controls="account-filters"
-      :aria-expanded="props.isFiltersOpen"
+    <AppFilterTrigger
+      :count="props.filterChips.length"
+      :open="props.isFiltersOpen"
+      controls="account-filters"
       @click="emit('openFilters')"
-    >
-      <AdjustmentsHorizontalIcon class="h-5 w-5" aria-hidden="true" />
-      <span v-if="props.filterChips.length" aria-hidden="true">{{ props.filterChips.length }}</span>
-    </AppButton>
+    />
   </div>
-  <div v-if="props.filterChips.length" class="flex flex-wrap gap-2" aria-label="Filtros aplicados">
-    <AppButton
-      v-for="chip in props.filterChips"
-      :key="chip.key"
-      variant="outline"
-      class="min-h-9! rounded-full! px-3! py-1! text-xs!"
-      :aria-label="`Quitar filtro: ${chip.label}`"
-      @click="chip.remove()"
-    >
-      {{ chip.label }}
-      <XMarkIcon class="h-3.5 w-3.5" aria-hidden="true" />
-    </AppButton>
-  </div>
+  <AppActiveFilters :filters="props.filterChips" />
 </template>
