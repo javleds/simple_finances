@@ -57,14 +57,14 @@ const filteredGraphAccounts = computed(() =>
 </script>
 
 <template>
-    <div class="space-y-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
-        <header class="space-y-1 lg:col-span-full">
+    <div class="flex flex-col gap-6">
+        <header class="space-y-1">
             <AppTitle as="h1" size="md">Resumen financiero</AppTitle>
             <AppText>Balances, reembolsos y planeación de tus cuentas.</AppText>
         </header>
         <section
             v-if="loadError && !hasDashboardData"
-            class="space-y-3 rounded-(--app-radius-control) border px-4 py-6 text-center lg:col-span-full"
+            class="space-y-3 rounded-(--app-radius-control) border px-4 py-6 text-center"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
             <AppText>{{ loadError }}</AppText>
@@ -75,7 +75,7 @@ const filteredGraphAccounts = computed(() =>
 
         <section
             v-else-if="isLoading && !hasDashboardData"
-            class="rounded-(--app-radius-control) border px-4 py-10 text-center lg:col-span-full"
+            class="rounded-(--app-radius-control) border px-4 py-10 text-center"
             :style="{ borderColor: 'var(--app-color-border)' }"
         >
             <AppText>Cargando dashboard...</AppText>
@@ -85,45 +85,57 @@ const filteredGraphAccounts = computed(() =>
             {{ loadError }}
         </Message>
 
-        <DashboardBalanceSection
-            v-model:graph-mode="accountGraphMode"
-            :accounts="filteredGraphAccounts"
-        />
+        <DashboardSummaryCards class="order-2 lg:order-1" :summary="dashboard.accountsSummary" />
 
-        <DashboardSummaryCards
-            class="lg:col-span-full lg:row-start-2"
-            :summary="dashboard.accountsSummary"
-        />
+        <div class="contents lg:order-2 lg:block lg:columns-2 lg:gap-6">
+            <DashboardBalanceSection
+                class="order-1 lg:mb-6 lg:break-inside-avoid"
+                v-model:graph-mode="accountGraphMode"
+                :accounts="filteredGraphAccounts"
+            />
 
-        <Message v-if="transferError" severity="error">{{ transferError }}</Message>
+            <Message
+                v-if="transferError"
+                class="order-3 lg:mb-6 lg:break-inside-avoid"
+                severity="error"
+                >{{ transferError }}</Message
+            >
 
-        <AccountReimbursementsPanel
-            :accounts="accountsWithReimbursements"
-            :active-transfer-key="activeTransferKey"
-            :current-user-id="currentUserId"
-            :is-transferring="isTransferring"
-            title="Reembolsos pendientes"
-            @settle="settleReimbursement"
-            @settle-all="settleAllAccountReimbursements"
-            @settle-account="settleAccountReimbursements"
-        />
+            <div
+                v-if="accountsWithReimbursements.length > 0"
+                class="order-4 lg:mb-6 lg:break-inside-avoid"
+            >
+                <AccountReimbursementsPanel
+                    :accounts="accountsWithReimbursements"
+                    :active-transfer-key="activeTransferKey"
+                    :current-user-id="currentUserId"
+                    :is-transferring="isTransferring"
+                    title="Reembolsos pendientes"
+                    @settle="settleReimbursement"
+                    @settle-all="settleAllAccountReimbursements"
+                    @settle-account="settleAccountReimbursements"
+                />
+            </div>
 
-        <DashboardSubscriptionsPlanning
-            v-model:savings-cadence="savingsCadence"
-            :annual-spend="annualSubscriptionsSpend"
-            :recommended-savings="recommendedSavings"
-            :summary="dashboard.subscriptionsSummary"
-        />
+            <DashboardSubscriptionsPlanning
+                class="order-5 lg:mb-6 lg:break-inside-avoid"
+                v-model:savings-cadence="savingsCadence"
+                :annual-spend="annualSubscriptionsSpend"
+                :recommended-savings="recommendedSavings"
+                :summary="dashboard.subscriptionsSummary"
+            />
 
-        <DashboardPeriodSummary
-            v-model:start-date="periodStartDate"
-            v-model:end-date="periodEndDate"
-            :summary="periodSummary"
-            :is-loading="isLoadingPeriodSummary"
-            :load-error="periodSummaryError"
-            :validation-error="periodSummaryValidationError"
-            @reset-period="resetToCurrentMonth"
-            @retry="loadPeriodSummary"
-        />
+            <DashboardPeriodSummary
+                class="order-6 lg:mb-6 lg:break-inside-avoid"
+                v-model:start-date="periodStartDate"
+                v-model:end-date="periodEndDate"
+                :summary="periodSummary"
+                :is-loading="isLoadingPeriodSummary"
+                :load-error="periodSummaryError"
+                :validation-error="periodSummaryValidationError"
+                @reset-period="resetToCurrentMonth"
+                @retry="loadPeriodSummary"
+            />
+        </div>
     </div>
 </template>

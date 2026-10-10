@@ -312,6 +312,76 @@ async function navigationCase(page) {
     assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
 }
 
+async function dashboardMasonryCase(page, width) {
+    const virtualDashboard = fixtures.get('/api/virtual-accounts');
+    const virtualAccounts = Array.from({ length: 5 }, (_, index) => ({
+        ...virtualDashboard.data.accounts[0],
+        account_id: index + 1,
+        account_name: `Masonry savings ${index + 1}`,
+    }));
+    await page.route(`${appUrl}/api/virtual-accounts`, (route) =>
+        route.fulfill({
+            json: { data: { ...virtualDashboard.data, accounts: virtualAccounts } },
+        }),
+    );
+    await page.route(`${appUrl}/api/dashboard/graph`, (route) =>
+        route.fulfill({
+            json: {
+                data: virtualAccounts.map((account) => ({
+                    account_id: account.account_id,
+                    account_name: account.account_name,
+                    balance: account.current_balance,
+                    is_virtual: true,
+                })),
+            },
+        }),
+    );
+    await page.reload();
+    await page.getByRole('button', { name: 'Virtuales', exact: true }).click();
+    await page.getByText('Masonry savings 5', { exact: true }).first().waitFor();
+    await page.waitForLoadState('networkidle');
+    const cardBox = async (heading) =>
+        page.getByRole('heading', { name: heading, exact: true }).evaluate((element) => {
+            const { x, y, width, height, bottom } = element
+                .closest('.p-card')
+                .getBoundingClientRect();
+            return { x, y, width, height, bottom };
+        });
+    const balance = await cardBox('Balance por cuenta');
+    const planning = await cardBox('Planeación de subscripciones');
+    const period = await cardBox('Resumen del periodo');
+    const summary = await page.getByText('Cuentas activas', { exact: true }).evaluate((element) => {
+        const { y, width, bottom } = element.closest('.p-card').getBoundingClientRect();
+        return { y, width, bottom };
+    });
+    if (width >= 1024) {
+        assert.ok(
+            summary.bottom <= balance.y && summary.width > balance.width * 1.9,
+            'Desktop metrics no longer span both columns',
+        );
+        assert.ok(
+            Math.abs(planning.x - period.x) < 2 && Math.abs(balance.x - period.x) > 100,
+            'Short cards are not stacked beside the tall balance card',
+        );
+        assert.ok(
+            Math.abs(period.y - planning.bottom - 24) < 2,
+            'Masonry leaves a gap between stacked cards',
+        );
+        assert.ok(
+            period.y < balance.bottom - 50,
+            'Period summary still waits for the tall balance card',
+        );
+    } else {
+        assert.ok(
+            balance.bottom <= summary.y &&
+                summary.bottom <= planning.y &&
+                planning.bottom <= period.y,
+            'Mobile dashboard order changed',
+        );
+    }
+    await noOverflow(page);
+}
+
 async function subscriptionCase(page) {
     await page.goto(`${appUrl}/admin/subscriptions`);
     await page
@@ -467,7 +537,7 @@ try {
             }
         }
     }
-    for (const width of [1023, 1024, 1280, 1440, 1920]) {
+    for (const width of [390, 1023, 1024, 1280, 1440, 1920]) {
         for (const theme of ['light', 'dark']) {
             const desktop = await prepare(width, 1000, theme);
             try {
@@ -560,6 +630,7 @@ try {
                             !(await page.locator('main').innerText()).includes('invalid_type'),
                             `Invalid fixture at ${path}`,
                         );
+                        if (path === '/admin/dashboard') await dashboardMasonryCase(page, width);
                         await noOverflow(page);
                         if (width === 1440 && process.env.PW_SCREENSHOT_DIR)
                             await page.screenshot({
