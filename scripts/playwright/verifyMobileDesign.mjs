@@ -265,6 +265,53 @@ async function closeWithFocus(page, trigger, dialog) {
     );
 }
 
+async function navigationCase(page) {
+    await page.goto(`${appUrl}/admin/accounts`);
+    await page.addStyleTag({ content: '.phpdebugbar { display: none !important; }' });
+    const navigation = page.getByRole('navigation', { name: 'Navegación principal' });
+    const controls = navigation.getByRole('link').or(navigation.getByRole('button'));
+    await navigation.waitFor();
+    assert.deepEqual(
+        (await controls.allInnerTexts()).map((label) => label.trim()),
+        ['Inicio', 'Cuentas', 'Ahorro', 'Subs', 'Más'],
+    );
+    const trigger = navigation.getByRole('button', { name: 'Más', exact: true });
+    await trigger.click();
+    let dialog = await dialogReady(page, 'Más opciones');
+    assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
+    assert.deepEqual(
+        (await dialog.getByRole('link').allTextContents()).map((label) => label.trim()),
+        ['Distribución', 'Utilidades', 'Configuración'],
+    );
+    await closeWithFocus(page, trigger, dialog);
+    for (const [label, pathname] of [
+        ['Distribución', '/admin/distribution'],
+        ['Utilidades', '/admin/settings/utilities/credit-card-payoff'],
+        ['Configuración', '/admin/settings'],
+    ]) {
+        await trigger.click();
+        dialog = await dialogReady(page, 'Más opciones');
+        await dialog.getByRole('link', { name: label, exact: true }).click();
+        await page.waitForURL(`${appUrl}${pathname}`);
+        await dialog.waitFor({ state: 'hidden' });
+        assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
+        await noOverflow(page);
+    }
+    await trigger.click();
+    dialog = await dialogReady(page, 'Más opciones');
+    const viewport = page.viewportSize();
+    await page.setViewportSize({ width: 1280, height: viewport.height });
+    await dialog.waitFor({ state: 'hidden' });
+    assert.equal(
+        await navigation.getByRole('button', { name: 'Más', exact: true }).isVisible(),
+        false,
+    );
+    assert.equal((await navigation.getByRole('link').first().innerText()).trim(), 'Inicio');
+    await page.setViewportSize(viewport);
+    await trigger.waitFor();
+    assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
+}
+
 async function subscriptionCase(page) {
     await page.goto(`${appUrl}/admin/subscriptions`);
     await page
@@ -407,6 +454,7 @@ try {
                         subscriptionCase(authenticated.page),
                     );
                     await runCase(`${label} sheet`, () => sheetCase(authenticated.page));
+                    await runCase(`${label} navigation`, () => navigationCase(authenticated.page));
                 } finally {
                     await authenticated.context.close();
                 }
@@ -433,7 +481,11 @@ try {
                     const navigation = page.getByRole('navigation', {
                         name: 'Navegación principal',
                     });
-                    assert.equal(await navigation.getByRole('link').count(), 6);
+                    assert.equal(await navigation.getByRole('link').count(), width >= 1024 ? 6 : 4);
+                    assert.equal(
+                        (await navigation.getByRole('link').first().innerText()).trim(),
+                        'Inicio',
+                    );
                     const navBox = await navigation.boundingBox();
                     const mainBox = await page.locator('main').boundingBox();
                     if (width >= 1024) {
