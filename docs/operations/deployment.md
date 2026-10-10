@@ -44,10 +44,18 @@ Después inicia PHP/MySQL/Nginx. MySQL dispone de un healthcheck TCP con `mysqla
 
 El script no retira automáticamente el contenedor SPA de otro proyecto ni aprovisiona Traefik. No se ha ejecutado ningún despliegue remoto como parte de esta integración.
 
+## Operación de WhatsApp
+
+Configura las variables de [WhatsApp](../integrations/whatsapp.md), aplica sus migraciones y mantén `QUEUE_CONNECTION=database`. La conexión de `jobs` debe coincidir con la de `webhook_receipts`, con `retry_after` mayor que el timeout de 60 segundos del job; el valor predeterminado es 90 segundos.
+
+El despliegue actual no aprovisiona un worker supervisado. Para habilitar procesamiento continuo, configura un proceso persistente con `php artisan queue:work database --sleep=1 --tries=5 --timeout=60`, reinícialo al cambiar código mediante el mecanismo de supervisión elegido y verifica que consuma la cola `default`. El worker incluido en `composer run dev` es para desarrollo.
+
+Registra en Meta la URL HTTPS pública `/api/whatsapp/webhook`, verifica el GET y suscribe el campo `messages`. Comprueba firma, persistencia y procesamiento del POST por separado: un `200` confirma recepción durable, no procesamiento de negocio. Revisa `php artisan queue:failed` y reintenta jobs corregidos con `php artisan queue:retry <uuid>`.
+
 ## Recuperación
 
 Para fallos de build o post-deploy, mantén mantenimiento, corrige el problema y repite `bash deploy.sh`. El script registra el commit anterior en el log.
 
 Para volver a una versión integrada anterior, restaura primero ese commit mediante el procedimiento operativo habitual, instala sus dependencias y restaura el manifest correspondiente desde `public/build/manifest.previous.json` si corresponde a esa versión; de otro modo reconstruye sus assets. Regenera las caches de Laravel y desactiva mantenimiento tras verificar. No basta cambiar el manifest dejando PHP actualizado.
 
-Para volver a una versión anterior a la integración, restaura el backend y su configuración Compose/Traefik anterior, reinicia el contenedor SPA conservado y devuelve el dominio principal a su router. Esa versión no contiene Vue embebido: restaurar solo un manifest no recupera el frontend. La integración no añade migraciones, pero `post-deploy --migrate` puede ejecutar otras pendientes; evalúa su compatibilidad antes de revertir código y no reviertas datos automáticamente.
+Para volver a una versión anterior a la integración, restaura el backend y su configuración Compose/Traefik anterior, reinicia el contenedor SPA conservado y devuelve el dominio principal a su router. Esa versión no contiene Vue embebido: restaurar solo un manifest no recupera el frontend. La integración de la SPA no añadió migraciones; WhatsApp sí incorpora tablas nuevas. Además, `post-deploy --migrate` puede ejecutar otras pendientes; evalúa su compatibilidad antes de revertir código y no reviertas datos automáticamente.

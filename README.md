@@ -19,7 +19,7 @@ Configura una base local en `.env`, créala y ejecuta `php artisan migrate`. Des
 composer run dev
 ```
 
-Abre `http://127.0.0.1:8000`. El comando supervisa PHP y Vite; `Ctrl+C` detiene ambos. No instala dependencias, ejecuta migraciones ni inicia workers o scheduler.
+Abre `http://127.0.0.1:8000`. El comando supervisa PHP, Vite y el worker de colas; `Ctrl+C` detiene los tres procesos. No instala dependencias, ejecuta migraciones ni inicia el scheduler.
 
 ## Organización y validación
 
@@ -36,4 +36,10 @@ php artisan test
 composer format:check
 ```
 
-Consulta [desarrollo local](docs/operations/local-development.md), [despliegue](docs/operations/deployment.md), [arquitectura](docs/architecture/overview.md) y [pruebas](docs/testing/strategy.md). Telegram, OpenAI y correo siguen configurándose desde Laravel; no publiques tokens en variables `VITE_*`.
+## WhatsApp
+
+Configuración permite vincular un teléfono mexicano al usuario autenticado mediante un código enviado por WhatsApp y desvincularlo posteriormente. La integración recibe webhooks firmados y guarda cada recepción junto con su job antes de responder `200`; el worker procesa las recepciones de forma asíncrona.
+
+El acceso a la SPA sigue usando correo, contraseña y JWT. El código de WhatsApp verifica la vinculación del teléfono; no inicia sesión. La prueba real de vinculación queda pendiente de disponer de una plantilla de autenticación aprobada. Consulta [configuración, contratos y pruebas de WhatsApp](docs/integrations/whatsapp.md).
+
+Consulta [desarrollo local](docs/operations/local-development.md), [despliegue](docs/operations/deployment.md), [arquitectura](docs/architecture/overview.md) y [pruebas](docs/testing/strategy.md). WhatsApp, Telegram, OpenAI y correo se configuran desde Laravel; no publiques tokens en variables `VITE_*`.

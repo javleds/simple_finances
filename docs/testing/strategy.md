@@ -21,3 +21,16 @@ Las reglas de cuentas compartidas requieren pruebas de balances, custodia, asign
 `npm run lint` y `npm run format` modifican archivos. `composer stan` existe como script pero PHPStan no está declarado como dependencia; `composer pint` tampoco implica que Pint esté instalado. No presentar estos checks como ejecutados si faltan sus binarios.
 
 Los scripts Playwright capturan vistas para inspección; no constituyen una suite E2E. Consulta `../../scripts/playwright/README.md`. No incorporar capturas o archivos temporales a commits.
+
+## WhatsApp
+
+La cobertura enfocada se ejecuta con:
+
+```bash
+php artisan test --filter=WhatsApp
+npm run test:unit -- --run resources/js/modules/settings/components/WhatsappConnectionCard.spec.ts
+```
+
+Verifica expiración de 24 horas, ceros iniciales, límites de solicitudes e intentos, conflictos de teléfonos, reenvío, fallos de envío y desvinculación. En el webhook, verifica firma, rechazo de eventos inválidos, persistencia y encolado atómicos, repetición del cuerpo, procesamiento y reintentos del worker. La UI debe conservar el aislamiento de datos al cambiar de sesión.
+
+Las pruebas automatizadas sustituyen las llamadas a Meta; no acreditan entrega de mensajes ni aprobación de plantillas. La prueba real del OTP permanece pendiente según el procedimiento de [WhatsApp](../integrations/whatsapp.md).
