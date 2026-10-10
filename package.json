@@ -17,7 +17,8 @@
         "pw:views": "node scripts/playwright/captureFacilities.mjs --output-dir tmp/playwright-views",
         "pw:views:list": "node scripts/playwright/captureFacilities.mjs --list",
         "pw:facilities": "node scripts/playwright/captureFacilities.mjs",
-        "pw:facilities:list": "node scripts/playwright/captureFacilities.mjs --list"
+        "pw:facilities:list": "node scripts/playwright/captureFacilities.mjs --list",
+        "pw:mobile-design": "node scripts/playwright/verifyMobileDesign.mjs"
     },
     "dependencies": {
         "@heroicons/vue": "^2.2.0",
