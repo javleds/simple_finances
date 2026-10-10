@@ -32,7 +32,7 @@ function formatDateLabel(date: string): string {
       <AppText size="sm" tone="subtle">Scroll continuo</AppText>
     </div>
 
-    <div class="space-y-4">
+    <div class="space-y-2 sm:space-y-4">
       <TransactionListItem
         v-for="transaction in props.transactions"
         :key="transaction.id"

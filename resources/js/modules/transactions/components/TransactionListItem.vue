@@ -108,7 +108,7 @@ function handleDelete(): void {
 
 <template>
     <AppCard
-        class="relative overflow-hidden rounded-xl p-4! shadow-none transition hover:border-(--app-color-border-strong)"
+        class="relative overflow-hidden rounded-xl px-4! py-3! shadow-none sm:py-4! transition hover:border-(--app-color-border-strong)"
     >
         <div
             class="pointer-events-none absolute inset-y-0 left-0 w-1"
@@ -121,7 +121,7 @@ function handleDelete(): void {
         />
 
         <div
-            class="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+            class="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 sm:gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
         >
             <div class="min-w-0">
                 <p class="text-sm leading-5 font-semibold break-words text-(--app-color-text)">
@@ -130,7 +130,7 @@ function handleDelete(): void {
             </div>
 
             <div
-                class="col-span-2 col-start-1 row-start-2 flex min-w-0 flex-col items-start gap-1.5 sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:items-end"
+                class="col-start-1 row-start-2 flex min-w-0 flex-col items-start gap-1.5 sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:items-end"
             >
                 <p
                     class="shrink-0 text-sm font-semibold tracking-tight whitespace-nowrap tabular-nums sm:text-base"
@@ -162,14 +162,14 @@ function handleDelete(): void {
 
             <AppActionMenu
                 v-if="props.showActions"
-                class="col-start-2 row-start-1 shrink-0 sm:col-start-3"
+                class="col-start-2 row-span-2 row-start-1 shrink-0 sm:col-start-3 sm:row-span-1"
                 :actions="actionMenuItems"
                 @delete="handleDelete"
                 @edit="handleEdit"
             />
             <div
                 v-else
-                class="col-start-2 row-start-1 h-6 w-7 shrink-0 sm:col-start-3"
+                class="col-start-2 row-span-2 row-start-1 w-11 shrink-0 sm:col-start-3 sm:row-span-1 sm:h-6 sm:w-7"
                 aria-hidden="true"
             />
 
