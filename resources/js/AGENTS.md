@@ -24,7 +24,7 @@ Current shared components:
   Path: `resources/js/modules/shared/components/AppEmptyState.vue`
 - `AppHeroMetric`: hero-style metric block with small label, large value and optional adornment slot.
   Path: `resources/js/modules/shared/components/AppHeroMetric.vue`
-- `AppIconButton`: compact circular button for icon-only actions.
+- `AppIconButton`: compact button with subtle corner radius for icon-only actions.
   Path: `resources/js/modules/shared/components/AppIconButton.vue`
 - `AppInput`: labeled input wrapper compatible with native input attributes via `$attrs`.
   Path: `resources/js/modules/shared/components/AppInput.vue`
@@ -32,7 +32,7 @@ Current shared components:
   Path: `resources/js/modules/shared/components/AppLink.vue`
 - `AppListState`: wrapper for initial loading and initial error states before rendering list content.
   Path: `resources/js/modules/shared/components/AppListState.vue`
-- `AppLoadMoreFooter`: dashed infinite-scroll footer with status label and optional retry action.
+- `AppLoadMoreFooter`: inline infinite-scroll status with optional retry action.
   Path: `resources/js/modules/shared/components/AppLoadMoreFooter.vue`
 - `AppModal`: base modal mobile-first with header, content area and footer actions; presentations `dialog`, `sheet` and `fullscreen`.
   Path: `resources/js/modules/shared/components/AppModal.vue`
@@ -44,7 +44,7 @@ Current shared components:
   Path: `resources/js/modules/shared/components/AppSearchSelect.vue`
 - `AppSectionBar`: compact heading row with title, actions slot and bottom divider; supports h1/h2/h3 through the as prop.
   Path: `resources/js/modules/shared/components/AppSectionBar.vue`
-- `AppSectionHeader`: reusable section header card with title, optional description, compact metrics area and actions slot.
+- `AppSectionHeader`: reusable section header with title, optional description, metrics and actions; uncarded on mobile.
   Path: `resources/js/modules/shared/components/AppSectionHeader.vue`
 - `AppSwitch`: boolean on/off switch for compact settings and per-item activation controls.
   Path: `resources/js/modules/shared/components/AppSwitch.vue`

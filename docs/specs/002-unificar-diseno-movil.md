@@ -34,7 +34,7 @@ Sin cambios. Preservar custodia, liquidaciones, ledger, balances y autorizacione
 
 ## Frontend
 
-Radios sutiles: 4 px en controles, tarjetas y estados; 6 px en modales y paneles. Avatares circulares y spinners conservados. Tokens compartidos --app-radius-control y --app-radius-overlay. Escala 4/8/12/16/24/32 px; controles de 48 px y objetivos de iconos de 44 px. Tipografía 24/30 para página, 18/24 para sección, 16/24 para cuerpo y campos. Una superficie por grupo funcional. Mantener navegación global y mover las cinco pestañas de cuenta bajo su encabezado.
+Radios sutiles: 4 px en controles, tarjetas y estados; 6 px en modales y paneles. Avatares circulares y spinners conservados. Tokens compartidos --app-radius-control y --app-radius-overlay. Escala 4/8/12/16/24/32 px; controles de 48 px y objetivos de iconos de 44 px. Tipografía 24/30 para página, 18/24 para sección, 16/24 para cuerpo y campos. Una superficie por grupo funcional. Mantener navegación global. Las cinco pestañas de cuenta quedan bajo el encabezado móvil; desde sm se fijan justo encima del menú principal, usando su altura compartida y sin margen de separación.
 
 ## Persistencia
 
@@ -105,8 +105,20 @@ Sistema aplicado a los módulos del alcance, con tokens compartidos claro/oscuro
 
 Revisión de bindings de las plantillas y revisión independiente sin pérdidas funcionales detectadas. La cancelación de WhatsApp se trasladó al contrato de cierre de AppModal y cuenta con prueba de comportamiento.
 
-Validación: type-check, build y ESLint correctos; 38 archivos y 111 pruebas frontend; 197 pruebas backend y 1198 aserciones. El script pw:mobile-design verifica 36 combinaciones móviles (360/390/430 px, alturas 640/844, claro/oscuro, tres flujos) y una comprobación desktop. Usa fixtures y bloquea escrituras API.
+Validación inicial: type-check, build y ESLint correctos; 38 archivos y 111 pruebas frontend; 197 pruebas backend y 1198 aserciones. El script pw:mobile-design verifica 36 combinaciones móviles (360/390/430 px, alturas 640/844, claro/oscuro, tres flujos) y una comprobación desktop. Usa fixtures y bloquea escrituras API.
 
 Oxlint mantiene 12 errores anteriores: comparación contra HEAD con cero errores nuevos. No se modificaron archivos ajenos para corregir esa deuda. Los estados financieros condicionales se respaldan con las pruebas existentes; no se ejecutaron pagos, liquidaciones, correcciones ni envíos de códigos sobre datos reales. La comprobación de teclado se limita a emulación y configuración del viewport, sin prueba en dispositivo físico.
 
 Referencias de implementación PrimeVue: [styled theming](https://primevue.dev/theming/styled), [Dialog](https://primevue.dev/dialog), [Select](https://primevue.dev/select) y [Button](https://primevue.dev/button). Metadatos y usos de los tres componentes validados mediante MCP.
+
+## Ajustes posteriores completados
+
+- Listas de transacciones compactas: menú lateral de 44 px sin agrandar la fila del concepto, autor y fecha alineados en distribución amplia y separación de tarjetas de 8 px dentro de cuentas.
+- Radios compartidos de 4 px en controles/tarjetas/etiquetas y 6 px en modales/paneles; avatares e indicadores de carga circulares.
+- Términos y privacidad como páginas independientes; lectura embebida en registro mediante `RegisterLegalPreview`, conservando borrador, aceptación explícita y foco. Textos intactos.
+- Dashboard con barras horizontales. En Virtuales, una barra apilada por cuenta: ahorro neto más rendimiento registrado; pérdidas a la izquierda del cero y diferencias sin clasificar en gris. Importes completos en lista y tooltip; no se falsean proporciones para destacar rendimientos pequeños.
+- Resumen y tarjetas virtuales con total, ahorro neto y rendimiento registrado; datos de aportaciones, retiros, saldo inicial e historial conservados. Las diferencias históricas se explicitan sin reclasificar datos.
+
+Última suite frontend: 122 pruebas en 40 archivos. Comprobaciones con fixtures: 37 casos de diseño móvil/documentos legales y 6 de gráfica apilada, en ejecuciones separadas. Backend virtual enfocado: 5 pruebas/28 aserciones. TypeScript, build y ESLint correctos. Los cálculos y contratos backend permanecen intactos.
+
+La guía vigente está en [interfaz PrimeVue](../frontend/primevue.md); los comandos y límites de validación en [pruebas](../testing/strategy.md#diseño-móvil-documentos-legales-y-cuentas-virtuales).

@@ -1,5 +1,7 @@
 # UX Improvements
 
+> Documento de análisis y planificación previo al refactor; no describe por completo el estado actual. Para las decisiones vigentes consulta [interfaz PrimeVue](primevue.md), [diseño móvil](../specs/002-unificar-diseno-movil.md) y [validación](../testing/strategy.md).
+
 ## Context
 
 These notes come from a mobile Playwright walkthrough of the SPA. The screenshots were generated for product documentation and feature planning, not as an E2E test suite.

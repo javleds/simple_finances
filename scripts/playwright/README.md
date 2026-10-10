@@ -1,6 +1,6 @@
-# Capturas de vistas con Playwright
+# Capturas y verificaciones con Playwright
 
-Helpers internos para abrir vistas de la SPA y capturarlas. Sirven para documentación de producto y planeación; no constituyen una suite E2E y permanecen fuera de `resources/js`.
+Herramientas locales para inspeccionar la SPA y comprobar comportamientos de interfaz. Los scripts de capturas sirven para documentación y planeación; los scripts `verify*` contienen aserciones con datos simulados. No constituyen una suite completa de flujos privados contra servicios reales.
 
 ## Requisitos
 
@@ -10,60 +10,72 @@ Desde la raíz Laravel, inicia la aplicación integrada:
 composer run dev
 ```
 
-Los scripts usan `test@example.com` / `password` por defecto; crea esa cuenta localmente o cambia las credenciales.
+Con Vite detenido, ejecuta `npm run build` antes de revisar cambios. Se requiere Chromium disponible para Playwright. Consulta [desarrollo local](../../docs/operations/local-development.md#assets-de-desarrollo-y-compilados) para distinguir HMR y assets compilados.
 
-## Uso
+## Regresiones sin datos reales
 
-List the available view keys:
+```bash
+npm run pw:mobile-design
+node scripts/playwright/verifyVirtualBalanceChart.mjs
+```
+
+Estos scripts instalan sesiones ficticias, interceptan respuestas API y bloquean escrituras o endpoints sin fixture. No requieren crear usuarios ni proporcionar credenciales reales.
+
+| Script | Alcance |
+| --- | --- |
+| `verifyMobileDesign.mjs` | 37 casos: suscripción fullscreen/selector largo, sheet de distribución y documentos legales embebidos e independientes en 360/390/430 px, alturas 640/844 y ambos temas; compatibilidad de encabezado desktop |
+| `verifyVirtualBalanceChart.mjs` | 6 casos: gráfica virtual en tres anchos y ambos temas; proporciones y continuidad de segmentos, ganancias, pérdidas, saldo sin desglose, selector Físicas/Virtuales y reintento tras error |
+
+Las comprobaciones fallan ante errores de página o solicitudes API inesperadas. Los detalles de la cobertura unitaria y sus límites están en [la estrategia de pruebas](../../docs/testing/strategy.md#diseño-móvil-documentos-legales-y-cuentas-virtuales).
+
+## Capturas con una cuenta local
+
+Los helpers de capturas usan una cuenta local existente. Los valores predeterminados son `test@example.com` y `password`; pueden sustituirse mediante variables de entorno. Esta configuración no aplica a los scripts de regresión con fixtures.
+
+Listar vistas disponibles:
 
 ```bash
 npm run pw:views:list
 ```
 
-Capture all available views in the mobile viewport:
+Capturar todas las vistas en móvil:
 
 ```bash
 npm run pw:views -- --all
 ```
 
-Capture one view:
+Capturar una vista o comparar móvil y escritorio:
 
 ```bash
 npm run pw:views -- --facility account-transactions
-```
-
-Capture both mobile and desktop:
-
-```bash
 npm run pw:views -- --facility dashboard --viewport both
 ```
 
-Open a visible browser without writing screenshots:
+Abrir el navegador visible sin escribir capturas:
 
 ```bash
 npm run pw:views -- --facility transactions --headed --no-screenshot
 ```
 
-Skip dynamic routes that require existing accounts or distribution rules:
+Omitir rutas dinámicas que requieren cuentas o reglas existentes:
 
 ```bash
 npm run pw:views:list -- --base-only
 ```
 
-Screenshots are written to `tmp/playwright-views` by default when using `pw:views`.
-
-The older `pw:facilities` scripts are still available as compatibility aliases:
+`pw:views` escribe en `tmp/playwright-views` por defecto. Los alias anteriores siguen disponibles:
 
 ```bash
 npm run pw:facilities -- --all
 ```
 
-Those compatibility commands write to `tmp/playwright-facilities` unless `--output-dir` or `PW_SCREENSHOT_DIR` is set.
+Los alias escriben en `tmp/playwright-facilities` salvo que se configure `--output-dir` o `PW_SCREENSHOT_DIR`. No incorporar capturas, credenciales ni archivos temporales a commits.
 
 ## Variables de entorno
 
-- `PW_APP_URL`: SPA URL. Defaults to `http://127.0.0.1:8000`.
-- `PW_API_URL`: API URL. Defaults to `http://127.0.0.1:8000/api`.
-- `PW_EMAIL`: login email. Defaults to `test@example.com`.
-- `PW_PASSWORD`: login password. Defaults to `password`.
-- `PW_SCREENSHOT_DIR`: screenshot output directory.
+| Variable | Uso y valor predeterminado |
+| --- | --- |
+| `PW_APP_URL` | URL local de la SPA; `http://127.0.0.1:8000`. También aplica a los scripts `verify*` |
+| `PW_API_URL` | URL de API para capturas; `http://127.0.0.1:8000/api` |
+| `PW_EMAIL`, `PW_PASSWORD` | Credenciales locales para helpers de capturas; no necesarias para regresiones con fixtures |
+| `PW_SCREENSHOT_DIR` | Directorio de salida de capturas |

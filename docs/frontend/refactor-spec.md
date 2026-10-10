@@ -1,5 +1,7 @@
 # Refactor Spec
 
+> Documento de análisis y planificación previo al refactor; no describe por completo el estado actual. Para las decisiones vigentes consulta [interfaz PrimeVue](primevue.md), [diseño móvil](../specs/002-unificar-diseno-movil.md) y [validación](../testing/strategy.md).
+
 ## Diagnostico Inicial
 
 La aplicacion tiene varias paginas actuando como "todo en uno": orquestan API, estado local, permisos, filtros, modales, formularios y presentacion.

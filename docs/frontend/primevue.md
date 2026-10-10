@@ -8,7 +8,7 @@ La migración conserva los repositorios HTTP, esquemas y mapeadores de API, perm
 
 ## Componentes y tema
 
-`resources/js/main.ts` registra PrimeVue con el preset y la configuración española de `resources/js/lib/primevue.ts`. El preset deriva de Aura, usa azul como color principal y conserva `.dark` y las capas CSS de Tailwind 4. Heroicons sigue siendo la biblioteca de iconos de la aplicación.
+`resources/js/main.ts` registra PrimeVue con el preset y la configuración española de `resources/js/lib/primevue.ts`. El preset deriva de Aura, usa petróleo y neutros como paleta principal y conserva `.dark` y las capas CSS de Tailwind 4. Heroicons sigue siendo la biblioteca de iconos de la aplicación.
 
 Los componentes de `resources/js/modules/shared/components` adaptan PrimeVue a los contratos existentes:
 
@@ -18,7 +18,7 @@ Los componentes de `resources/js/modules/shared/components` adaptan PrimeVue a l
 | `AppDatePicker` | DatePicker; fecha local `yyyy-MM-dd`, sin conversión de zona horaria, y vacío como `null` |
 | `AppSearchSelect` | Select; búsqueda, limpieza, descripciones y asociación accesible de etiquetas y errores |
 | `AppSwitch`, `AppToggleButton` | ToggleSwitch y SelectButton; valores y eventos del consumidor |
-| `AppModal` | Dialog; cierre, variantes, acciones, pie personalizable y presentación inferior en móvil mediante `presentation="sheet"` |
+| `AppModal` | Dialog; cierre, variantes, acciones, pie personalizable y presentaciones `dialog`, `sheet` y `fullscreen`; cuerpo desplazable y pie fijo |
 | `AppThemeMenu` | Menu; selección persistida de Claro, Oscuro o Sistema desde los layouts |
 | `AppActionMenu`, `AppContextTabs` | Menu y Tabs; acciones y navegación contextual existentes |
 | `AppCard` | Card; padding configurable desde el contenedor y contenido espaciado dentro del slot |
@@ -27,7 +27,31 @@ Los componentes de `resources/js/modules/shared/components` adaptan PrimeVue a l
 | `AppFilterTrigger` | Botón con icono y contador, nombre accesible y asociación con el panel |
 | `AppActiveFilters` | Etiquetas removibles de selecciones aplicadas; conserva los callbacks de cada módulo |
 
-Las pestañas inferiores de cuentas presentan el icono y el título en una misma fila. El listado de pestañas conserva su desplazamiento horizontal en pantallas estrechas. Los mensajes de error, confirmación y estado usan componentes PrimeVue donde corresponde.
+Las cinco pestañas de cuenta presentan icono y título en una misma fila y conservan desplazamiento horizontal. En móvil quedan bajo el encabezado, con posición sticky. Desde `sm` quedan fijas inmediatamente encima de la navegación principal: el desplazamiento usa `--app-bottom-nav-height`, sin margen inferior adicional. Los mensajes de error, confirmación y estado usan componentes PrimeVue donde corresponde.
+
+## Sistema visual móvil
+
+El sistema centraliza colores, radios y alturas en `resources/js/main.css` y adapta el preset Aura. La escala de espacio es 4/8/12/16/24/32 px: margen de página y padding habitual de tarjeta de 16 px, campos separados 16 px y secciones 24 px. Se evita acumular superficies y padding para grupos anidados.
+
+| Elemento | Regla vigente |
+| --- | --- |
+| Tarjetas, campos, botones y etiquetas | Radio de 4 px mediante `--app-radius-control`; sin etiquetas en forma de píldora |
+| Modales y paneles | Radio de 6 px mediante `--app-radius-overlay`; fullscreen móvil conserva esquinas rectas |
+| Avatares e indicadores de carga | Forma circular conservada |
+| Controles principales / botones de icono | 48 px / área táctil de 44 px |
+| Títulos de página / sección | 24/30 px y 18/24 px; `AppSectionBar` admite `h1`, `h2` y `h3` |
+| Acciones | Guardar/crear primarios, cerrar/cancelar neutrales, eliminar con variante `danger` |
+| Formularios | Largos en fullscreen móvil, cortos en sheet, confirmaciones compactas en dialog; desde `sm` se centran |
+
+El shell reserva el espacio de la navegación global y las áreas seguras mediante `--app-header-height` y `--app-bottom-nav-height`. El viewport incluye `viewport-fit=cover` e `interactive-widget=resizes-content`; esto no sustituye una prueba de teclado en dispositivo físico.
+
+`TransactionListItem` alinea el menú de acciones sin aumentar la altura de la fila del concepto; conserva concepto, importe, autor, fecha y estados de reembolso. En distribución amplia, autor y fecha comparten fila. Las transacciones dentro de una cuenta se separan 8 px. `AppSearchSelect` limita el overlay al viewport y permite ajustar las descripciones en varias líneas. `AppLoadMoreFooter` presenta el estado y reintento sin una tarjeta adicional.
+
+## Documentos legales y registro
+
+Las páginas independientes son `/auth/terms-and-conditions` y `/auth/privacy-policy`, con rutas `auth.terms` y `auth.privacy`. Ambas incluyen un enlace de regreso al registro.
+
+En registro, `RegisterLegalPreview` integra los mismos componentes de contenido dentro del formulario, sin modal ni navegación. Abrir o cerrar conserva los datos escritos y no acepta las casillas legales. El foco pasa al documento al abrir y vuelve al enlace al cerrar. **Abrir página completa (nueva pestaña)** permite consultar la ruta independiente sin abandonar el borrador. Los títulos usan `h1` en las páginas y `h2`/`h3` en el contenido embebido. Los textos legales no se modificaron.
 
 ## Selector de tema
 
@@ -90,11 +114,41 @@ Al cambiar el registro editado o el desafío de WhatsApp se reinicia el formular
 
 ## Gráficos y dependencias
 
-`DashboardBalanceChart.vue` usa `@primeui/vue-chart` y `@primeui/chart-style`, con renderer SVG y tema PrimeOne. Conserva los balances con signo, colores de cuenta y formatos monetarios MXN. La categoría interna usa el identificador de cuenta para distinguir cuentas con el mismo nombre.
+`DashboardBalanceChart.vue` usa `@primeui/vue-chart` y `@primeui/chart-style`, con renderer SVG y tema PrimeOne. Las barras son horizontales, su altura se adapta al número de cuentas y los identificadores internos distinguen nombres repetidos. Los nombres completos y los importes MXN se conservan en la lista y los tooltips; solo los nombres muy largos del eje se abrevian.
+
+- **Físicas:** una barra de balance por cuenta, conservando su color.
+- **Virtuales:** una barra apilada por cuenta, con **ahorro neto** en petróleo y **rendimiento registrado** en verde. El ancho de cada segmento es proporcional a su importe; no se agrandan rendimientos pequeños para hacerlos más visibles. Un rendimiento cero no ocupa ancho.
+- Los segmentos negativos se representan a la izquierda del cero; un rendimiento negativo usa rojo. El total numérico es la suma algebraica, no el ancho combinado a ambos lados del cero.
+- Si ahorro y rendimiento no explican todo el total, aparece un segmento gris **Sin desglose**, también identificado en los importes. No se atribuye automáticamente a ganancias ni a aportaciones.
+
+`DashboardBalanceSection` solicita el desglose a `GET /api/virtual-accounts` solo cuando se selecciona Virtuales. La consulta TanStack Query usa `['dashboard', 'virtual-balances']`, se refresca al volver a habilitarse y contempla carga, error y reintento. Pertenece al prefijo de invalidaciones existente del dashboard. No se cambiaron endpoints ni reglas financieras.
+
+`buildVirtualBalanceChart` cruza los identificadores de la gráfica con el resumen virtual, conserva el orden y usa el total del mismo resumen que sus segmentos. Si una cuenta no tiene resumen, su saldo se muestra sin desglose, sin inventar ahorro o rendimiento.
 
 La licencia se configura mediante `VITE_PRIMEVUE_LICENSE_KEY`; los cambios requieren reiniciar Vite o recompilar. Se retiraron `vee-validate`, `@vee-validate/zod`, `@vueform/multiselect`, `@vuepic/vue-datepicker`, `echarts` y `vue-echarts`.
 
+## Resumen de cuentas virtuales
+
+La página de cuentas virtuales conserva el **Total actual** y muestra **Ahorro neto** y **Rendimiento registrado** tanto en el resumen general como en cada cuenta. `VirtualBalanceBreakdown` unifica etiquetas, signos, colores y diferencias sin clasificar. Aportado, Retirado, Inicial, último corte, historial y captura de saldo permanecen disponibles.
+
+| Concepto | Cálculo vigente |
+| --- | --- |
+| Ahorro neto | `netCapital`: ingresos manuales menos egresos manuales, según el resumen existente |
+| Rendimiento registrado | `observedYield`: suma de los deltas de cortes capturados; puede incluir pérdidas o ajustes, no acredita ganancias realizadas |
+| Saldo sin desglose | Total actual menos ahorro neto menos rendimiento registrado, conciliado en centavos |
+
+El saldo inicial es una referencia del primer corte; no se suma otra vez a las aportaciones. Los movimientos técnicos de snapshots y los movimientos marcados como migrados están excluidos del cálculo manual existente. El desglose conserva esa regla y explicita diferencias históricas en lugar de reclasificar datos.
+
+
 ## Validación realizada
+
+La última ejecución de los ajustes visuales pasó **122 pruebas frontend en 40 archivos**, TypeScript, build y ESLint de los módulos modificados. La suite backend completa pasó **197 pruebas y 1198 aserciones** durante el refactor inicial; posteriormente pasaron las **5 pruebas enfocadas de cuentas virtuales, con 28 aserciones**, sin cambios backend.
+
+Las regresiones con fixtures pasaron 37 casos de diseño móvil/documentos legales y 6 de barras virtuales apiladas. El segundo script verifica geometría y proporciones de los segmentos, totales, pérdidas, diferencias históricas, alternancia Físicas/Virtuales y reintento. Consulta [comandos y alcance de pruebas](../testing/strategy.md#diseño-móvil-documentos-legales-y-cuentas-virtuales).
+
+Durante el refactor inicial se comparó Oxlint contra HEAD: 12 errores preexistentes y cero nuevos en esa comparación. Este resultado corresponde a esa ejecución, no acredita una ejecución posterior de Oxlint sobre todos los cambios.
+
+### Registro de la migración inicial
 
 En la migración pasaron 69 pruebas frontend en 25 archivos, 192 pruebas backend con 1168 assertions, chequeo de tipos, ESLint, Oxlint y build. Las pruebas de regresión cubren importes, fechas, reparto porcentual, accesibilidad de selectores, acciones externas de modales, validación cruzada, reinicio y protección contra envíos repetidos.
 

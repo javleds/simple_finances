@@ -20,7 +20,7 @@ Las reglas de cuentas compartidas requieren pruebas de balances, custodia, asign
 
 `npm run lint` y `npm run format` modifican archivos. `composer stan` existe como script pero PHPStan no está declarado como dependencia; `composer pint` tampoco implica que Pint esté instalado. No presentar estos checks como ejecutados si faltan sus binarios.
 
-Los scripts Playwright capturan vistas para inspección; no constituyen una suite E2E. Consulta `../../scripts/playwright/README.md`. No incorporar capturas o archivos temporales a commits.
+Los scripts de captura Playwright sirven para inspección; los scripts `verifyMobileDesign.mjs` y `verifyVirtualBalanceChart.mjs` contienen aserciones con fixtures. Ninguno acredita todos los flujos privados contra servicios reales. Consulta [los scripts y sus requisitos](../../scripts/playwright/README.md). No incorporar capturas o archivos temporales a commits.
 
 ## WhatsApp
 
@@ -39,7 +39,7 @@ Las pruebas automatizadas sustituyen las llamadas a Meta; no acreditan entrega d
 
 Además del chequeo de tipos y las pruebas completas, verifica fechas locales, importes durante la edición, validación Zod entre campos, reinicio al cambiar de registro, envío desde el pie del modal y bloqueo de envíos duplicados. Las regresiones enfocadas están en `primeControls.spec.ts`, `primeForms.spec.ts`, `AccountUserEditModal.spec.ts`, `useAccountGoalPageActions.spec.ts` y `WhatsappConnectionCard.spec.ts`.
 
-En navegador, revisa menús, diálogos, filtros, búsquedas y scroll infinito en móvil y escritorio, con temas claro y oscuro. Dentro de una cuenta, comprueba las cinco pestañas inferiores, su desplazamiento horizontal y que cada icono quede junto a su título. Confirma primero si se está sirviendo HMR o un build actualizado. Consulta [la migración y el alcance de su validación](../frontend/primevue.md#validación-realizada).
+En navegador, revisa menús, diálogos, filtros, búsquedas y scroll infinito en móvil y escritorio, con temas claro y oscuro. Dentro de una cuenta, comprueba las cinco pestañas bajo el encabezado móvil y encima de la navegación inferior desde `sm`, sin separación entre ambas barras fijas. Verifica desplazamiento horizontal y cada icono junto a su título. Confirma primero si se está sirviendo HMR o un build actualizado. Consulta [la migración y el alcance de su validación](../frontend/primevue.md#validación-realizada).
 
 ## Filtros de listas
 
@@ -81,3 +81,28 @@ En navegador, comprobar el menú de tema en autenticación y antes de Perfil, pe
 La revisión puntual del tema cubrió anchos de 320, 390 y 1440 píxeles, persistencia y cambios del dispositivo. Las notificaciones se revisaron en claro y oscuro a 390 píxeles; se simuló un error de guardado en el navegador para comprobar la recuperación del estado sin modificar preferencias reales. La aceptación de arreglos vacíos se verificó mediante pruebas de API. Estas comprobaciones no constituyen una suite E2E completa.
 
 Tras estos cambios pasaron 197 pruebas backend, 108 frontend, chequeo de tipos, ESLint de los archivos modificados y build. Los totales describen esa ejecución y pueden crecer con cambios posteriores.
+
+## Diseño móvil, documentos legales y cuentas virtuales
+
+Con la aplicación local disponible en `http://127.0.0.1:8000` y assets actualizados:
+
+```bash
+npm run pw:mobile-design
+node scripts/playwright/verifyVirtualBalanceChart.mjs
+```
+
+Ambos scripts usan sesiones ficticias y respuestas API interceptadas; bloquean escrituras y fallan ante solicitudes sin fixture. No necesitan credenciales reales. `PW_APP_URL` permite cambiar la URL local. Si Vite está detenido, ejecuta `npm run build` antes de probar. Se requiere Chromium disponible para Playwright.
+
+| Verificación | Cobertura |
+| --- | --- |
+| `verifyMobileDesign.mjs` | 36 combinaciones de 360/390/430 px, alturas 640/844, claro/oscuro y tres flujos; más encabezado desktop: 37 casos |
+| Formularios y paneles | Fullscreen de suscripción, selector con nombres y descripciones largos, sheet de distribución, límites del viewport, scroll, Escape y retorno de foco |
+| Documentos legales | Lectura embebida sin modal, conservación de nombre/correo y casillas sin aceptar; cierre y foco; ambas páginas independientes y enlaces a nueva pestaña |
+| `verifyVirtualBalanceChart.mjs` | 6 combinaciones de 360/390/430 px y claro/oscuro, con ganancias, pérdidas y saldo histórico |
+| Barras virtuales | Segmentos en la misma fila, contiguos y con proporción 10000:500; totales y diferencias exactos; cambio a Físicas y recuperación ante error de consulta |
+| `VirtualBalanceBreakdown.spec.ts` | Signos positivo/negativo/cero, referencias iniciales sin duplicación, diferencias sin reclasificar y redondeo en centavos |
+| `virtualBalanceChart.spec.ts` | Cruce por cuenta y orden, total coherente con segmentos, pérdidas, diferencias históricas y resumen ausente |
+
+Últimos resultados: 122 pruebas frontend en 40 archivos; 37 casos de diseño móvil y 6 casos de gráfica en ejecuciones separadas; TypeScript, build y ESLint correctos. La suite backend completa del refactor pasó 197 pruebas/1198 aserciones y la comprobación posterior enfocada de cuentas virtuales pasó 5 pruebas/28 aserciones.
+
+La auditoría inicial revisó 24 vistas y 106 capturas con Chrome DevTools. Las capturas y galerías quedan fuera de Git. Los fixtures no acreditan pagos, liquidaciones, correcciones ni envíos de códigos reales; tampoco sustituyen una prueba de teclado y safe-area en dispositivo físico. El registro de validación y la deuda preexistente de Oxlint están en [la guía de interfaz](../frontend/primevue.md#validación-realizada).
