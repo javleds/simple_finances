@@ -23,6 +23,8 @@ Las variables están declaradas en `.env.example`:
 
 Las credenciales `WA_*` pertenecen al backend y no deben llevar prefijo `VITE_`. El flujo actual de recepción de WhatsApp no llama a OpenAI.
 
+La sección de vinculación se oculta cuando falta alguno de los seis valores `WA_*` de configuración de envío o webhook de la tabla anterior. `WA_AUTH_TEMPLATE_LANGUAGE` utiliza `es_MX` como valor predeterminado si no se define; un valor vacío deshabilita la sección. Laravel publica únicamente el indicador booleano `app-whatsapp-enabled` en el HTML, sin credenciales. Cuando está deshabilitada, la tarjeta no se monta ni consulta el estado de vinculación. Las conexiones existentes se conservan. Después de cambiar la configuración, actualizar la caché de configuración si se utiliza y recargar la página; no se requiere recompilar el frontend.
+
 La plantilla se administra en WhatsApp Manager, en las plantillas de mensajes de la cuenta Business. Debe ser de autenticación con código y botón para copiarlo: el envío implementado incluye el mismo código en el cuerpo y en el botón. La cuenta de prueba utilizada rechazó la creación de plantillas personalizadas; la validación real sigue pendiente hasta disponer de una plantilla autorizada.
 
 `hello_world` no permite insertar el OTP como parámetro: cambiar solamente `WA_AUTH_TEMPLATE_NAME` a ese valor no prueba este flujo. No se ha implementado una alternativa de envío de texto para desarrollo.

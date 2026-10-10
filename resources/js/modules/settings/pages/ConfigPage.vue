@@ -6,6 +6,10 @@ import { CalculatorIcon } from '@heroicons/vue/24/outline';
 import { RouterLink } from 'vue-router';
 import { AppCard, AppSwitch, AppText, AppTitle } from '@/modules/shared/components';
 
+const isWhatsappEnabled =
+    document.querySelector<HTMLMetaElement>('meta[name="app-whatsapp-enabled"]')?.content ===
+    'true';
+
 const {
     globalNotificationSettings,
     accountNotificationSettings,
@@ -23,7 +27,7 @@ const {
             <AppTitle as="h1">Configuración</AppTitle>
             <AppText>Administra tus conexiones, avisos y herramientas.</AppText>
         </header>
-        <WhatsappConnectionCard />
+        <WhatsappConnectionCard v-if="isWhatsappEnabled" />
         <section class="space-y-3">
             <div class="space-y-1">
                 <AppTitle as="h2" size="sm">Configuración de notificaciones</AppTitle>
@@ -36,7 +40,10 @@ const {
             <Message v-if="saveError" severity="error">{{ saveError }}</Message>
             <AppText v-if="isSaving" role="status" size="sm">Guardando preferencias...</AppText>
 
-            <div v-if="isLoading" class="rounded-(--app-radius-control) border px-4 py-6 text-center">
+            <div
+                v-if="isLoading"
+                class="rounded-(--app-radius-control) border px-4 py-6 text-center"
+            >
                 <AppText>Cargando configuración...</AppText>
             </div>
 
