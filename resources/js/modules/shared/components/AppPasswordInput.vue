@@ -24,7 +24,7 @@ function handleBlur(event: FocusEvent): void {
 </script>
 
 <template>
-    <div class="space-y-2.5">
+    <div class="space-y-2">
         <div class="flex min-h-5 items-center justify-between gap-4">
             <label
                 :for="props.id"

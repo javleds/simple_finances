@@ -234,7 +234,7 @@ function toFixedAmount(value: string): string {
 </script>
 
 <template>
-    <div class="space-y-2.5">
+    <div class="space-y-2">
         <div v-if="props.label" class="flex min-h-5 items-center">
             <label
                 :for="props.id"

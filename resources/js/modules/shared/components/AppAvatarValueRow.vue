@@ -23,7 +23,7 @@ const initials = computed(() =>
     >
         <Avatar :label="initials" shape="circle" aria-hidden="true" class="shrink-0" />
         <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium text-(--app-color-text)">
+            <p class="text-sm font-medium wrap-anywhere text-(--app-color-text)">
                 {{ props.name }}
             </p>
             <p v-if="props.helperText" class="text-xs text-(--app-color-text-subtle)">
@@ -34,7 +34,7 @@ const initials = computed(() =>
         <div class="flex shrink-0 items-center gap-2">
             <slot name="action" />
 
-            <span class="text-sm font-semibold text-(--app-color-text)">
+            <span class="text-sm font-semibold text-(--app-color-text) tabular-nums">
                 {{ props.value }}
             </span>
         </div>

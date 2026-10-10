@@ -12,7 +12,7 @@ Current shared components:
   Path: `resources/js/modules/shared/components/AppActionMenu.vue`
 - `AppAvatarValueRow`: compact row with circular initials avatar, primary label and right-aligned value for small summaries.
   Path: `resources/js/modules/shared/components/AppAvatarValueRow.vue`
-- `AppButton`: base button with variants `primary`, `secondary`, `ghost`.
+- `AppButton`: base button with variants `primary`, `secondary`, `ghost`, `outline`, `danger`.
   Path: `resources/js/modules/shared/components/AppButton.vue`
 - `AppCard`: bordered surface card with optional padding and muted surface mode.
   Path: `resources/js/modules/shared/components/AppCard.vue`
@@ -34,7 +34,7 @@ Current shared components:
   Path: `resources/js/modules/shared/components/AppListState.vue`
 - `AppLoadMoreFooter`: dashed infinite-scroll footer with status label and optional retry action.
   Path: `resources/js/modules/shared/components/AppLoadMoreFooter.vue`
-- `AppModal`: base modal mobile-first with header, content area and footer actions.
+- `AppModal`: base modal mobile-first with header, content area and footer actions; presentations `dialog`, `sheet` and `fullscreen`.
   Path: `resources/js/modules/shared/components/AppModal.vue`
 - `AppPasswordInput`: password input with show/hide action.
   Path: `resources/js/modules/shared/components/AppPasswordInput.vue`
@@ -42,7 +42,7 @@ Current shared components:
   Path: `resources/js/modules/shared/components/AppPercentageSplitEditor.vue`
 - `AppSearchSelect`: adaptador de PrimeVue Select con búsqueda, limpieza, descripciones de opciones y etiquetas accesibles.
   Path: `resources/js/modules/shared/components/AppSearchSelect.vue`
-- `AppSectionBar`: compact section heading row with title, actions slot and bottom divider.
+- `AppSectionBar`: compact heading row with title, actions slot and bottom divider; supports h1/h2/h3 through the as prop.
   Path: `resources/js/modules/shared/components/AppSectionBar.vue`
 - `AppSectionHeader`: reusable section header card with title, optional description, compact metrics area and actions slot.
   Path: `resources/js/modules/shared/components/AppSectionHeader.vue`

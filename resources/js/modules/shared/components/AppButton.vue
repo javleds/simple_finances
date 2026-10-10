@@ -3,7 +3,7 @@ import Button from 'primevue/button';
 const props = withDefaults(
     defineProps<{
         type?: 'button' | 'submit' | 'reset';
-        variant?: 'primary' | 'secondary' | 'ghost' | 'outline';
+        variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'danger';
         fullWidth?: boolean;
         disabled?: boolean;
         loading?: boolean;
@@ -23,11 +23,17 @@ const props = withDefaults(
         :type="props.type"
         :disabled="props.disabled || props.loading"
         :aria-busy="props.loading"
-        :severity="props.variant === 'secondary' ? 'secondary' : undefined"
+        :severity="
+            props.variant === 'danger'
+                ? 'danger'
+                : props.variant === 'secondary'
+                  ? 'secondary'
+                  : undefined
+        "
         :text="props.variant === 'ghost'"
         :outlined="props.variant === 'outline'"
         :fluid="props.fullWidth"
-        class="min-h-12"
+        class="min-h-12 text-base"
     >
         <span
             v-if="props.loading"

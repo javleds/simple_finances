@@ -126,6 +126,24 @@ describe('PrimeVue shared controls', () => {
         ).toBe(10000);
     });
 
+    it('closes informational dialogs with a neutral action without submitting a form', async () => {
+        const wrapper = mount(AppModal, {
+            attachTo: document.body,
+            props: { open: true, title: 'Información', presentation: 'sheet' },
+            global,
+        });
+        wrappers.push(wrapper);
+        await nextTick();
+        const close = [...document.body.querySelectorAll<HTMLButtonElement>('button')].find(
+            (button) => button.textContent?.trim() === 'Cerrar',
+        )!;
+        expect(close.type).toBe('button');
+        expect(close.classList.contains('p-button-danger')).toBe(false);
+        close.click();
+        expect(wrapper.emitted('action')).toEqual([['close']]);
+        expect(wrapper.emitted('close')).toHaveLength(1);
+    });
+
     it('submits an external form once and prevents pending actions', async () => {
         const form = document.createElement('form');
         form.id = 'external-form';
@@ -140,6 +158,7 @@ describe('PrimeVue shared controls', () => {
             props: {
                 open: true,
                 title: 'Guardar',
+                presentation: 'fullscreen',
                 actions: [{ key: 'save', label: 'Guardar', type: 'submit', form: form.id }],
             },
             global,

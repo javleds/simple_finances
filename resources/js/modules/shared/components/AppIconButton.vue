@@ -25,7 +25,7 @@ const props = withDefaults(
         outlined
         icon-only
         severity="secondary"
-        class="h-10 w-10 shrink-0"
+        class="h-11 w-11 shrink-0"
     >
         <span
             v-if="props.loading"

@@ -4,48 +4,50 @@ import AppText from './AppText.vue';
 import AppTitle from './AppTitle.vue';
 
 const props = withDefaults(
-  defineProps<{
-    title: string;
-    description?: string;
-  }>(),
-  {
-    description: undefined,
-  },
+    defineProps<{
+        title: string;
+        description?: string;
+    }>(),
+    {
+        description: undefined,
+    },
 );
 </script>
 
 <template>
-  <AppCard class="rounded-3xl">
-    <div class="space-y-4">
-      <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0 flex-1 space-y-1">
-          <AppTitle as="h2" size="sm">{{ props.title }}</AppTitle>
-          <AppText v-if="props.description">
-            {{ props.description }}
-          </AppText>
-        </div>
+    <AppCard
+        class="border-0! bg-transparent! p-0! shadow-none! sm:rounded-3xl sm:border! sm:bg-(--app-color-surface)! sm:p-8!"
+    >
+        <div class="space-y-4">
+            <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0 flex-1 space-y-1">
+                    <AppTitle as="h2" size="sm">{{ props.title }}</AppTitle>
+                    <AppText v-if="props.description">
+                        {{ props.description }}
+                    </AppText>
+                </div>
 
-        <div v-if="$slots.actions" class="flex shrink-0 items-center gap-2">
-          <slot name="actions" />
-        </div>
-      </div>
+                <div v-if="$slots.actions" class="flex shrink-0 items-center gap-2">
+                    <slot name="actions" />
+                </div>
+            </div>
 
-      <div
-        v-if="$slots['primary-metric']"
-        class="rounded-2xl border bg-(--app-color-surface-muted) px-4 py-4"
-        :style="{ borderColor: 'var(--app-color-border)' }"
-      >
-        <slot name="primary-metric" />
-      </div>
+            <div
+                v-if="$slots['primary-metric']"
+                class="py-2 sm:rounded-2xl sm:border sm:bg-(--app-color-surface-muted) sm:px-4 sm:py-4"
+                :style="{ borderColor: 'var(--app-color-border)' }"
+            >
+                <slot name="primary-metric" />
+            </div>
 
-      <div
-        v-if="$slots['secondary-metrics']"
-        class="-mx-6 overflow-x-auto px-6 pb-1 sm:mx-0 sm:px-0"
-      >
-        <div class="flex min-w-max items-stretch gap-2">
-          <slot name="secondary-metrics" />
+            <div
+                v-if="$slots['secondary-metrics']"
+                class="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"
+            >
+                <div class="flex min-w-max items-stretch gap-2">
+                    <slot name="secondary-metrics" />
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </AppCard>
+    </AppCard>
 </template>

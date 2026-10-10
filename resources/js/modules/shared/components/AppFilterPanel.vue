@@ -25,15 +25,13 @@ const emit = defineEmits<{ apply: []; clear: []; close: [] }>();
     >
         <form
             :id="`${props.id}-form`"
-            class="grid gap-6 pt-2"
+            class="grid gap-4 sm:gap-6"
             @submit.prevent="!props.applyDisabled && emit('apply')"
         >
             <slot />
         </form>
         <template #footer>
-            <div
-                class="flex w-full items-center justify-between gap-3 pb-[env(safe-area-inset-bottom)]"
-            >
+            <div class="flex w-full items-center justify-between gap-3">
                 <AppButton variant="ghost" @click="emit('clear')">{{ props.clearLabel }}</AppButton>
                 <AppButton type="submit" :form="`${props.id}-form`" :disabled="props.applyDisabled"
                     >Aplicar filtros</AppButton

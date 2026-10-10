@@ -14,7 +14,7 @@ type SplitUser = {
 
 const TOTAL_BASIS_POINTS = 10_000;
 const DEFAULT_STEP_PERCENTAGE = 5;
-const HANDLE_WIDTH_PX = 18;
+const HANDLE_WIDTH_PX = 44;
 const USER_COLORS = ['#2563EB', '#0F766E', '#EA580C', '#7C3AED', '#D97706', '#DC2626'] as const;
 
 const props = withDefaults(
@@ -449,7 +449,7 @@ onBeforeUnmount(() => {
         <div class="space-y-3">
             <div
                 ref="trackRef"
-                class="relative h-4 touch-none overflow-visible rounded-full bg-(--app-color-surface-muted) select-none"
+                class="relative mx-[1.375rem] h-4 touch-none overflow-visible rounded-full bg-(--app-color-surface-muted) select-none"
             >
                 <div
                     v-for="(user, index) in userItems"
@@ -470,7 +470,7 @@ onBeforeUnmount(() => {
                     outlined
                     icon-only
                     severity="secondary"
-                    class="absolute top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 touch-none items-center justify-center rounded-full border bg-(--app-color-surface) shadow-sm transition select-none focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none"
+                    class="absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 touch-none items-center justify-center rounded-full border bg-(--app-color-surface) transition select-none focus:ring-2 focus:ring-(--app-color-focus-ring) focus:outline-none"
                     :style="{
                         left: `calc(${cumulativeBoundaries[index] ?? 0}% - ${HANDLE_WIDTH_PX / 2}px)`,
                         borderColor: 'var(--app-color-border-strong)',
@@ -482,11 +482,11 @@ onBeforeUnmount(() => {
                 </Button>
             </div>
 
-            <div class="grid gap-2.5">
+            <div class="grid gap-3 pt-3">
                 <div
                     v-for="user in userItems"
                     :key="user.id"
-                    class="rounded-xl border bg-(--app-color-surface-muted) px-3 py-2.5"
+                    class="border-b px-0 py-3 sm:rounded-xl sm:border sm:bg-(--app-color-surface-muted) sm:px-3 sm:py-2.5"
                     :style="{ borderColor: 'var(--app-color-border)' }"
                 >
                     <div class="grid grid-cols-[minmax(0,1fr)_6.5rem] items-center gap-3">
@@ -495,13 +495,14 @@ onBeforeUnmount(() => {
                                 class="h-3 w-3 shrink-0 rounded-full"
                                 :style="{ backgroundColor: user.color }"
                             />
-                            <p class="truncate text-sm font-semibold text-(--app-color-text)">
+                            <p class="text-sm font-semibold wrap-anywhere text-(--app-color-text)">
                                 {{ user.name }}
                             </p>
                         </div>
 
                         <AppInput
                             :id="`percentage-split-${user.id}`"
+                            :aria-label="`Porcentaje de ${user.name}`"
                             :model-value="inputValue(user.id, user.percentage)"
                             type="number"
                             inputmode="decimal"

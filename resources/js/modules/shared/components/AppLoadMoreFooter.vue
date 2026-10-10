@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import AppButton from './AppButton.vue';
-import AppCard from './AppCard.vue';
 import AppText from './AppText.vue';
 
 const props = withDefaults(
@@ -21,13 +20,10 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <AppCard
-        :padded="false"
-        class="border-dashed [&_.p-card-content]:px-4 [&_.p-card-content]:py-4 [&_.p-card-content]:text-center"
-    >
+    <div class="py-4 text-center" role="status" aria-live="polite">
         <AppText size="sm">{{ props.label }}</AppText>
         <div v-if="props.showRetry" class="mt-3 flex justify-center">
             <AppButton variant="secondary" @click="emit('retry')">{{ props.retryLabel }}</AppButton>
         </div>
-    </AppCard>
+    </div>
 </template>

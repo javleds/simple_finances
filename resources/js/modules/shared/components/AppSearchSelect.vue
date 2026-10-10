@@ -71,7 +71,7 @@ function handleBlur(event: Event): void {
 </script>
 
 <template>
-    <div class="app-search-select space-y-2.5">
+    <div class="app-search-select space-y-2">
         <div v-if="props.label" class="flex min-h-5 items-center">
             <label
                 :id="`${props.id}-label`"
@@ -96,6 +96,7 @@ function handleBlur(event: Event): void {
             :filter-placeholder="props.searchPlaceholder"
             :placeholder="props.placeholder"
             :disabled="props.disabled"
+            overlay-class="app-select-overlay"
             :empty-message="props.emptyMessage"
             :empty-filter-message="props.emptyMessage"
             :invalid="Boolean(props.error)"
@@ -109,11 +110,11 @@ function handleBlur(event: Event): void {
             @blur="handleBlur"
         >
             <template #option="{ option }">
-                <div class="min-w-0 space-y-0.5">
-                    <p class="truncate text-sm font-semibold">{{ option.label }}</p>
+                <div class="max-w-full min-w-0 space-y-0.5">
+                    <p class="text-sm font-semibold wrap-anywhere">{{ option.label }}</p>
                     <p
                         v-if="option.description"
-                        class="line-clamp-2 text-xs leading-5 text-(--app-color-text-subtle)"
+                        class="text-xs leading-5 wrap-anywhere text-(--app-color-text-subtle)"
                     >
                         {{ option.description }}
                     </p>

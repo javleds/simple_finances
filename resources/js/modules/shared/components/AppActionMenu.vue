@@ -60,7 +60,7 @@ function handleAction(key: string): void {
             aria-haspopup="menu"
             :aria-controls="menuId"
             :aria-expanded="isOpen"
-            class="h-8 w-8"
+            class="h-11 w-11 shrink-0"
             @click="menuRef?.toggle($event)"
         >
             <EllipsisHorizontalIcon class="h-5 w-5" />
@@ -76,7 +76,7 @@ function handleAction(key: string): void {
             <template #item="{ item, props: itemProps }">
                 <a
                     v-bind="itemProps.action"
-                    class="flex items-center gap-3"
+                    class="flex min-h-11 items-center gap-3"
                     :class="
                         item.tone === 'danger'
                             ? 'text-(--app-color-danger)!'

@@ -6,63 +6,96 @@
 @custom-variant dark (&:where([data-vdt-mode='dark'], [data-vdt-mode='dark'] *, .dark, .dark *));
 
 :root {
-  color-scheme: light;
-  --app-color-page: #f5f7fb;
-  --app-color-page-glow: rgba(29, 78, 216, 0.1);
-  --app-color-surface: #ffffff;
-  --app-color-surface-muted: #f7faff;
-  --app-color-border: #dbe4f0;
-  --app-color-border-strong: #d8e3f2;
-  --app-color-text: #0f172a;
-  --app-color-text-muted: #475569;
-  --app-color-text-subtle: #64748b;
-  --app-color-label: #1e293b;
-  --app-color-input-bg: #ffffff;
-  --app-color-input-border: #cbd5e1;
-  --app-color-input-text: #0f172a;
-  --app-color-input-placeholder: #94a3b8;
-  --app-color-primary: #1d4ed8;
-  --app-color-primary-hover: #1e40af;
-  --app-color-primary-foreground: #eff6ff;
-  --app-color-success: #15803d;
-  --app-color-warning: #b45309;
-  --app-color-danger: #b91c1c;
-  --app-color-secondary: #0f172a;
-  --app-color-secondary-hover: #1e293b;
-  --app-color-secondary-foreground: #ffffff;
-  --app-color-link: #1d4ed8;
-  --app-color-link-hover: #1e3a8a;
-  --app-color-focus-ring: rgba(29, 78, 216, 0.12);
-  --app-shadow-card: 0 24px 80px -32px rgba(15, 23, 42, 0.22);
+    color-scheme: light;
+    --app-color-page: #f4f7f7;
+    --app-color-page-glow: transparent;
+    --app-color-surface: #ffffff;
+    --app-color-surface-muted: #ebf1f2;
+    --app-color-border: #d2dee0;
+    --app-color-border-strong: #d2dee0;
+    --app-color-text: #122b31;
+    --app-color-text-muted: #52676d;
+    --app-color-text-subtle: #52676d;
+    --app-color-label: #122b31;
+    --app-color-input-bg: #ffffff;
+    --app-color-input-border: #71878d;
+    --app-color-input-text: #122b31;
+    --app-color-input-placeholder: #52676d;
+    --app-color-primary: #0e6474;
+    --app-color-primary-hover: #0b5361;
+    --app-color-primary-active: #08424d;
+    --app-color-primary-foreground: #ffffff;
+    --app-color-success: #167347;
+    --app-color-warning: #905400;
+    --app-color-danger: #b42332;
+    --app-color-danger-hover: #941c29;
+    --app-color-danger-foreground: #ffffff;
+    --app-color-secondary: #ebf1f2;
+    --app-color-secondary-hover: #d2dee0;
+    --app-color-secondary-foreground: #122b31;
+    --app-color-link: #0e6474;
+    --app-color-link-hover: #0b5361;
+    --app-color-focus-ring: #0e6474;
+    --app-shadow-card: none;
+    --app-shadow-overlay: 0 16px 48px rgb(18 43 49 / 18%);
+    --app-header-height: calc(4rem + env(safe-area-inset-top, 0px));
+    --app-bottom-nav-height: calc(4rem + env(safe-area-inset-bottom, 0px));
 }
 
 .dark {
-  color-scheme: dark;
-  --app-color-page: #101215;
-  --app-color-page-glow: rgba(59, 130, 246, 0.03);
-  --app-color-surface: #171a20;
-  --app-color-surface-muted: #1f232b;
-  --app-color-border: #2c313b;
-  --app-color-border-strong: #353b47;
-  --app-color-text: #f3f6fb;
-  --app-color-text-muted: #c2cad8;
-  --app-color-text-subtle: #8b95a7;
-  --app-color-label: #e4e9f2;
-  --app-color-input-bg: #12151b;
-  --app-color-input-border: #374050;
-  --app-color-input-text: #f8fbff;
-  --app-color-input-placeholder: #768194;
-  --app-color-primary: #1e40af;
-  --app-color-primary-hover: #1d4ed8;
-  --app-color-primary-foreground: #eff6ff;
-  --app-color-success: #4ade80;
-  --app-color-warning: #fbbf24;
-  --app-color-danger: #f87171;
-  --app-color-secondary: #dbe4ff;
-  --app-color-secondary-hover: #bfdbfe;
-  --app-color-secondary-foreground: #101215;
-  --app-color-link: #93c5fd;
-  --app-color-link-hover: #bfdbfe;
-  --app-color-focus-ring: rgba(37, 99, 235, 0.16);
-  --app-shadow-card: 0 32px 90px -42px rgba(0, 0, 0, 0.72);
+    color-scheme: dark;
+    --app-color-page: #10191d;
+    --app-color-surface: #17252b;
+    --app-color-surface-muted: #20323a;
+    --app-color-border: #344b54;
+    --app-color-border-strong: #344b54;
+    --app-color-text: #e7f0f2;
+    --app-color-text-muted: #a7bcc2;
+    --app-color-text-subtle: #a7bcc2;
+    --app-color-label: #e7f0f2;
+    --app-color-input-bg: #17252b;
+    --app-color-input-border: #78949d;
+    --app-color-input-text: #e7f0f2;
+    --app-color-input-placeholder: #a7bcc2;
+    --app-color-primary: #7dd3e2;
+    --app-color-primary-hover: #a5e4ec;
+    --app-color-primary-active: #c0eff4;
+    --app-color-primary-foreground: #082f38;
+    --app-color-success: #70db9b;
+    --app-color-warning: #f6c66b;
+    --app-color-danger: #fda4af;
+    --app-color-danger-hover: #fecdd3;
+    --app-color-danger-foreground: #47101b;
+    --app-color-secondary: #20323a;
+    --app-color-secondary-hover: #344b54;
+    --app-color-secondary-foreground: #e7f0f2;
+    --app-color-link: #7dd3e2;
+    --app-color-link-hover: #a5e4ec;
+    --app-color-focus-ring: #7dd3e2;
+    --app-shadow-overlay: 0 16px 48px rgb(0 0 0 / 40%);
+}
+
+@layer base {
+    body {
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        background: var(--app-color-page);
+        color: var(--app-color-text);
+    }
+}
+
+@layer components {
+    .app-modal {
+        background: var(--app-color-surface);
+        color: var(--app-color-text);
+        box-shadow: var(--app-shadow-overlay);
+    }
+
+    .app-select-overlay {
+        max-width: calc(100vw - 2rem);
+    }
+
+    .app-select-overlay [role='option'] {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
 }

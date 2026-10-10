@@ -19,7 +19,7 @@ const props = withDefaults(
         variant?: AppModalVariant;
         actions?: ReadonlyArray<AppModalAction>;
         closeLabel?: string;
-        presentation?: 'dialog' | 'sheet';
+        presentation?: 'dialog' | 'sheet' | 'fullscreen';
     }>(),
     {
         variant: 'default',
@@ -36,8 +36,6 @@ const emit = defineEmits<{
 
 const modalVariantStyles = {
     default: {
-        headerClass:
-            'bg-[color-mix(in_srgb,var(--app-color-primary)_10%,var(--app-color-surface))]',
         icon: InformationCircleIcon,
         iconStyle: {
             backgroundColor: 'color-mix(in srgb, var(--app-color-primary) 16%, transparent)',
@@ -45,8 +43,6 @@ const modalVariantStyles = {
         },
     },
     warning: {
-        headerClass:
-            'bg-[color-mix(in_srgb,var(--app-color-warning)_10%,var(--app-color-surface))]',
         icon: ExclamationTriangleIcon,
         iconStyle: {
             backgroundColor: 'color-mix(in srgb, var(--app-color-warning) 16%, transparent)',
@@ -54,7 +50,6 @@ const modalVariantStyles = {
         },
     },
     danger: {
-        headerClass: 'bg-[color-mix(in_srgb,var(--app-color-danger)_10%,var(--app-color-surface))]',
         icon: ExclamationCircleIcon,
         iconStyle: {
             backgroundColor: 'color-mix(in srgb, var(--app-color-danger) 16%, transparent)',
@@ -62,8 +57,6 @@ const modalVariantStyles = {
         },
     },
     success: {
-        headerClass:
-            'bg-[color-mix(in_srgb,var(--app-color-success)_10%,var(--app-color-surface))]',
         icon: CheckCircleIcon,
         iconStyle: {
             backgroundColor: 'color-mix(in srgb, var(--app-color-success) 16%, transparent)',
@@ -98,10 +91,22 @@ const resolvedActions = computed<ReadonlyArray<AppModalAction>>(() => {
         {
             key: 'close',
             label: props.closeLabel,
-            tone: 'danger',
+            tone: 'neutral',
             autoClose: true,
         },
     ];
+});
+
+const presentationClasses = computed(() => {
+    if (props.presentation === 'fullscreen') {
+        return 'm-0! h-dvh max-h-dvh! w-screen max-w-none! rounded-none! border-0! sm:m-4! sm:h-auto sm:max-h-[90dvh]! sm:w-[calc(100%-2rem)] sm:max-w-xl! sm:rounded-2xl! sm:border!';
+    }
+
+    if (props.presentation === 'sheet') {
+        return 'm-0! max-h-[90dvh]! w-full max-w-xl rounded-t-[1.25rem]! rounded-b-none! sm:m-4! sm:w-[calc(100%-2rem)] sm:rounded-2xl!';
+    }
+
+    return 'm-4! max-h-[calc(100dvh-2rem)]! w-[calc(100%-2rem)] max-w-xl rounded-2xl!';
 });
 
 function closeModal(): void {
@@ -140,24 +145,30 @@ function isCloseAction(action: AppModalAction): boolean {
         dismissable-mask
         block-scroll
         :draggable="false"
-        :close-button-props="{ 'aria-label': 'Cerrar modal' }"
-        :class="
-            props.presentation === 'sheet'
-                ? 'm-0! max-h-[90dvh] overflow-hidden w-full max-w-xl rounded-t-3xl! rounded-b-none! sm:m-4! sm:w-[calc(100%-2rem)] sm:rounded-3xl!'
-                : 'w-[calc(100%-2rem)] max-w-xl'
-        "
+        :close-button-props="{
+            'aria-label': 'Cerrar modal',
+            severity: 'secondary',
+            text: true,
+            class: 'min-h-11 min-w-11 shrink-0',
+        }"
+        class="app-modal flex min-w-0 flex-col overflow-hidden"
+        :class="presentationClasses"
         :pt="{
             mask: {
                 class: props.presentation === 'sheet' ? 'items-end! sm:items-center!' : undefined,
             },
             header: {
-                class:
-                    props.presentation === 'sheet'
-                        ? 'bg-(--app-color-surface)'
-                        : modalStyle.headerClass,
+                class: 'shrink-0 border-b border-(--app-color-border) px-4 py-3',
+                style:
+                    props.presentation === 'fullscreen'
+                        ? { paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }
+                        : undefined,
             },
-            content: { class: 'min-h-0 overflow-y-auto' },
-            footer: { class: 'flex border-t border-(--app-color-border) pt-4' },
+            content: { class: 'min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4' },
+            footer: {
+                class: 'flex shrink-0 gap-3 border-t border-(--app-color-border) p-4',
+                style: { paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' },
+            },
         }"
         @update:visible="!$event && closeModal()"
     >
@@ -165,7 +176,7 @@ function isCloseAction(action: AppModalAction): boolean {
             <div class="flex min-w-0 flex-1 items-center gap-3">
                 <div
                     v-if="props.presentation !== 'sheet'"
-                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
                     :style="modalStyle.iconStyle"
                 >
                     <component :is="modalStyle.icon" class="h-5 w-5" />
@@ -196,7 +207,7 @@ function isCloseAction(action: AppModalAction): boolean {
                               : undefined
                     "
                     :text="action.tone === 'neutral'"
-                    class="min-h-11 min-w-0 flex-1"
+                    class="min-h-12 min-w-0 flex-1 text-base"
                     @click="handleAction(action)"
                 >
                     <span
@@ -205,7 +216,7 @@ function isCloseAction(action: AppModalAction): boolean {
                         class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
                     />
                     <component :is="action.icon" v-else-if="action.icon" class="h-5 w-5 shrink-0" />
-                    <span>{{ action.label }}</span>
+                    <span class="wrap-anywhere">{{ action.label }}</span>
                 </Button>
             </slot>
         </template>
