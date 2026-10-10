@@ -187,55 +187,128 @@ function today(): string {
             loading-label="Cargando cuentas virtuales..."
             @retry="loadDashboard"
         >
-            <div
-                class="space-y-4 sm:space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0"
-            >
-                <AppCard class="rounded-(--app-radius-control) sm:rounded-(--app-radius-control)">
-                    <div class="space-y-4 sm:space-y-5">
-                        <AppHeroMetric
-                            label="Total actual"
-                            :value="formatCurrency(dashboard.summary.currentBalance)"
-                        >
-                            <template #adornment>
-                                <BanknotesIcon class="h-9 w-9 text-(--app-color-primary)" />
-                            </template>
-                        </AppHeroMetric>
-
-                        <VirtualBalanceBreakdown :balance="dashboard.summary" />
-                        <AppText size="sm" tone="subtle">
-                            Ahorro neto: aportaciones menos retiros. El rendimiento registrado
-                            refleja las variaciones de los cortes capturados, incluidas pérdidas o
-                            ajustes de saldo.
-                        </AppText>
-
-                        <div class="grid grid-cols-2 gap-3 border-t pt-3">
-                            <div
-                                class="min-w-0 py-2 sm:rounded-(--app-radius-control) sm:border sm:px-3 sm:py-3"
-                                :style="{ borderColor: 'var(--app-color-border)' }"
+            <div class="flex flex-col gap-4 sm:gap-5 lg:grid lg:grid-cols-2 lg:items-start">
+                <div class="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
+                    <AppCard
+                        class="order-1 rounded-(--app-radius-control) sm:rounded-(--app-radius-control)"
+                    >
+                        <div class="space-y-4 sm:space-y-5">
+                            <AppHeroMetric
+                                label="Total actual"
+                                :value="formatCurrency(dashboard.summary.currentBalance)"
                             >
-                                <AppText size="sm" tone="subtle">Aportado</AppText>
-                                <p
-                                    class="text-base font-semibold text-(--app-color-text) tabular-nums"
+                                <template #adornment>
+                                    <BanknotesIcon class="h-9 w-9 text-(--app-color-primary)" />
+                                </template>
+                            </AppHeroMetric>
+
+                            <VirtualBalanceBreakdown :balance="dashboard.summary" />
+                            <AppText size="sm" tone="subtle">
+                                Ahorro neto: aportaciones menos retiros. El rendimiento registrado
+                                refleja las variaciones de los cortes capturados, incluidas pérdidas
+                                o ajustes de saldo.
+                            </AppText>
+
+                            <div class="grid grid-cols-2 gap-3 border-t pt-3">
+                                <div
+                                    class="min-w-0 py-2 sm:rounded-(--app-radius-control) sm:border sm:px-3 sm:py-3"
+                                    :style="{ borderColor: 'var(--app-color-border)' }"
                                 >
-                                    {{ formatCurrency(dashboard.summary.manualContributions) }}
-                                </p>
-                            </div>
-                            <div
-                                class="min-w-0 py-2 sm:rounded-(--app-radius-control) sm:border sm:px-3 sm:py-3"
-                                :style="{ borderColor: 'var(--app-color-border)' }"
-                            >
-                                <AppText size="sm" tone="subtle">Retirado</AppText>
-                                <p
-                                    class="text-base font-semibold text-(--app-color-text) tabular-nums"
+                                    <AppText size="sm" tone="subtle">Aportado</AppText>
+                                    <p
+                                        class="text-base font-semibold text-(--app-color-text) tabular-nums"
+                                    >
+                                        {{ formatCurrency(dashboard.summary.manualContributions) }}
+                                    </p>
+                                </div>
+                                <div
+                                    class="min-w-0 py-2 sm:rounded-(--app-radius-control) sm:border sm:px-3 sm:py-3"
+                                    :style="{ borderColor: 'var(--app-color-border)' }"
                                 >
-                                    {{ formatCurrency(dashboard.summary.manualWithdrawals) }}
-                                </p>
+                                    <AppText size="sm" tone="subtle">Retirado</AppText>
+                                    <p
+                                        class="text-base font-semibold text-(--app-color-text) tabular-nums"
+                                    >
+                                        {{ formatCurrency(dashboard.summary.manualWithdrawals) }}
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </AppCard>
+                    </AppCard>
 
-                <section class="space-y-3 lg:row-span-2">
+                    <AppCard
+                        v-if="selectedAccount"
+                        class="order-3 rounded-(--app-radius-control) sm:rounded-(--app-radius-control)"
+                    >
+                        <div class="space-y-4">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <AppTitle as="h2" size="sm">Historial observado</AppTitle>
+                                    <AppText tone="subtle">{{
+                                        selectedAccount.accountName
+                                    }}</AppText>
+                                </div>
+                            </div>
+
+                            <div v-if="isLoadingSnapshots" class="py-6 text-center">
+                                <AppText>Cargando historial...</AppText>
+                            </div>
+
+                            <div
+                                v-else-if="selectedSnapshots.length === 0"
+                                class="rounded-(--app-radius-control) border px-4 py-5 text-center"
+                                :style="{ borderColor: 'var(--app-color-border)' }"
+                            >
+                                <AppText>Sin cortes capturados.</AppText>
+                            </div>
+
+                            <div v-else class="space-y-3">
+                                <div
+                                    v-for="snapshot in selectedSnapshots"
+                                    :key="snapshot.id"
+                                    class="border-b px-0 py-3 sm:rounded-(--app-radius-control) sm:border sm:px-4"
+                                    :style="{ borderColor: 'var(--app-color-border)' }"
+                                >
+                                    <div class="flex flex-wrap items-start justify-between gap-3">
+                                        <div>
+                                            <p
+                                                class="text-sm font-semibold text-(--app-color-text)"
+                                            >
+                                                {{ formatDate(snapshot.observedAt) }}
+                                            </p>
+                                            <AppText v-if="snapshot.notes" size="sm" tone="subtle">
+                                                {{ snapshot.notes }}
+                                            </AppText>
+                                        </div>
+                                        <p
+                                            class="text-sm font-semibold tabular-nums"
+                                            :class="
+                                                snapshot.delta >= 0
+                                                    ? 'text-emerald-700 dark:text-emerald-300'
+                                                    : 'text-red-700 dark:text-red-300'
+                                            "
+                                        >
+                                            {{ formatCurrency(snapshot.delta) }}
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="mt-3 flex justify-between gap-3 text-xs text-(--app-color-text-subtle)"
+                                    >
+                                        <span
+                                            >Anterior
+                                            {{ formatCurrency(snapshot.previousBalance) }}</span
+                                        >
+                                        <span
+                                            >Final
+                                            {{ formatCurrency(snapshot.observedBalance) }}</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </AppCard>
+                </div>
+                <section class="order-2 space-y-3">
                     <AppTitle as="h2" size="sm">Apartados</AppTitle>
 
                     <article
@@ -308,73 +381,6 @@ function today(): string {
                         </div>
                     </article>
                 </section>
-
-                <AppCard
-                    v-if="selectedAccount"
-                    class="rounded-(--app-radius-control) sm:rounded-(--app-radius-control)"
-                >
-                    <div class="space-y-4">
-                        <div class="flex flex-wrap items-start justify-between gap-3">
-                            <div class="min-w-0">
-                                <AppTitle as="h2" size="sm">Historial observado</AppTitle>
-                                <AppText tone="subtle">{{ selectedAccount.accountName }}</AppText>
-                            </div>
-                        </div>
-
-                        <div v-if="isLoadingSnapshots" class="py-6 text-center">
-                            <AppText>Cargando historial...</AppText>
-                        </div>
-
-                        <div
-                            v-else-if="selectedSnapshots.length === 0"
-                            class="rounded-(--app-radius-control) border px-4 py-5 text-center"
-                            :style="{ borderColor: 'var(--app-color-border)' }"
-                        >
-                            <AppText>Sin cortes capturados.</AppText>
-                        </div>
-
-                        <div v-else class="space-y-3">
-                            <div
-                                v-for="snapshot in selectedSnapshots"
-                                :key="snapshot.id"
-                                class="border-b px-0 py-3 sm:rounded-(--app-radius-control) sm:border sm:px-4"
-                                :style="{ borderColor: 'var(--app-color-border)' }"
-                            >
-                                <div class="flex flex-wrap items-start justify-between gap-3">
-                                    <div>
-                                        <p class="text-sm font-semibold text-(--app-color-text)">
-                                            {{ formatDate(snapshot.observedAt) }}
-                                        </p>
-                                        <AppText v-if="snapshot.notes" size="sm" tone="subtle">
-                                            {{ snapshot.notes }}
-                                        </AppText>
-                                    </div>
-                                    <p
-                                        class="text-sm font-semibold tabular-nums"
-                                        :class="
-                                            snapshot.delta >= 0
-                                                ? 'text-emerald-700 dark:text-emerald-300'
-                                                : 'text-red-700 dark:text-red-300'
-                                        "
-                                    >
-                                        {{ formatCurrency(snapshot.delta) }}
-                                    </p>
-                                </div>
-                                <div
-                                    class="mt-3 flex justify-between gap-3 text-xs text-(--app-color-text-subtle)"
-                                >
-                                    <span
-                                        >Anterior
-                                        {{ formatCurrency(snapshot.previousBalance) }}</span
-                                    >
-                                    <span
-                                        >Final {{ formatCurrency(snapshot.observedBalance) }}</span
-                                    >
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </AppCard>
             </div>
         </AppListState>
 

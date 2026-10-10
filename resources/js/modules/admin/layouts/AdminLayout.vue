@@ -18,11 +18,9 @@ import {
 } from '@heroicons/vue/24/outline';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import {
-    AdjustmentsHorizontalIcon as AdjustmentsHorizontalSolidIcon,
     BanknotesIcon as BanknotesSolidIcon,
     CreditCardIcon as CreditCardSolidIcon,
     HomeIcon as HomeSolidIcon,
-    Squares2X2Icon as Squares2X2SolidIcon,
     WalletIcon as WalletSolidIcon,
 } from '@heroicons/vue/24/solid';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
@@ -49,6 +47,7 @@ const route = useRoute();
 const router = useRouter();
 const activeFacilityName = 'Finanzas Simples';
 const isMoreOpen = ref(false);
+const isDesktop = ref(false);
 const desktopMedia = ref<MediaQueryList | null>(null);
 const profileMenuRef = ref<InstanceType<typeof Menu> | null>(null);
 const authRepository = createAuthRepository();
@@ -97,26 +96,12 @@ const navigationItems: AdminNavigationItem[] = [
         icon: CreditCardIcon,
         activeIcon: CreditCardSolidIcon,
     },
-    {
-        label: 'Distro',
-        desktopLabel: 'Distribución',
-        routeName: 'admin.distribution',
-        icon: Squares2X2Icon,
-        activeIcon: Squares2X2SolidIcon,
-    },
-    {
-        label: 'Config',
-        desktopLabel: 'Configuración',
-        routeName: 'admin.settings',
-        icon: AdjustmentsHorizontalIcon,
-        activeIcon: AdjustmentsHorizontalSolidIcon,
-    },
 ];
 
 const moreNavigationItems = [
     { label: 'Distribución', routeName: 'admin.distribution', icon: Squares2X2Icon },
     {
-        label: 'Utilidades',
+        label: 'Pagos',
         routeName: 'admin.settings.utilities.credit-card-payoff',
         icon: CalculatorIcon,
     },
@@ -134,17 +119,19 @@ watch(
     },
 );
 
-function closeMoreOnDesktop(event: MediaQueryListEvent): void {
-    if (event.matches) isMoreOpen.value = false;
+function resetMoreOnResize(event: MediaQueryListEvent): void {
+    isDesktop.value = event.matches;
+    isMoreOpen.value = false;
 }
 
 onMounted(() => {
     desktopMedia.value = window.matchMedia('(min-width: 1024px)');
-    desktopMedia.value.addEventListener('change', closeMoreOnDesktop);
+    isDesktop.value = desktopMedia.value.matches;
+    desktopMedia.value.addEventListener('change', resetMoreOnResize);
 });
 
 onBeforeUnmount(() => {
-    desktopMedia.value?.removeEventListener('change', closeMoreOnDesktop);
+    desktopMedia.value?.removeEventListener('change', resetMoreOnResize);
 });
 
 function showBackButton(): boolean {
@@ -306,11 +293,7 @@ async function handleLogout(): Promise<void> {
         >
             <p class="mb-8 hidden px-3 text-lg font-semibold lg:block">Finanzas Simples</p>
             <ul class="grid grid-cols-5 sm:gap-1 lg:flex lg:flex-col lg:gap-2">
-                <li
-                    v-for="(item, index) in navigationItems"
-                    :key="item.routeName"
-                    :class="index >= 4 ? 'hidden lg:block' : ''"
-                >
+                <li v-for="item in navigationItems" :key="item.routeName">
                     <RouterLink
                         :to="{ name: item.routeName }"
                         class="flex min-h-16 flex-col items-center justify-center gap-1 rounded-(--app-radius-control) px-0.5 py-2 text-center transition focus:ring-4 focus:ring-(--app-color-focus-ring) focus:outline-none sm:rounded-(--app-radius-control) sm:px-1 lg:min-h-12 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-left"
@@ -332,28 +315,57 @@ async function handleLogout(): Promise<void> {
                         }}</span>
                     </RouterLink>
                 </li>
-                <li class="lg:hidden">
+                <li>
                     <AppButton
                         variant="ghost"
-                        class="min-h-16! w-full flex-col! gap-1! rounded-(--app-radius-control) px-1! py-2! text-xs!"
+                        class="min-h-16! w-full flex-col! gap-1! rounded-(--app-radius-control) px-1! py-2! text-xs! lg:min-h-12! lg:flex-row! lg:justify-start! lg:gap-3! lg:px-3! lg:py-3! lg:text-sm!"
                         :class="
                             isMoreActive || isMoreOpen
                                 ? 'bg-(--app-color-primary)! text-(--app-color-primary-foreground)!'
                                 : 'text-(--app-color-text-subtle)!'
                         "
-                        aria-haspopup="dialog"
+                        :aria-haspopup="isDesktop ? undefined : 'dialog'"
                         :aria-expanded="isMoreOpen"
-                        aria-controls="more-navigation-content"
-                        @click="isMoreOpen = true"
+                        :aria-controls="
+                            isDesktop ? 'desktop-more-navigation' : 'more-navigation-content'
+                        "
+                        @click="isMoreOpen = !isMoreOpen"
                     >
                         <EllipsisHorizontalIcon class="h-5 w-5" aria-hidden="true" />
                         <span>Más</span>
                     </AppButton>
+                    <ul
+                        v-if="isDesktop && isMoreOpen"
+                        id="desktop-more-navigation"
+                        class="mt-2 space-y-1 border-l pl-3"
+                        :style="{ borderColor: 'var(--app-color-border)' }"
+                    >
+                        <li v-for="item in moreNavigationItems" :key="item.routeName">
+                            <AppLink
+                                :to="{ name: item.routeName }"
+                                variant="secondary"
+                                class="flex min-h-12 items-center gap-3 rounded-(--app-radius-control) px-3 py-3 hover:bg-(--app-color-surface-muted)"
+                                :class="
+                                    isActiveRoute(item.routeName)
+                                        ? 'bg-(--app-color-surface-muted) text-(--app-color-primary)!'
+                                        : ''
+                                "
+                                :aria-current="route.name === item.routeName ? 'page' : undefined"
+                            >
+                                <component
+                                    :is="item.icon"
+                                    class="h-5 w-5 shrink-0"
+                                    aria-hidden="true"
+                                />
+                                <span>{{ item.label }}</span>
+                            </AppLink>
+                        </li>
+                    </ul>
                 </li>
             </ul>
         </nav>
         <AppModal
-            :open="isMoreOpen"
+            :open="isMoreOpen && !isDesktop"
             title="Más opciones"
             presentation="sheet"
             @close="isMoreOpen = false"

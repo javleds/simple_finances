@@ -281,12 +281,12 @@ async function navigationCase(page) {
     assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
     assert.deepEqual(
         (await dialog.getByRole('link').allTextContents()).map((label) => label.trim()),
-        ['Distribución', 'Utilidades', 'Configuración'],
+        ['Distribución', 'Pagos', 'Configuración'],
     );
     await closeWithFocus(page, trigger, dialog);
     for (const [label, pathname] of [
         ['Distribución', '/admin/distribution'],
-        ['Utilidades', '/admin/settings/utilities/credit-card-payoff'],
+        ['Pagos', '/admin/settings/utilities/credit-card-payoff'],
         ['Configuración', '/admin/settings'],
     ]) {
         await trigger.click();
@@ -304,12 +304,91 @@ async function navigationCase(page) {
     await dialog.waitFor({ state: 'hidden' });
     assert.equal(
         await navigation.getByRole('button', { name: 'Más', exact: true }).isVisible(),
-        false,
+        true,
     );
     assert.equal((await navigation.getByRole('link').first().innerText()).trim(), 'Inicio');
     await page.setViewportSize(viewport);
     await trigger.waitFor();
     assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
+}
+
+async function desktopNavigationCase(page) {
+    const navigation = page.getByRole('navigation', { name: 'Navegación principal' });
+    const trigger = navigation.getByRole('button', { name: 'Más', exact: true });
+    await trigger.click();
+    const submenu = navigation.locator('#desktop-more-navigation');
+    await submenu.waitFor();
+    assert.deepEqual(
+        (await submenu.getByRole('link').allTextContents()).map((label) => label.trim()),
+        ['Distribución', 'Pagos', 'Configuración'],
+    );
+    await trigger.click();
+    await submenu.waitFor({ state: 'hidden' });
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await submenu.waitFor();
+    for (const [label, pathname] of [
+        ['Distribución', '/admin/distribution'],
+        ['Pagos', '/admin/settings/utilities/credit-card-payoff'],
+        ['Configuración', '/admin/settings'],
+    ]) {
+        if ((await trigger.getAttribute('aria-expanded')) === 'false') await trigger.click();
+        await submenu.getByRole('link', { name: label, exact: true }).click();
+        await page.waitForURL(`${appUrl}${pathname}`);
+        await submenu.waitFor({ state: 'hidden' });
+        assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
+    }
+    await page.goto(`${appUrl}/admin/accounts`);
+}
+
+async function savingsLayoutCase(page, width) {
+    const virtualDashboard = fixtures.get('/api/virtual-accounts');
+    await page.route(`${appUrl}/api/virtual-accounts`, (route) =>
+        route.fulfill({
+            json: {
+                data: {
+                    ...virtualDashboard.data,
+                    accounts: Array.from({ length: 5 }, (_, index) => ({
+                        ...virtualDashboard.data.accounts[0],
+                        account_id: index + 1,
+                        account_name: `Layout savings ${index + 1}`,
+                    })),
+                },
+            },
+        }),
+    );
+    await page.reload();
+    await page.getByText('Layout savings 5', { exact: true }).waitFor();
+    await page.getByText('Sin cortes capturados.', { exact: true }).waitFor();
+    const summary = await page.getByText('Total actual', { exact: true }).evaluate((element) => {
+        const rect = element.closest('.p-card').getBoundingClientRect();
+        return { x: rect.x, bottom: rect.bottom };
+    });
+    const history = await page
+        .getByRole('heading', { name: 'Historial observado' })
+        .evaluate((element) => {
+            const rect = element.closest('.p-card').getBoundingClientRect();
+            return { x: rect.x, y: rect.y };
+        });
+    const accounts = await page
+        .getByRole('heading', { name: 'Apartados' })
+        .locator('..')
+        .boundingBox();
+    if (width >= 1024) {
+        assert.ok(Math.abs(history.x - summary.x) < 2);
+        assert.ok(
+            Math.abs(history.y - summary.bottom - 20) < 2,
+            'Savings history has an unnecessary gap',
+        );
+        assert.ok(
+            accounts.y + accounts.height > history.y + 50,
+            'Savings fixture must have a tall account list',
+        );
+    } else {
+        assert.ok(summary.bottom <= accounts.y);
+        assert.ok(accounts.y + accounts.height <= history.y, 'Mobile savings order changed');
+    }
+    await noOverflow(page);
 }
 
 async function dashboardMasonryCase(page, width) {
@@ -551,7 +630,11 @@ try {
                     const navigation = page.getByRole('navigation', {
                         name: 'Navegación principal',
                     });
-                    assert.equal(await navigation.getByRole('link').count(), width >= 1024 ? 6 : 4);
+                    assert.equal(await navigation.getByRole('link').count(), 4);
+                    if (width >= 1024) await desktopNavigationCase(page);
+                    else await navigationCase(page);
+                    await page.goto(`${appUrl}/admin/accounts`);
+                    await first.waitFor();
                     assert.equal(
                         (await navigation.getByRole('link').first().innerText()).trim(),
                         'Inicio',
@@ -631,6 +714,8 @@ try {
                             `Invalid fixture at ${path}`,
                         );
                         if (path === '/admin/dashboard') await dashboardMasonryCase(page, width);
+                        if (path === '/admin/virtual-accounts')
+                            await savingsLayoutCase(page, width);
                         await noOverflow(page);
                         if (width === 1440 && process.env.PW_SCREENSHOT_DIR)
                             await page.screenshot({
