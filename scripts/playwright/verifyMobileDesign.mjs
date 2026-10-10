@@ -194,27 +194,54 @@ async function sheetCase(page) {
 
 async function legalCase(page) {
     await page.goto(`${appUrl}/auth/register`);
-    for (const [linkName, title] of [
-        ['términos y condiciones', 'Términos y condiciones'],
-        ['política de privacidad', 'Política de privacidad'],
+    await page.getByRole('textbox', { name: 'Nombre', exact: true }).fill('Registro conservado');
+    await page
+        .getByRole('textbox', { name: 'Correo electrónico', exact: true })
+        .fill('draft@example.test');
+    for (const [linkName, title, path] of [
+        ['términos y condiciones', 'Términos y condiciones', '/auth/terms-and-conditions'],
+        ['política de privacidad', 'Política de privacidad', '/auth/privacy-policy'],
     ]) {
         const trigger = page.getByRole('link', { name: linkName, exact: true });
         await trigger.click();
-        const dialog = await dialogReady(page, title);
-        const content = dialog.locator('.p-dialog-content');
-        assert.ok(
-            await content.evaluate(
-                (element) =>
-                    element.scrollHeight <= element.clientHeight + 1 ||
-                    ['auto', 'scroll'].includes(getComputedStyle(element).overflowY),
-            ),
-            'Legal document overflow is inaccessible',
+        const preview = page.getByRole('region', { name: 'Documento legal', exact: true });
+        await preview.getByRole('heading', { name: title, exact: true }).waitFor();
+        assert.equal(await page.getByRole('dialog').count(), 0, 'Legal preview opened a modal');
+        assert.equal(new URL(page.url()).pathname, '/auth/register', 'Preview left registration');
+        assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
+        assert.equal(
+            await page.getByRole('textbox', { name: 'Nombre', exact: true }).inputValue(),
+            'Registro conservado',
         );
-        await dialog.locator('.p-dialog-content').evaluate((element) => {
-            element.scrollTop = element.scrollHeight;
+        assert.equal(
+            await page
+                .getByRole('textbox', { name: 'Correo electrónico', exact: true })
+                .inputValue(),
+            'draft@example.test',
+        );
+        const pageLink = preview.getByRole('link', {
+            name: 'Abrir página completa (nueva pestaña)',
+            exact: true,
         });
-        await withinViewport(page, dialog.getByRole('button', { name: 'Cerrar', exact: true }));
-        await closeWithFocus(page, trigger, dialog);
+        assert.equal(await pageLink.getAttribute('href'), path);
+        assert.equal(await pageLink.getAttribute('target'), '_blank');
+        const documentPage = await page.context().newPage();
+        try {
+            await documentPage.goto(`${appUrl}${path}`);
+            await documentPage
+                .getByRole('heading', { name: title, level: 1, exact: true })
+                .waitFor();
+            await noOverflow(documentPage);
+        } finally {
+            await documentPage.close();
+        }
+        await preview.getByRole('button', { name: 'Cerrar documento', exact: true }).click();
+        await preview.waitFor({ state: 'hidden' });
+        assert.equal(
+            await trigger.evaluate((element) => document.activeElement === element),
+            true,
+            'Focus did not return to legal link',
+        );
     }
     assert.equal(
         await page

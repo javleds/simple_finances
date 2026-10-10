@@ -5,6 +5,7 @@ import Message from 'primevue/message';
 import { AppLink } from '@/modules/shared/components';
 
 const props = defineProps<{
+    activeDocument?: 'terms' | 'privacy' | null;
     privacyPolicyAccepted: boolean;
     privacyPolicyError?: string;
     termsAccepted: boolean;
@@ -46,7 +47,10 @@ function updatePrivacyPolicyAccepted(value: boolean): void {
             <span class="text-sm text-(--app-color-text)">
                 Acepto los
                 <AppLink
-                    href=""
+                    id="register-terms-link"
+                    href="/auth/terms-and-conditions"
+                    :aria-expanded="props.activeDocument === 'terms'"
+                    aria-controls="register-legal-document"
                     variant="primary"
                     class="font-semibold"
                     @click.prevent="emit('openTerms')"
@@ -69,7 +73,10 @@ function updatePrivacyPolicyAccepted(value: boolean): void {
             <span class="text-sm text-(--app-color-text)">
                 Acepto la
                 <AppLink
-                    href=""
+                    id="register-privacy-link"
+                    href="/auth/privacy-policy"
+                    :aria-expanded="props.activeDocument === 'privacy'"
+                    aria-controls="register-legal-document"
                     variant="primary"
                     class="font-semibold"
                     @click.prevent="emit('openPrivacy')"

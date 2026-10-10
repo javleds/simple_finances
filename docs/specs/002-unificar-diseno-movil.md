@@ -18,7 +18,7 @@ Rediseño desktop, cambios de dominio, dependencias, endpoints, persistencia y r
 
 ## Comportamiento esperado
 
-Margen de página y tarjetas de 16 px; campos separados 16 px; secciones 24 px. Encabezados sin tarjeta. Importes completos, nombres ajustables y overlays contenidos. Cancelar/cerrar neutrales, eliminar rojo, guardar/crear primarios. Formularios largos y documentos legales fullscreen; formularios cortos y filtros en sheet; confirmaciones compactas.
+Margen de página y tarjetas de 16 px; campos separados 16 px; secciones 24 px. Encabezados sin tarjeta. Importes completos, nombres ajustables y overlays contenidos. Cancelar/cerrar neutrales, eliminar rojo, guardar/crear primarios. Formularios largos fullscreen; documentos legales disponibles como páginas e integrados en registro sin modal; formularios cortos y filtros en sheet; confirmaciones compactas.
 
 ## Decisiones técnicas
 
