@@ -2,7 +2,6 @@
 import Message from 'primevue/message';
 import { useNotificationSettings } from '@/modules/settings/composables/useNotificationSettings';
 import WhatsappConnectionCard from '@/modules/settings/components/WhatsappConnectionCard.vue';
-import { THEME_MODE, useThemeStore, type ThemeMode } from '@/stores/theme';
 import { CalculatorIcon } from '@heroicons/vue/24/outline';
 import { RouterLink } from 'vue-router';
 import {
@@ -10,16 +9,7 @@ import {
     AppSwitch,
     AppText,
     AppTitle,
-    AppToggleButton,
 } from '@/modules/shared/components';
-
-const themeStore = useThemeStore();
-
-const themeOptions = [
-    { value: THEME_MODE.LIGHT, label: 'Claro' },
-    { value: THEME_MODE.DARK, label: 'Oscuro' },
-    { value: THEME_MODE.SYSTEM, label: 'Sistema' },
-] as const;
 
 const {
     globalNotificationSettings,
@@ -30,31 +20,11 @@ const {
     toggleAccountSetting,
 } = useNotificationSettings();
 
-function updateTheme(nextTheme: ThemeMode): void {
-    themeStore.setTheme(nextTheme);
-}
 </script>
 
 <template>
     <div class="space-y-5">
         <WhatsappConnectionCard />
-        <AppCard class="rounded-3xl">
-            <div class="flex flex-wrap items-center justify-between gap-4">
-                <div class="space-y-1">
-                    <AppTitle as="h2" size="sm">Tema visual</AppTitle>
-                    <AppText
-                        >Elige un tema claro, oscuro o según tu dispositivo.</AppText
-                    >
-                </div>
-
-                <AppToggleButton
-                    :model-value="themeStore.mode"
-                    :options="themeOptions"
-                    @update:model-value="updateTheme"
-                />
-            </div>
-        </AppCard>
-
         <section class="space-y-3">
             <div class="space-y-1">
                 <AppTitle as="h2" size="sm">Configuración de notificaciones</AppTitle>
