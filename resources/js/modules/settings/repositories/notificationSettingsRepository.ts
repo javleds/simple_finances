@@ -75,7 +75,7 @@ function parseNotificationTypeItem(item: unknown, index: number): NotificationTy
           ? record.help_text
           : '',
     enabled: toBoolean(
-      record.enabled ?? record.active ?? record.selected ?? record.attached ?? record.is_enabled,
+      record.checked ?? record.enabled ?? record.active ?? record.selected ?? record.attached ?? record.is_enabled,
     ),
   };
 }
@@ -98,7 +98,7 @@ function parseAccountItem(item: unknown, index: number): AccountNotificationSett
             ? record.title
             : `Cuenta ${index + 1}`,
     enabled: toBoolean(
-      record.enabled ?? record.active ?? record.selected ?? record.attached ?? record.is_enabled,
+      record.checked ?? record.enabled ?? record.active ?? record.selected ?? record.attached ?? record.is_enabled,
     ),
   };
 }

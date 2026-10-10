@@ -329,6 +329,29 @@ it('updates notification settings', function () {
     expect($user->notificableAccounts()->pluck('accounts.id')->all())->toBe([$account->id]);
 });
 
+it('allows disabling all notification settings and still requires both fields', function () {
+    seedNotificationTypes();
+    $user = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $user->id]);
+    $account->users()->attach($user->id);
+    $user->notificationTypes()->sync(NotificationType::query()->pluck('id')->all());
+    $user->notificableAccounts()->sync([$account->id]);
+
+    $this->withHeaders(apiHeaders($user))
+        ->putJson('/api/notification-settings', [
+            'notification_type_ids' => [],
+            'account_ids' => [],
+        ])->assertOk();
+
+    expect($user->notificationTypes()->count())->toBe(0);
+    expect($user->notificableAccounts()->count())->toBe(0);
+
+    $this->withHeaders(apiHeaders($user))
+        ->putJson('/api/notification-settings', [])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['notification_type_ids', 'account_ids']);
+});
+
 it('creates and updates accounts and transactions through the api', function () {
     seedNotificationTypes();
     $user = User::factory()->create();

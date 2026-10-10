@@ -85,6 +85,8 @@ export function useNotificationSettings() {
   }
 
   async function persistSettings(nextSettings: NotificationSettingsState): Promise<void> {
+    if (updateSettingsMutation.isPending.value) return;
+    const previousSettings = settings.value;
     saveError.value = null;
     queryClient.setQueryData(notificationSettingsQueryKeys.detail(), nextSettings);
 
@@ -92,7 +94,7 @@ export function useNotificationSettings() {
       await updateSettingsMutation.mutateAsync(nextSettings);
     } catch (error) {
       saveError.value = resolveApiErrorMessage(error, 'No fue posible guardar la configuración.');
-      await loadSettings();
+      queryClient.setQueryData(notificationSettingsQueryKeys.detail(), previousSettings);
     }
   }
 
@@ -120,6 +122,7 @@ export function useNotificationSettings() {
     globalNotificationSettings,
     accountNotificationSettings,
     isLoading,
+    isSaving: updateSettingsMutation.isPending,
     saveError,
     loadSettings,
     toggleGlobalSetting,

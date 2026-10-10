@@ -4,22 +4,17 @@ import { useNotificationSettings } from '@/modules/settings/composables/useNotif
 import WhatsappConnectionCard from '@/modules/settings/components/WhatsappConnectionCard.vue';
 import { CalculatorIcon } from '@heroicons/vue/24/outline';
 import { RouterLink } from 'vue-router';
-import {
-    AppCard,
-    AppSwitch,
-    AppText,
-    AppTitle,
-} from '@/modules/shared/components';
+import { AppCard, AppSwitch, AppText, AppTitle } from '@/modules/shared/components';
 
 const {
     globalNotificationSettings,
     accountNotificationSettings,
     isLoading,
+    isSaving,
     saveError,
     toggleGlobalSetting,
     toggleAccountSetting,
 } = useNotificationSettings();
-
 </script>
 
 <template>
@@ -29,12 +24,13 @@ const {
             <div class="space-y-1">
                 <AppTitle as="h2" size="sm">Configuración de notificaciones</AppTitle>
                 <AppText
-                    >Controla qué avisos globales de cuenta se mantienen activos para la
-                    facility.</AppText
+                    >Elige los avisos que quieres recibir por correo. Los cambios se guardan
+                    automáticamente.</AppText
                 >
             </div>
 
             <Message v-if="saveError" severity="error">{{ saveError }}</Message>
+            <AppText v-if="isSaving" role="status" size="sm">Guardando preferencias...</AppText>
 
             <div v-if="isLoading" class="rounded-2xl border px-4 py-6 text-center">
                 <AppText>Cargando configuración...</AppText>
@@ -44,9 +40,14 @@ const {
                 <AppCard
                     v-for="setting in globalNotificationSettings"
                     :key="setting.id"
-                    class="rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
+                    class="rounded-2xl p-4! shadow-none"
+                    :class="
+                        setting.enabled
+                            ? 'border-(--app-color-primary)! bg-(--app-color-primary)/5!'
+                            : ''
+                    "
                 >
-                    <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-center justify-between gap-4">
                         <div class="min-w-0 space-y-1">
                             <p class="text-sm font-semibold text-(--app-color-text)">
                                 {{ setting.title }}
@@ -54,11 +55,23 @@ const {
                             <AppText size="sm">{{ setting.description }}</AppText>
                         </div>
 
-                        <AppSwitch
-                            :model-value="setting.enabled"
-                            :aria-label="`Alternar ${setting.title}`"
-                            @update:model-value="void toggleGlobalSetting(setting.id)"
-                        />
+                        <div class="flex shrink-0 flex-col items-center gap-1.5">
+                            <AppSwitch
+                                :disabled="isSaving"
+                                :model-value="setting.enabled"
+                                :aria-label="`Alternar ${setting.title}`"
+                                @update:model-value="void toggleGlobalSetting(setting.id)"
+                            />
+                            <span
+                                class="text-xs font-medium"
+                                :class="
+                                    setting.enabled
+                                        ? 'text-(--app-color-primary)'
+                                        : 'text-(--app-color-text-subtle)'
+                                "
+                                >{{ setting.enabled ? 'Activada' : 'Desactivada' }}</span
+                            >
+                        </div>
                     </div>
                 </AppCard>
             </div>
@@ -110,7 +123,12 @@ const {
                 <AppCard
                     v-for="setting in accountNotificationSettings"
                     :key="setting.id"
-                    class="rounded-xl p-3.5! shadow-none transition hover:border-(--app-color-border-strong)"
+                    class="rounded-2xl p-4! shadow-none"
+                    :class="
+                        setting.enabled
+                            ? 'border-(--app-color-primary)! bg-(--app-color-primary)/5!'
+                            : ''
+                    "
                 >
                     <div class="flex items-center justify-between gap-4">
                         <div class="min-w-0">
@@ -121,11 +139,23 @@ const {
                             </p>
                         </div>
 
-                        <AppSwitch
-                            :model-value="setting.enabled"
-                            :aria-label="`Alternar notificaciones de ${setting.accountName}`"
-                            @update:model-value="void toggleAccountSetting(setting.id)"
-                        />
+                        <div class="flex shrink-0 flex-col items-center gap-1.5">
+                            <AppSwitch
+                                :disabled="isSaving"
+                                :model-value="setting.enabled"
+                                :aria-label="`Alternar notificaciones de ${setting.accountName}`"
+                                @update:model-value="void toggleAccountSetting(setting.id)"
+                            />
+                            <span
+                                class="text-xs font-medium"
+                                :class="
+                                    setting.enabled
+                                        ? 'text-(--app-color-primary)'
+                                        : 'text-(--app-color-text-subtle)'
+                                "
+                                >{{ setting.enabled ? 'Activada' : 'Desactivada' }}</span
+                            >
+                        </div>
                     </div>
                 </AppCard>
             </div>
