@@ -52,14 +52,18 @@ const emit = defineEmits<{
 
     <AppButton
       variant="outline"
+      class="shrink-0"
+      :aria-label="
+        props.filterChips.length
+          ? `Abrir filtros, ${props.filterChips.length} activos`
+          : 'Abrir filtros'
+      "
       aria-controls="account-filters"
       :aria-expanded="props.isFiltersOpen"
       @click="emit('openFilters')"
     >
-      <AdjustmentsHorizontalIcon class="h-5 w-5" />
-      <span
-        >Filtros<span v-if="props.filterChips.length"> · {{ props.filterChips.length }}</span></span
-      >
+      <AdjustmentsHorizontalIcon class="h-5 w-5" aria-hidden="true" />
+      <span v-if="props.filterChips.length" aria-hidden="true">{{ props.filterChips.length }}</span>
     </AppButton>
   </div>
   <div v-if="props.filterChips.length" class="flex flex-wrap gap-2" aria-label="Filtros aplicados">

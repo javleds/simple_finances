@@ -23,7 +23,7 @@ describe('account filter toolbar', () => {
             { key: 'kind-credit', label: 'Crédito', remove: removeKind },
         ]);
 
-        expect(wrapper.get('button[aria-controls="account-filters"]').text()).toBe('Filtros · 2');
+        expect(wrapper.get('button[aria-controls="account-filters"]').text()).toBe('2');
         await wrapper.get('button[aria-label="Quitar filtro: Crédito"]').trigger('click');
         expect(removeKind).toHaveBeenCalledOnce();
         expect(removeStatus).not.toHaveBeenCalled();
@@ -31,14 +31,15 @@ describe('account filter toolbar', () => {
         await wrapper.setProps({
             filterChips: [{ key: 'status-Activo', label: 'Activas', remove: removeStatus }],
         });
-        expect(wrapper.get('button[aria-controls="account-filters"]').text()).toBe('Filtros · 1');
+        expect(wrapper.get('button[aria-controls="account-filters"]').text()).toBe('1');
         expect(wrapper.find('button[aria-label="Quitar filtro: Crédito"]').exists()).toBe(false);
     });
 
     it('opens the panel and exposes its expanded state without showing an empty chip area', async () => {
         const wrapper = renderToolbar();
         const trigger = wrapper.get('button[aria-controls="account-filters"]');
-        expect(trigger.text()).toBe('Filtros');
+        expect(trigger.text()).toBe('');
+        expect(trigger.attributes('aria-label')).toBe('Abrir filtros');
         expect(trigger.attributes('aria-expanded')).toBe('false');
         expect(wrapper.find('[aria-label="Filtros aplicados"]').exists()).toBe(false);
 
