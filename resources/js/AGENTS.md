@@ -83,6 +83,14 @@ When a feature needs icons, use `@heroicons/vue` as the default icon library.
 - Mantener búsquedas, filtros, estados y scroll infinito de los composables existentes. Los componentes PrimeVue no sustituyen la lógica de dominio ni los permisos.
 - Proteger también los manejadores de mutación contra envíos repetidos mientras guardan; deshabilitar únicamente el botón del modal no bloquea Enter dentro del formulario.
 
+## Filtros de listas
+
+- Reutilizar `AppFilterPanel`, `AppFilterOptions`, `AppFilterTrigger` y `AppActiveFilters` según [la guía de interfaz](../../docs/frontend/primevue.md#filtros-de-listas).
+- Mantener borradores locales: seleccionar y limpiar no actualizan filtros aplicados hasta confirmar. Cerrar descarta los cambios pendientes.
+- Conservar búsqueda, reglas del módulo, sincronización con URL y reinicio de paginación. Quitar una etiqueta se aplica directamente.
+- Mantener el orden encabezado → buscador con botón compacto y contador → filtros activos → lista. En `AccountTransactionsActivity`, insertar las etiquetas en el slot `filters`, nunca antes del componente de actividad.
+- El periodo de transacciones globales sigue siendo obligatorio; validar fechas y rango antes de aplicar y conservar el restablecimiento a mes actual.
+
 ## Maintenance Rule
 
 Whenever a new reusable shared component is created, update this file in the same task so the index stays current.

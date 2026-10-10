@@ -18,11 +18,48 @@ Los componentes de `resources/js/modules/shared/components` adaptan PrimeVue a l
 | `AppDatePicker` | DatePicker; fecha local `yyyy-MM-dd`, sin conversión de zona horaria, y vacío como `null` |
 | `AppSearchSelect` | Select; búsqueda, limpieza, descripciones y asociación accesible de etiquetas y errores |
 | `AppSwitch`, `AppToggleButton` | ToggleSwitch y SelectButton; valores y eventos del consumidor |
-| `AppModal` | Dialog; cierre, variantes, acciones y envío de formularios mediante botones del pie |
+| `AppModal` | Dialog; cierre, variantes, acciones, pie personalizable y presentación inferior en móvil mediante `presentation="sheet"` |
 | `AppActionMenu`, `AppContextTabs` | Menu y Tabs; acciones y navegación contextual existentes |
 | `AppCard` | Card; padding configurable desde el contenedor y contenido espaciado dentro del slot |
+| `AppFilterPanel` | Composición de `AppModal` y `AppButton`; formulario y pie fijo con limpiar y aplicar |
+| `AppFilterOptions` | Casillas nativas tipadas, agrupadas en dos columnas y con toda la opción pulsable |
+| `AppFilterTrigger` | Botón con icono y contador, nombre accesible y asociación con el panel |
+| `AppActiveFilters` | Etiquetas removibles de selecciones aplicadas; conserva los callbacks de cada módulo |
 
 Las pestañas inferiores de cuentas presentan el icono y el título en una misma fila. El listado de pestañas conserva su desplazamiento horizontal en pantallas estrechas. Los mensajes de error, confirmación y estado usan componentes PrimeVue donde corresponde.
+
+## Filtros de listas
+
+El patrón se aplica a cuentas, transacciones de una cuenta, metas, invitaciones de una cuenta, suscripciones, ingresos fijos y transacciones globales. Las listas que solo tienen búsqueda conservan su comportamiento.
+
+### Presentación y ubicación
+
+En móvil, el panel se abre desde abajo; desde el breakpoint `sm` se centra como modal. El contenido puede desplazarse y el pie permanece visible, con espacio para el área segura del dispositivo. El botón que abre el panel conserva únicamente el icono y el contador cuando hay filtros activos; el nombre accesible comunica su propósito.
+
+El orden de cada listado es: encabezado, buscador con botón de filtros, etiquetas activas y lista. Los resúmenes financieros y acciones de reembolso pueden preceder al listado. En transacciones anidadas, las etiquetas se insertan mediante el slot `filters` de `AccountTransactionsActivity`, después de su toolbar; no deben colocarse antes del componente de actividad.
+
+### Borrador y aplicación
+
+- Abrir copia las selecciones aplicadas a un borrador local.
+- Seleccionar opciones o limpiar modifica solo el borrador; no cambia la URL ni recarga la lista.
+- **Aplicar filtros** confirma todas las selecciones juntas y cierra el panel.
+- Cerrar con la cruz, Escape o el fondo descarta el borrador. Al volver a abrir se recuperan los filtros aplicados.
+- Quitar una etiqueta modifica directamente el filtro aplicado y actualiza la lista.
+- Aplicar o limpiar filtros conserva el texto del buscador. Los composables mantienen la sincronización con la URL y los cargadores reinician la paginación cuando cambian los filtros aplicados.
+
+Cada módulo conserva sus tipos y reglas: el estado de suscripciones admite una sola selección; sus frecuencias y los grupos multiselección conservan sus combinaciones existentes. Los filtros no cambian permisos ni contratos HTTP.
+
+### Periodo de transacciones globales
+
+El periodo inicial es el mes actual. **Mes actual** restablece solo las fechas del borrador y requiere aplicar para confirmar. Se rechazan fechas inexistentes, fechas vacías y rangos invertidos; el botón de aplicar queda deshabilitado y el envío del formulario también se protege.
+
+Un periodo distinto al mes actual aparece como una etiqueta y cuenta como un filtro. Quitar esa etiqueta restablece el mes actual. El periodo predeterminado muestra «Periodo: mes actual» sin etiqueta removible ni contador. `AppDatePicker` conserva fechas locales `yyyy-MM-dd`; `transactionPeriod.ts` centraliza el rango inicial y la validación.
+
+### Responsabilidades
+
+`AppFilterPanel` emite `apply`, `clear` y `close`, admite `applyDisabled` y no administra las selecciones. Cada modal de módulo es dueño de su borrador. `AppFilterOptions` recibe opciones tipadas y un arreglo mediante `v-model`. `AppActiveFilters` recibe objetos `ActiveFilter` con `key`, `label` y `remove`; los callbacks pertenecen al módulo.
+
+El índice de componentes está en [las instrucciones de frontend](../../resources/js/AGENTS.md). La cobertura automatizada y las comprobaciones visuales se describen en [la estrategia de pruebas](../testing/strategy.md#filtros-de-listas).
 
 ## Formularios y Zod
 
