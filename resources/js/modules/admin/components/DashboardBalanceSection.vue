@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
+import { useQuery } from '@tanstack/vue-query';
+import { createVirtualAccountsRepository } from '@/modules/virtual-accounts/repositories/virtualAccountsRepository';
+import { dashboardQueryKeys } from '@/modules/admin/queries/dashboardQueries';
 
 import type { DashboardGraphAccount } from '@/modules/admin/types/dashboard';
-import { AppCard, AppText, AppToggleButton, AppTitle } from '@/modules/shared/components';
+import {
+    AppButton,
+    AppCard,
+    AppText,
+    AppToggleButton,
+    AppTitle,
+} from '@/modules/shared/components';
 
 type AccountGraphMode = 'physical' | 'virtual';
 
@@ -15,6 +24,15 @@ const graphMode = defineModel<AccountGraphMode>('graphMode', { required: true })
 const props = defineProps<{
     accounts: DashboardGraphAccount[];
 }>();
+
+const virtualRepository = createVirtualAccountsRepository();
+const virtualQuery = useQuery({
+    queryKey: [...dashboardQueryKeys.all, 'virtual-balances'],
+    queryFn: () => virtualRepository.loadDashboard(),
+    enabled: computed(() => graphMode.value === 'virtual'),
+    retry: false,
+    staleTime: 0,
+});
 
 const accountGraphModeOptions = [
     { value: 'physical', label: 'Físicas' },
@@ -41,7 +59,23 @@ const accountGraphModeOptions = [
                 </div>
             </div>
 
-            <DashboardBalanceChart :accounts="props.accounts" />
+            <template v-if="graphMode === 'virtual'">
+                <AppText v-if="virtualQuery.isPending.value"
+                    >Cargando desglose de ahorro y rendimiento...</AppText
+                >
+                <div v-else-if="virtualQuery.isError.value" class="space-y-3">
+                    <AppText>No fue posible cargar el desglose de cuentas virtuales.</AppText>
+                    <AppButton variant="secondary" @click="virtualQuery.refetch()"
+                        >Reintentar</AppButton
+                    >
+                </div>
+                <DashboardBalanceChart
+                    v-else
+                    :accounts="props.accounts"
+                    :virtual-accounts="virtualQuery.data.value?.accounts ?? []"
+                />
+            </template>
+            <DashboardBalanceChart v-else :accounts="props.accounts" />
         </div>
     </AppCard>
 </template>
