@@ -43,7 +43,7 @@ Las pruebas automatizadas sustituyen las llamadas a Meta; no acreditan entrega d
 
 Además del chequeo de tipos y las pruebas completas, verifica fechas locales, importes durante la edición, validación Zod entre campos, reinicio al cambiar de registro, envío desde el pie del modal y bloqueo de envíos duplicados. Las regresiones enfocadas están en `primeControls.spec.ts`, `primeForms.spec.ts`, `AccountUserEditModal.spec.ts`, `useAccountGoalPageActions.spec.ts` y `WhatsappConnectionCard.spec.ts`.
 
-En navegador, revisa menús, diálogos, filtros, búsquedas y scroll infinito en móvil y escritorio, con temas claro y oscuro. Dentro de una cuenta, comprueba las cinco pestañas bajo el encabezado móvil y encima de la navegación inferior desde `sm`, sin separación entre ambas barras fijas. Verifica desplazamiento horizontal y cada icono junto a su título. Confirma primero si se está sirviendo HMR o un build actualizado. Consulta [la migración y el alcance de su validación](../frontend/primevue.md#validación-realizada).
+En navegador, revisa menús, diálogos, filtros, búsquedas y scroll infinito en móvil y escritorio, con temas claro y oscuro. Dentro de una cuenta, comprueba las cinco pestañas bajo el encabezado móvil, encima de la navegación inferior entre `sm` y `lg` sin separación entre ambas barras fijas, y dentro del flujo bajo el encabezado de cuenta desde `lg`. Verifica desplazamiento horizontal y cada icono junto a su título. Confirma primero si se está sirviendo HMR o un build actualizado. Consulta [la migración y el alcance de su validación](../frontend/primevue.md#validación-realizada).
 
 ## Filtros de listas
 
@@ -99,7 +99,10 @@ Ambos scripts usan sesiones ficticias y respuestas API interceptadas; bloquean e
 
 | Verificación | Cobertura |
 | --- | --- |
-| `verifyMobileDesign.mjs` | 36 combinaciones de 360/390/430 px, alturas 640/844, claro/oscuro y tres flujos; más encabezado desktop: 37 casos |
+| `verifyMobileDesign.mjs` | 60 casos disponibles: 48 de suscripciones, sheet, navegación y documentos legales en 360/390/430 px, alturas 640/844 y ambos temas; 12 de layout adaptable |
+| Layout adaptable | 390/1023/1024/1280/1440/1920 px y claro/oscuro; barra inferior o lateral, cuadrículas, pestañas de cuenta y borrador de suscripción conservado al redimensionar |
+| Dashboard y Ahorro | Dashboard con tarjetas apiladas sin filas de altura compartida; historial de Ahorro pegado al resumen pese a una lista larga de apartados; orden móvil conservado |
+| Navegación Más | Cinco entradas principales; sheet móvil con Escape y retorno de foco; desplegable lateral con teclado; destinos de Distribución, Pagos y Configuración y cierre al navegar |
 | Formularios y paneles | Fullscreen de suscripción, selector con nombres y descripciones largos, sheet de distribución, límites del viewport, scroll, Escape y retorno de foco |
 | Documentos legales | Lectura embebida sin modal, conservación de nombre/correo y casillas sin aceptar; cierre y foco; ambas páginas independientes y enlaces a nueva pestaña |
 | `verifyVirtualBalanceChart.mjs` | 6 combinaciones de 360/390/430 px y claro/oscuro, con ganancias, pérdidas y saldo histórico |
@@ -107,6 +110,16 @@ Ambos scripts usan sesiones ficticias y respuestas API interceptadas; bloquean e
 | `VirtualBalanceBreakdown.spec.ts` | Signos positivo/negativo/cero, referencias iniciales sin duplicación, diferencias sin reclasificar y redondeo en centavos |
 | `virtualBalanceChart.spec.ts` | Cruce por cuenta y orden, total coherente con segmentos, pérdidas, diferencias históricas y resumen ausente |
 
-Últimos resultados: 122 pruebas frontend en 40 archivos; 37 casos de diseño móvil y 6 casos de gráfica en ejecuciones separadas; TypeScript, build y ESLint correctos. La suite backend completa del refactor pasó 197 pruebas/1198 aserciones y la comprobación posterior enfocada de cuentas virtuales pasó 5 pruebas/28 aserciones.
+Para ejecutar solo los 12 casos adaptables:
+
+```bash
+PW_DESKTOP_ONLY=1 npm run pw:mobile-design
+```
+
+Pese al nombre de la variable, esta selección incluye 390 y 1023 px para comprobar la presentación móvil y el límite anterior a escritorio. No ejecuta los 48 casos de la matriz móvil de formularios y documentos legales. `PW_SCREENSHOT_DIR` permite guardar capturas de las páginas revisadas a 1440 px en un directorio existente fuera de Git.
+
+Última validación de escritorio y navegación: 12 casos adaptables aprobados, 126 pruebas frontend y 224 pruebas backend con 1232 aserciones; type-check, build y ESLint de los componentes modificados correctos. Se revisó visualmente Ahorro a 1440 px con cinco apartados y el historial debajo del resumen.
+
+Resultados previos del refactor móvil: 122 pruebas frontend en 40 archivos; 37 casos de diseño móvil y 6 casos de gráfica en ejecuciones separadas; TypeScript, build y ESLint correctos. La suite backend completa del refactor pasó 197 pruebas/1198 aserciones y la comprobación posterior enfocada de cuentas virtuales pasó 5 pruebas/28 aserciones.
 
 La auditoría inicial revisó 24 vistas y 106 capturas con Chrome DevTools. Las capturas y galerías quedan fuera de Git. Los fixtures no acreditan pagos, liquidaciones, correcciones ni envíos de códigos reales; tampoco sustituyen una prueba de teclado y safe-area en dispositivo físico. El registro de validación y la deuda preexistente de Oxlint están en [la guía de interfaz](../frontend/primevue.md#validación-realizada).

@@ -27,7 +27,7 @@ Los componentes de `resources/js/modules/shared/components` adaptan PrimeVue a l
 | `AppFilterTrigger` | Botón con icono y contador, nombre accesible y asociación con el panel |
 | `AppActiveFilters` | Etiquetas removibles de selecciones aplicadas; conserva los callbacks de cada módulo |
 
-Las cinco pestañas de cuenta presentan icono y título en una misma fila y conservan desplazamiento horizontal. En móvil quedan bajo el encabezado, con posición sticky. Desde `sm` quedan fijas inmediatamente encima de la navegación principal: el desplazamiento usa `--app-bottom-nav-height`, sin margen inferior adicional. Los mensajes de error, confirmación y estado usan componentes PrimeVue donde corresponde.
+Las cinco pestañas de cuenta presentan icono y título en una misma fila y conservan desplazamiento horizontal. En móvil quedan bajo el encabezado, con posición sticky. Entre `sm` y `lg` quedan fijas inmediatamente encima de la navegación principal: el desplazamiento usa `--app-bottom-nav-height`, sin margen inferior adicional. Desde `lg` vuelven al flujo de la página, debajo del encabezado de la cuenta. Los mensajes de error, confirmación y estado usan componentes PrimeVue donde corresponde.
 
 ## Sistema visual móvil
 
@@ -46,6 +46,28 @@ El sistema centraliza colores, radios y alturas en `resources/js/main.css` y ada
 El shell reserva el espacio de la navegación global y las áreas seguras mediante `--app-header-height` y `--app-bottom-nav-height`. El viewport incluye `viewport-fit=cover` e `interactive-widget=resizes-content`; esto no sustituye una prueba de teclado en dispositivo físico.
 
 `TransactionListItem` alinea el menú de acciones sin aumentar la altura de la fila del concepto; conserva concepto, importe, autor, fecha y estados de reembolso. En distribución amplia, autor y fecha comparten fila. Las transacciones dentro de una cuenta se separan 8 px. `AppSearchSelect` limita el overlay al viewport y permite ajustar las descripciones en varias líneas. `AppLoadMoreFooter` presenta el estado y reintento sin una tarjeta adicional.
+
+## Layout adaptable y navegación
+
+`AdminLayout.vue` conserva la presentación móvil por debajo de **1024 px** (`lg`), con contenido de hasta 430 px y navegación inferior. Desde 1024 px usa una barra lateral de 240 px, encabezado desplazado a la derecha y contenido de hasta 1440 px. El cambio de tamaño reutiliza las mismas páginas y formularios; no crea una segunda instancia del estado.
+
+La navegación principal tiene cinco entradas en ambos tamaños: **Inicio, Cuentas, Ahorro, Suscripciones y Más**. En móvil, Suscripciones se abrevia **Subs**. Inicio siempre ocupa la primera posición.
+
+| Opción de Más | Destino |
+| --- | --- |
+| Distribución | `/admin/distribution` |
+| Pagos | `/admin/settings/utilities/credit-card-payoff`, calculadora de pago de tarjetas |
+| Configuración | `/admin/settings` |
+
+En móvil, Más abre un `AppModal` con presentación `sheet`; en escritorio despliega los enlaces dentro de la barra lateral. El botón comunica su estado con `aria-expanded` y permanece destacado en las rutas de Distribución y Configuración, incluidas sus utilidades. El panel o desplegable se cierra al cambiar de ruta o cruzar el breakpoint de escritorio. Perfil, Invitaciones y Salir permanecen en el menú del usuario.
+
+### Tarjetas de Dashboard y Ahorro
+
+En escritorio, el dashboard coloca los indicadores de cuentas a todo el ancho y apila las demás tarjetas en dos columnas CSS, con separación de 24 px y `break-inside-avoid`. Esta composición tipo masonry evita igualar la altura de las filas y conserva cada tarjeta completa. Las columnas se leen de arriba abajo; no garantizan un orden horizontal por filas. En móvil se conserva el orden: balance, indicadores de cuentas, error de transferencia si existe, reembolsos, planeación de suscripciones y resumen del periodo.
+
+Ahorro usa dos columnas independientes en escritorio: resumen e Historial observado se apilan a la izquierda, con 20 px entre ambos; Apartados ocupa la derecha. La altura de la lista de apartados no desplaza el historial. En móvil se conserva resumen → apartados → historial. No se aplica masonry a todas las listas de la aplicación: cuentas, metas y suscripciones conservan sus cuadrículas adaptables.
+
+Los ajustes reutilizan `AppCard`, `AppButton`, `AppLink` y `AppModal`, sin dependencias adicionales ni cambios en cálculos, endpoints o permisos. Consulta [la cobertura adaptable](../testing/strategy.md#diseño-móvil-documentos-legales-y-cuentas-virtuales).
 
 ## Documentos legales y registro
 
@@ -142,7 +164,9 @@ El saldo inicial es una referencia del primer corte; no se suma otra vez a las a
 
 ## Validación realizada
 
-La última ejecución de los ajustes visuales pasó **122 pruebas frontend en 40 archivos**, TypeScript, build y ESLint de los módulos modificados. La suite backend completa pasó **197 pruebas y 1198 aserciones** durante el refactor inicial; posteriormente pasaron las **5 pruebas enfocadas de cuentas virtuales, con 28 aserciones**, sin cambios backend.
+Los ajustes de escritorio y navegación de octubre de 2026 pasaron type-check, build, ESLint de los componentes modificados, **126 pruebas frontend** y **224 pruebas backend con 1232 aserciones**. La última ejecución de `PW_DESKTOP_ONLY=1 npm run pw:mobile-design` pasó **12 casos adaptables**: 390, 1023, 1024, 1280, 1440 y 1920 px en claro y oscuro. Incluye geometría de Dashboard y Ahorro con listas largas, navegación Más, ausencia de desbordamiento y conservación del borrador al redimensionar. Esta ejecución no repitió la matriz completa de formularios móviles y documentos legales.
+
+La ejecución previa de los ajustes móviles pasó **122 pruebas frontend en 40 archivos**, TypeScript, build y ESLint de los módulos modificados. La suite backend completa pasó **197 pruebas y 1198 aserciones** durante el refactor inicial; posteriormente pasaron las **5 pruebas enfocadas de cuentas virtuales, con 28 aserciones**, sin cambios backend.
 
 Las regresiones con fixtures pasaron 37 casos de diseño móvil/documentos legales y 6 de barras virtuales apiladas. El segundo script verifica geometría y proporciones de los segmentos, totales, pérdidas, diferencias históricas, alternancia Físicas/Virtuales y reintento. Consulta [comandos y alcance de pruebas](../testing/strategy.md#diseño-móvil-documentos-legales-y-cuentas-virtuales).
 

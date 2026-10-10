@@ -23,8 +23,16 @@ Estos scripts instalan sesiones ficticias, interceptan respuestas API y bloquean
 
 | Script | Alcance |
 | --- | --- |
-| `verifyMobileDesign.mjs` | 37 casos: suscripción fullscreen/selector largo, sheet de distribución y documentos legales embebidos e independientes en 360/390/430 px, alturas 640/844 y ambos temas; compatibilidad de encabezado desktop |
+| `verifyMobileDesign.mjs` | 60 casos: 48 de suscripción fullscreen/selector largo, sheet de distribución, navegación Más y documentos legales en 360/390/430 px, alturas 640/844 y ambos temas; 12 de layouts adaptables en 390/1023/1024/1280/1440/1920 px y ambos temas, incluidos Dashboard, historial de Ahorro, menú lateral y borradores al redimensionar |
 | `verifyVirtualBalanceChart.mjs` | 6 casos: gráfica virtual en tres anchos y ambos temas; proporciones y continuidad de segmentos, ganancias, pérdidas, saldo sin desglose, selector Físicas/Virtuales y reintento tras error |
+
+Para ejecutar únicamente los 12 casos de layout adaptable:
+
+```bash
+PW_DESKTOP_ONLY=1 npm run pw:mobile-design
+```
+
+Esta selección también incluye 390 y 1023 px para verificar que los cambios de escritorio conservan el layout móvil. Omite los 48 casos de formularios, navegación y documentos legales de la matriz móvil. Para obtener capturas de las páginas revisadas a 1440 px, define `PW_SCREENSHOT_DIR` con un directorio existente fuera de Git.
 
 Las comprobaciones fallan ante errores de página o solicitudes API inesperadas. Los detalles de la cobertura unitaria y sus límites están en [la estrategia de pruebas](../../docs/testing/strategy.md#diseño-móvil-documentos-legales-y-cuentas-virtuales).
 
@@ -78,4 +86,5 @@ Los alias escriben en `tmp/playwright-facilities` salvo que se configure `--outp
 | `PW_APP_URL` | URL local de la SPA; `http://127.0.0.1:8000`. También aplica a los scripts `verify*` |
 | `PW_API_URL` | URL de API para capturas; `http://127.0.0.1:8000/api` |
 | `PW_EMAIL`, `PW_PASSWORD` | Credenciales locales para helpers de capturas; no necesarias para regresiones con fixtures |
-| `PW_SCREENSHOT_DIR` | Directorio de salida de capturas |
+| `PW_SCREENSHOT_DIR` | Directorio de salida de capturas; en `verifyMobileDesign.mjs`, guarda las vistas revisadas a 1440 px |
+| `PW_DESKTOP_ONLY` | En `verifyMobileDesign.mjs`, cualquier valor no vacío selecciona solo los 12 casos adaptables, incluidos los anchos móviles de 390 y 1023 px |
