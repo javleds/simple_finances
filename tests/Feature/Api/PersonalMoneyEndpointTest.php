@@ -106,3 +106,41 @@ it('rejects inaccessible and automatic sources and invalid source types', functi
     $outside = Transaction::factory()->income()->create(['account_id' => $outsideAccount->id, 'user_id' => $outsider->id, 'scheduled_at' => '2026-10-05']);
     $this->putJson('/api/personal-money/links', array_replace($payload, ['source_id' => $outside->id]))->assertNotFound();
 });
+
+it('activates from now without a start date and validates reset operation keys', function (): void {
+    $this->withHeaders(personalMoneyApiHeaders($this->user));
+    $payload = ['account_id' => $this->personal->id, 'opening_balance' => 10000, 'enabled' => true, 'start_mode' => 'now'];
+    $this->putJson('/api/personal-money/settings', $payload)->assertUnprocessable()->assertJsonValidationErrors('operation_key');
+    $payload['operation_key'] = (string) Illuminate\Support\Str::uuid();
+    $response = $this->putJson('/api/personal-money/settings', $payload)->assertOk()
+        ->assertJsonPath('data.available_balance', 10000.0)->assertJsonPath('data.settings.start_mode', 'now')
+        ->assertJsonPath('data.settings.started_at', '2026-10-11')->assertJsonPath('data.history', []);
+    expect($response->json('data.settings.activated_at'))->not->toBeNull();
+    expect($response->json('data.settings.transaction_cutoff_id'))->toBeInt();
+    $this->putJson('/api/personal-money/settings', array_replace($payload, ['opening_balance' => 9000]))
+        ->assertUnprocessable()->assertJsonValidationErrors('operation_key');
+    $this->withHeaders(personalMoneyApiHeaders($this->other))->getJson('/api/personal-money')->assertOk()
+        ->assertJsonPath('data.settings', null);
+});
+
+it('defaults current own shared cash payments through both endpoints', function (bool $nested): void {
+    $this->withHeaders(personalMoneyApiHeaders($this->user))->putJson('/api/personal-money/settings', [
+        'account_id' => $this->personal->id, 'opening_balance' => 10000, 'enabled' => true,
+        'start_mode' => 'now', 'operation_key' => (string) Illuminate\Support\Str::uuid(),
+    ])->assertOk();
+    $url = $nested ? "/api/accounts/{$this->shared->id}/transactions" : '/api/transactions';
+    $this->postJson($url, [
+        'account_id'      => $this->shared->id, 'type' => 'outcome', 'status' => 'completed',
+        'concept'         => 'Current payment', 'amount' => 200, 'scheduled_at' => '2026-10-11',
+        'paid_by_user_id' => $this->user->id, 'payment_source' => 'member_out_of_pocket',
+    ])->assertCreated()->assertJsonMissingPath('data.cash_source');
+    $this->getJson('/api/personal-money')->assertOk()->assertJsonPath('data.available_balance', 9800.0)->assertJsonPath('data.pending_count', 0);
+})->with([true, false]);
+
+it('keeps the local activation day without using the client clock for the actual cut', function (): void {
+    $this->withHeaders(personalMoneyApiHeaders($this->user))->putJson('/api/personal-money/settings', [
+        'account_id' => $this->personal->id, 'opening_balance' => 10000, 'enabled' => true,
+        'start_mode' => 'now', 'started_at' => '2026-10-10', 'operation_key' => (string) Illuminate\Support\Str::uuid(),
+    ])->assertOk()->assertJsonPath('data.settings.started_at', '2026-10-10')
+        ->assertJsonPath('data.settings.activated_at', now()->toIso8601String())->assertJsonPath('data.available_balance', 10000.0);
+});

@@ -36,8 +36,9 @@ class PersonalMoneyController extends ApiController
     ): JsonResponse {
         $data = $request->validated();
         $updateSettings->execute($request->user()->id, new PersonalMoneySettingsDto(
-            accountId: (int) $data['account_id'], startedAt: $data['started_at'],
+            accountId: (int) $data['account_id'], startedAt: $data['started_at'] ?? null,
             openingBalance: (float) $data['opening_balance'], enabled: (bool) $data['enabled'],
+            startMode: $data['start_mode'] ?? null, operationKey: $data['operation_key'] ?? null,
         ));
 
         return $this->respond(['data' => $summary->execute($request->user()->id)]);

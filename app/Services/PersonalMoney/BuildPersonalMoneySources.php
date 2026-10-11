@@ -42,7 +42,10 @@ class BuildPersonalMoneySources
         $transactions = $this->visibleTransactionsForUser->query($userId)
             ->completed()->whereNull('legacy_migrated_at')->whereNull('parent_transaction_id')
             ->whereNull('account_balance_snapshot_id')
-            ->whereBetween('scheduled_at', [$setting->started_at->startOfDay(), now()])
+            ->where('scheduled_at', '<=', now())
+            ->when(null !== $setting->activated_at,
+                static fn (Builder $query): Builder => $query->where('transactions.id', '>', $setting->transaction_cutoff_id),
+                static fn (Builder $query): Builder => $query->where('scheduled_at', '>=', $setting->started_at->startOfDay()))
             ->where(static function (Builder $query) use ($setting, $userId): void {
                 $query->where(static fn (Builder $personal): Builder => $personal->where('account_id', $setting->account_id)->where(static fn (Builder $rules): Builder => $rules->where('uses_shared_account_rules', false)->orWhereNull('uses_shared_account_rules')))
                     ->orWhere(static function (Builder $shared) use ($userId): void {
@@ -73,13 +76,16 @@ class BuildPersonalMoneySources
                 concept: $transaction->concept, occurredAt: $transaction->scheduled_at->toIso8601String(),
                 amount: $transaction->amount, kind: $kind, signature: $signature,
                 rawEffect: $personal && $income ? $transaction->amount : -$transaction->amount,
-                automatic: $personal, link: $links->get('transaction:' . $transaction->id),
+                automatic: $personal && ! (null !== $setting->activated_at && $transaction->scheduled_at->lt($setting->started_at)), link: $links->get('transaction:' . $transaction->id),
             );
         });
 
         $reimbursements = PersonalMoneyReimbursement::query()
             ->where('user_id', $userId)->where('cash_effect', '!=', 0)
-            ->whereBetween('occurred_at', [$setting->started_at->startOfDay(), now()])
+            ->where('occurred_at', '<=', now())
+            ->when(null !== $setting->activated_at,
+                static fn (Builder $query): Builder => $query->where('ledger_entry_key', '>', $setting->ledger_cutoff_id),
+                static fn (Builder $query): Builder => $query->where('occurred_at', '>=', $setting->started_at->startOfDay()))
             ->get();
 
         foreach ($reimbursements as $reimbursement) {
@@ -96,7 +102,8 @@ class BuildPersonalMoneySources
             ->whereHas('users', static fn (Builder $users): Builder => $users->where('users.id', $userId))->pluck('id');
         foreach ($links as $link) {
             if (null === $link->transaction_id || $memberAccountIds->contains($link->source_account_id)
-                || $link->occurred_at->lt($setting->started_at) || $link->occurred_at->gt(now())) {
+                || (null !== $setting->activated_at ? $link->transaction_id <= $setting->transaction_cutoff_id : $link->occurred_at->lt($setting->started_at))
+                || $link->occurred_at->gt(now())) {
                 continue;
             }
             $sources->push($this->source(

@@ -38,8 +38,11 @@ class BuildPersonalMoneySummary
 
         return [
             'settings'          => null === $setting ? null : [
-                'account_id'      => $setting->account_id, 'started_at' => $setting->started_at->toDateString(),
-                'opening_balance' => $setting->opening_balance, 'enabled' => $setting->enabled,
+                'account_id'            => $setting->account_id, 'started_at' => $setting->started_at->toDateString(),
+                'transaction_cutoff_id' => $setting->transaction_cutoff_id,
+                'activated_at'          => $setting->activated_at?->toIso8601String(),
+                'start_mode'            => null !== $setting->activated_at ? 'now' : 'date',
+                'opening_balance'       => $setting->opening_balance, 'enabled' => $setting->enabled,
             ],
             'accounts'          => $accounts->toArray(),
             'account_available' => $accountAvailable,

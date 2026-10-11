@@ -7,6 +7,7 @@ namespace App\Services\PersonalMoney;
 use App\Models\PersonalMoneyLink;
 use App\Models\Transaction;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 use function round;
 
@@ -27,7 +28,7 @@ class SyncPersonalMoneyTransactionLinks
         }
 
         $links->update([
-            'cash_effect' => -round($transaction->amount, 2),
+            'cash_effect' => DB::raw('CASE WHEN kind = \'personal_income\' THEN ' . round($transaction->amount, 2) . ' ELSE ' . -round($transaction->amount, 2) . ' END'),
             'concept'     => $transaction->concept,
             'occurred_at' => $transaction->scheduled_at,
         ]);

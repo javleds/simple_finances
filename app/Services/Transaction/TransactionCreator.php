@@ -1,19 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Transaction;
+
+use function app;
 
 use App\Dto\TransactionFormDto;
 use App\Enums\Action;
-use App\Enums\TransactionStatus;
 use App\Enums\TransactionPaymentSource;
+use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\Transaction;
-use App\Services\PersonalMoney\ResolvePersonalMoneySource;
+use App\Services\PersonalMoney\ApplyPersonalMoneyTransactionSource;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class TransactionCreator
 {
@@ -24,14 +29,14 @@ class TransactionCreator
         private ResolveOutcomeUserPayments $resolveOutcomeUserPayments,
         private SyncCoveredPayerRecoveryTransaction $syncCoveredPayerRecoveryTransaction,
         private ProcessTransactionSideEffects $processTransactionSideEffects,
-        private ResolvePersonalMoneySource $resolvePersonalMoneySource,
+        private ApplyPersonalMoneyTransactionSource $applyPersonalMoneyTransactionSource,
     ) {
     }
 
     public function execute(TransactionFormDto $dto): Transaction
     {
-        if ($dto->status !== TransactionStatus::Completed) {
-            throw new \InvalidArgumentException('Transactions must have status Completed.');
+        if (TransactionStatus::Completed !== $dto->status) {
+            throw new InvalidArgumentException('Transactions must have status Completed.');
         }
 
         $transaction = DB::transaction(function () use ($dto): Transaction {
@@ -42,11 +47,9 @@ class TransactionCreator
             $transaction->load('paidByUser');
             $this->syncCoveredPayerRecoveryTransaction->execute($transaction);
 
-            if ($dto->cashSource !== null) {
-                $this->resolvePersonalMoneySource->execute(
-                    (int) $this->auth->id(), 'transaction', $transaction->id, $dto->cashSource,
-                );
-            }
+            $this->applyPersonalMoneyTransactionSource->execute(
+                $transaction, (int) $this->auth->id(), $dto->cashSource, true,
+            );
 
             return $transaction;
         });
@@ -70,9 +73,9 @@ class TransactionCreator
         $transaction->amount = $dto->amount;
         $transaction->percentage = 100.0;
         $transaction->account_id = $dto->accountId;
-        $transaction->paid_by_user_id = $dto->type === TransactionType::Outcome && ! $shared ? $personalUserId : $this->paidByUserId($dto);
-        $transaction->custodian_user_id = $dto->type === TransactionType::Income && ! $shared ? $personalUserId : $this->custodianUserId($dto);
-        $transaction->payment_source = $dto->type === TransactionType::Outcome && ! $shared ? TransactionPaymentSource::AccountFund : $this->paymentSource($dto);
+        $transaction->paid_by_user_id = TransactionType::Outcome === $dto->type && ! $shared ? $personalUserId : $this->paidByUserId($dto);
+        $transaction->custodian_user_id = TransactionType::Income === $dto->type && ! $shared ? $personalUserId : $this->custodianUserId($dto);
+        $transaction->payment_source = TransactionType::Outcome === $dto->type && ! $shared ? TransactionPaymentSource::AccountFund : $this->paymentSource($dto);
         $transaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
         $transaction->financial_goal_id = $dto->financialGoalId ?: null;
         $transaction->user_id = $this->auth->id();
@@ -84,7 +87,7 @@ class TransactionCreator
 
     private function userPayments(Transaction $transaction, TransactionFormDto $dto): array
     {
-        if ($transaction->uses_shared_account_rules === false || $dto->type !== TransactionType::Outcome) {
+        if (false === $transaction->uses_shared_account_rules || TransactionType::Outcome !== $dto->type) {
             return [];
         }
 
@@ -103,13 +106,13 @@ class TransactionCreator
         );
     }
 
-    private function resolveScheduleDate(string|CarbonInterface $scheduledAt): CarbonInterface
+    private function resolveScheduleDate(string | CarbonInterface $scheduledAt): CarbonInterface
     {
         if ($scheduledAt instanceof CarbonInterface) {
             return $scheduledAt;
         }
 
-        if ($scheduledAt === '') {
+        if ('' === $scheduledAt) {
             return Carbon::now();
         }
 
@@ -118,7 +121,7 @@ class TransactionCreator
 
     private function paidByUserId(TransactionFormDto $dto): ?int
     {
-        if ($dto->type !== TransactionType::Outcome) {
+        if (TransactionType::Outcome !== $dto->type) {
             return null;
         }
 
@@ -127,7 +130,7 @@ class TransactionCreator
 
     private function custodianUserId(TransactionFormDto $dto): ?int
     {
-        if ($dto->type !== TransactionType::Income) {
+        if (TransactionType::Income !== $dto->type) {
             return null;
         }
 
@@ -136,7 +139,7 @@ class TransactionCreator
 
     private function paymentSource(TransactionFormDto $dto): ?TransactionPaymentSource
     {
-        if ($dto->type !== TransactionType::Outcome) {
+        if (TransactionType::Outcome !== $dto->type) {
             return null;
         }
 

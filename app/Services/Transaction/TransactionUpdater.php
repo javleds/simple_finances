@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Transaction;
+
+use function app;
 
 use App\Dto\TransactionFormDto;
 use App\Enums\Action;
@@ -10,12 +14,16 @@ use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\Transaction;
 use App\Services\Accounts\RecalculateAccountBalance;
-use App\Services\PersonalMoney\ResolvePersonalMoneySource;
+use App\Services\PersonalMoney\ApplyPersonalMoneyTransactionSource;
 use App\Services\PersonalMoney\SyncPersonalMoneyTransactionLinks;
+
+use function auth;
+
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class TransactionUpdater
 {
@@ -26,7 +34,7 @@ class TransactionUpdater
         private ResolveOutcomeUserPayments $resolveOutcomeUserPayments,
         private SyncCoveredPayerRecoveryTransaction $syncCoveredPayerRecoveryTransaction,
         private ProcessTransactionSideEffects $processTransactionSideEffects,
-        private ResolvePersonalMoneySource $resolvePersonalMoneySource,
+        private ApplyPersonalMoneyTransactionSource $applyPersonalMoneyTransactionSource,
         private SyncPersonalMoneyTransactionLinks $syncPersonalMoneyTransactionLinks,
         private RecalculateAccountBalance $recalculateAccountBalance,
     ) {
@@ -34,8 +42,8 @@ class TransactionUpdater
 
     public function execute(Transaction $transaction, TransactionFormDto $dto): Transaction
     {
-        if ($dto->status !== TransactionStatus::Completed) {
-            throw new \InvalidArgumentException('Transactions must have status Completed.');
+        if (TransactionStatus::Completed !== $dto->status) {
+            throw new InvalidArgumentException('Transactions must have status Completed.');
         }
 
         $previousAccountId = $transaction->account_id;
@@ -56,18 +64,16 @@ class TransactionUpdater
             $transaction->load('paidByUser');
             $this->syncCoveredPayerRecoveryTransaction->execute($transaction);
 
-            if ($dto->cashSource !== null) {
-                $this->resolvePersonalMoneySource->execute(
-                    (int) auth()->id(), 'transaction', $transaction->id, $dto->cashSource,
-                );
-            }
+            $this->applyPersonalMoneyTransactionSource->execute(
+                $transaction, (int) auth()->id(), $dto->cashSource, false,
+            );
 
             return $transaction;
         }, 3);
 
         if ($previousAccountId !== $transaction->account_id) {
             $previousAccount = Account::withoutGlobalScopes()->find($previousAccountId);
-            if ($previousAccount !== null) {
+            if (null !== $previousAccount) {
                 $this->recalculateAccountBalance->execute($previousAccount);
             }
         }
@@ -101,10 +107,10 @@ class TransactionUpdater
         $transaction->paid_by_user_id = $this->paidByUserId($dto);
         $transaction->custodian_user_id = $this->custodianUserId($dto);
         $transaction->payment_source = $this->paymentSource($dto);
-        if ($transaction->uses_shared_account_rules === false) {
-            $transaction->paid_by_user_id = $dto->type === TransactionType::Outcome ? ($sameAccount ? ($previousPayerId ?? $personalUserId) : $personalUserId) : null;
-            $transaction->custodian_user_id = $dto->type === TransactionType::Income ? ($sameAccount ? ($previousCustodianId ?? $personalUserId) : $personalUserId) : null;
-            $transaction->payment_source = $dto->type === TransactionType::Outcome ? TransactionPaymentSource::AccountFund : null;
+        if (false === $transaction->uses_shared_account_rules) {
+            $transaction->paid_by_user_id = TransactionType::Outcome === $dto->type ? ($sameAccount ? ($previousPayerId ?? $personalUserId) : $personalUserId) : null;
+            $transaction->custodian_user_id = TransactionType::Income === $dto->type ? ($sameAccount ? ($previousCustodianId ?? $personalUserId) : $personalUserId) : null;
+            $transaction->payment_source = TransactionType::Outcome === $dto->type ? TransactionPaymentSource::AccountFund : null;
         }
         $transaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
         $transaction->financial_goal_id = $dto->financialGoalId ?: null;
@@ -113,7 +119,7 @@ class TransactionUpdater
 
     private function userPayments(Transaction $transaction, TransactionFormDto $dto): array
     {
-        if ($transaction->uses_shared_account_rules === false || $dto->type !== TransactionType::Outcome) {
+        if (false === $transaction->uses_shared_account_rules || TransactionType::Outcome !== $dto->type) {
             return [];
         }
 
@@ -132,13 +138,13 @@ class TransactionUpdater
         );
     }
 
-    private function resolveScheduleDate(string|CarbonInterface $scheduledAt): CarbonInterface
+    private function resolveScheduleDate(string | CarbonInterface $scheduledAt): CarbonInterface
     {
         if ($scheduledAt instanceof CarbonInterface) {
             return $scheduledAt;
         }
 
-        if ($scheduledAt === '') {
+        if ('' === $scheduledAt) {
             return Carbon::now();
         }
 
@@ -147,7 +153,7 @@ class TransactionUpdater
 
     private function paidByUserId(TransactionFormDto $dto): ?int
     {
-        if ($dto->type !== TransactionType::Outcome) {
+        if (TransactionType::Outcome !== $dto->type) {
             return null;
         }
 
@@ -156,7 +162,7 @@ class TransactionUpdater
 
     private function custodianUserId(TransactionFormDto $dto): ?int
     {
-        if ($dto->type !== TransactionType::Income) {
+        if (TransactionType::Income !== $dto->type) {
             return null;
         }
 
@@ -165,7 +171,7 @@ class TransactionUpdater
 
     private function paymentSource(TransactionFormDto $dto): ?TransactionPaymentSource
     {
-        if ($dto->type !== TransactionType::Outcome) {
+        if (TransactionType::Outcome !== $dto->type) {
             return null;
         }
 
