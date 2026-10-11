@@ -14,6 +14,10 @@ Mantener alineados los contratos Laravel y su consumo Vue. Evitar cambios de dom
 
 Las instrucciones de IA se mantienen en este archivo y en `resources/js/AGENTS.md`. La documentación vigente está en `docs`; los documentos anteriores del workspace se conservan en `docs/history/workspace` como referencia histórica. La propuesta original de casos de prueba está en `docs/testing/test-cases.md`; para reglas vigentes consultar `docs/shared-account-model.md`.
 
+## Mi dinero disponible
+
+Antes de modificar el cálculo privado, sus vínculos, configuración o defaults de origen de dinero, consultar [docs/domain/personal-money.md](docs/domain/personal-money.md). Preservar el inicio por activación, las decisiones históricas, la privacidad por usuario y la separación entre disponible personal, balance de cuenta y custodia compartida. Los ingresos compartidos vinculados representan aportaciones que reducen el disponible; los ingresos de la cuenta personal lo aumentan.
+
 ## Shared Account Domain Rules
 
 The current finance model supports individual current accounts, shared current accounts with explicit custodianship, and shared receivable/payable accounts. Preserve these rules when changing transactions, account balances, reimbursements, or related UI:
