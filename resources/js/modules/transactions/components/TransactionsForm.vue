@@ -237,7 +237,7 @@ watch(
             !props.initialValues?.id &&
             showCashSource.value &&
             !isHistoricalMovement.value &&
-            isExpense.value &&
+            (isExpense.value || isIncome.value) &&
             hasSharedAccount.value
                 ? 'personal'
                 : null;

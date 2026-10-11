@@ -364,7 +364,7 @@ describe('private cash source choice', () => {
         wrapper.unmount();
         personalMoney.value = undefined;
     });
-    it('allows a shared income contribution to explicitly use personal money', async () => {
+    it('defaults a shared income contribution to personal money and allows changing its source', async () => {
         personalMoney.value = {
             settings: { enabled: true, started_at: '2026-01-01' },
             account_available: true,
@@ -374,12 +374,21 @@ describe('private cash source choice', () => {
             initialValues: { type: 'income', concept: 'Aportación', amount: 20 },
         });
         expect(wrapper.find('#transaction-cash-source').exists()).toBe(true);
+        const source = wrapper
+            .findAllComponents({ name: 'AppSearchSelect' })
+            .find((item) => item.attributes('id') === 'transaction-cash-source')!;
+        expect(source.props('modelValue')).toBe('personal');
+        expect(await submit(wrapper)).toMatchObject({ type: 'income', cashSource: 'personal' });
         wrapper
             .findAllComponents({ name: 'AppSearchSelect' })
             .find((item) => item.attributes('id') === 'transaction-cash-source')!
-            .vm.$emit('update:modelValue', 'personal');
+            .vm.$emit('update:modelValue', 'external');
         await flushPromises();
-        expect(await submit(wrapper)).toMatchObject({ type: 'income', cashSource: 'personal' });
+        await submit(wrapper);
+        expect(wrapper.emitted('submit')?.at(-1)?.[0]).toMatchObject({
+            type: 'income',
+            cashSource: 'external',
+        });
         wrapper.unmount();
         personalMoney.value = undefined;
     });
