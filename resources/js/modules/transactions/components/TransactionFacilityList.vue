@@ -31,6 +31,7 @@ function formatDateLabel(date: string): string {
         :key="transaction.id"
         :account-name="transaction.accountName"
         :amount="transaction.amount"
+        :attachments-count="transaction.attachmentsCount"
         :concept="transaction.concept"
         :category-name="transaction.categoryName"
         :creator-name="transaction.creatorName"

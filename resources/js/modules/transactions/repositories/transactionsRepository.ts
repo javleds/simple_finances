@@ -297,8 +297,9 @@ export const createdTransactionResponseSchema = z
     })),
   ])
   .transform<CreatedTransactionResult>((payload, context) => {
-    const transactions = sortTransactionsByCreatedAt(payload.data.map(mapTransactionApiToDomain));
-    const transaction = transactions[0];
+    const mappedTransactions = payload.data.map(mapTransactionApiToDomain);
+    const transaction = mappedTransactions[0];
+    const transactions = sortTransactionsByCreatedAt(mappedTransactions);
 
     if (!transaction) {
       context.addIssue({

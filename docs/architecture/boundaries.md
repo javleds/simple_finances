@@ -19,3 +19,7 @@ PHP y Nginx comparten el checkout y assets; Node solo construye. El montaje obli
 ## Categorías
 
 Laravel resuelve el catálogo efectivo y autoriza creación, selección, renombrado y eliminación. La conversión al compartir una cuenta y la reclasificación al eliminar son operaciones atómicas. Vue presenta búsqueda, creación dentro del formulario y administración; las categorías no alteran el ledger ni las reglas financieras. Consulta [el dominio de categorías](../domain/categories.md).
+
+## Comprobantes de transacciones
+
+La API recibe archivos individuales, verifica permisos y reserva capacidad; los jobs validan contenido y convierten imágenes. Vue mantiene selecciones locales, presenta estados y descarga mediante JWT. La transacción financiera se guarda antes de subir comprobantes: los fallos de archivos no repiten notificaciones ni mutaciones financieras. Los archivos nunca se exponen mediante el disco público.

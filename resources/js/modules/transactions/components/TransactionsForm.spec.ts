@@ -104,3 +104,29 @@ describe('transaction account context', () => {
         expect(await submit(wrapper)).toMatchObject({ paymentSource: 'account_fund' });
     });
 });
+
+it('keeps pending files and their saved transaction when the selected row is replaced', async () => {
+    const wrapper = render({
+        initialValues: { id: '123', concept: 'Compra', amount: 20, date: '2026-10-10' },
+    });
+    const receipts = wrapper.getComponent({ name: 'TransactionAttachments' });
+    const draft = receipts.props('draft');
+    draft.files.push({
+        file: new File(['receipt'], 'receipt.pdf'),
+        uploadId: 'receipt',
+        uploaded: false,
+    });
+    draft.transactionId = '123';
+    await wrapper.setProps({
+        initialValues: { id: '123', concept: 'Compra editada', amount: 30, date: '2026-10-10' },
+    });
+    expect(receipts.props('draft')).toBe(draft);
+    expect(draft.transactionId).toBe('123');
+    expect(draft.files).toHaveLength(1);
+    await wrapper.setProps({
+        initialValues: { id: '456', concept: 'Otro', amount: 10, date: '2026-10-10' },
+    });
+    expect(draft.files).toHaveLength(0);
+    expect(draft.transactionId).toBeNull();
+    wrapper.unmount();
+});

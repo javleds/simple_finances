@@ -19,6 +19,7 @@
         "pw:facilities": "node scripts/playwright/captureFacilities.mjs",
         "pw:facilities:list": "node scripts/playwright/captureFacilities.mjs --list",
         "pw:categories": "node scripts/playwright/verifyCategories.mjs",
+        "pw:attachments": "node scripts/playwright/verifyAttachments.mjs",
         "pw:mobile-design": "node scripts/playwright/verifyMobileDesign.mjs"
     },
     "dependencies": {

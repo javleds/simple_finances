@@ -40,6 +40,7 @@ describe('transaction schemas', () => {
       id: '10',
       accountId: '20',
       accountName: 'Cuenta principal',
+      attachmentsCount: 0,
       categoryId: null,
       categoryName: null,
       concept: 'Compra mensual',

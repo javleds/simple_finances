@@ -13,3 +13,5 @@ WhatsApp vincula un teléfono al usuario autenticado; no incorpora un método de
 `account_member_ledger_entries` sigue siendo parte del dominio: custodia, liquidaciones, reembolsos y balances deben permanecer sincronizados con las transacciones. Consulta `../shared-account-model.md` para las reglas completas.
 
 Las transacciones admiten categorías opcionales. Los catálogos personales pertenecen al usuario; los compartidos pertenecen a la cuenta y mantienen permisos de administración propios. Consulta [categorías de transacciones](../domain/categories.md) para conversión de catálogos, eliminación y contrato API.
+
+Los comprobantes de transacciones usan almacenamiento privado y procesamiento asíncrono en la cola `attachments`. Los archivos se publican solo al terminar su validación y conversión; los permisos dependen de la membresía vigente de la cuenta. Consulta [la especificación de adjuntos](../specs/005-adjuntos-de-transacciones.md).

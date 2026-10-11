@@ -224,6 +224,7 @@ export const transactionApiSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => value ?? null),
+  attachments_count: z.number().optional().default(0),
   category_id: z.union([z.string(), z.number()]).nullable().optional().transform(parseEntityId),
   category: z.object({ name: z.string() }).nullable().optional(),
   concept: z.string(),
@@ -341,6 +342,7 @@ export function mapTransactionApiToDomain(
     accountId: payload.account_id ?? payload.account?.id ?? '',
     accountName: payload.account?.name ?? null,
     categoryId: payload.category_id,
+    attachmentsCount: payload.attachments_count,
     categoryName: payload.category?.name ?? null,
     concept: payload.concept,
     amount: payload.amount,

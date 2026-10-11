@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { PencilSquareIcon, TrashIcon, PaperClipIcon } from '@heroicons/vue/24/outline';
 
-import { AppActionMenu, AppCard } from '@/modules/shared/components';
+import TransactionAttachments from './TransactionAttachments.vue';
+import { AppActionMenu, AppCard, AppButton, AppModal } from '@/modules/shared/components';
 
 type TransactionItemType = 'income' | 'expense';
 
 const props = defineProps<{
     itemId: string;
+    attachmentsCount?: number;
     concept: string;
     categoryName?: string | null;
     amount: number;
@@ -26,6 +28,24 @@ const emit = defineEmits<{
     delete: [itemId: string];
 }>();
 
+const attachmentsOpen = ref(false);
+const attachmentCount = ref<number | null>(null);
+watch(
+    () => props.attachmentsCount,
+    () => {
+        attachmentCount.value = null;
+    },
+);
+function updateAttachmentCount(event: Event): void {
+    const detail = (event as CustomEvent<{ transactionId: string; count: number }>).detail;
+    if (detail.transactionId === props.itemId) attachmentCount.value = detail.count;
+}
+onMounted(() =>
+    window.addEventListener('transaction-attachments-count-updated', updateAttachmentCount),
+);
+onBeforeUnmount(() =>
+    window.removeEventListener('transaction-attachments-count-updated', updateAttachmentCount),
+);
 const currencyFormatter = new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: 'MXN',
@@ -131,6 +151,16 @@ function handleDelete(): void {
                 <p class="mt-1 text-xs wrap-anywhere text-(--app-color-text-subtle)">
                     {{ props.categoryName || 'Sin categoría' }}
                 </p>
+                <AppButton
+                    v-if="(attachmentCount ?? props.attachmentsCount ?? 0) > 0"
+                    type="button"
+                    variant="ghost"
+                    :aria-label="`Ver ${attachmentCount ?? props.attachmentsCount} comprobantes`"
+                    @click="attachmentsOpen = true"
+                    ><PaperClipIcon class="h-4 w-4" aria-hidden="true" />{{
+                        attachmentCount ?? props.attachmentsCount
+                    }}</AppButton
+                >
             </div>
 
             <div
@@ -190,4 +220,16 @@ function handleDelete(): void {
             </p>
         </div>
     </AppCard>
+    <AppModal
+        :open="attachmentsOpen"
+        title="Comprobantes de la transacción"
+        @close="attachmentsOpen = false"
+    >
+        <TransactionAttachments
+            v-if="attachmentsOpen"
+            :transaction-id="props.itemId"
+            :read-only="!props.showActions"
+            @changed="attachmentCount = $event"
+        />
+    </AppModal>
 </template>

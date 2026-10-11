@@ -127,7 +127,7 @@ describe('transactions repository schemas', () => {
         });
     });
 
-    it('parses a shared-account create response with transaction array data', () => {
+    it('preserves the root mutation target while sorting shared transactions newest first', () => {
         const result = createdTransactionResponseSchema.parse({
             data: [
                 {
@@ -162,17 +162,18 @@ describe('transactions repository schemas', () => {
 
         expect(result).toEqual({
             transaction: {
-                id: '11',
+                id: '10',
                 accountId: '20',
                 accountName: 'Cuenta compartida',
+                attachmentsCount: 0,
                 categoryId: null,
                 categoryName: null,
                 concept: 'Compra mensual',
-                amount: 720.3,
-                type: 'income',
-                status: 'completed',
+                amount: 1200.5,
+                type: 'expense',
+                status: null,
                 date: '2026-06-09',
-                createdAt: '2026-06-09T12:01:00.000000Z',
+                createdAt: '2026-06-09T12:00:00.000000Z',
                 creatorId: '9',
                 creatorName: 'María López',
                 financialGoalId: null,
@@ -184,13 +185,14 @@ describe('transactions repository schemas', () => {
                 paymentSource: null,
                 currentUserPendingReimbursementAmount: 0,
                 currentUserReceivableReimbursementAmount: 0,
-                userPayments: {},
+                userPayments: { '7': 60, '8': 40 },
             },
             transactions: [
                 {
                     id: '11',
                     accountId: '20',
                     accountName: 'Cuenta compartida',
+                    attachmentsCount: 0,
                     categoryId: null,
                     categoryName: null,
                     concept: 'Compra mensual',
@@ -216,6 +218,7 @@ describe('transactions repository schemas', () => {
                     id: '10',
                     accountId: '20',
                     accountName: 'Cuenta compartida',
+                    attachmentsCount: 0,
                     categoryId: null,
                     categoryName: null,
                     concept: 'Compra mensual',

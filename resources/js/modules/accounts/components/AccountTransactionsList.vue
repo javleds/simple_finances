@@ -37,6 +37,7 @@ function formatDateLabel(date: string): string {
         v-for="transaction in props.transactions"
         :key="transaction.id"
         :amount="transaction.amount"
+        :attachments-count="transaction.attachmentsCount"
         :concept="transaction.concept"
         :category-name="transaction.categoryName"
         :creator-name="transaction.creatorName"

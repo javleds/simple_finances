@@ -4,6 +4,7 @@ type ApiRequestOptions = {
   headers?: HeadersInit;
   signal?: AbortSignal;
   credentials?: RequestCredentials;
+  responseType?: 'blob';
 };
 
 const AUTH_TOKEN_STORAGE_KEY = 'finsi_20_auth_token';
@@ -119,14 +120,24 @@ async function request<T>(path: string, options: ApiRequestOptions = {}): Promis
     headers: {
       Accept: 'application/json',
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.body && !(options.body instanceof FormData)
+        ? { 'Content-Type': 'application/json' }
+        : {}),
       ...options.headers,
     },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body:
+      options.body instanceof FormData
+        ? options.body
+        : options.body
+          ? JSON.stringify(options.body)
+          : undefined,
     signal: options.signal,
   });
 
-  const payload = await parseResponse(response);
+  const payload =
+    response.ok && options.responseType === 'blob'
+      ? await response.blob()
+      : await parseResponse(response);
 
   if (!response.ok) {
     if (response.status === 401 && authToken) {
@@ -149,6 +160,9 @@ async function request<T>(path: string, options: ApiRequestOptions = {}): Promis
 
 export function createApiClient() {
   return {
+    download(path: string): Promise<Blob> {
+      return request<Blob>(path, { responseType: 'blob' });
+    },
     get<T>(path: string, options?: Omit<ApiRequestOptions, 'method' | 'body'>) {
       return request<T>(path, { ...options, method: 'GET' });
     },

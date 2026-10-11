@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import Message from 'primevue/message';
 import TransactionCategorySelect from './TransactionCategorySelect.vue';
+import TransactionAttachments from './TransactionAttachments.vue';
 import Checkbox from 'primevue/checkbox';
-import { computed, ref, watch, watchEffect } from 'vue';
+import { computed, reactive, ref, watch, watchEffect } from 'vue';
 
 import type { AccountMember } from '@/modules/accounts/types';
 import { useTransactionForm } from '@/modules/transactions/composables/useTransactionForm';
 import type {
+    AttachmentDraft,
     Transaction,
     TransactionSubmitOptions,
     TransactionWritePayload,
 } from '@/modules/transactions/types';
 import {
+    AppButton,
     AppDatePicker,
     AppInput,
     AppPercentageSplitEditor,
@@ -26,11 +29,13 @@ type FormState = {
     canSubmit: boolean;
     isSubmitting: boolean;
     keepOpen: boolean;
+    savedTransactionId?: string | null;
 };
 
 const props = withDefaults(
     defineProps<{
         formId?: string;
+        saving?: boolean;
         accountUsers?: ReadonlyArray<AccountMember>;
         accountBalance?: number | null;
         financialGoals?: ReadonlyArray<{
@@ -47,6 +52,7 @@ const props = withDefaults(
     }>(),
     {
         formId: 'transaction-form',
+        saving: false,
         accountUsers: () => [],
         accountBalance: null,
         financialGoals: () => [],
@@ -118,6 +124,23 @@ const paymentSourceOptions = computed(() => [
 ]);
 const createAndAddAnother = ref(false);
 const categoryBusy = ref(false);
+const attachments = reactive<AttachmentDraft>({ files: [], transactionId: null });
+watch(
+    () => props.initialValues,
+    (nextValues, previousValues) => {
+        if (nextValues?.id && nextValues.id === previousValues?.id) return;
+        attachments.files = [];
+        attachments.transactionId = null;
+    },
+);
+function confirmClose(): boolean {
+    if (props.saving) return false;
+    return (
+        !attachments.files.some((entry) => !entry.uploaded) ||
+        window.confirm('Hay comprobantes sin subir. ¿Salir y descartarlos?')
+    );
+}
+defineExpose({ confirmClose });
 const { error: conceptError, touch: touchConcept } = useFormFieldInteraction('concept');
 const { error: amountError, touch: touchAmount } = useFormFieldInteraction('amount');
 const { error: userPaymentsError, touch: touchUserPayments } =
@@ -135,12 +158,20 @@ const financialGoalOptions = computed(() =>
 );
 
 watch(
-    [isSubmitDisabled, isSubmitting, meta, createAndAddAnother, categoryBusy],
+    [
+        isSubmitDisabled,
+        isSubmitting,
+        meta,
+        createAndAddAnother,
+        categoryBusy,
+        () => attachments.transactionId,
+    ],
     () => {
         emit('stateChange', {
             canSubmit: !isSubmitDisabled.value && !categoryBusy.value,
             isSubmitting: isSubmitting.value,
             keepOpen: props.enableCreateAndAddAnother && createAndAddAnother.value,
+            savedTransactionId: attachments.transactionId,
         });
     },
     { immediate: true, deep: true },
@@ -206,8 +237,14 @@ watch(showUserSplitToggle, (isVisible) => {
     }
 });
 
+async function continueWithoutFiles(): Promise<void> {
+    if (props.saving || !window.confirm('¿Continuar sin subir los archivos pendientes?')) return;
+    attachments.files = attachments.files.filter((entry) => entry.uploaded);
+    await handleSubmit();
+}
+
 async function handleSubmit(): Promise<void> {
-    if (categoryBusy.value || isSubmitting.value) return;
+    if (categoryBusy.value || isSubmitting.value || props.saving) return;
     const payload = await submitForm();
 
     if (!payload) {
@@ -218,6 +255,7 @@ async function handleSubmit(): Promise<void> {
         keepOpen: props.enableCreateAndAddAnother && createAndAddAnother.value,
     };
 
+    payload.attachments = attachments;
     emit('submit', payload);
     emit('submitWithOptions', payload, options);
 }
@@ -227,7 +265,11 @@ async function handleSubmit(): Promise<void> {
     <form :id="props.formId" class="space-y-6" @submit.prevent="handleSubmit">
         <Message v-if="props.serverError" severity="error">{{ props.serverError }}</Message>
 
-        <section class="space-y-4" :style="{ borderColor: 'var(--app-color-border)' }">
+        <section
+            :inert="attachments.transactionId ? true : undefined"
+            class="space-y-4"
+            :style="{ borderColor: 'var(--app-color-border)' }"
+        >
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <label for="transaction-type" class="text-sm font-medium text-(--app-color-label)">
                     Tipo
@@ -241,7 +283,7 @@ async function handleSubmit(): Promise<void> {
             </div>
         </section>
 
-        <section class="space-y-4">
+        <section :inert="attachments.transactionId ? true : undefined" class="space-y-4">
             <AppInput
                 id="transaction-concept"
                 v-model="concept"
@@ -289,7 +331,32 @@ async function handleSubmit(): Promise<void> {
                 :account-id="accountId"
                 @busy="categoryBusy = $event"
             />
-
+        </section>
+        <TransactionAttachments
+            :transaction-id="props.initialValues?.id"
+            :draft="attachments"
+            @files-change="attachments.files = $event"
+            :busy="isSubmitting || props.saving"
+        />
+        <section v-if="attachments.transactionId" class="space-y-2">
+            <AppText size="sm" tone="subtle"
+                >Movimiento guardado. Puedes reintentar los comprobantes sin crear otro
+                movimiento.</AppText
+            >
+            <div class="flex flex-wrap gap-2">
+                <AppButton type="submit" :disabled="props.saving"
+                    >Reintentar comprobantes</AppButton
+                >
+                <AppButton
+                    type="button"
+                    variant="ghost"
+                    :disabled="props.saving"
+                    @click="continueWithoutFiles"
+                    >Continuar sin los archivos pendientes</AppButton
+                >
+            </div>
+        </section>
+        <section :inert="attachments.transactionId ? true : undefined" class="space-y-4">
             <div v-if="isExpense && hasSharedAccount">
                 <AppSearchSelect
                     id="transaction-paid-by"
@@ -368,7 +435,11 @@ async function handleSubmit(): Promise<void> {
             </section>
         </section>
 
-        <section v-if="isIncome" class="space-y-3">
+        <section
+            v-if="isIncome"
+            :inert="attachments.transactionId ? true : undefined"
+            class="space-y-3"
+        >
             <AppSearchSelect
                 v-if="hasSharedAccount"
                 id="transaction-custodian"

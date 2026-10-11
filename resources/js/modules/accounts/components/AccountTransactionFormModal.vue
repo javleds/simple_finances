@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue';
 import type { AppModalAction } from '@/modules/shared/types/modal';
 import type { AccountMember } from '@/modules/accounts/types';
 import type { AccountGoal } from '@/modules/accounts/schemas/accountGoalSchemas';
@@ -14,6 +15,7 @@ type FormState = {
     canSubmit: boolean;
     isSubmitting: boolean;
     keepOpen: boolean;
+    savedTransactionId?: string | null;
 };
 
 const props = withDefaults(
@@ -43,6 +45,22 @@ const props = withDefaults(
     },
 );
 
+const savedTransactionId = ref<string | null>(null);
+watch(
+    () => props.open,
+    () => {
+        savedTransactionId.value = null;
+    },
+);
+function updateState(state: FormState): void {
+    savedTransactionId.value = state.savedTransactionId ?? null;
+    emit('stateChange', state);
+}
+const transactionForm = ref<InstanceType<typeof TransactionsForm> | null>(null);
+function requestClose(): void {
+    if (transactionForm.value?.confirmClose() !== false) emit('close');
+}
+
 const emit = defineEmits<{
     close: [];
     stateChange: [state: FormState];
@@ -56,13 +74,15 @@ const emit = defineEmits<{
         presentation="fullscreen"
         :open="props.open"
         :actions="props.actions"
-        :title="props.title"
+        :title="savedTransactionId ? 'Movimiento guardado · Comprobantes' : props.title"
         variant="default"
-        @close="emit('close')"
+        @close="requestClose"
     >
         <TransactionsForm
-            v-if="!props.requiresInitialValues || props.initialValues"
+            ref="transactionForm"
+            v-if="props.open && (!props.requiresInitialValues || props.initialValues)"
             :form-id="props.formId"
+            :saving="props.actions.some((action) => action.loading)"
             :account-users="props.accountUsers"
             :account-balance="props.accountBalance"
             :current-user-id="props.currentUserId"
@@ -72,7 +92,7 @@ const emit = defineEmits<{
             :locked-account-id="props.accountId"
             :initial-values="props.initialValues ?? undefined"
             :server-error="props.serverError"
-            @state-change="emit('stateChange', $event)"
+            @state-change="updateState"
             @submit="emit('submit', $event)"
             @submit-with-options="(payload, options) => emit('submitWithOptions', payload, options)"
         />

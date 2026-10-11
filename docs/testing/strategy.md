@@ -137,3 +137,13 @@ npm run pw:categories
 El script `scripts/playwright/verifyCategories.mjs` usa sesiones y respuestas API ficticias. Comprueba creación dentro del formulario, conservación del concepto, recuperación ante fallo de creación, eliminación compartida con reasignación y distribución a 390 y 1280 píxeles. Verifica Cantidad y Fecha en una fila en escritorio, apiladas en móvil, y Categoría después de Fecha. `PW_APP_URL` permite cambiar la URL local; con Vite detenido se requiere `npm run build`. Estas comprobaciones no escriben movimientos reales ni sustituyen las pruebas backend.
 
 Las reglas de aceptación están en [Categorías de transacciones](../domain/categories.md).
+
+## Adjuntos de transacciones
+
+La cobertura backend comprueba permisos, almacenamiento privado, límites, validación XML/ZIP/imágenes, estados y limpieza. La cobertura Vue comprueba selección, guardado parcial y transporte multipart/binario. `scripts/playwright/verifyAttachments.mjs` utiliza sesiones ficticias y respuestas API interceptadas para revisar cuentas personales y compartidas a 390 y 1280 píxeles: conservación del movimiento ante fallo de subida, reintento sin duplicación, actualización asíncrona, descarga autenticada y ausencia de desbordamiento horizontal. No escribe datos reales. Con assets compilados y aplicación local disponible, ejecutar:
+
+```bash
+PW_APP_URL=http://127.0.0.1:8000 node scripts/playwright/verifyAttachments.mjs
+```
+
+Los servicios de producción requieren además el diagnóstico real de cola, conversión y almacenamiento documentado en [despliegue](../operations/deployment.md).

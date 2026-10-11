@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/vue-query';
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 
 import { categoryQueryKeys } from '@/modules/categories/composables/useCategories';
 import { dashboardQueryKeys } from '@/modules/admin/queries/dashboardQueries';
@@ -9,8 +9,10 @@ import { usePaginatedCollection } from '@/modules/shared/composables/usePaginate
 import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 import { transactionFacilityQueryKeys } from '@/modules/transactions/queries/transactionFacilityQueries';
 
+import { transactionAttachmentsRepository } from '../repositories/transactionAttachmentsRepository';
 import { createTransactionsRepository } from '../repositories/transactionsRepository';
 import type {
+    AttachmentDraft,
     CreatedTransactionResult,
     DeletedTransactionResult,
     Transaction,
@@ -23,6 +25,34 @@ const transactionsRepository = createTransactionsRepository();
 
 export function useTransactionsCrud() {
     const queryClient = useQueryClient();
+    const savedDrafts = new WeakMap<AttachmentDraft, CreatedTransactionResult>();
+    async function uploadAttachments(
+        payload: TransactionWritePayload,
+        result: CreatedTransactionResult,
+    ): Promise<void> {
+        const draft = payload.attachments;
+        if (!draft || draft.files.length === 0) return;
+        draft.transactionId = result.transaction.id;
+        savedDrafts.set(draft, result);
+        for (const entry of draft.files) {
+            if (entry.uploaded) continue;
+            await transactionAttachmentsRepository.upload(
+                result.transaction.id,
+                entry.file,
+                entry.uploadId,
+            );
+            entry.uploaded = true;
+            result.transaction.attachmentsCount = (result.transaction.attachmentsCount ?? 0) + 1;
+            transactionsState.replaceItem(
+                (transaction) => transaction.id === result.transaction.id,
+                { ...result.transaction },
+            );
+            void queryClient.invalidateQueries({ queryKey: transactionFacilityQueryKeys.all });
+            await queryClient.invalidateQueries({
+                queryKey: ['transaction-attachments', result.transaction.id],
+            });
+        }
+    }
     const transactionsState = usePaginatedCollection<
         Transaction,
         [string | undefined, TransactionListFilters | undefined]
@@ -37,6 +67,23 @@ export function useTransactionsCrud() {
         loadErrorMessage: 'No fue posible cargar las transacciones.',
         loadMoreErrorMessage: 'No fue posible cargar más transacciones.',
     });
+    function syncAttachmentCount(event: Event): void {
+        const detail = (event as CustomEvent<{ transactionId: string; count: number }>).detail;
+        const transaction = transactionsState.items.value.find(
+            (item) => item.id === detail.transactionId,
+        );
+        if (transaction)
+            transactionsState.replaceItem((item) => item.id === detail.transactionId, {
+                ...transaction,
+                attachmentsCount: detail.count,
+            });
+    }
+    onMounted(() =>
+        window.addEventListener('transaction-attachments-count-updated', syncAttachmentCount),
+    );
+    onBeforeUnmount(() =>
+        window.removeEventListener('transaction-attachments-count-updated', syncAttachmentCount),
+    );
     const isSaving = ref(false);
     const isDeleting = ref(false);
     const saveError = ref<string | null>(null);
@@ -67,12 +114,21 @@ export function useTransactionsCrud() {
         saveError.value = null;
 
         try {
-            const result = await transactionsRepository.create(payload);
-            transactionsState.prependItems(result.transactions);
-            syncAccountState(payload.accountId, result.meta);
+            const previous = payload.attachments?.transactionId
+                ? savedDrafts.get(payload.attachments)
+                : undefined;
+            const result = previous ?? (await transactionsRepository.create(payload));
+            if (!previous) {
+                transactionsState.prependItems(result.transactions);
+                syncAccountState(payload.accountId, result.meta);
+            }
+            await uploadAttachments(payload, result);
+            if (payload.attachments) savedDrafts.delete(payload.attachments);
             return result;
         } catch (error) {
-            saveError.value = resolveApiErrorMessage(error, 'No fue posible crear la transacción.');
+            saveError.value = payload.attachments?.transactionId
+                ? `El movimiento se guardó, pero faltan comprobantes por subir. ${resolveApiErrorMessage(error, 'Reintenta o quita los archivos pendientes para continuar.')}`
+                : resolveApiErrorMessage(error, 'No fue posible crear la transacción.');
             return null;
         } finally {
             isSaving.value = false;
@@ -88,17 +144,25 @@ export function useTransactionsCrud() {
         saveError.value = null;
 
         try {
-            const result = await transactionsRepository.update(transactionId, payload);
+            const previous = payload.attachments?.transactionId
+                ? savedDrafts.get(payload.attachments)
+                : undefined;
+            const result =
+                previous ?? (await transactionsRepository.update(transactionId, payload));
             transactionsState.replaceItem(
                 (transaction) => transaction.id === transactionId,
                 result.transaction,
             );
-            syncAccountState(payload.accountId, result.meta);
+            if (!previous) syncAccountState(payload.accountId, result.meta);
+            await uploadAttachments(payload, result);
+            if (payload.attachments) savedDrafts.delete(payload.attachments);
             return result;
         } catch (error) {
             saveError.value = resolveApiErrorMessage(
                 error,
-                'No fue posible actualizar la transacción.',
+                payload.attachments?.transactionId
+                    ? 'El movimiento se guardó, pero faltan comprobantes. Reintenta o quita los archivos pendientes.'
+                    : 'No fue posible actualizar la transacción.',
             );
             return null;
         } finally {

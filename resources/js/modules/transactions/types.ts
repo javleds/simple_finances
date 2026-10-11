@@ -33,6 +33,7 @@ export type Transaction = {
   id: string;
   accountId: string;
   accountName: string | null;
+  attachmentsCount?: number;
   categoryName?: string | null;
   categoryId?: string | null;
   concept: string;
@@ -72,6 +73,7 @@ export type TransactionFormValues = {
 };
 
 export type TransactionWritePayload = {
+  attachments?: AttachmentDraft;
   type: TransactionType;
   status: 'completed';
   categoryId?: string | null;
@@ -132,4 +134,29 @@ export type CreatedTransactionResult = {
 
 export type DeletedTransactionResult = {
   meta: TransactionMutationMeta;
+};
+
+export type AttachmentDraft = {
+    files: Array<{ file: File; uploadId: string; uploaded: boolean }>;
+    transactionId: string | null;
+};
+
+export type TransactionAttachment = {
+    id: string;
+    original_name: string;
+    mime_type: string;
+    size_bytes: number;
+    status: 'pending' | 'processing' | 'ready' | 'failed';
+    error_message: string | null;
+    can_manage: boolean;
+    can_retry: boolean;
+    created_at: string;
+};
+
+export type AttachmentConfig = {
+    max_files: number;
+    max_file_bytes: Record<'image' | 'pdf' | 'xml' | 'zip', number>;
+    max_transaction_bytes: number;
+    accepted_extensions: string[];
+    poll_interval_ms: number;
 };
