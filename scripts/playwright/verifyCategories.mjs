@@ -164,10 +164,15 @@ try {
         const amountBox = await dialog.getByLabel('Cantidad', { exact: true }).boundingBox();
         const categoryBox = await categorySelect.evaluate((element) => {
             const rect = element.closest('.p-select').getBoundingClientRect();
-            return { y: rect.y, width: rect.width };
+            return { x: rect.x, y: rect.y, width: rect.width };
         });
-        assert.ok(categoryBox.y > amountBox.y, 'Category must follow amount');
-        assert.ok(Math.abs(categoryBox.width - amountBox.width) < 5, 'Category must align with amount');
+        if (width < 640) {
+            assert.ok(categoryBox.y > amountBox.y, 'Category must follow amount on mobile');
+            assert.ok(Math.abs(categoryBox.width - amountBox.width) < 5, 'Category must align with amount on mobile');
+        } else {
+            assert.ok(Math.abs(categoryBox.y - amountBox.y) < 5, 'Category must share the amount row');
+            assert.ok(categoryBox.x >= amountBox.x + amountBox.width, 'Category must be to the right of amount');
+        }
         await categorySelect.click();
         await page.getByPlaceholder('Buscar o crear categoría').fill('transporte');
         assert.equal(

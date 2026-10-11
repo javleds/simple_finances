@@ -253,22 +253,23 @@ async function handleSubmit(): Promise<void> {
             />
 
             <div class="grid gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-                <div class="space-y-4">
-                    <AppSearchSelect
-                        v-if="isExpense && hasSharedAccount"
-                        id="transaction-paid-by"
-                        v-model="paidByUserId"
-                        label="Pagado por"
-                        :options="accountUserOptions"
-                        placeholder="Selecciona usuario"
-                        search-placeholder="Buscar usuario"
-                        empty-message="No hay usuarios disponibles."
-                        required
-                    />
+                <div class="contents">
+                    <div v-if="isExpense && hasSharedAccount" class="sm:order-1">
+                        <AppSearchSelect
+                            id="transaction-paid-by"
+                            v-model="paidByUserId"
+                            label="Pagado por"
+                            :options="accountUserOptions"
+                            placeholder="Selecciona usuario"
+                            search-placeholder="Buscar usuario"
+                            empty-message="No hay usuarios disponibles."
+                            required
+                        />
+                    </div>
 
                     <section
                         v-if="isExpense && hasSharedAccount"
-                        class="space-y-3"
+                        class="space-y-3 sm:order-3 sm:col-span-2"
                         :style="{ borderColor: 'var(--app-color-border)' }"
                     >
                         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -293,22 +294,25 @@ async function handleSubmit(): Promise<void> {
                         </AppText>
                     </section>
 
-                    <AppInput
-                        id="transaction-amount"
-                        v-model="amount"
-                        label="Cantidad"
-                        mask="amount"
-                        type="number"
-                        inputmode="decimal"
-                        min="0"
-                        step="0.01"
-                        placeholder="$ 00.00"
-                        :error="amountError"
-                        @blur="touchAmount"
-                        required
-                    />
+                    <div class="sm:order-4">
+                        <AppInput
+                            id="transaction-amount"
+                            v-model="amount"
+                            label="Cantidad"
+                            mask="amount"
+                            type="number"
+                            inputmode="decimal"
+                            min="0"
+                            step="0.01"
+                            placeholder="$ 00.00"
+                            :error="amountError"
+                            @blur="touchAmount"
+                            required
+                        />
+                    </div>
 
                     <TransactionCategorySelect
+                        class="sm:order-5"
                         v-model="categoryId"
                         :account-id="accountId"
                         @busy="categoryBusy = $event"
@@ -316,7 +320,7 @@ async function handleSubmit(): Promise<void> {
 
                     <section
                         v-if="showUserSplitToggle"
-                        class="space-y-4 border-t border-(--app-color-border) pt-4"
+                        class="space-y-4 border-t border-(--app-color-border) pt-4 sm:order-6 sm:col-span-2"
                         :style="{ borderColor: 'var(--app-color-border)' }"
                     >
                         <label class="flex items-start gap-3">
@@ -353,16 +357,21 @@ async function handleSubmit(): Promise<void> {
                     </section>
                 </div>
 
-                <AppDatePicker
-                    id="transaction-date"
-                    v-model="date"
-                    label="Fecha"
-                    placeholder="AAAA-MM-DD"
-                    :error="dateError"
-                    @change="touchDate"
-                    @blur="touchDate"
-                    required
-                />
+                <div
+                    class="sm:order-2"
+                    :class="{ 'sm:col-span-2': !(isExpense && hasSharedAccount) }"
+                >
+                    <AppDatePicker
+                        id="transaction-date"
+                        v-model="date"
+                        label="Fecha"
+                        placeholder="AAAA-MM-DD"
+                        :error="dateError"
+                        @change="touchDate"
+                        @blur="touchDate"
+                        required
+                    />
+                </div>
             </div>
         </section>
 
