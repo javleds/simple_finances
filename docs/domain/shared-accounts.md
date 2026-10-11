@@ -90,3 +90,7 @@ Confianza: Observado.
 - `tests/Feature/Services/Transaction`
 - `resources/js/modules/accounts`
 - `resources/js/modules/transactions`
+
+## Categorías compartidas
+
+La cuenta conserva un catálogo propio desde su primera conversión a compartida, incluso si vuelve a tener un solo miembro. Se copian las categorías usadas en esa cuenta sin modificar los catálogos personales. Todos los miembros pueden crear y seleccionar; solo el propietario renombra o elimina. Eliminar puede reclasificar movimientos de otros miembros y exige decidir su destino si hay uso. Consulta [categorías de transacciones](categories.md) para conflictos de nombres, permisos y contrato API.

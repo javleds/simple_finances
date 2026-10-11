@@ -123,3 +123,17 @@ Pese al nombre de la variable, esta selección incluye 390 y 1023 px para compro
 Resultados previos del refactor móvil: 122 pruebas frontend en 40 archivos; 37 casos de diseño móvil y 6 casos de gráfica en ejecuciones separadas; TypeScript, build y ESLint correctos. La suite backend completa del refactor pasó 197 pruebas/1198 aserciones y la comprobación posterior enfocada de cuentas virtuales pasó 5 pruebas/28 aserciones.
 
 La auditoría inicial revisó 24 vistas y 106 capturas con Chrome DevTools. Las capturas y galerías quedan fuera de Git. Los fixtures no acreditan pagos, liquidaciones, correcciones ni envíos de códigos reales; tampoco sustituyen una prueba de teclado y safe-area en dispositivo físico. El registro de validación y la deuda preexistente de Oxlint están en [la guía de interfaz](../frontend/primevue.md#validación-realizada).
+
+## Categorías personales y compartidas
+
+La cobertura de `tests/Feature/Api/CategoryEndpointTest.php` verifica aislamiento de catálogos, nombres duplicados, permisos de miembros y propietario, eliminación con destino, conversión al compartir y compatibilidad de `category_id` en transacciones. Las pruebas Vue cubren selector, administración, repositorio, schemas y consultas.
+
+Con assets actualizados y la aplicación local disponible, ejecutar:
+
+```bash
+npm run pw:categories
+```
+
+El script `scripts/playwright/verifyCategories.mjs` usa sesiones y respuestas API ficticias. Comprueba creación dentro del formulario, conservación del concepto, recuperación ante fallo de creación, eliminación compartida con reasignación y distribución a 390 y 1280 píxeles. Verifica Cantidad y Fecha en una fila en escritorio, apiladas en móvil, y Categoría después de Fecha. `PW_APP_URL` permite cambiar la URL local; con Vite detenido se requiere `npm run build`. Estas comprobaciones no escriben movimientos reales ni sustituyen las pruebas backend.
+
+Las reglas de aceptación están en [Categorías de transacciones](../domain/categories.md).

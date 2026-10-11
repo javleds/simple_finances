@@ -1,5 +1,7 @@
 # Categorías personales y compartidas
 
+Estado: implementado. La referencia funcional y técnica vigente está en [Categorías de transacciones](../domain/categories.md). Este documento conserva la especificación y el plan de implementación.
+
 ## Contexto y objetivo
 Agregar clasificación opcional a movimientos existentes y nuevos, conservando las reglas financieras y la separación entre catálogos personales y compartidos.
 

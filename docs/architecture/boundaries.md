@@ -15,3 +15,7 @@ Blade solo proporciona el HTML de entrada. La navegación pertenece a Vue Router
 ## Operación
 
 PHP y Nginx comparten el checkout y assets; Node solo construye. El montaje obliga a activar mantenimiento antes de actualizar Git. MySQL conserva nombres y volumen anteriores. Traefik atiende dominio principal y antiguo host API sin redirigir enlaces firmados o webhooks.
+
+## Categorías
+
+Laravel resuelve el catálogo efectivo y autoriza creación, selección, renombrado y eliminación. La conversión al compartir una cuenta y la reclasificación al eliminar son operaciones atómicas. Vue presenta búsqueda, creación dentro del formulario y administración; las categorías no alteran el ledger ni las reglas financieras. Consulta [el dominio de categorías](../domain/categories.md).

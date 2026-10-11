@@ -11,3 +11,5 @@ Vite 8 con el plugin Laravel 3 compila una entrada Vue. En desarrollo Composer s
 WhatsApp vincula un teléfono al usuario autenticado; no incorpora un método de login. La recepción valida la firma de Meta y persiste el payload cifrado en `webhook_receipts` junto con el job en una transacción de la misma base de datos. Solo después del commit devuelve `200`. El worker actual valida el proveedor y el tipo de sobre y marca la recepción como procesada; todavía no genera respuestas, transacciones ni llamadas a OpenAI. Telegram conserva su procesamiento actual. Consulta [la integración de WhatsApp](../integrations/whatsapp.md).
 
 `account_member_ledger_entries` sigue siendo parte del dominio: custodia, liquidaciones, reembolsos y balances deben permanecer sincronizados con las transacciones. Consulta `../shared-account-model.md` para las reglas completas.
+
+Las transacciones admiten categorías opcionales. Los catálogos personales pertenecen al usuario; los compartidos pertenecen a la cuenta y mantienen permisos de administración propios. Consulta [categorías de transacciones](../domain/categories.md) para conversión de catálogos, eliminación y contrato API.

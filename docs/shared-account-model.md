@@ -243,3 +243,7 @@ This is used for balance recalculation, account transaction lists, and transacti
 - Reimbursement settlement does not change custody or account balance.
 - Historical pending transaction data is normalized to completed data by migration.
 - `legacy_migrated_at` is the safety marker that prevents double-counting migrated children.
+
+## Categorías de movimientos
+
+Las categorías compartidas pertenecen a la cuenta y permanecen separadas de los catálogos personales. Todos los miembros pueden crearlas y usarlas; el propietario administra nombres y eliminación, incluida la reclasificación de movimientos de otros miembros. Cambiar la clasificación no altera importes, balance, custodia, asignaciones ni reembolsos. Las reglas completas están en [Categorías de transacciones](domain/categories.md).
