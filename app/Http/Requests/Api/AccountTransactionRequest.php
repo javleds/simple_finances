@@ -16,6 +16,7 @@ class AccountTransactionRequest extends FormRequest
         return [
             'type' => ['required', 'in:income,outcome'],
             'status' => ['required', 'in:completed'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'concept' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'paid_by_user_id' => ['nullable', 'integer', 'exists:users,id'],

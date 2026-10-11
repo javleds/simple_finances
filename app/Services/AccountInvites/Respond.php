@@ -15,21 +15,24 @@ readonly class Respond
 
     public function execute(AccountInvite $invite, InviteStatus $status): AccountInvite
     {
-        $invite->update([
-            'status' => $status,
-        ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($invite, $status): void {
+            $invite->update(['status' => $status]);
 
-        Account::withoutGlobalScopes()
-            ->find($invite->account_id)
-            ->users()
-            ->syncWithoutDetaching([
-                auth()->id() => [
-                    'percentage' => $invite->percentage,
-                ],
+            if ($status !== InviteStatus::Accepted) {
+                return;
+            }
+
+            $account = Account::withoutGlobalScopes()->lockForUpdate()->findOrFail($invite->account_id);
+            app(\App\Services\Categories\ConvertAccountCategoryCatalog::class)->execute($account);
+            $account->users()->syncWithoutDetaching([
+                auth()->id() => ['percentage' => $invite->percentage],
             ]);
+        });
 
         $this->notifyOnInteract->execute($invite);
-        $this->enableNotificationForInvitation->execute($invite);
+        if ($status === InviteStatus::Accepted) {
+            $this->enableNotificationForInvitation->execute($invite);
+        }
 
         return $invite;
     }

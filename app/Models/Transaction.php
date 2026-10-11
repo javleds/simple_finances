@@ -28,6 +28,7 @@ class Transaction extends Model
             'paid_by_user_id' => 'integer',
             'custodian_user_id' => 'integer',
             'account_id' => 'integer',
+            'category_id' => 'integer',
             'type' => TransactionType::class,
             'status' => TransactionStatus::class,
             'payment_source' => TransactionPaymentSource::class,
@@ -38,6 +39,11 @@ class Transaction extends Model
             'financial_goal_id' => 'integer',
             'account_balance_snapshot_id' => 'integer',
         ];
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function account(): BelongsTo

@@ -23,6 +23,8 @@ class TransactionFormDto
         public array $userPayments,
         public string|CarbonInterface $scheduledAt,
         public ?int $financialGoalId,
+        public ?int $categoryId = null,
+        public bool $categoryProvided = false,
     ) {}
 
     public static function fromFormArray(array $data): self
@@ -44,6 +46,8 @@ class TransactionFormDto
             userPayments: collect($data['user_payments'] ?? [])->map(fn (array $userPayment) => UserPaymentDto::fromFormArray($userPayment))->all(),
             scheduledAt: $data['scheduled_at'] ?? '',
             financialGoalId: $data['financial_goal_id'] ?? null,
+            categoryId: isset($data['category_id']) ? (int) $data['category_id'] : null,
+            categoryProvided: array_key_exists('category_id', $data),
         );
     }
 

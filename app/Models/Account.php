@@ -28,6 +28,7 @@ class Account extends Model
             'spent' => 'float',
             'feed_account_id' => 'int',
             'virtual' => 'bool',
+            'uses_shared_categories' => 'bool',
         ];
     }
 

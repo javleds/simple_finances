@@ -83,6 +83,15 @@ Route::middleware('api.auth')->group(function (): void {
     Route::get('notification-settings', [NotificationSettingsController::class, 'show']);
     Route::put('notification-settings', [NotificationSettingsController::class, 'update']);
 
+    Route::get('categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
+    Route::post('categories', [\App\Http\Controllers\Api\CategoryController::class, 'store']);
+    Route::put('categories/{category}', [\App\Http\Controllers\Api\CategoryController::class, 'update']);
+    Route::delete('categories/{category}', [\App\Http\Controllers\Api\CategoryController::class, 'delete']);
+    Route::get('accounts/{account}/categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
+    Route::post('accounts/{account}/categories', [\App\Http\Controllers\Api\CategoryController::class, 'store']);
+    Route::put('accounts/{account}/categories/{category}', [\App\Http\Controllers\Api\CategoryController::class, 'updateShared']);
+    Route::delete('accounts/{account}/categories/{category}', [\App\Http\Controllers\Api\CategoryController::class, 'deleteShared']);
+
     Route::get('accounts', [AccountController::class, 'index']);
     Route::post('accounts', [AccountController::class, 'store']);
     Route::get('accounts/{account}', [AccountController::class, 'show']);

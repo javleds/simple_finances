@@ -66,7 +66,7 @@ class TransactionController extends ApiController
 
         return $this->respondModel(
             $transaction->fresh(),
-            ['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
+            ['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
             201,
             $buildTransactionAccountMeta->execute($transaction->account_id),
         );
@@ -76,7 +76,7 @@ class TransactionController extends ApiController
     {
         $this->ensureVisibleTransaction($transaction);
 
-        return $this->respondModel($transaction, ['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user']);
+        return $this->respondModel($transaction, ['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user']);
     }
 
     public function update(
@@ -100,7 +100,7 @@ class TransactionController extends ApiController
 
         return $this->respondModel(
             $transaction->fresh(),
-            ['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
+            ['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
             meta: $buildTransactionAccountMeta->execute($transaction->account_id, $previousAccountId),
         );
     }

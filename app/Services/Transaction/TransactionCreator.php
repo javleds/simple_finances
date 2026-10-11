@@ -62,6 +62,7 @@ class TransactionCreator
         $transaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
         $transaction->financial_goal_id = $dto->financialGoalId ?: null;
         $transaction->user_id = $this->auth->id();
+        $transaction->category_id = app(\App\Services\Categories\ResolveTransactionCategory::class)->execute($dto->accountId, $dto->categoryId, $this->auth->id());
         $transaction->save();
 
         return $transaction;

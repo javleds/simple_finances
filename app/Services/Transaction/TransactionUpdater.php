@@ -32,6 +32,9 @@ class TransactionUpdater
         }
 
         $transaction = DB::transaction(function () use ($transaction, $dto) {
+            Account::withoutGlobalScopes()->whereIn('id', [$transaction->account_id, $dto->accountId])->orderBy('id')->lockForUpdate()->get();
+            $persisted = Transaction::withoutGlobalScopes()->whereKey($transaction->id)->lockForUpdate()->firstOrFail();
+            $transaction->category_id = $persisted->category_id;
             $this->syncCoveredPayerRecoveryTransaction->deleteExisting($transaction);
             $transaction->ledgerEntries()->delete();
             $this->applyBaseData($transaction, $dto);
@@ -43,7 +46,7 @@ class TransactionUpdater
             $this->syncCoveredPayerRecoveryTransaction->execute($transaction);
 
             return $transaction;
-        });
+        }, 3);
 
         $this->processTransactionSideEffects->execute($transaction, Action::Updated);
 
@@ -57,6 +60,11 @@ class TransactionUpdater
         $transaction->concept = $dto->concept;
         $transaction->amount = $dto->amount;
         $transaction->percentage = 100.0;
+        $categoryId = $dto->categoryProvided ? $dto->categoryId : $transaction->category_id;
+        if (! $dto->categoryProvided && $transaction->account_id !== $dto->accountId) {
+            $categoryId = null;
+        }
+        $transaction->category_id = app(\App\Services\Categories\ResolveTransactionCategory::class)->execute($dto->accountId, $categoryId, $transaction->user_id ?? $this->auth->id());
         $transaction->account_id = $dto->accountId;
         $transaction->paid_by_user_id = $this->paidByUserId($dto);
         $transaction->custodian_user_id = $this->custodianUserId($dto);

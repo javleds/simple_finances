@@ -35,7 +35,7 @@ class AccountTransactionController extends ApiController
         $this->ensureAccountMember($account);
 
         $query = $account->transactions()
-            ->with(['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'])
+            ->with(['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'])
             ->whereNull('legacy_migrated_at')
             ->orderByDesc('scheduled_at')
             ->orderByDesc('created_at')
@@ -93,7 +93,7 @@ class AccountTransactionController extends ApiController
 
         return $this->respondModel(
             $transaction->fresh(),
-            ['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
+            ['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
             201,
             $this->transactionAccountMeta($account->id),
         );
@@ -103,7 +103,7 @@ class AccountTransactionController extends ApiController
     {
         $this->ensureAccountTransaction($account, $transaction);
 
-        return $this->respondModel($transaction, ['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user']);
+        return $this->respondModel($transaction, ['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user']);
     }
 
     public function update(
@@ -129,7 +129,7 @@ class AccountTransactionController extends ApiController
 
         return $this->respondModel(
             $transaction->fresh(),
-            ['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
+            ['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
             meta: $this->transactionAccountMeta($transaction->account_id, $previousAccountId),
         );
     }
@@ -195,7 +195,7 @@ class AccountTransactionController extends ApiController
         }
 
         return Transaction::query()
-            ->with(['account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'allocations.user'])
+            ->with(['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'allocations.user'])
             ->where('id', $transaction->id)
             ->orWhere(function ($query) use ($transaction): void {
                 $query

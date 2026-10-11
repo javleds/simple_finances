@@ -62,12 +62,14 @@ class AccountUserController extends ApiController
 
         $user = User::withoutGlobalScopes()->findOrFail($request->integer('user_id'));
 
-        $account->users()->syncWithoutDetaching([
-            $user->id => [
-                'percentage' => 0.0,
-            ],
-        ]);
-        $updateAccountUserPercentage->execute($account, $user->id, $request->float('percentage'));
+        \Illuminate\Support\Facades\DB::transaction(function () use ($account, $user, $request, $updateAccountUserPercentage): void {
+            Account::withoutGlobalScopes()->whereKey($account->id)->lockForUpdate()->firstOrFail();
+            if ($user->id !== $account->user_id) {
+                app(\App\Services\Categories\ConvertAccountCategoryCatalog::class)->execute($account);
+            }
+            $account->users()->syncWithoutDetaching([$user->id => ['percentage' => 0.0]]);
+            $updateAccountUserPercentage->execute($account, $user->id, $request->float('percentage'));
+        });
 
         return $this->respondModel(
             $account->users()->withPivot('percentage')->findOrFail($user->id),
