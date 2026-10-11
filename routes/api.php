@@ -200,6 +200,13 @@ Route::middleware('api.auth')->group(function (): void {
     Route::put('telegram-verification-codes/{telegramVerificationCode}', [TelegramVerificationCodeController::class, 'update']);
     Route::delete('telegram-verification-codes/{telegramVerificationCode}', [TelegramVerificationCodeController::class, 'delete']);
 
+    Route::get('transaction-attachments/config', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'config']);
+    Route::get('transactions/{transaction}/attachments', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'index']);
+    Route::post('transactions/{transaction}/attachments', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'store']);
+    Route::get('transactions/{transaction}/attachments/{attachment}/download', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'download']);
+    Route::post('transactions/{transaction}/attachments/{attachment}/retry', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'retry']);
+    Route::delete('transactions/{transaction}/attachments/{attachment}', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'delete']);
+
     Route::get('transactions', [TransactionController::class, 'index']);
     Route::post('transactions', [TransactionController::class, 'store']);
     Route::get('transactions/{transaction}', [TransactionController::class, 'show']);

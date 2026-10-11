@@ -26,6 +26,10 @@ abstract class ApiController extends Controller
             $model->loadMissing($relations);
         }
 
+        if ($model instanceof \App\Models\Transaction) {
+            $model->loadCount('attachments');
+        }
+
         $payload = [
             'data' => $model,
         ];

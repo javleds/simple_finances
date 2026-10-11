@@ -41,6 +41,11 @@ class Transaction extends Model
         ];
     }
 
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(TransactionAttachment::class)->whereNull('deleted_at');
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);

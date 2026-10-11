@@ -15,6 +15,7 @@ class BuildTransactionFacilityQuery
     {
         $query = $this->ownedTransactionsForUser
             ->query($userId)
+            ->withCount('attachments')
             ->with(['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'])
             ->whereNull('legacy_migrated_at')
             ->whereNull('parent_transaction_id')

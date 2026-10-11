@@ -35,6 +35,7 @@ class AccountTransactionController extends ApiController
         $this->ensureAccountMember($account);
 
         $query = $account->transactions()
+            ->withCount('attachments')
             ->with(['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'])
             ->whereNull('legacy_migrated_at')
             ->orderByDesc('scheduled_at')
@@ -195,6 +196,7 @@ class AccountTransactionController extends ApiController
         }
 
         return Transaction::query()
+            ->withCount('attachments')
             ->with(['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'allocations.user'])
             ->where('id', $transaction->id)
             ->orWhere(function ($query) use ($transaction): void {

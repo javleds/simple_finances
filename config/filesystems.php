@@ -30,6 +30,13 @@ return [
 
     'disks' => [
 
+        'transaction_attachments' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/transaction-attachments'),
+            'visibility' => 'private',
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app'),
