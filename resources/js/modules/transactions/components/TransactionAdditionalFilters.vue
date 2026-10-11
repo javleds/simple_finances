@@ -33,7 +33,7 @@ const attachmentOptions = [
 ];
 </script>
 <template>
-    <div class="space-y-4">
+    <div class="grid gap-6">
         <AppText v-if="query.isPending.value" size="sm" role="status">Cargando categorías…</AppText>
         <div v-if="query.isError.value" class="space-y-2">
             <AppText size="sm" role="alert"

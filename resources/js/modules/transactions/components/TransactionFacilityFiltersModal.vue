@@ -73,7 +73,7 @@ function applyDraft(): void {
         @clear="resetDraft"
         @close="emit('close')"
     >
-        <div class="space-y-5">
+        <div class="grid gap-6">
             <fieldset class="m-0 min-w-0 border-0 p-0">
                 <legend class="mb-3 text-sm font-semibold text-(--app-color-text)">Periodo</legend>
                 <div class="grid gap-4 sm:grid-cols-2">

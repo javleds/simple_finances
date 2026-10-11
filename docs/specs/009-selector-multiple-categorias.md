@@ -4,7 +4,7 @@
 El filtro de categorías ocupa demasiado espacio con casillas. Sustituirlo por un selector múltiple con búsqueda en ambos listados.
 
 ## Alcance y comportamiento esperado
-Conservar selección múltiple, «Sin categoría», borradores, límite de 100 categorías, etiquetas y URL. Mostrar hasta dos nombres y resumir selecciones adicionales con un contador; permitir limpiar la selección.
+Conservar selección múltiple, «Sin categoría», borradores, límite de 100 categorías, etiquetas y URL. Mostrar hasta dos nombres y resumir selecciones adicionales con un contador; permitir limpiar la selección. Mantener 24 px entre grupos de filtros y 8 px entre etiqueta y control, con etiquetas de altura consistente.
 
 ## Fuera de alcance
 Cambios de backend, contratos, persistencia, permisos o filtros de comprobantes.

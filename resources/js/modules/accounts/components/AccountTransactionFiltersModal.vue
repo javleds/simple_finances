@@ -63,7 +63,7 @@ function apply(): void {
         "
         @close="emit('close')"
     >
-        <div class="space-y-5">
+        <div class="grid gap-6">
             <AppFilterOptions v-model="draft" label="Tipo" :options="props.typeOptions" />
             <AppText v-if="categoryError" size="sm" role="alert">{{ categoryError }}</AppText>
             <TransactionAdditionalFilters

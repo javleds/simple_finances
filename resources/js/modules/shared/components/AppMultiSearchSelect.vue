@@ -26,11 +26,11 @@ function updateSelection(value: unknown): void {
 </script>
 
 <template>
-    <div class="min-w-0 space-y-2">
+    <div class="grid min-w-0 gap-2">
         <label
             :id="`${props.id}-label`"
             :for="props.id"
-            class="text-sm font-medium text-(--app-color-label)"
+            class="flex min-h-5 items-center text-sm font-medium text-(--app-color-label)"
         >
             {{ props.label }}
         </label>
