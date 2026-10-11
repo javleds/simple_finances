@@ -34,6 +34,7 @@ export type Transaction = {
   accountId: string;
   accountName: string | null;
   attachmentsCount?: number;
+  usesSharedAccountRules?: boolean | null;
   categoryName?: string | null;
   categoryId?: string | null;
   concept: string;

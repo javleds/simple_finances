@@ -10,12 +10,15 @@ import type { Transaction, TransactionFormValues, TransactionWritePayload } from
 
 type UseTransactionFormOptions = {
     initialValues?: Partial<Transaction> | null | (() => Partial<Transaction> | null | undefined);
-    lockedAccountId?: string | null;
+    lockedAccountId?: string | null | (() => string | null | undefined);
 };
 
 export function useTransactionForm(options: UseTransactionFormOptions = {}) {
     const resolvedInitialValues = computed(() =>
-        createDefaultTransactionFormValues(toValue(options.initialValues), options.lockedAccountId),
+        createDefaultTransactionFormValues(
+            toValue(options.initialValues),
+            toValue(options.lockedAccountId),
+        ),
     );
 
     const { errors, handleSubmit, isSubmitting, meta, resetForm, setFieldValue, values } =

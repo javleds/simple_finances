@@ -224,6 +224,7 @@ export const transactionApiSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => value ?? null),
+  uses_shared_account_rules: z.boolean().nullable().optional().transform((value) => value ?? null),
   attachments_count: z.number().optional().default(0),
   category_id: z.union([z.string(), z.number()]).nullable().optional().transform(parseEntityId),
   category: z.object({ name: z.string() }).nullable().optional(),
@@ -323,7 +324,7 @@ export function createDefaultTransactionFormValues(
       transaction?.amount === null || transaction?.amount === undefined
         ? ''
         : String(transaction.amount),
-    accountId: transaction?.accountId ?? lockedAccountId ?? null,
+    accountId: lockedAccountId ?? transaction?.accountId ?? null,
     paidByUserId: transaction?.paidByUserId ?? transaction?.creatorId ?? null,
     custodianUserId: transaction?.custodianUserId ?? transaction?.creatorId ?? null,
     paymentSource: transaction?.paymentSource ?? 'account_fund',
@@ -343,6 +344,7 @@ export function mapTransactionApiToDomain(
     accountName: payload.account?.name ?? null,
     categoryId: payload.category_id,
     attachmentsCount: payload.attachments_count,
+    usesSharedAccountRules: payload.uses_shared_account_rules,
     categoryName: payload.category?.name ?? null,
     concept: payload.concept,
     amount: payload.amount,

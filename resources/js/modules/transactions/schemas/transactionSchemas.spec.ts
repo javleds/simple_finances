@@ -41,6 +41,7 @@ describe('transaction schemas', () => {
       accountId: '20',
       accountName: 'Cuenta principal',
       attachmentsCount: 0,
+      usesSharedAccountRules: null,
       categoryId: null,
       categoryName: null,
       concept: 'Compra mensual',
@@ -149,4 +150,9 @@ describe('transaction schemas', () => {
       }).financialGoalId,
     ).toBeNull();
   });
+});
+
+it.each([true, false, null, undefined])('maps the read-only financial snapshot %s without inferring it', (snapshot) => {
+  const parsed = transactionApiSchema.parse({ ...baseTransactionPayload, uses_shared_account_rules: snapshot });
+  expect(mapTransactionApiToDomain(parsed).usesSharedAccountRules).toBe(snapshot ?? null);
 });

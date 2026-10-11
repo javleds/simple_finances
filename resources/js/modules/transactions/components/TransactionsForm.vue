@@ -97,19 +97,70 @@ const {
     submitForm,
 } = useTransactionForm({
     initialValues: () => props.initialValues,
-    lockedAccountId: props.lockedAccountId,
+    lockedAccountId: () => props.lockedAccountId,
 });
 
-const hasSharedAccount = computed(() => props.accountUsers.length > 1);
+const isEditingOriginalAccount = computed(
+    () =>
+        Boolean(props.initialValues?.id) &&
+        accountId.value === (props.initialValues?.accountId ?? props.lockedAccountId),
+);
+const preservesLegacyFinancialChoices = computed(
+    () => isEditingOriginalAccount.value && props.initialValues?.usesSharedAccountRules == null,
+);
+const hasSharedAccount = computed(() => {
+    const snapshot = props.initialValues?.usesSharedAccountRules;
+    if (isEditingOriginalAccount.value && typeof snapshot === 'boolean') return snapshot;
+    return props.accountUsers.length > 1;
+});
 const showUserSplitToggle = computed(() => isExpense.value && hasSharedAccount.value);
 const showUserSplitInputs = computed(() => showUserSplitToggle.value && splitBetweenUsers.value);
-const accountUserOptions = computed(() =>
-    props.accountUsers.map((user) => ({
+function participantOptions(
+    role: 'payer' | 'custodian',
+): Array<{ value: string; label: string; description: string }> {
+    const options = props.accountUsers.map((user) => ({
         value: user.id,
         label: user.name,
         description: user.email,
-    })),
-);
+    }));
+    if (!isEditingOriginalAccount.value) return options;
+    const id =
+        role === 'payer' ? props.initialValues?.paidByUserId : props.initialValues?.custodianUserId;
+    const name =
+        role === 'payer'
+            ? props.initialValues?.paidByUserName
+            : props.initialValues?.custodianUserName;
+    if (id && !options.some((option) => option.value === id))
+        options.push({
+            value: id,
+            label: name ?? 'Miembro anterior',
+            description: 'Participó en este movimiento',
+        });
+    return options;
+}
+const payerOptions = computed(() => participantOptions('payer'));
+const custodianOptions = computed(() => participantOptions('custodian'));
+const splitUsers = computed(() => {
+    const users: Array<{ id: string; name: string }> = props.accountUsers.map((user) => ({
+        id: user.id,
+        name: user.name,
+    }));
+    if (!isEditingOriginalAccount.value) return users;
+    const previous = props.initialValues;
+    for (const id of Object.keys(previous?.userPayments ?? {})) {
+        if (users.some((user) => user.id === id)) continue;
+        const name =
+            id === previous?.paidByUserId
+                ? previous.paidByUserName
+                : id === previous?.custodianUserId
+                  ? previous.custodianUserName
+                  : id === previous?.creatorId
+                    ? previous.creatorName
+                    : null;
+        users.push({ id, name: name ?? 'Miembro anterior' });
+    }
+    return users;
+});
 const hasNoAccountFunds = computed(
     () => hasSharedAccount.value && props.accountBalance !== null && props.accountBalance <= 0,
 );
@@ -217,7 +268,13 @@ watch(
 );
 
 watchEffect(() => {
-    if (props.accountUsers.length === 1) {
+    if (preservesLegacyFinancialChoices.value) return;
+    if (isEditingOriginalAccount.value && props.initialValues?.usesSharedAccountRules === false) {
+        if (paymentSource.value !== 'account_fund') paymentSource.value = 'account_fund';
+        if (splitBetweenUsers.value) splitBetweenUsers.value = false;
+        return;
+    }
+    if (!hasSharedAccount.value && props.accountUsers.length === 1) {
         const ownerId = props.accountUsers[0]!.id;
         if (paidByUserId.value !== ownerId) paidByUserId.value = ownerId;
         if (custodianUserId.value !== ownerId) custodianUserId.value = ownerId;
@@ -232,7 +289,7 @@ watchEffect(() => {
 });
 
 watch(showUserSplitToggle, (isVisible) => {
-    if (!isVisible) {
+    if (!isVisible && !preservesLegacyFinancialChoices.value) {
         splitBetweenUsers.value = false;
     }
 });
@@ -283,6 +340,16 @@ async function handleSubmit(): Promise<void> {
             </div>
         </section>
 
+        <AppText
+            v-if="
+                isEditingOriginalAccount &&
+                props.initialValues?.usesSharedAccountRules === true &&
+                props.accountUsers.length <= 1
+            "
+            size="sm"
+            tone="subtle"
+            >Este movimiento conserva las reglas de cuando la cuenta era compartida.</AppText
+        >
         <section :inert="attachments.transactionId ? true : undefined" class="space-y-4">
             <AppInput
                 id="transaction-concept"
@@ -362,7 +429,7 @@ async function handleSubmit(): Promise<void> {
                     id="transaction-paid-by"
                     v-model="paidByUserId"
                     label="Pagado por"
-                    :options="accountUserOptions"
+                    :options="payerOptions"
                     placeholder="Selecciona usuario"
                     search-placeholder="Buscar usuario"
                     empty-message="No hay usuarios disponibles."
@@ -421,7 +488,7 @@ async function handleSubmit(): Promise<void> {
 
                 <AppPercentageSplitEditor
                     v-if="showUserSplitInputs"
-                    :users="props.accountUsers"
+                    :users="splitUsers"
                     :model-value="userPayments"
                     @update:model-value="
                         touchUserPayments();
@@ -445,7 +512,7 @@ async function handleSubmit(): Promise<void> {
                 id="transaction-custodian"
                 v-model="custodianUserId"
                 label="¿Quién recibió el dinero?"
-                :options="accountUserOptions"
+                :options="custodianOptions"
                 placeholder="Selecciona usuario"
                 search-placeholder="Buscar usuario"
                 empty-message="No hay usuarios disponibles."
