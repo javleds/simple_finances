@@ -1,8 +1,9 @@
-import { useMutation } from '@tanstack/vue-query';
+import { useMutation, useQueryClient } from '@tanstack/vue-query';
 import { computed, ref, type Ref } from 'vue';
 
 import { createAccountInvitesRepository } from '@/modules/accounts/repositories/accountInvitesRepository';
 import type { AccountInvite } from '@/modules/accounts/schemas/accountInviteSchemas';
+import { personalMoneyQueryKeys } from '@/modules/personal-money/composables/usePersonalMoney';
 import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 
 export type PendingInvitationAction = 'accepted' | 'declined';
@@ -18,6 +19,7 @@ type UseFacilityInvitationActionsOptions = {
 const accountInvitesRepository = createAccountInvitesRepository();
 
 export function useFacilityInvitationActions(options: UseFacilityInvitationActionsOptions) {
+  const queryClient = useQueryClient();
   const saveError = ref<string | null>(null);
   const selectedInvitationId = ref<string | null>(null);
   const pendingAction = ref<PendingInvitationAction | null>(null);
@@ -96,6 +98,7 @@ export function useFacilityInvitationActions(options: UseFacilityInvitationActio
         updatedInvitation,
       );
 
+      void queryClient.invalidateQueries({ queryKey: personalMoneyQueryKeys.all });
       closeInvitationAction();
     } catch (error) {
       saveError.value = resolveApiErrorMessage(error, 'No fue posible responder la invitación.');

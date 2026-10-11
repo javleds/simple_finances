@@ -9,6 +9,7 @@ use App\Enums\TransactionPaymentSource;
 use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\Transaction;
+use App\Services\PersonalMoney\ResolvePersonalMoneySource;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Support\Carbon;
@@ -23,6 +24,7 @@ class TransactionCreator
         private ResolveOutcomeUserPayments $resolveOutcomeUserPayments,
         private SyncCoveredPayerRecoveryTransaction $syncCoveredPayerRecoveryTransaction,
         private ProcessTransactionSideEffects $processTransactionSideEffects,
+        private ResolvePersonalMoneySource $resolvePersonalMoneySource,
     ) {
     }
 
@@ -39,6 +41,12 @@ class TransactionCreator
             $this->syncAccountMemberLedger->execute($transaction);
             $transaction->load('paidByUser');
             $this->syncCoveredPayerRecoveryTransaction->execute($transaction);
+
+            if ($dto->cashSource !== null) {
+                $this->resolvePersonalMoneySource->execute(
+                    (int) $this->auth->id(), 'transaction', $transaction->id, $dto->cashSource,
+                );
+            }
 
             return $transaction;
         });

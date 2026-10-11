@@ -1,3 +1,4 @@
+import { personalMoneyQueryKeys } from '@/modules/personal-money/composables/usePersonalMoney';
 import { useMutation, useQueryClient } from '@tanstack/vue-query';
 import { computed, ref } from 'vue';
 
@@ -27,6 +28,7 @@ export function useAccountMemberTransfers() {
       updateAccountCache(payload.accountId, result);
       void queryClient.invalidateQueries({ queryKey: accountQueryKeys.all });
       void queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: personalMoneyQueryKeys.all });
       void queryClient.invalidateQueries({ queryKey: transactionFacilityQueryKeys.all });
     },
   });

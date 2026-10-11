@@ -80,6 +80,7 @@ export type TransactionFormValues = {
 };
 
 export type TransactionWritePayload = {
+  cashSource?: 'personal' | 'external' | 'pending';
   attachments?: AttachmentDraft;
   type: TransactionType;
   status: 'completed';

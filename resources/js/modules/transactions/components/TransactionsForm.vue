@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Message from 'primevue/message';
+import { usePersonalMoney } from '@/modules/personal-money/composables/usePersonalMoney';
+import type { PersonalMoneyResolution } from '@/modules/personal-money/types';
 import TransactionCategorySelect from './TransactionCategorySelect.vue';
 import TransactionAttachments from './TransactionAttachments.vue';
 import Checkbox from 'primevue/checkbox';
@@ -173,6 +175,30 @@ const paymentSourceOptions = computed(() => [
     },
     { value: 'member_out_of_pocket' as const, label: 'Dinero personal' },
 ]);
+const { state: personalMoney } = usePersonalMoney();
+const cashSource = ref<PersonalMoneyResolution | null>(null);
+const showCashSource = computed(
+    () =>
+        personalMoney.value?.settings?.enabled === true &&
+        personalMoney.value.account_available !== false &&
+        personalMoney.value.available_balance !== null &&
+        hasSharedAccount.value &&
+        (isIncome.value ||
+            (paymentSource.value === 'member_out_of_pocket' &&
+                paidByUserId.value === props.currentUserId)),
+);
+const cashSourceOptions = [
+    { value: 'personal', label: 'Mi dinero disponible' },
+    { value: 'external', label: 'Origen externo' },
+    { value: 'pending', label: 'Revisar después' },
+];
+watch([() => props.initialValues, accountId, type, paidByUserId, paymentSource], () => {
+    cashSource.value = null;
+});
+function updateCashSource(value: string | null): void {
+    cashSource.value =
+        value === 'personal' || value === 'external' || value === 'pending' ? value : null;
+}
 const createAndAddAnother = ref(false);
 const categoryBusy = ref(false);
 const attachments = reactive<AttachmentDraft>({ files: [], transactionId: null });
@@ -312,6 +338,7 @@ async function handleSubmit(): Promise<void> {
         keepOpen: props.enableCreateAndAddAnother && createAndAddAnother.value,
     };
 
+    if (showCashSource.value && cashSource.value) payload.cashSource = cashSource.value;
     payload.attachments = attachments;
     emit('submit', payload);
     emit('submitWithOptions', payload, options);
@@ -543,6 +570,26 @@ async function handleSubmit(): Promise<void> {
                 @blur="touchFinancialGoal"
             />
         </section>
+
+        <div
+            v-if="showCashSource"
+            :inert="attachments.transactionId ? true : undefined"
+            class="space-y-2"
+        >
+            <AppSearchSelect
+                id="transaction-cash-source"
+                label="Origen de tu dinero (privado)"
+                :model-value="cashSource"
+                :options="cashSourceOptions"
+                placeholder="Conservar origen o revisar después"
+                :disabled="props.saving"
+                @update:model-value="updateCashSource"
+            />
+            <AppText
+                >Elige si este movimiento afecta tu disponible personal. Solo tú puedes ver esta
+                elección.</AppText
+            >
+        </div>
 
         <section
             v-if="props.enableCreateAndAddAnother"

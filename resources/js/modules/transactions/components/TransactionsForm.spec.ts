@@ -1,5 +1,17 @@
 import { flushPromises, shallowMount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { ref } from 'vue';
+const personalMoney = ref<
+    | {
+          settings: { enabled: boolean };
+          account_available: boolean;
+          available_balance?: number | null;
+      }
+    | undefined
+>();
+vi.mock('@/modules/personal-money/composables/usePersonalMoney', () => ({
+    usePersonalMoney: () => ({ state: personalMoney }),
+}));
 import TransactionsForm from './TransactionsForm.vue';
 
 const members = [
@@ -279,4 +291,84 @@ it('keeps historical allocations through the real split editor and excludes unre
         userPayments: { '1': 40, '2': 60 },
     });
     wrapper.unmount();
+});
+
+describe('private cash source choice', () => {
+    it('omits the source on edit until the user explicitly chooses it', async () => {
+        personalMoney.value = { settings: { enabled: true }, account_available: true };
+        const wrapper = render({
+            initialValues: {
+                id: '4',
+                concept: 'Compra',
+                amount: 20,
+                accountId: '10',
+                paymentSource: 'member_out_of_pocket',
+                paidByUserId: '2',
+                usesSharedAccountRules: true,
+            },
+        });
+        expect(wrapper.find('#transaction-cash-source').exists()).toBe(true);
+        expect(await submit(wrapper)).not.toHaveProperty('cashSource');
+        wrapper
+            .findAllComponents({ name: 'AppSearchSelect' })
+            .find((item) => item.attributes('id') === 'transaction-cash-source')!
+            .vm.$emit('update:modelValue', 'personal');
+        await flushPromises();
+        await submit(wrapper);
+        expect(wrapper.emitted('submit')?.at(-1)?.[0]).toMatchObject({ cashSource: 'personal' });
+        wrapper.unmount();
+        personalMoney.value = undefined;
+    });
+    it('hides private source choices when another member pays', async () => {
+        personalMoney.value = { settings: { enabled: true }, account_available: true };
+        const wrapper = render({
+            initialValues: {
+                concept: 'Compra',
+                amount: 20,
+                paymentSource: 'member_out_of_pocket',
+                paidByUserId: '1',
+            },
+        });
+        expect(wrapper.find('#transaction-cash-source').exists()).toBe(false);
+        expect(await submit(wrapper)).not.toHaveProperty('cashSource');
+        wrapper.unmount();
+        personalMoney.value = undefined;
+    });
+    it('hides the private source selector when the available balance cannot be calculated', () => {
+        personalMoney.value = {
+            settings: { enabled: true },
+            account_available: true,
+            available_balance: null,
+        };
+        const wrapper = render({
+            initialValues: {
+                concept: 'Compra',
+                amount: 20,
+                paymentSource: 'member_out_of_pocket',
+                paidByUserId: '2',
+            },
+        });
+        expect(wrapper.find('#transaction-cash-source').exists()).toBe(false);
+        wrapper.unmount();
+        personalMoney.value = undefined;
+    });
+    it('allows a shared income contribution to explicitly use personal money', async () => {
+        personalMoney.value = {
+            settings: { enabled: true },
+            account_available: true,
+            available_balance: 100,
+        };
+        const wrapper = render({
+            initialValues: { type: 'income', concept: 'Aportación', amount: 20 },
+        });
+        expect(wrapper.find('#transaction-cash-source').exists()).toBe(true);
+        wrapper
+            .findAllComponents({ name: 'AppSearchSelect' })
+            .find((item) => item.attributes('id') === 'transaction-cash-source')!
+            .vm.$emit('update:modelValue', 'personal');
+        await flushPromises();
+        expect(await submit(wrapper)).toMatchObject({ type: 'income', cashSource: 'personal' });
+        wrapper.unmount();
+        personalMoney.value = undefined;
+    });
 });

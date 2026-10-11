@@ -8,6 +8,7 @@ use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\AccountMemberLedgerEntry;
 use App\Models\Transaction;
+use App\Services\PersonalMoney\CapturePersonalMoneyReimbursements;
 use App\Services\Transaction\SyncAccountMemberLedger;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
@@ -20,6 +21,7 @@ class RegisterAccountMemberTransfer
     public function __construct(
         private readonly RecalculateAccountBalance $recalculateAccountBalance,
         private readonly SyncAccountMemberLedger $syncAccountMemberLedger,
+        private readonly CapturePersonalMoneyReimbursements $capturePersonalMoneyReimbursements,
     ) {}
 
     public function execute(Account $account, array $payload): array
@@ -83,6 +85,8 @@ class RegisterAccountMemberTransfer
                     occurredAt: $occurredAt,
                 );
             }
+
+            $this->capturePersonalMoneyReimbursements->execute($account, $payload, $entries);
 
             return $entries;
         });

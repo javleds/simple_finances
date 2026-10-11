@@ -14,6 +14,7 @@ class AccountTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'cash_source' => ['sometimes', 'in:personal,external,pending'],
             'uses_shared_account_rules' => ['prohibited'],
             'type' => ['required', 'in:income,outcome'],
             'status' => ['required', 'in:completed'],

@@ -1,3 +1,5 @@
+import { useQueryClient } from '@tanstack/vue-query';
+import { personalMoneyQueryKeys } from '@/modules/personal-money/composables/usePersonalMoney';
 import { computed, ref } from 'vue';
 
 import { usePaginatedCollection } from '@/modules/shared/composables/usePaginatedCollection';
@@ -9,6 +11,7 @@ import type { Account, AccountListFilters, AccountWritePayload } from '../types'
 const accountsRepository = createAccountsRepository();
 
 export function useAccountsCrud() {
+  const queryClient = useQueryClient();
   const accountsState = usePaginatedCollection<Account, [AccountListFilters | undefined]>({
     defaultPerPage: 20,
     loadPage: (options, filters) => accountsRepository.list({ ...options, filters }),
@@ -43,6 +46,7 @@ export function useAccountsCrud() {
     try {
       const account = await accountsRepository.create(payload);
       accountsState.prependItem(account);
+      void queryClient.invalidateQueries({ queryKey: personalMoneyQueryKeys.all });
       return true;
     } catch (error) {
       saveError.value = resolveApiErrorMessage(error, 'No fue posible crear la cuenta.');
@@ -59,6 +63,7 @@ export function useAccountsCrud() {
     try {
       const updatedAccount = await accountsRepository.update(accountId, payload);
       accountsState.replaceItem((account) => account.id === accountId, updatedAccount);
+      void queryClient.invalidateQueries({ queryKey: personalMoneyQueryKeys.all });
       return true;
     } catch (error) {
       saveError.value = resolveApiErrorMessage(error, 'No fue posible actualizar la cuenta.');
@@ -75,6 +80,7 @@ export function useAccountsCrud() {
     try {
       await accountsRepository.remove(accountId);
       accountsState.removeItem((account) => account.id === accountId);
+      void queryClient.invalidateQueries({ queryKey: personalMoneyQueryKeys.all });
       return true;
     } catch (error) {
       deleteError.value = resolveApiErrorMessage(error, 'No fue posible eliminar la cuenta.');
@@ -91,6 +97,7 @@ export function useAccountsCrud() {
     try {
       await accountsRepository.removeUser(accountId, userId);
       accountsState.removeItem((account) => account.id === accountId);
+      void queryClient.invalidateQueries({ queryKey: personalMoneyQueryKeys.all });
       return true;
     } catch (error) {
       deleteError.value = resolveApiErrorMessage(error, 'No fue posible salir de la cuenta.');

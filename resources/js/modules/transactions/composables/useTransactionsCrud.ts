@@ -1,3 +1,4 @@
+import { personalMoneyQueryKeys } from '@/modules/personal-money/composables/usePersonalMoney';
 import { useQueryClient } from '@tanstack/vue-query';
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 
@@ -184,7 +185,10 @@ export function useTransactionsCrud() {
             if (accountId) {
                 syncAccountState(accountId, result.meta);
             }
-            if (!accountId) void queryClient.invalidateQueries({ queryKey: categoryQueryKeys.all });
+            if (!accountId) {
+                void queryClient.invalidateQueries({ queryKey: categoryQueryKeys.all });
+                void queryClient.invalidateQueries({ queryKey: personalMoneyQueryKeys.all });
+            }
             return result;
         } catch (error) {
             deleteError.value = resolveApiErrorMessage(
@@ -211,6 +215,7 @@ export function useTransactionsCrud() {
         void queryClient.invalidateQueries({ queryKey: categoryQueryKeys.all });
         void queryClient.invalidateQueries({ queryKey: accountQueryKeys.all });
         void queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all });
+        void queryClient.invalidateQueries({ queryKey: personalMoneyQueryKeys.all });
         void queryClient.invalidateQueries({ queryKey: transactionFacilityQueryKeys.all });
     }
 

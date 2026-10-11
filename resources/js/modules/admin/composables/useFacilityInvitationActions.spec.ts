@@ -10,6 +10,7 @@ vi.mock('@/modules/accounts/repositories/accountInvitesRepository', () => ({
   createAccountInvitesRepository: () => ({ respond }),
 }));
 vi.mock('@tanstack/vue-query', () => ({
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   useMutation: (options: { mutationFn: (payload: unknown) => Promise<unknown> }) => ({
     mutateAsync: options.mutationFn,
     isPending: ref(false),

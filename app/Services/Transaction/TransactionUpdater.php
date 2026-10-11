@@ -10,6 +10,8 @@ use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\Transaction;
 use App\Services\Accounts\RecalculateAccountBalance;
+use App\Services\PersonalMoney\ResolvePersonalMoneySource;
+use App\Services\PersonalMoney\SyncPersonalMoneyTransactionLinks;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Auth\Guard;
@@ -24,6 +26,8 @@ class TransactionUpdater
         private ResolveOutcomeUserPayments $resolveOutcomeUserPayments,
         private SyncCoveredPayerRecoveryTransaction $syncCoveredPayerRecoveryTransaction,
         private ProcessTransactionSideEffects $processTransactionSideEffects,
+        private ResolvePersonalMoneySource $resolvePersonalMoneySource,
+        private SyncPersonalMoneyTransactionLinks $syncPersonalMoneyTransactionLinks,
         private RecalculateAccountBalance $recalculateAccountBalance,
     ) {
     }
@@ -40,15 +44,23 @@ class TransactionUpdater
             $persisted = Transaction::withoutGlobalScopes()->whereKey($transaction->id)->lockForUpdate()->firstOrFail();
             $transaction = $persisted;
             $previousAccountId = $persisted->account_id;
+            $previousCashTransaction = clone $persisted;
             $this->syncCoveredPayerRecoveryTransaction->deleteExisting($transaction);
             $transaction->ledgerEntries()->delete();
             $this->applyBaseData($transaction, $dto);
             $transaction->save();
+            $this->syncPersonalMoneyTransactionLinks->execute($transaction, $previousCashTransaction);
             $this->syncTransactionAllocations->execute($transaction, $this->userPayments($transaction, $dto));
             $transaction->load('allocations');
             $this->syncAccountMemberLedger->execute($transaction);
             $transaction->load('paidByUser');
             $this->syncCoveredPayerRecoveryTransaction->execute($transaction);
+
+            if ($dto->cashSource !== null) {
+                $this->resolvePersonalMoneySource->execute(
+                    (int) auth()->id(), 'transaction', $transaction->id, $dto->cashSource,
+                );
+            }
 
             return $transaction;
         }, 3);

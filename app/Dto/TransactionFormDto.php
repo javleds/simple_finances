@@ -25,6 +25,7 @@ class TransactionFormDto
         public ?int $financialGoalId,
         public ?int $categoryId = null,
         public bool $categoryProvided = false,
+        public ?string $cashSource = null,
     ) {}
 
     public static function fromFormArray(array $data): self
@@ -48,6 +49,7 @@ class TransactionFormDto
             financialGoalId: $data['financial_goal_id'] ?? null,
             categoryId: isset($data['category_id']) ? (int) $data['category_id'] : null,
             categoryProvided: array_key_exists('category_id', $data),
+            cashSource: $data['cash_source'] ?? null,
         );
     }
 

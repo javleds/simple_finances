@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Message from 'primevue/message';
+import PersonalMoneyPanel from '@/modules/personal-money/components/PersonalMoneyPanel.vue';
 import { computed, ref } from 'vue';
 
 import DashboardBalanceSection from '@/modules/admin/components/DashboardBalanceSection.vue';
@@ -84,6 +85,8 @@ const filteredGraphAccounts = computed(() =>
         <Message v-if="loadError && hasDashboardData" severity="error">
             {{ loadError }}
         </Message>
+
+        <PersonalMoneyPanel class="order-1" />
 
         <DashboardSummaryCards class="order-2 lg:order-1" :summary="dashboard.accountsSummary" />
 

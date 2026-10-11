@@ -4,6 +4,7 @@ export function buildTransactionWritePayload(payload: TransactionWritePayload) {
   return {
     type: payload.type === 'expense' ? 'outcome' : 'income',
     status: 'completed',
+    ...(payload.cashSource !== undefined ? { cash_source: payload.cashSource } : {}),
     ...(payload.categoryId !== undefined ? { category_id: payload.categoryId } : {}),
     concept: payload.concept,
     amount: payload.amount,

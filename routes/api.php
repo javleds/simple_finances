@@ -75,6 +75,10 @@ Route::middleware('api.auth')->group(function (): void {
     Route::get('profile', [ProfileController::class, 'show']);
     Route::put('profile', [ProfileController::class, 'update']);
 
+    Route::get('personal-money', [\App\Http\Controllers\Api\PersonalMoneyController::class, 'index']);
+    Route::put('personal-money/settings', [\App\Http\Controllers\Api\PersonalMoneyController::class, 'settings']);
+    Route::put('personal-money/links', [\App\Http\Controllers\Api\PersonalMoneyController::class, 'resolve']);
+
     Route::get('dashboard/graph', [DashboardGraphController::class, 'index']);
     Route::get('dashboard/accounts', [DashboardAccountController::class, 'index']);
     Route::get('dashboard/subscriptions', [DashboardSubscriptionController::class, 'index']);

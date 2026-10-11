@@ -1,3 +1,5 @@
+import { useQueryClient } from '@tanstack/vue-query';
+import { personalMoneyQueryKeys } from '@/modules/personal-money/composables/usePersonalMoney';
 import { computed, ref, type Ref } from 'vue';
 
 import { createAccountsRepository } from '@/modules/accounts/repositories/accountsRepository';
@@ -9,6 +11,7 @@ const accountsRepository = createAccountsRepository();
 const defaultUsersPerPage = 20;
 
 export function useAccountUsersCrud(filters: Ref<AccountUsersListFilters>) {
+  const queryClient = useQueryClient();
   const usersState = usePaginatedCollection<AccountMember, [string]>({
     defaultPerPage: defaultUsersPerPage,
     loadPage: (options, accountId) =>
@@ -93,6 +96,7 @@ export function useAccountUsersCrud(filters: Ref<AccountUsersListFilters>) {
     try {
       await accountsRepository.removeUser(accountId, userId);
       usersState.removeItem((user) => user.id === userId);
+      void queryClient.invalidateQueries({ queryKey: personalMoneyQueryKeys.all });
       return true;
     } catch (error) {
       deleteError.value = resolveApiErrorMessage(error, 'No fue posible quitar al usuario.');
