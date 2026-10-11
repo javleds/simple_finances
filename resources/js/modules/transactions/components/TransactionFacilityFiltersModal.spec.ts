@@ -25,6 +25,7 @@ function render() {
         global: {
             stubs: {
                 AppModal: modalStub,
+                TransactionAdditionalFilters: true,
                 AppDatePicker: dateStub,
                 AppButton: { template: '<button><slot/></button>' },
             },
@@ -46,7 +47,14 @@ describe('transaction period filter drafts', () => {
         await wrapper.get('#transaction-facility-start-date').setValue('2026-01-05');
         await wrapper.get('form').trigger('submit');
         expect(wrapper.emitted('apply')).toEqual([
-            [{ startDate: '2026-01-05', endDate: '2026-01-31' }],
+            [
+                {
+                    startDate: '2026-01-05',
+                    endDate: '2026-01-31',
+                    categories: [],
+                    hasAttachments: null,
+                },
+            ],
         ]);
     });
 
@@ -66,11 +74,51 @@ describe('transaction period filter drafts', () => {
         const wrapper = render();
         await wrapper
             .findAll('button')
-            .find((button) => button.text() === 'Mes actual')!
+            .find((button) => button.text() === 'Limpiar')!
             .trigger('click');
         expect(wrapper.emitted('apply')).toBeUndefined();
         expect(wrapper.props('startDate')).toBe('2026-01-01');
         await wrapper.get('form').trigger('submit');
-        expect(wrapper.emitted('apply')).toEqual([[currentMonthRange()]]);
+        expect(wrapper.emitted('apply')).toEqual([
+            [{ ...currentMonthRange(), categories: [], hasAttachments: null }],
+        ]);
     });
+});
+
+it('keeps category and receipt changes in the draft until applying and resets them on reopen', async () => {
+    const wrapper = render();
+    await wrapper.setProps({ selectedCategories: ['2'], hasAttachments: false, open: false });
+    await wrapper.setProps({ open: true });
+    const additional = wrapper.getComponent({ name: 'TransactionAdditionalFilters' });
+    additional.vm.$emit('update:categories', ['3', 'uncategorized']);
+    additional.vm.$emit('update:hasAttachments', true);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.emitted('apply')).toBeUndefined();
+    await wrapper.setProps({ open: false });
+    await wrapper.setProps({ open: true });
+    expect(
+        wrapper.getComponent({ name: 'TransactionAdditionalFilters' }).props('categories'),
+    ).toEqual(['2']);
+    expect(
+        wrapper.getComponent({ name: 'TransactionAdditionalFilters' }).props('hasAttachments'),
+    ).toBe(false);
+    await wrapper.get('form').trigger('submit');
+    expect(wrapper.emitted('apply')?.[0]?.[0]).toMatchObject({
+        categories: ['2'],
+        hasAttachments: false,
+    });
+    wrapper.unmount();
+});
+
+it('blocks applying more than 100 categories with a visible explanation', async () => {
+    const wrapper = render();
+    wrapper.getComponent({ name: 'TransactionAdditionalFilters' }).vm.$emit(
+        'update:categories',
+        Array.from({ length: 101 }, (_, index) => String(index + 1)),
+    );
+    await wrapper.vm.$nextTick();
+    await wrapper.get('form').trigger('submit');
+    expect(wrapper.emitted('apply')).toBeUndefined();
+    expect(wrapper.text()).toContain('Selecciona como máximo 100 categorías');
+    wrapper.unmount();
 });

@@ -7,6 +7,9 @@ export const transactionFacilityQueryKeys = {
       ...this.all,
       {
         endDate: filters.endDate,
+        categoryIds: filters.categoryIds ?? [],
+        uncategorized: filters.uncategorized ?? false,
+        hasAttachments: filters.hasAttachments ?? null,
         perPage,
         search: filters.search ?? '',
         startDate: filters.startDate,

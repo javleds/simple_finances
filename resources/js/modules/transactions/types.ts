@@ -4,12 +4,18 @@ import type { PaginatedCollection } from '@/modules/shared/lib/pagination';
 export type TransactionType = 'income' | 'expense';
 export type TransactionStatus = 'pending' | 'completed';
 export type TransactionPaymentSource = 'account_fund' | 'member_out_of_pocket';
-export type TransactionListFilters = {
+export type TransactionAttachmentFilters = {
+  categoryIds?: string[];
+  uncategorized?: boolean;
+  hasAttachments?: boolean;
+};
+export type TransactionFilterCategory = { id: string; name: string; accountName: string | null };
+export type TransactionListFilters = TransactionAttachmentFilters & {
   search?: string;
   type?: TransactionType[];
 };
 
-export type TransactionFacilityFilters = {
+export type TransactionFacilityFilters = TransactionAttachmentFilters & {
   search?: string;
   startDate: string;
   endDate: string;

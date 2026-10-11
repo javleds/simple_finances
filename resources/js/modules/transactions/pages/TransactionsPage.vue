@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { additionalFilterChips } from '@/modules/transactions/lib/transactionAdditionalFilters';
+import { useTransactionFilterOptions } from '@/modules/transactions/composables/useTransactionFilterOptions';
 import Message from 'primevue/message';
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -19,19 +21,38 @@ import { currentMonthRange } from '@/modules/transactions/lib/transactionPeriod'
 
 const route = useRoute();
 const isFiltersModalOpen = ref(false);
-const { activeFilters, applyPeriod, endDate, resetPeriod, searchTerm, startDate, validationError } =
-    useTransactionFacilityFilters();
+const {
+    activeFilters,
+    applyPeriod,
+    endDate,
+    resetPeriod,
+    searchTerm,
+    startDate,
+    validationError,
+    selectedCategories,
+    hasAttachments,
+} = useTransactionFacilityFilters();
+const { options: categoryFilterOptions } = useTransactionFilterOptions();
 const periodChips = computed(() => {
-    const defaultRange = currentMonthRange();
-    if (startDate.value === defaultRange.startDate && endDate.value === defaultRange.endDate)
-        return [];
-    return [
-        {
+    const range = currentMonthRange();
+    const chips = additionalFilterChips(
+        selectedCategories.value,
+        hasAttachments.value,
+        categoryFilterOptions.value,
+        (id) => {
+            selectedCategories.value = selectedCategories.value.filter((item) => item !== id);
+        },
+        () => {
+            hasAttachments.value = null;
+        },
+    );
+    if (startDate.value !== range.startDate || endDate.value !== range.endDate)
+        chips.unshift({
             key: 'period',
             label: `${startDate.value ?? 'Sin fecha'} → ${endDate.value ?? 'Sin fecha'}`,
             remove: resetPeriod,
-        },
-    ];
+        });
+    return chips;
 });
 const {
     transactions,
@@ -189,7 +210,13 @@ function infiniteStatusLabel(): string {
             :start-date="startDate"
             :end-date="endDate"
             :open="isFiltersModalOpen"
-            @apply="applyPeriod"
+            :selected-categories="selectedCategories"
+            :has-attachments="hasAttachments"
+            @apply="
+                applyPeriod($event);
+                selectedCategories = $event.categories;
+                hasAttachments = $event.hasAttachments;
+            "
             @close="closeFiltersModal"
         />
     </div>

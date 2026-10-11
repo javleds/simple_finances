@@ -18,6 +18,9 @@ describe('transaction facility query keys', () => {
       'facility',
       {
         endDate: '2026-06-30',
+        categoryIds: [],
+        uncategorized: false,
+        hasAttachments: null,
         perPage: 20,
         search: 'renta',
         startDate: '2026-06-01',
@@ -39,6 +42,9 @@ describe('transaction facility query keys', () => {
       'facility',
       {
         endDate: '2026-06-30',
+        categoryIds: [],
+        uncategorized: false,
+        hasAttachments: null,
         perPage: 20,
         search: '',
         startDate: '2026-06-01',

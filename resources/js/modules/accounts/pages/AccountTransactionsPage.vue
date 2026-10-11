@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useTransactionFilterRefresh } from '@/modules/accounts/composables/useTransactionFilterRefresh';
+import { additionalFilterChips } from '@/modules/transactions/lib/transactionAdditionalFilters';
+import { useTransactionFilterOptions } from '@/modules/transactions/composables/useTransactionFilterOptions';
 import { AppActiveFilters } from '@/modules/shared/components';
 import { computed, ref, watch } from 'vue';
 
@@ -26,7 +29,8 @@ import type { TransactionMutationMeta } from '@/modules/transactions/types';
 
 const props = defineProps<{ account?: Account }>();
 
-const { activeFilters, searchTerm, selectedTypes, toggleType } = useAccountTransactionFilters();
+const { activeFilters, searchTerm, selectedTypes, toggleType, selectedCategories, hasAttachments } =
+    useAccountTransactionFilters();
 
 const account = computed(() => props.account);
 const accountBalance = ref(account.value?.balance ?? 0);
@@ -138,7 +142,10 @@ const { confirmDeleteTransaction, handleEditTransactionSubmit, handleTransaction
         closeEditTransactionModal,
         createTransaction,
         deleteTransaction,
-        onMutationMeta: applyMutationMeta,
+        onMutationMeta: (meta) => {
+            applyMutationMeta(meta);
+            refreshAfterMutation();
+        },
         prepareNextCreateTransaction,
         selectedTransaction,
         updateTransaction,
@@ -233,6 +240,33 @@ async function handleSettleAllAccountReimbursements(
     applyTransferResults(await settleAllAccountReimbursements(accounts));
     await reloadTransactions();
 }
+const { refreshAfterMutation } = useTransactionFilterRefresh({
+    categories: selectedCategories,
+    hasAttachments,
+    isSaving,
+    isEditing: isEditTransactionModalOpen,
+    isCreating: isCreateTransactionModalOpen,
+    reload: reloadTransactions,
+});
+const { options: categoryFilterOptions } = useTransactionFilterOptions(accountId);
+const filterChips = computed(() => [
+    ...selectedTypes.value.map((type) => ({
+        key: type,
+        label: type === 'income' ? 'Ingreso' : 'Egreso',
+        remove: () => toggleType(type),
+    })),
+    ...additionalFilterChips(
+        selectedCategories.value,
+        hasAttachments.value,
+        categoryFilterOptions.value,
+        (id) => {
+            selectedCategories.value = selectedCategories.value.filter((item) => item !== id);
+        },
+        () => {
+            hasAttachments.value = null;
+        },
+    ),
+]);
 </script>
 
 <template>
@@ -262,7 +296,7 @@ async function handleSettleAllAccountReimbursements(
         </div>
         <div class="min-w-0 space-y-4 xl:col-start-1 xl:row-start-1">
             <AccountTransactionsActivity
-                :active-filter-count="selectedTypes.length"
+                :active-filter-count="filterChips.length"
                 :filters-open="isFiltersOpen"
                 v-model:search-term="searchTerm"
                 :current-user-id="currentUserId"
@@ -280,15 +314,7 @@ async function handleSettleAllAccountReimbursements(
                 @retry="reloadTransactions"
             >
                 <template #filters>
-                    <AppActiveFilters
-                        :filters="
-                            selectedTypes.map((type) => ({
-                                key: type,
-                                label: type === 'income' ? 'Ingreso' : 'Egreso',
-                                remove: () => toggleType(type),
-                            }))
-                        "
-                    />
+                    <AppActiveFilters :filters="filterChips" />
                 </template>
                 <template #loadMoreSentinel>
                     <div ref="loadMoreSentinel" class="h-1 w-full" aria-hidden="true" />
@@ -299,8 +325,15 @@ async function handleSettleAllAccountReimbursements(
         <AccountTransactionsFilters
             :open="isFiltersOpen"
             :selected-types="selectedTypes"
+            :account-id="accountId"
+            :selected-categories="selectedCategories"
+            :has-attachments="hasAttachments"
             @close="closeFilters"
             @apply="selectedTypes = $event"
+            @apply-additional="
+                selectedCategories = $event.categories;
+                hasAttachments = $event.hasAttachments;
+            "
         />
 
         <AccountTransactionsModals

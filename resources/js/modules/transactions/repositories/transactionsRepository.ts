@@ -12,6 +12,7 @@ import type {
   DeletedTransactionResult,
   Transaction,
   TransactionFacilityFilters,
+  TransactionFilterCategory,
   TransactionFacilityListResult,
   TransactionFacilitySummary,
   TransactionListFilters,
@@ -318,6 +319,11 @@ export const createdTransactionResponseSchema = z
 
 export function createTransactionsRepository() {
   return {
+    async filterOptions(accountId?: string): Promise<TransactionFilterCategory[]> {
+      const path = accountId ? `/accounts/${encodeURIComponent(accountId)}/transactions/filter-options` : '/transactions/filter-options';
+      const response = await apiClient.get<unknown>(path);
+      return z.object({ data: z.object({ categories: z.array(z.object({ id: transactionIdSchema, name: z.string(), account_name: z.string().nullable() })) }) }).parse(response).data.categories.map((category) => ({ id: category.id, name: category.name, accountName: category.account_name }));
+    },
     async list(
       accountId?: string,
       options?: { page?: number; perPage?: number; filters?: TransactionListFilters },
@@ -327,6 +333,9 @@ export function createTransactionsRepository() {
         per_page: options?.perPage,
         search: options?.filters?.search,
         type: mapTransactionTypesToApi(options?.filters?.type),
+        category_ids: options?.filters?.categoryIds,
+        uncategorized: options?.filters?.uncategorized === undefined ? undefined : Number(options.filters.uncategorized),
+        has_attachments: options?.filters?.hasAttachments === undefined ? undefined : Number(options.filters.hasAttachments),
       });
       const query = searchParams.toString();
       const path = accountId ? `${accountsPath}/${accountId}/transactions` : transactionsPath;
@@ -350,6 +359,9 @@ export function createTransactionsRepository() {
         search: options.filters.search,
         start_date: options.filters.startDate,
         end_date: options.filters.endDate,
+        category_ids: options.filters.categoryIds,
+        uncategorized: options.filters.uncategorized === undefined ? undefined : Number(options.filters.uncategorized),
+        has_attachments: options.filters.hasAttachments === undefined ? undefined : Number(options.filters.hasAttachments),
       });
       const query = searchParams.toString();
       const response = await apiClient.get<unknown>(

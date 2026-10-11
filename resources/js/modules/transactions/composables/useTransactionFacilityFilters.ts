@@ -1,3 +1,8 @@
+import {
+  readTransactionAdditionalFilters,
+  additionalFiltersPayload,
+  additionalFiltersQuery,
+} from '@/modules/transactions/lib/transactionAdditionalFilters';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -14,6 +19,8 @@ export function useTransactionFacilityFilters() {
   const router = useRouter();
   const defaultRange = currentMonthRange();
   const searchTerm = ref('');
+  const selectedCategories = ref<string[]>([]);
+  const hasAttachments = ref<boolean | null>(null);
   const startDate = ref<string | null>(defaultRange.startDate);
   const endDate = ref<string | null>(defaultRange.endDate);
 
@@ -26,6 +33,7 @@ export function useTransactionFacilityFilters() {
 
     return {
       search: searchTerm.value.trim() || undefined,
+      ...additionalFiltersPayload(selectedCategories.value, hasAttachments.value),
       startDate: startDate.value,
       endDate: endDate.value,
     };
@@ -35,6 +43,10 @@ export function useTransactionFacilityFilters() {
     () => route.query,
     (nextQuery) => {
       searchTerm.value = typeof nextQuery.search === 'string' ? nextQuery.search : '';
+      const additional = readTransactionAdditionalFilters(nextQuery);
+      if (selectedCategories.value.join(',') !== additional.categories.join(','))
+        selectedCategories.value = additional.categories;
+      hasAttachments.value = additional.hasAttachments;
       startDate.value =
         typeof nextQuery.start_date === 'string' ? nextQuery.start_date : defaultRange.startDate;
       endDate.value =
@@ -43,9 +55,10 @@ export function useTransactionFacilityFilters() {
     { immediate: true },
   );
 
-  watch([searchTerm, startDate, endDate], () => {
+  watch([searchTerm, startDate, endDate, selectedCategories, hasAttachments], () => {
     const nextQuery = {
       ...route.query,
+      ...additionalFiltersQuery(selectedCategories.value, hasAttachments.value),
       search: searchTerm.value.trim() || undefined,
       start_date: startDate.value || undefined,
       end_date: endDate.value || undefined,
@@ -71,6 +84,8 @@ export function useTransactionFacilityFilters() {
 
   return {
     activeFilters,
+    selectedCategories,
+    hasAttachments,
     applyPeriod,
     endDate,
     resetPeriod,

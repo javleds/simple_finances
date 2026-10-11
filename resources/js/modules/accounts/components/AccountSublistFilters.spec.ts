@@ -47,7 +47,13 @@ describe.each(cases)('$name filter drafts', ({ component, selected, options, val
                 [selected]: [values[0]],
                 [options]: values.map((value) => ({ value, label: value })),
             } as never,
-            global: { stubs: { AppModal: modalStub, AppButton: buttonStub } },
+            global: {
+                stubs: {
+                    AppModal: modalStub,
+                    AppButton: buttonStub,
+                    TransactionAdditionalFilters: true,
+                },
+            },
         });
     }
 
