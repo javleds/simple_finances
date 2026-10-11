@@ -161,13 +161,13 @@ try {
             'Compra conservada',
         );
         assert.ok((await dialog.innerText()).includes('Compartida · Casa'));
-        const conceptBox = await dialog.getByLabel('Concepto', { exact: true }).boundingBox();
+        const amountBox = await dialog.getByLabel('Cantidad', { exact: true }).boundingBox();
         const categoryBox = await categorySelect.evaluate((element) => {
             const rect = element.closest('.p-select').getBoundingClientRect();
             return { y: rect.y, width: rect.width };
         });
-        assert.ok(categoryBox.y > conceptBox.y, 'Category must follow concept');
-        assert.ok(categoryBox.width > conceptBox.width - 5, 'Category must occupy full form width');
+        assert.ok(categoryBox.y > amountBox.y, 'Category must follow amount');
+        assert.ok(Math.abs(categoryBox.width - amountBox.width) < 5, 'Category must align with amount');
         await categorySelect.click();
         await page.getByPlaceholder('Buscar o crear categoría').fill('transporte');
         assert.equal(

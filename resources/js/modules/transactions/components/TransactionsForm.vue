@@ -252,12 +252,6 @@ async function handleSubmit(): Promise<void> {
                 required
             />
 
-            <TransactionCategorySelect
-                v-model="categoryId"
-                :account-id="accountId"
-                @busy="categoryBusy = $event"
-            />
-
             <div class="grid gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
                 <div class="space-y-4">
                     <AppSearchSelect
@@ -312,6 +306,12 @@ async function handleSubmit(): Promise<void> {
                         :error="amountError"
                         @blur="touchAmount"
                         required
+                    />
+
+                    <TransactionCategorySelect
+                        v-model="categoryId"
+                        :account-id="accountId"
+                        @busy="categoryBusy = $event"
                     />
 
                     <section
