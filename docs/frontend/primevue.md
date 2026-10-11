@@ -134,6 +134,25 @@ Los formularios existentes mantienen su elemento `form` y sus identificadores pa
 
 Al cambiar el registro editado o el desafío de WhatsApp se reinicia el formulario correspondiente. Los manejadores de mutación también bloquean envíos repetidos mientras guardan, incluido Enter dentro del formulario.
 
+### Formulario de transacciones según los miembros de la cuenta
+
+`TransactionsForm.vue` adapta los controles al número de miembros recibido en `accountUsers`: muestra las opciones compartidas cuando hay más de uno y asigna los valores individuales automáticamente cuando hay exactamente uno.
+
+| Control | Cuenta con un miembro | Cuenta con varios miembros |
+| --- | --- | --- |
+| Pagado por | Oculto; se asigna el único miembro | Visible; al crear sin valores iniciales se preselecciona el usuario actual si pertenece a la cuenta |
+| Custodia del ingreso | Oculta; se asigna el único miembro | Visible como «¿Quién recibió el dinero?» |
+| Fuente del pago | Oculta; se usa `account_fund` | Visible como «¿Con qué dinero se pagó?» |
+| Reparto del egreso | Desactivado y oculto | Disponible mediante «Dividir entre usuarios de la cuenta» |
+
+Las opciones de fuente de pago se presentan como **Dinero de la cuenta** (`account_fund`) y **Dinero personal** (`member_out_of_pocket`). La distinción permite registrar el uso de fondos comunes o un adelanto personal y conserva las reglas de custodia y reembolsos descritas en [cuentas compartidas](../domain/shared-accounts.md).
+
+Para nuevos egresos compartidos, cuando el saldo conocido es cero o negativo, el formulario selecciona **Dinero personal**, deshabilita **Dinero de la cuenta** y muestra: «La cuenta no tiene saldo disponible. Registra el pago con dinero personal». Un saldo desconocido (`null`) no activa esta selección automática.
+
+Al editar una transacción compartida existente, el saldo actual no sustituye automáticamente su fuente de pago original. En cuentas con un solo miembro, tanto la creación como la edición normalizan los campos ocultos al único miembro, la fuente a `account_fund` y el reparto a desactivado. La meta financiera permanece disponible para ingresos.
+
+El cambio reutiliza `AppSearchSelect`, `AppToggleButton` y `AppText`; conserva los contratos API y las reglas del backend. `TransactionsForm.spec.ts` cubre los controles ocultos, los valores enviados en cuentas individuales, la selección del usuario actual, los saldos cero y negativos y la conservación de la fuente al editar movimientos compartidos.
+
 ## Gráficos y dependencias
 
 `DashboardBalanceChart.vue` usa `@primeui/vue-chart` y `@primeui/chart-style`, con renderer SVG y tema PrimeOne. Las barras son horizontales, su altura se adapta al número de cuentas y los identificadores internos distinguen nombres repetidos. Los nombres completos y los importes MXN se conservan en la lista y los tooltips; solo los nombres muy largos del eje se abrevian.
