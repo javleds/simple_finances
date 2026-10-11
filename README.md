@@ -4,7 +4,7 @@ Aplicación de finanzas personales y cuentas compartidas en un único repositori
 
 ## Inicio rápido
 
-Requiere PHP 8.4 o superior, Composer, Node 24 y npm. Desde la raíz de este repositorio:
+Requiere PHP 8.4 o superior con Imagick y soporte JPEG/PNG/WebP/HEIC, Composer, Node 24 y npm. Desde la raíz de este repositorio:
 
 ```bash
 cp .env.example .env
@@ -35,6 +35,12 @@ npm run build
 php artisan test
 composer format:check
 ```
+
+## Comprobantes de transacciones
+
+Las transacciones admiten fotos, PDF, XML y ZIP opcionales, hasta cinco archivos por movimiento por defecto. El procesamiento es asíncrono; las imágenes se convierten a WebP y se consultan en una galería con zoom. El acceso es privado para miembros actuales de la cuenta y la gestión corresponde al autor del movimiento. Los límites se configuran en Laravel con overrides opcionales en `.env`.
+
+Consulta [formatos, permisos, galería y contrato de adjuntos](docs/domain/transaction-attachments.md), y [dependencias y diagnóstico local](docs/operations/local-development.md#adjuntos-de-transacciones).
 
 ## WhatsApp
 

@@ -22,4 +22,4 @@ Laravel resuelve el catálogo efectivo y autoriza creación, selección, renombr
 
 ## Comprobantes de transacciones
 
-La API recibe archivos individuales, verifica permisos y reserva capacidad; los jobs validan contenido y convierten imágenes. Vue mantiene selecciones locales, presenta estados y descarga mediante JWT. La transacción financiera se guarda antes de subir comprobantes: los fallos de archivos no repiten notificaciones ni mutaciones financieras. Los archivos nunca se exponen mediante el disco público.
+La API recibe archivos individuales, verifica permisos y reserva capacidad; los jobs validan contenido y convierten imágenes. Vue mantiene selecciones locales, presenta estados y descarga mediante JWT. La transacción financiera se guarda antes de subir comprobantes: los fallos de archivos no repiten notificaciones ni mutaciones financieras. Los archivos nunca se exponen mediante el disco público. La galería reutiliza el WebP privado para miniatura, visor y descarga; los blobs pertenecen a la sesión visible y se liberan al terminarla. Consulta [comprobantes de transacciones](../domain/transaction-attachments.md).

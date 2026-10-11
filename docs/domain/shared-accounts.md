@@ -94,3 +94,7 @@ Confianza: Observado.
 ## Categorías compartidas
 
 La cuenta conserva un catálogo propio desde su primera conversión a compartida, incluso si vuelve a tener un solo miembro. Se copian las categorías usadas en esa cuenta sin modificar los catálogos personales. Todos los miembros pueden crear y seleccionar; solo el propietario renombra o elimina. Eliminar puede reclasificar movimientos de otros miembros y exige decidir su destino si hay uso. Consulta [categorías de transacciones](categories.md) para conflictos de nombres, permisos y contrato API.
+
+## Comprobantes de movimientos
+
+Los miembros vigentes pueden consultar y descargar adjuntos de movimientos de la cuenta. Solo el autor del movimiento puede subir, reintentar y eliminar sus comprobantes; el propietario no obtiene permiso de gestión sobre archivos ajenos. El acceso sigue a la cuenta actual de la transacción y se comprueba en cada petición. Los adjuntos no modifican ledger, custodia ni reembolsos. Consulta [comprobantes de transacciones](transaction-attachments.md).

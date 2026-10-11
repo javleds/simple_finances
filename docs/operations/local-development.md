@@ -23,6 +23,8 @@ composer run dev
 
 Laravel escucha en `127.0.0.1:8000`; Vite en `127.0.0.1:5173` sirve assets y HMR. Abre la aplicación en `http://127.0.0.1:8000`, incluida una ruta profunda como `/admin/accounts`. Ambos puertos son estrictos: si uno está ocupado, el comando termina. Composer también inicia `php artisan queue:listen --queue=default,attachments --sleep=1 --tries=5 --timeout=60`. `Ctrl+C` o la salida de uno de los procesos detiene los demás.
 
+`composer run dev` invoca `scripts/dev.sh`. En macOS con Homebrew selecciona el PHP de `brew --prefix php` para servidor y colas; en otros entornos usa el PHP del `PATH`. Antes de iniciar comprueba Imagick y soporte JPEG, PNG, WebP y HEIC, e imprime el binario elegido. Si falta alguna dependencia, no inicia los procesos.
+
 El cliente usa `/api` por defecto. `VITE_API_BASE_URL` permite un override público para integraciones. Mantén `APP_URL`, `SPA_URL` y `FRONTEND_URL` en la URL local. Las variables `VITE_*` se incorporan al navegador y nunca deben contener secretos.
 
 Usa `QUEUE_CONNECTION=database` para WhatsApp y aplica las migraciones antes de iniciar la aplicación. La cola y `webhook_receipts` deben usar la misma conexión de base de datos; `sync` y Redis no satisfacen el contrato de recepción durable implementado. El scheduler se ejecuta por separado cuando se necesita. `composer run dev` no instala paquetes ni migra datos.
@@ -63,6 +65,17 @@ Para verificar producción local, detén Vite y comprueba que no exista `public/
 
 El procesamiento usa la cola `attachments` de base de datos, incluida en `composer run dev`. Instala Imagick, ImageMagick con JPEG/PNG/WebP y libheif con HEIC/HEIF; la imagen Docker incluye estas dependencias y comprueba su disponibilidad al construirse. El almacenamiento dedicado vive en `storage/app/private/transaction-attachments` y nunca se publica con `storage:link`.
 
+Para comprobar la instalación del host:
+
+```bash
+php --ini
+php -r 'echo PHP_BINARY.PHP_EOL; echo extension_loaded("imagick") ? "Imagick disponible\n" : "Imagick no disponible\n";'
+```
+
+En Homebrew, instala las bibliotecas con `brew install imagemagick libheif`, instala la extensión mediante `pecl install imagick-3.8.0` del PHP correspondiente y habilita `extension=imagick.so` en el directorio de configuración que indique `php --ini`, si todavía no está habilitada. Instalar la extensión sin habilitarla no basta. Reinicia `composer run dev` después de cambiar PHP o sus extensiones y usa **Reintentar** en los comprobantes fallidos que aún conserven la fuente. El diagnóstico de cola es la comprobación completa; detectar la extensión o el nombre de un códec no prueba una conversión real.
+
 Para usar Docker, construye PHP antes de iniciar los consumidores: `docker compose build php`. `attachments-worker` procesa un archivo a la vez y `attachments-maintenance` ejecuta únicamente la limpieza de comprobantes cada hora. No sustituyen el scheduler financiero. Para desarrollar en host, ejecuta `php artisan attachments:maintain` cuando necesites limpiar y `php artisan attachments:diagnose --timeout=120` con el worker activo para comprobar cola, almacenamiento y conversión.
 
 Los límites funcionales están en `config/transaction_attachments.php`; `.env.example` muestra sus overrides opcionales. Las barreras PHP/Nginx admiten solicitudes de 8 MiB y archivos de 6 MiB: aumentar el límite de aplicación requiere actualizar también estas barreras. Los controles de ImageMagick y el contenedor son techos de infraestructura, aunque la configuración de aplicación sea mayor. No se realiza análisis antivirus.
+
+Consulta [comprobantes de transacciones](../domain/transaction-attachments.md) para comportamiento, galería, permisos y límites predeterminados.

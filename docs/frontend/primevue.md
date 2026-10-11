@@ -198,3 +198,9 @@ En la migración pasaron 69 pruebas frontend en 25 archivos, 192 pruebas backend
 La revisión visual pública cubrió 32 combinaciones de páginas, tamaños móvil/escritorio y temas claro/oscuro, sin errores de página ni desbordamiento horizontal. Posteriormente se comprobó con Chrome DevTools el menú inferior dentro de una cuenta autenticada: las cinco pestañas tienen icono y título alineados en escritorio y móvil, sin desbordamiento de la página. Esta revisión puntual no equivale a validar todos los flujos privados de extremo a extremo.
 
 Para repetir los chequeos y revisar vistas consulta [pruebas](../testing/strategy.md). Para distinguir HMR de assets compilados consulta [desarrollo local](../operations/local-development.md#assets-de-desarrollo-y-compilados).
+
+## Galería de comprobantes
+
+`TransactionAttachments` presenta miniaturas y documentos en dos columnas móviles y tres desde `sm`. `TransactionImageViewer` utiliza Galleria de PrimeVue dentro de AppModal, con `size="wide"` en escritorio y presentación fullscreen móvil. Galleria controla la navegación; el componente agrega zoom, pinza, arrastre y deslizamiento. Los botones reutilizan AppButton y Heroicons.
+
+El visor conserva foco y cierra únicamente su propia capa con Escape. Las imágenes proceden del repositorio autenticado y usan URL de blobs durante la sesión; no deben sustituirse por enlaces al disco privado. La carga fallida de una imagen se reintenta individualmente. PDF, XML y ZIP conservan descarga sin vista previa. Consulta [las reglas de comprobantes](../domain/transaction-attachments.md) y [la cobertura](../testing/strategy.md#adjuntos-de-transacciones).

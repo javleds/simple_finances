@@ -16,6 +16,323 @@
     }
   ],
   "paths": {
+    "/api/transaction-attachments/config": {
+      "get": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Consultar límites públicos de comprobantes",
+        "responses": {
+          "200": {
+            "description": "Límites y extensiones para el formulario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionAttachmentConfigResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación requerida"
+          }
+        }
+      }
+    },
+    "/api/transactions/{transaction}/attachments": {
+      "parameters": [
+        {
+          "name": "transaction",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Listar comprobantes para miembros vigentes de la cuenta",
+        "responses": {
+          "200": {
+            "description": "Comprobantes ordenados por ID y permisos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionAttachmentListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación requerida"
+          },
+          "403": {
+            "description": "Sin permiso sobre la cuenta o el movimiento"
+          },
+          "404": {
+            "description": "Recurso no disponible o adjunto de otra transacción"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Subir un comprobante del autor de la transacción",
+        "description": "Guarda una fuente privada y encola su validación. Reutilizar upload_id para reintentar la misma selección sin duplicarla. La aceptación no garantiza procesamiento correcto.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "upload_id"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "upload_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Comprobante aceptado o subida existente con el mismo UUID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionAttachmentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación requerida"
+          },
+          "403": {
+            "description": "Sin permiso sobre la cuenta o el movimiento"
+          },
+          "404": {
+            "description": "Recurso no disponible o adjunto de otra transacción"
+          },
+          "409": {
+            "description": "La subida con ese UUID fue eliminada"
+          },
+          "422": {
+            "description": "Archivo, UUID, formato o límites inválidos"
+          },
+          "507": {
+            "description": "Capacidad global o disco libre insuficientes"
+          }
+        }
+      }
+    },
+    "/api/transactions/{transaction}/attachments/{attachment}/download": {
+      "parameters": [
+        {
+          "name": "transaction",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "attachment",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Descargar un comprobante disponible con JWT",
+        "description": "Solo miembros vigentes. Devuelve Content-Disposition attachment, Cache-Control private, no-store y X-Content-Type-Options nosniff. Las imágenes convertidas tienen extensión .webp.",
+        "responses": {
+          "200": {
+            "description": "Contenido binario privado",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación requerida"
+          },
+          "403": {
+            "description": "Sin permiso sobre la cuenta o el movimiento"
+          },
+          "404": {
+            "description": "Recurso no disponible o adjunto de otra transacción"
+          },
+          "409": {
+            "description": "El archivo todavía no está disponible"
+          }
+        }
+      }
+    },
+    "/api/transactions/{transaction}/attachments/{attachment}/retry": {
+      "parameters": [
+        {
+          "name": "transaction",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "attachment",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Reintentar un comprobante fallido conservando su fuente",
+        "description": "Solo el autor con membresía vigente. Si la fuente expiró hay que seleccionar el archivo nuevamente.",
+        "responses": {
+          "202": {
+            "description": "Comprobante nuevamente pendiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionAttachmentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación requerida"
+          },
+          "403": {
+            "description": "Sin permiso sobre la cuenta o el movimiento"
+          },
+          "404": {
+            "description": "Recurso no disponible o adjunto de otra transacción"
+          },
+          "409": {
+            "description": "No está fallido o ya no conserva una fuente para reintentar"
+          }
+        }
+      }
+    },
+    "/api/transactions/{transaction}/attachments/{attachment}": {
+      "parameters": [
+        {
+          "name": "transaction",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "attachment",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "delete": {
+        "tags": [
+          "Attachments"
+        ],
+        "summary": "Eliminar un comprobante propio",
+        "description": "Revoca acceso inmediatamente; el mantenimiento elimina los archivos físicos después.",
+        "responses": {
+          "200": {
+            "description": "Comprobante eliminado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación requerida"
+          },
+          "403": {
+            "description": "Sin permiso sobre la cuenta o el movimiento"
+          },
+          "404": {
+            "description": "Recurso no disponible o adjunto de otra transacción"
+          }
+        }
+      }
+    },
     "/api/auth/register": {
       "post": {
         "tags": ["Auth"],
@@ -2699,6 +3016,166 @@
       "TransactionFinancialGoalIdFilter": { "name": "financial_goal_id", "in": "query", "required": false, "schema": { "type": "integer" } }
     },
     "schemas": {
+      "TransactionAttachment": {
+        "type": "object",
+        "required": [
+          "id",
+          "original_name",
+          "mime_type",
+          "size_bytes",
+          "status",
+          "error_message",
+          "can_manage",
+          "can_retry",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "original_name": {
+            "type": "string"
+          },
+          "mime_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Puede ser null antes de completar el procesamiento"
+          },
+          "size_bytes": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "processing",
+              "ready",
+              "failed"
+            ]
+          },
+          "error_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "can_manage": {
+            "type": "boolean"
+          },
+          "can_retry": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TransactionAttachmentResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TransactionAttachment"
+          }
+        }
+      },
+      "TransactionAttachmentListResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionAttachment"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "required": [
+              "can_manage",
+              "count",
+              "total_bytes"
+            ],
+            "properties": {
+              "can_manage": {
+                "type": "boolean"
+              },
+              "count": {
+                "type": "integer"
+              },
+              "total_bytes": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "TransactionAttachmentConfigResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "max_files",
+              "max_file_bytes",
+              "max_transaction_bytes",
+              "accepted_extensions",
+              "poll_interval_ms"
+            ],
+            "properties": {
+              "max_files": {
+                "type": "integer"
+              },
+              "max_file_bytes": {
+                "type": "object",
+                "required": [
+                  "image",
+                  "pdf",
+                  "xml",
+                  "zip"
+                ],
+                "properties": {
+                  "image": {
+                    "type": "integer"
+                  },
+                  "pdf": {
+                    "type": "integer"
+                  },
+                  "xml": {
+                    "type": "integer"
+                  },
+                  "zip": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "max_transaction_bytes": {
+                "type": "integer"
+              },
+              "accepted_extensions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "poll_interval_ms": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
       "PaginationMeta": {
         "type": "object",
         "properties": {
@@ -2916,6 +3393,7 @@
       "Transaction": {
         "type": "object",
         "properties": {
+          "attachments_count": { "type": "integer", "description": "Cantidad de comprobantes no eliminados, incluidos pendientes y fallidos" },
           "id": { "type": "integer" },
           "parent_transaction_id": { "type": ["integer", "null"] },
           "user_id": { "type": "integer" },

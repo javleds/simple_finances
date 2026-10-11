@@ -64,6 +64,8 @@ Para volver a una versión anterior a la integración, restaura el backend y su 
 
 ## Operación de adjuntos
 
+El comportamiento de subida, galería, permisos, límites predeterminados y contrato API se documenta en [comprobantes de transacciones](../domain/transaction-attachments.md).
+
 `attachments-worker` y `attachments-maintenance` usan la misma imagen PHP, UID/GID 1001 y montaje `/app` de la aplicación. Ambos pertenecen solo a la red interna; no publican puertos ni rutas Traefik. Nginx conserva la única entrada HTTP pública y MySQL permanece interno. El worker consume exclusivamente `attachments`, una instancia inicial con 1 GiB de memoria y parada gradual de 90 segundos. `--force` permite comprobar la cola durante mantenimiento; el despliegue lo detiene antes de modificar código. El consumidor existente de `default` sigue siendo responsabilidad de su supervisor actual.
 
 El servicio de mantenimiento ejecuta `attachments:maintain --interval=3600`, no `schedule:work`: evita duplicar tareas financieras. Retira fuentes fallidas y temporales huérfanos tras 24 horas, completa borrados y reconcilia capacidad. Para ejecutarlo manualmente usa `docker compose -f docker-compose.prod.yml exec -T php php artisan attachments:maintain`. Los servicios reinician automáticamente; consulta `docker compose -f docker-compose.prod.yml logs --tail=100 attachments-worker attachments-maintenance` y `php artisan queue:failed`. Reintenta mediante la interfaz del adjunto cuando conserve su fuente; un archivo expirado exige nueva selección. Investiga el error antes de usar `queue:retry`.

@@ -140,10 +140,12 @@ Las reglas de aceptación están en [Categorías de transacciones](../domain/cat
 
 ## Adjuntos de transacciones
 
-La cobertura backend comprueba permisos, almacenamiento privado, límites, validación XML/ZIP/imágenes, estados y limpieza. La cobertura Vue comprueba selección, guardado parcial y transporte multipart/binario. `scripts/playwright/verifyAttachments.mjs` utiliza sesiones ficticias y respuestas API interceptadas para revisar cuentas personales y compartidas a 390 y 1280 píxeles: conservación del movimiento ante fallo de subida, reintento sin duplicación, actualización asíncrona, descarga autenticada y ausencia de desbordamiento horizontal. No escribe datos reales. Con assets compilados y aplicación local disponible, ejecutar:
+La cobertura backend comprueba permisos, almacenamiento privado, límites, validación XML/ZIP/imágenes, estados y limpieza. La cobertura Vue comprueba selección, guardado parcial, transporte multipart/binario, miniaturas locales y remotas, reutilización y liberación de blobs, descarte de respuestas tardías y limpieza tras pérdida de acceso. El visor se prueba con Galleria real: navegación sin circulación, límites de zoom, arrastre según dimensiones de imagen, pinza, deslizamiento, redimensionamiento, reintento y Escape sin cerrar el modal inferior. `scripts/playwright/verifyAttachments.mjs` utiliza sesiones ficticias y respuestas API interceptadas para revisar cuentas personales y compartidas a 390 y 1280 píxeles: conservación del movimiento ante fallo de subida, reintento sin duplicación, actualización asíncrona, miniatura antes de guardar, galería, navegación, zoom, descarga autenticada sin repetir la carga de imágenes, visor amplio en escritorio, Escape conservando comprobantes y ausencia de desbordamiento horizontal. No escribe datos reales. Con assets compilados y aplicación local disponible, ejecutar:
 
 ```bash
-PW_APP_URL=http://127.0.0.1:8000 node scripts/playwright/verifyAttachments.mjs
+PW_APP_URL=http://127.0.0.1:8000 npm run pw:attachments
 ```
 
 Los servicios de producción requieren además el diagnóstico real de cola, conversión y almacenamiento documentado en [despliegue](../operations/deployment.md).
+
+`PW_ATTACHMENT_SCREENSHOTS` permite guardar capturas en un directorio existente fuera de Git. Los gestos tienen cobertura unitaria; la verificación de navegador no sustituye probar pinza, arrastre y áreas seguras en un teléfono físico. Las reglas vigentes están en [comprobantes de transacciones](../domain/transaction-attachments.md).
