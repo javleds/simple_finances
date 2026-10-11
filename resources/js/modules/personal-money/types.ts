@@ -3,6 +3,9 @@ export type PersonalMoneySettings = {
     started_at: string;
     opening_balance: number;
     enabled: boolean;
+    activated_at?: string | null;
+    start_mode?: 'now' | 'date';
+    transaction_cutoff_id?: number | null;
 };
 export type PersonalMoneyResolution = 'personal' | 'external' | 'pending';
 export type PersonalMoneyEntry = {
@@ -33,4 +36,13 @@ export type PersonalMoneyState = {
 };
 export type PersonalMoneyLink = Pick<PersonalMoneyEntry, 'source_type' | 'source_id'> & {
     resolution: PersonalMoneyResolution;
+};
+
+export type PersonalMoneySettingsPayload = {
+    account_id: number;
+    opening_balance: number;
+    enabled: boolean;
+    started_at?: string;
+    start_mode?: 'now' | 'date';
+    operation_key?: string;
 };

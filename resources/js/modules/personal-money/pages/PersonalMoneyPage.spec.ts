@@ -155,11 +155,11 @@ describe('personal money page', () => {
     });
     it('keeps help behind an explicit action', async () => {
         const { wrapper } = await setup();
-        expect(wrapper.text()).not.toContain('Parte del saldo libre');
+        expect(wrapper.text()).not.toContain('Al comenzar desde ahora');
         await wrapper
             .findAll('button')
             .find((button) => button.text() === 'Cómo se calcula')!
             .trigger('click');
-        expect(wrapper.text()).toContain('Parte del saldo libre');
+        expect(wrapper.text()).toContain('Al comenzar desde ahora');
     });
 });

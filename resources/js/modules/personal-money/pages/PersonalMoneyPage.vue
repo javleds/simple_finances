@@ -26,6 +26,13 @@ const route = useRoute();
 const router = useRouter();
 const editing = ref(false);
 const helpOpen = ref(false);
+const activationLabel = computed(() =>
+    state.value?.settings?.activated_at
+        ? new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(
+              new Date(state.value.settings.activated_at),
+          )
+        : state.value?.settings?.started_at,
+);
 const enabled = computed(() => state.value?.settings?.enabled === true);
 const accountName = computed(
     () =>
@@ -59,12 +66,29 @@ const resolutions: Record<PersonalMoneyEntry['resolution'], string> = {
     pending: 'Por revisar',
     automatic: 'Movimiento personal',
 };
+function isHistoricalEntry(entry: PersonalMoneyEntry): boolean {
+    return (
+        Boolean(state.value?.settings?.activated_at) &&
+        entry.occurred_at.slice(0, 10) < (state.value?.settings?.started_at ?? '')
+    );
+}
+function personalLabel(entry: PersonalMoneyEntry): string {
+    return isHistoricalEntry(entry) ? 'Aplicar a mi disponible' : 'Mi dinero';
+}
+function externalLabel(entry: PersonalMoneyEntry): string {
+    return isHistoricalEntry(entry) ? 'Ya está incluido en mi saldo inicial' : 'Origen externo';
+}
+function resolutionLabel(entry: PersonalMoneyEntry): string {
+    if (entry.resolution === 'personal') return personalLabel(entry);
+    if (entry.resolution === 'external') return externalLabel(entry);
+    return resolutions[entry.resolution];
+}
 function entryActions(
     entry: PersonalMoneyEntry,
 ): Array<{ key: string; label: string; icon: Component }> {
     return [
-        { key: 'personal', label: 'Usar mi dinero', icon: WalletIcon },
-        { key: 'external', label: 'Usar origen externo', icon: ArrowPathIcon },
+        { key: 'personal', label: personalLabel(entry), icon: WalletIcon },
+        { key: 'external', label: externalLabel(entry), icon: ArrowPathIcon },
         { key: 'pending', label: 'Volver a revisar', icon: ClockIcon },
     ].filter((action) => action.key !== entry.resolution);
 }
@@ -133,7 +157,7 @@ async function resolve(entry: PersonalMoneyEntry, value: string): Promise<void> 
                             qué movimientos compartidos afectan tu disponible.</AppText
                         >
                         <AppText v-if="enabled && accountName" size="sm" class="mt-3"
-                            >{{ accountName }} · Desde {{ state.settings?.started_at }}</AppText
+                            >{{ accountName }} · Desde {{ activationLabel }}</AppText
                         >
                     </template>
                 </AppSectionHeader>
@@ -182,7 +206,7 @@ async function resolve(entry: PersonalMoneyEntry, value: string): Promise<void> 
                                     >
                                     <AppText size="sm"
                                         >{{ kinds[entry.kind] }} ·
-                                        {{ resolutions[entry.resolution] }}</AppText
+                                        {{ resolutionLabel(entry) }}</AppText
                                     >
                                 </div>
                                 <div class="flex shrink-0 items-start gap-1">
@@ -218,13 +242,13 @@ async function resolve(entry: PersonalMoneyEntry, value: string): Promise<void> 
                                     variant="outline"
                                     :disabled="isSaving"
                                     @click="resolve(entry, 'personal')"
-                                    >Mi dinero</AppButton
+                                    >{{ personalLabel(entry) }}</AppButton
                                 >
                                 <AppButton
                                     variant="outline"
                                     :disabled="isSaving"
                                     @click="resolve(entry, 'external')"
-                                    >Origen externo</AppButton
+                                    >{{ externalLabel(entry) }}</AppButton
                                 >
                             </div>
                         </li>
@@ -261,14 +285,21 @@ async function resolve(entry: PersonalMoneyEntry, value: string): Promise<void> 
                     registras.</AppText
                 >
                 <AppText
-                    >Parte del saldo libre al inicio de la fecha elegida, antes de sus movimientos y
-                    excluyendo el dinero que ya apartaste. Incluye los ingresos y gastos de tu
-                    cuenta personal desde esa fecha.</AppText
+                    >Al comenzar desde ahora, parte del saldo libre que indicas y deja fuera los
+                    movimientos ya registrados. Los nuevos ingresos y gastos de tu cuenta personal
+                    se incluyen automáticamente. Las configuraciones anteriores conservan su fecha
+                    inicial hasta que elijas establecer un saldo actual.</AppText
                 >
                 <AppText
-                    >Tú eliges qué aportaciones, pagos de bolsillo y reembolsos afectan el cálculo.
-                    Los movimientos con origen externo no modifican tu disponible; los que están por
-                    revisar quedan pendientes de tu decisión.</AppText
+                    >Tus nuevos gastos compartidos pagados de tu bolsillo se vinculan por defecto.
+                    Puedes elegir otro origen o revisarlos después. Si alguien registra un gasto
+                    indicando que tú pagaste, queda por revisar. Las aportaciones y los reembolsos
+                    conservan su elección de origen.</AppText
+                >
+                <AppText
+                    >Al registrar movimientos antiguos, elige si ya están incluidos en tu saldo
+                    inicial o si deben aplicarse a tu disponible. Los que queden por revisar no
+                    modifican el saldo.</AppText
                 >
                 <AppText
                     >Solo tú puedes consultar tu disponible y elegir estos vínculos. Los demás

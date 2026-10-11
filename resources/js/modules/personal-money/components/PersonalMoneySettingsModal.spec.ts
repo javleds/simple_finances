@@ -35,9 +35,18 @@ async function setup() {
                     props: ['open', 'actions'],
                     template: '<div v-if="open"><slot /></div>',
                 },
+                AppButton: { template: '<button><slot /></button>' },
                 AppText: { template: '<p><slot /></p>' },
-                AppSearchSelect: { props: ['modelValue'], template: '<div />' },
-                AppDatePicker: { props: ['modelValue'], template: '<div />' },
+                AppSearchSelect: {
+                    name: 'AppSearchSelect',
+                    props: ['modelValue'],
+                    template: '<div />',
+                },
+                AppDatePicker: {
+                    name: 'AppDatePicker',
+                    props: ['modelValue'],
+                    template: '<div />',
+                },
                 AppInput: { name: 'AppInput', props: ['modelValue'], template: '<div />' },
             },
         },
@@ -100,5 +109,39 @@ describe('personal money settings modal', () => {
         await flushPromises();
         expect(mocks.saveSettings).toHaveBeenCalledOnce();
         expect(wrapper.emitted('close')).toBeUndefined();
+    });
+    it('activates from now without asking for a date or historical confirmations', async () => {
+        state.value!.settings = null;
+        const wrapper = await setup();
+        expect(wrapper.findComponent({ name: 'AppDatePicker' }).exists()).toBe(false);
+        expect(wrapper.text()).toContain('los movimientos ya registrados quedan fuera');
+        wrapper.findComponent({ name: 'AppSearchSelect' }).vm.$emit('update:modelValue', '1');
+        wrapper.findComponent({ name: 'AppInput' }).vm.$emit('update:modelValue', '10000');
+        await flushPromises();
+        await wrapper.find('form').trigger('submit');
+        await flushPromises();
+        expect(mocks.saveSettings).toHaveBeenCalledWith({
+            account_id: 1,
+            opening_balance: 10000,
+            enabled: true,
+            start_mode: 'now',
+            started_at: expect.any(String),
+            operation_key: expect.any(String),
+        });
+    });
+    it('reuses the operation key when retrying a failed baseline reset', async () => {
+        mocks.saveSettings.mockRejectedValueOnce(new Error('Unavailable'));
+        const wrapper = await setup();
+        await wrapper
+            .findAll('button')
+            .find((button) => button.text() === 'Establecer saldo actual')!
+            .trigger('click');
+        await wrapper.find('form').trigger('submit');
+        await flushPromises();
+        const payload = mocks.saveSettings.mock.calls[0]![0];
+        expect(payload.start_mode).toBe('now');
+        await wrapper.find('form').trigger('submit');
+        await flushPromises();
+        expect(mocks.saveSettings).toHaveBeenLastCalledWith(payload);
     });
 });

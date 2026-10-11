@@ -177,25 +177,75 @@ const paymentSourceOptions = computed(() => [
 ]);
 const { state: personalMoney } = usePersonalMoney();
 const cashSource = ref<PersonalMoneyResolution | null>(null);
+const currentDay = new Date();
+const currentDate = `${currentDay.getFullYear()}-${String(currentDay.getMonth() + 1).padStart(2, '0')}-${String(currentDay.getDate()).padStart(2, '0')}`;
+const isAfterActivation = computed(() => {
+    const cutoff = personalMoney.value?.settings?.transaction_cutoff_id;
+    return !props.initialValues?.id || cutoff == null || Number(props.initialValues.id) > cutoff;
+});
+const isHistoricalMovement = computed(
+    () =>
+        Boolean(personalMoney.value?.settings?.activated_at) &&
+        date.value < (personalMoney.value?.settings?.started_at ?? ''),
+);
+const isPersonalAccount = computed(
+    () =>
+        !hasSharedAccount.value &&
+        accountId.value === String(personalMoney.value?.settings?.account_id),
+);
 const showCashSource = computed(
     () =>
         personalMoney.value?.settings?.enabled === true &&
         personalMoney.value.account_available !== false &&
         personalMoney.value.available_balance !== null &&
-        hasSharedAccount.value &&
-        (isIncome.value ||
-            (paymentSource.value === 'member_out_of_pocket' &&
-                paidByUserId.value === props.currentUserId)),
+        isAfterActivation.value &&
+        date.value <= currentDate &&
+        (personalMoney.value.settings.activated_at ||
+            date.value >= personalMoney.value.settings.started_at) &&
+        ((hasSharedAccount.value &&
+            (isIncome.value ||
+                (paymentSource.value === 'member_out_of_pocket' &&
+                    paidByUserId.value === props.currentUserId))) ||
+            (isPersonalAccount.value && isHistoricalMovement.value)),
 );
-const cashSourceOptions = [
-    { value: 'personal', label: 'Mi dinero disponible' },
-    { value: 'external', label: 'Origen externo' },
-    { value: 'pending', label: 'Revisar después' },
-];
-watch([() => props.initialValues, accountId, type, paidByUserId, paymentSource], () => {
-    cashSource.value = null;
-});
+const cashSourceOptions = computed(() =>
+    isHistoricalMovement.value
+        ? [
+              { value: 'external', label: 'Ya está incluido en mi saldo inicial' },
+              { value: 'personal', label: 'Aplicar a mi disponible' },
+          ]
+        : [
+              { value: 'personal', label: 'Mi dinero disponible' },
+              { value: 'external', label: 'Origen externo' },
+              { value: 'pending', label: 'Revisar después' },
+          ],
+);
+const cashSourceError = ref<string | null>(null);
+watch(
+    [
+        () => props.initialValues,
+        accountId,
+        type,
+        paidByUserId,
+        paymentSource,
+        isHistoricalMovement,
+        showCashSource,
+    ],
+    () => {
+        cashSourceError.value = null;
+        cashSource.value =
+            !props.initialValues?.id &&
+            showCashSource.value &&
+            !isHistoricalMovement.value &&
+            isExpense.value &&
+            hasSharedAccount.value
+                ? 'personal'
+                : null;
+    },
+    { immediate: true },
+);
 function updateCashSource(value: string | null): void {
+    cashSourceError.value = null;
     cashSource.value =
         value === 'personal' || value === 'external' || value === 'pending' ? value : null;
 }
@@ -328,6 +378,11 @@ async function continueWithoutFiles(): Promise<void> {
 
 async function handleSubmit(): Promise<void> {
     if (categoryBusy.value || isSubmitting.value || props.saving) return;
+    if (showCashSource.value && isHistoricalMovement.value && !cashSource.value) {
+        cashSourceError.value =
+            'Elige si este movimiento ya está incluido en tu saldo inicial o debe aplicarse a tu disponible.';
+        return;
+    }
     const payload = await submitForm();
 
     if (!payload) {
@@ -578,17 +633,27 @@ async function handleSubmit(): Promise<void> {
         >
             <AppSearchSelect
                 id="transaction-cash-source"
-                label="Origen de tu dinero (privado)"
+                :label="
+                    isHistoricalMovement
+                        ? 'Efecto del movimiento antiguo'
+                        : 'Origen de tu dinero (privado)'
+                "
                 :model-value="cashSource"
                 :options="cashSourceOptions"
-                placeholder="Conservar origen o revisar después"
+                :placeholder="
+                    isHistoricalMovement
+                        ? 'Elige cómo afecta tu saldo'
+                        : 'Conservar origen o revisar después'
+                "
+                :error="cashSourceError ?? undefined"
                 :disabled="props.saving"
                 @update:model-value="updateCashSource"
             />
-            <AppText
-                >Elige si este movimiento afecta tu disponible personal. Solo tú puedes ver esta
-                elección.</AppText
-            >
+            <AppText>{{
+                isHistoricalMovement
+                    ? 'La fecha es anterior a tu inicio. Decide si el saldo inicial ya contemplaba este movimiento para evitar contarlo dos veces.'
+                    : 'Tus nuevos gastos compartidos pagados por ti usan tu disponible por defecto. Puedes cambiar el origen. Solo tú puedes ver esta elección.'
+            }}</AppText>
         </div>
 
         <section

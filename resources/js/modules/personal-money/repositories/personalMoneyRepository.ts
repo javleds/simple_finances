@@ -1,5 +1,5 @@
 import { createApiClient } from '@/lib/api/apiClient';
-import type { PersonalMoneyLink, PersonalMoneySettings, PersonalMoneyState } from '../types';
+import type { PersonalMoneyLink, PersonalMoneySettingsPayload, PersonalMoneyState } from '../types';
 
 const api = createApiClient();
 export const personalMoneyRepository = {
@@ -9,7 +9,7 @@ export const personalMoneyRepository = {
         );
         return response.data;
     },
-    async saveSettings(payload: PersonalMoneySettings): Promise<PersonalMoneyState> {
+    async saveSettings(payload: PersonalMoneySettingsPayload): Promise<PersonalMoneyState> {
         const response = await api.put<{ data: PersonalMoneyState }>(
             '/personal-money/settings',
             payload,

@@ -3,7 +3,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 const personalMoney = ref<
     | {
-          settings: { enabled: boolean };
+          settings: {
+              enabled: boolean;
+              started_at: string;
+              activated_at?: string | null;
+              account_id?: number;
+              transaction_cutoff_id?: number;
+          };
           account_available: boolean;
           available_balance?: number | null;
       }
@@ -295,7 +301,10 @@ it('keeps historical allocations through the real split editor and excludes unre
 
 describe('private cash source choice', () => {
     it('omits the source on edit until the user explicitly chooses it', async () => {
-        personalMoney.value = { settings: { enabled: true }, account_available: true };
+        personalMoney.value = {
+            settings: { enabled: true, started_at: '2026-01-01' },
+            account_available: true,
+        };
         const wrapper = render({
             initialValues: {
                 id: '4',
@@ -320,7 +329,10 @@ describe('private cash source choice', () => {
         personalMoney.value = undefined;
     });
     it('hides private source choices when another member pays', async () => {
-        personalMoney.value = { settings: { enabled: true }, account_available: true };
+        personalMoney.value = {
+            settings: { enabled: true, started_at: '2026-01-01' },
+            account_available: true,
+        };
         const wrapper = render({
             initialValues: {
                 concept: 'Compra',
@@ -336,7 +348,7 @@ describe('private cash source choice', () => {
     });
     it('hides the private source selector when the available balance cannot be calculated', () => {
         personalMoney.value = {
-            settings: { enabled: true },
+            settings: { enabled: true, started_at: '2026-01-01' },
             account_available: true,
             available_balance: null,
         };
@@ -354,7 +366,7 @@ describe('private cash source choice', () => {
     });
     it('allows a shared income contribution to explicitly use personal money', async () => {
         personalMoney.value = {
-            settings: { enabled: true },
+            settings: { enabled: true, started_at: '2026-01-01' },
             account_available: true,
             available_balance: 100,
         };
@@ -368,6 +380,123 @@ describe('private cash source choice', () => {
             .vm.$emit('update:modelValue', 'personal');
         await flushPromises();
         expect(await submit(wrapper)).toMatchObject({ type: 'income', cashSource: 'personal' });
+        wrapper.unmount();
+        personalMoney.value = undefined;
+    });
+});
+
+describe('activation-based private money', () => {
+    function activate() {
+        personalMoney.value = {
+            settings: {
+                enabled: true,
+                started_at: '2026-10-11',
+                activated_at: '2026-10-11T15:00:00Z',
+                account_id: 10,
+                transaction_cutoff_id: 5,
+            },
+            account_available: true,
+            available_balance: 10000,
+        };
+    }
+    it('defaults new current shared out of pocket expenses to personal money', async () => {
+        activate();
+        const wrapper = render({
+            initialValues: {
+                concept: 'Today',
+                amount: 100,
+                date: '2026-10-11',
+                paymentSource: 'member_out_of_pocket',
+                paidByUserId: '2',
+            },
+        });
+        await flushPromises();
+        expect(await submit(wrapper)).toMatchObject({ cashSource: 'personal' });
+        wrapper.unmount();
+        personalMoney.value = undefined;
+    });
+    it('requires a decision before submitting a historical personal movement', async () => {
+        activate();
+        const wrapper = render({
+            accountUsers: members.slice(1),
+            initialValues: {
+                type: 'income',
+                concept: 'Old salary',
+                amount: 100,
+                date: '2026-10-01',
+            },
+        });
+        await flushPromises();
+        const source = wrapper
+            .findAllComponents({ name: 'AppSearchSelect' })
+            .find((item) => item.attributes('id') === 'transaction-cash-source')!;
+        expect(source.props('options').map((option: { label: string }) => option.label)).toEqual([
+            'Ya está incluido en mi saldo inicial',
+            'Aplicar a mi disponible',
+        ]);
+        expect(await submit(wrapper)).toBeUndefined();
+        expect(source.props('error')).toContain('Elige si este movimiento');
+        source.vm.$emit('update:modelValue', 'external');
+        await flushPromises();
+        expect(await submit(wrapper)).toMatchObject({ cashSource: 'external' });
+        wrapper.unmount();
+        personalMoney.value = undefined;
+    });
+    it('leaves historical shared expenses without a default decision', async () => {
+        activate();
+        const wrapper = render({
+            initialValues: {
+                concept: 'Old expense',
+                amount: 100,
+                date: '2026-10-01',
+                paymentSource: 'member_out_of_pocket',
+                paidByUserId: '2',
+            },
+        });
+        await flushPromises();
+        expect(await submit(wrapper)).toBeUndefined();
+        const source = wrapper
+            .findAllComponents({ name: 'AppSearchSelect' })
+            .find((item) => item.attributes('id') === 'transaction-cash-source')!;
+        source.vm.$emit('update:modelValue', 'personal');
+        await flushPromises();
+        expect(await submit(wrapper)).toMatchObject({ cashSource: 'personal' });
+        wrapper.unmount();
+        personalMoney.value = undefined;
+    });
+    it('does not offer a private link while editing a preactivation transaction', async () => {
+        activate();
+        const wrapper = render({
+            initialValues: {
+                id: '4',
+                accountId: '10',
+                usesSharedAccountRules: true,
+                concept: 'Earlier expense',
+                amount: 100,
+                date: '2026-10-11',
+                paymentSource: 'member_out_of_pocket',
+                paidByUserId: '2',
+            },
+        });
+        expect(wrapper.find('#transaction-cash-source').exists()).toBe(false);
+        expect(await submit(wrapper)).not.toHaveProperty('cashSource');
+        wrapper.unmount();
+        personalMoney.value = undefined;
+    });
+    it('does not send an immediate cash choice for a future dated transaction', async () => {
+        activate();
+        const wrapper = render({
+            initialValues: {
+                concept: 'Future expense',
+                amount: 100,
+                date: '2099-10-11',
+                paymentSource: 'member_out_of_pocket',
+                paidByUserId: '2',
+            },
+        });
+        await flushPromises();
+        expect(wrapper.find('#transaction-cash-source').exists()).toBe(false);
+        expect(await submit(wrapper)).not.toHaveProperty('cashSource');
         wrapper.unmount();
         personalMoney.value = undefined;
     });
