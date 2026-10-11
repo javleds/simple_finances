@@ -148,19 +148,22 @@ function handleDelete(): void {
                 <p class="text-sm leading-5 font-semibold break-words text-(--app-color-text)">
                     {{ props.concept }}
                 </p>
-                <p class="mt-1 text-xs wrap-anywhere text-(--app-color-text-subtle)">
-                    {{ props.categoryName || 'Sin categoría' }}
-                </p>
-                <AppButton
-                    v-if="(attachmentCount ?? props.attachmentsCount ?? 0) > 0"
-                    type="button"
-                    variant="ghost"
-                    :aria-label="`Ver ${attachmentCount ?? props.attachmentsCount} comprobantes`"
-                    @click="attachmentsOpen = true"
-                    ><PaperClipIcon class="h-4 w-4" aria-hidden="true" />{{
-                        attachmentCount ?? props.attachmentsCount
-                    }}</AppButton
-                >
+                <div class="mt-1 flex min-h-8 items-center gap-2 sm:min-h-6">
+                    <p class="min-w-0 text-xs wrap-anywhere text-(--app-color-text-subtle)">
+                        {{ props.categoryName || 'Sin categoría' }}
+                    </p>
+                    <AppButton
+                        v-if="(attachmentCount ?? props.attachmentsCount ?? 0) > 0"
+                        type="button"
+                        variant="ghost"
+                        class="h-8! min-h-8! shrink-0 gap-1! px-1.5! py-0! text-xs! sm:h-6! sm:min-h-6!"
+                        :aria-label="`Ver ${attachmentCount ?? props.attachmentsCount} comprobantes`"
+                        @click="attachmentsOpen = true"
+                    >
+                        <PaperClipIcon class="h-4 w-4" aria-hidden="true" />
+                        {{ attachmentCount ?? props.attachmentsCount }}
+                    </AppButton>
+                </div>
             </div>
 
             <div
