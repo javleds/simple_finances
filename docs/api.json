@@ -3526,6 +3526,8 @@
       "Transaction": {
         "type": "object",
         "properties": {
+          "current_user_pending_reimbursement_amount": { "type": "number", "minimum": 0, "readOnly": true, "description": "Importe por pagar del usuario autenticado, calculado desde el ledger en listados, consulta individual, creación y edición." },
+          "current_user_receivable_reimbursement_amount": { "type": "number", "minimum": 0, "readOnly": true, "description": "Importe por recibir del usuario autenticado, calculado desde el ledger en listados, consulta individual, creación y edición." },
           "attachments_count": { "type": "integer", "description": "Cantidad de comprobantes no eliminados, incluidos pendientes y fallidos" },
           "id": { "type": "integer" },
           "parent_transaction_id": { "type": ["integer", "null"] },

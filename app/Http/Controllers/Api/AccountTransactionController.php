@@ -27,13 +27,13 @@ class AccountTransactionController extends ApiController
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
         private readonly BuildTransactionAccountMeta $buildTransactionAccountMeta,
         private readonly AuthorizeTransactionParticipants $authorizeTransactionParticipants,
+        private readonly HydrateCurrentUserPendingReimbursements $hydrateCurrentUserPendingReimbursements,
     ) {
     }
 
     public function index(
         Account $account,
         TransactionIndexRequest $request,
-        HydrateCurrentUserPendingReimbursements $hydrateCurrentUserPendingReimbursements,
         ModelIndexCriteria $modelIndexCriteria,
         ApplyTransactionCategoryAttachmentFilters $applyCategoryAttachmentFilters,
     ): JsonResponse {
@@ -60,7 +60,7 @@ class AccountTransactionController extends ApiController
             ->paginate($perPage)
             ->withQueryString();
 
-        $hydrateCurrentUserPendingReimbursements->execute($paginator->items(), $request->user()->id);
+        $this->hydrateCurrentUserPendingReimbursements->execute($paginator->items(), $request->user()->id);
 
         return $this->respond([
             'data' => $paginator->items(),
@@ -101,14 +101,19 @@ class AccountTransactionController extends ApiController
         $createdTransactions = $this->createdTransactions($transaction);
 
         if ($createdTransactions !== null) {
+            $this->hydrateCurrentUserPendingReimbursements->execute($createdTransactions, (int) $request->user()->id);
+
             return $this->respond([
                 'data' => $createdTransactions,
                 'meta' => $this->transactionAccountMeta($account->id),
             ], 201);
         }
 
+        $transaction->refresh();
+        $this->hydrateCurrentUserPendingReimbursements->execute([$transaction], (int) auth()->id());
+
         return $this->respondModel(
-            $transaction->fresh(),
+            $transaction,
             ['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
             201,
             $this->transactionAccountMeta($account->id),
@@ -118,6 +123,7 @@ class AccountTransactionController extends ApiController
     public function show(Account $account, Transaction $transaction): JsonResponse
     {
         $this->ensureAccountTransaction($account, $transaction);
+        $this->hydrateCurrentUserPendingReimbursements->execute([$transaction], (int) auth()->id());
 
         return $this->respondModel($transaction, ['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user']);
     }
@@ -143,8 +149,11 @@ class AccountTransactionController extends ApiController
             TransactionFormDto::fromFormArray($payload)
         );
 
+        $transaction->refresh();
+        $this->hydrateCurrentUserPendingReimbursements->execute([$transaction], (int) auth()->id());
+
         return $this->respondModel(
-            $transaction->fresh(),
+            $transaction,
             ['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'],
             meta: $this->transactionAccountMeta($transaction->account_id, $previousAccountId),
         );
