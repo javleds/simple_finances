@@ -40,6 +40,8 @@ Current shared components:
   Path: `resources/js/modules/shared/components/AppPasswordInput.vue`
 - `AppPercentageSplitEditor`: interactive horizontal percentage splitter with drag handles and exact numeric adjustment that keeps the total at 100%.
   Path: `resources/js/modules/shared/components/AppPercentageSplitEditor.vue`
+- `AppMultiSearchSelect`: selector múltiple de PrimeVue MultiSelect con búsqueda, limpieza y resumen compacto de selecciones.
+  Path: `resources/js/modules/shared/components/AppMultiSearchSelect.vue`
 - `AppSearchSelect`: adaptador de PrimeVue Select con búsqueda, limpieza, descripciones de opciones y etiquetas accesibles.
   Path: `resources/js/modules/shared/components/AppSearchSelect.vue`
 - `AppSectionBar`: compact heading row with title, actions slot and bottom divider; supports h1/h2/h3 through the as prop.

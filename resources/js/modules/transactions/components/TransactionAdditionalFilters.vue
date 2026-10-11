@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { AppButton, AppFilterOptions, AppSearchSelect, AppText } from '@/modules/shared/components';
+import {
+    AppButton,
+    AppMultiSearchSelect,
+    AppSearchSelect,
+    AppText,
+} from '@/modules/shared/components';
 import { useTransactionFilterOptions } from '../composables/useTransactionFilterOptions';
 const props = defineProps<{ accountId?: string; accountScoped?: boolean }>();
 const categories = defineModel<string[]>('categories', { required: true });
@@ -35,7 +40,15 @@ const attachmentOptions = [
                 >No fue posible cargar las categorías. Tus filtros se conservan.</AppText
             ><AppButton variant="ghost" @click="query.refetch()">Reintentar categorías</AppButton>
         </div>
-        <AppFilterOptions v-model="categories" label="Categorías" :options="options" />
+        <AppMultiSearchSelect
+            id="transaction-category-filter"
+            v-model="categories"
+            label="Categorías"
+            :options="options"
+            placeholder="Todas las categorías"
+            search-placeholder="Buscar categoría"
+            :loading="query.isFetching.value"
+        />
         <AppSearchSelect
             id="transaction-attachment-filter"
             v-model="selection"

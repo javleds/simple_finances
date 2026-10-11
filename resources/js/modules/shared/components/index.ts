@@ -14,6 +14,7 @@ export { default as AppLoadMoreFooter } from './AppLoadMoreFooter.vue';
 export { default as AppModal } from './AppModal.vue';
 export { default as AppPasswordInput } from './AppPasswordInput.vue';
 export { default as AppPercentageSplitEditor } from './AppPercentageSplitEditor.vue';
+export { default as AppMultiSearchSelect } from './AppMultiSearchSelect.vue';
 export { default as AppSearchSelect } from './AppSearchSelect.vue';
 export { default as AppSectionBar } from './AppSectionBar.vue';
 export { default as AppSectionHeader } from './AppSectionHeader.vue';
