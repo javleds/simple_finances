@@ -3398,6 +3398,7 @@
           "parent_transaction_id": { "type": ["integer", "null"] },
           "user_id": { "type": "integer" },
           "account_id": { "type": "integer" },
+          "uses_shared_account_rules": { "type": ["boolean", "null"], "readOnly": true, "description": "Reglas financieras fijadas por el servidor al crear el movimiento: true compartidas, false personales, null compatibilidad histórica. Se conservan al editar en la misma cuenta y se recalculan al mover a otra cuenta. No se admite en escrituras." },
           "concept": { "type": "string" },
           "amount": { "type": "number" },
           "percentage": { "type": "number" },

@@ -15,6 +15,14 @@ Confianza: Observado en `docs/shared-account-model.md`, modelos, migraciones y s
 
 ## Reglas observadas
 
+### Los movimientos personales no generan aportaciones pendientes
+
+Cada movimiento nuevo conserva `uses_shared_account_rules`: `false` si la cuenta tiene un solo miembro y `true` si tiene varios al crearlo. En modo personal, el gasto usa `account_fund`, pertenece al único miembro y registra el importe completo como `account_fund_expense`, aunque el saldo sea cero o negativo. No genera asignaciones, deuda, aportaciones pendientes ni ingresos técnicos de recuperación. Los ingresos mantienen su registro de custodia.
+
+Agregar o retirar miembros no cambia esa clasificación. Editar dentro de la misma cuenta conserva las reglas del movimiento; moverlo a otra cuenta aplica las reglas del destino. Si una cuenta vuelve a tener un miembro, los nuevos movimientos son personales y las obligaciones compartidas anteriores permanecen. Al editar movimientos anteriores pueden conservarse pagadores y asignaciones de antiguos miembros, sin permitir asignar nuevos participantes ajenos.
+
+Los movimientos existentes conservan `null` y su comportamiento histórico. No se reparan ni reclasifican datos anteriores. Este indicador financiero es independiente del catálogo compartido de categorías.
+
 ### Las transacciones nuevas deben quedar completadas
 
 Regla: las escrituras operativas de transacciones usan `completed`; `pending` ya no es el estado operativo para planear gastos.

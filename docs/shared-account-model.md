@@ -46,6 +46,16 @@ Debts between members do not create income transactions. They are derived from `
 
 ## Relational Model
 
+### Reglas financieras por movimiento
+
+`transactions.uses_shared_account_rules` es un indicador nullable de solo lectura para la API. El servidor lo calcula al crear el movimiento según la membresía vigente: un miembro implica reglas personales (`false`), varios implican reglas compartidas (`true`). Editar en la misma cuenta conserva el valor original, incluido `null`; mover a otra cuenta lo calcula para el destino. Cambiar miembros no reclasifica movimientos anteriores.
+
+Un gasto personal utiliza `account_fund` y registra una entrada `account_fund_expense` por el importe completo, incluso con saldo cero o negativo. No genera asignaciones, déficit por miembro, reembolsos ni ingresos técnicos de recuperación. El saldo negativo representa el gasto pendiente de cubrir. Los ingresos personales conservan su entrada de custodia.
+
+Cuando una cuenta compartida vuelve a tener un miembro, sus nuevos movimientos siguen las reglas personales y sus obligaciones compartidas previas permanecen. Un movimiento personal anterior continúa siendo personal aunque se agreguen miembros. Los movimientos compartidos conservan su pagador y sus asignaciones históricas al editarse; esto no autoriza agregar personas ajenas a la cuenta.
+
+Los registros anteriores conservan `null` y el comportamiento de compatibilidad. La migración solo agrega la columna; no modifica movimientos ni ledger existentes. Este indicador no cambia las reglas del catálogo compartido de categorías.
+
 See [shared-account-relations.puml](diagrams/shared-account-relations.puml).
 
 ![Shared account relational model](diagrams/shared-account-relations.svg)
