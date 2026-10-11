@@ -997,8 +997,11 @@
       "get": {
         "tags": ["Transactions"],
         "summary": "List account transactions",
-        "description": "Filtros disponibles por cualquier propiedad real del modelo Transaction dentro de la cuenta seleccionada.",
+        "description": "Filtros permitidos de la cuenta, incluidos categorías múltiples, movimientos sin categoría y presencia de comprobantes. Categorías seleccionadas y sin categoría se combinan con OR; el resto con AND.",
         "parameters": [
+          { "$ref": "#/components/parameters/TransactionCategoryIdsFilter" },
+          { "$ref": "#/components/parameters/TransactionUncategorizedFilter" },
+          { "$ref": "#/components/parameters/TransactionHasAttachmentsFilter" },
           { "$ref": "#/components/parameters/AccountPath" },
           { "$ref": "#/components/parameters/Page" },
           { "$ref": "#/components/parameters/PerPage" },
@@ -2584,11 +2587,126 @@
         }
       }
     },
+    "/api/transactions/filter-options": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Categorías disponibles para filtrar movimientos",
+        "description": "Categorías utilizadas en movimientos visibles para este listado, sin limitar por periodo. Conserva el alcance de permisos del listado; account_name es null para categorías personales.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Opciones de categorías",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "categories": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name",
+                              "account_name"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "account_name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accounts/{account}/transactions/filter-options": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Categorías disponibles para filtrar movimientos",
+        "description": "Categorías utilizadas en movimientos visibles para este listado, sin limitar por periodo. Conserva el alcance de permisos del listado; account_name es null para categorías personales.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AccountPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Opciones de categorías",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "categories": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name",
+                              "account_name"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "account_name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/transactions": {
       "get": {
         "tags": ["Transactions"],
         "summary": "List transactions",
         "parameters": [
+          { "$ref": "#/components/parameters/TransactionCategoryIdsFilter" },
+          { "$ref": "#/components/parameters/TransactionUncategorizedFilter" },
+          { "$ref": "#/components/parameters/TransactionHasAttachmentsFilter" },
           { "$ref": "#/components/parameters/Page" },
           { "$ref": "#/components/parameters/PerPage" },
           { "$ref": "#/components/parameters/TransactionIdFilter" },
@@ -2752,6 +2870,21 @@
       }
     },
     "parameters": {
+      "TransactionCategoryIdsFilter": {
+        "name": "category_ids", "in": "query", "style": "form", "explode": false,
+        "description": "IDs de categorías (CSV o arreglo category_ids[]), máximo 100. Coincidencia OR; combinable con uncategorized.",
+        "schema": { "type": "array", "maxItems": 100, "items": { "type": "integer", "minimum": 1 } }
+      },
+      "TransactionUncategorizedFilter": {
+        "name": "uncategorized", "in": "query",
+        "description": "1 incluye movimientos sin categoría junto con category_ids; omitido o 0 no los añade.",
+        "schema": { "type": "integer", "enum": [0, 1] }
+      },
+      "TransactionHasAttachmentsFilter": {
+        "name": "has_attachments", "in": "query",
+        "description": "1 con comprobantes, 0 sin comprobantes; omitir para todos. Cuenta adjuntos no eliminados, incluidos pendientes y fallidos.",
+        "schema": { "type": "integer", "enum": [0, 1] }
+      },
       "Page": {
         "name": "page",
         "in": "query",
