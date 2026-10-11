@@ -40,6 +40,8 @@ describe('transaction schemas', () => {
       id: '10',
       accountId: '20',
       accountName: 'Cuenta principal',
+      categoryId: null,
+      categoryName: null,
       concept: 'Compra mensual',
       amount: 1200.5,
       type: 'expense',
@@ -59,6 +61,17 @@ describe('transaction schemas', () => {
       currentUserReceivableReimbursementAmount: 0,
       userPayments: {},
     });
+  });
+
+  it('maps a selected category from the API', () => {
+    const transaction = mapTransactionApiToDomain(
+      transactionApiSchema.parse({
+        ...baseTransactionPayload,
+        category_id: 5,
+        category: { name: 'Comida' },
+      }),
+    );
+    expect(transaction).toMatchObject({ categoryId: '5', categoryName: 'Comida' });
   });
 
   it('maps current user receivable reimbursement amount', () => {

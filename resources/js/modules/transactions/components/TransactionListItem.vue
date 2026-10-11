@@ -9,6 +9,7 @@ type TransactionItemType = 'income' | 'expense';
 const props = defineProps<{
     itemId: string;
     concept: string;
+    categoryName?: string | null;
     amount: number;
     type: TransactionItemType;
     dateLabel: string;
@@ -126,6 +127,9 @@ function handleDelete(): void {
             <div class="min-w-0">
                 <p class="text-sm leading-5 font-semibold break-words text-(--app-color-text)">
                     {{ props.concept }}
+                </p>
+                <p class="mt-1 text-xs wrap-anywhere text-(--app-color-text-subtle)">
+                    {{ props.categoryName || 'Sin categoría' }}
                 </p>
             </div>
 

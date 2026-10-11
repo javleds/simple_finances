@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Message from 'primevue/message';
+import TransactionCategorySelect from './TransactionCategorySelect.vue';
 import Checkbox from 'primevue/checkbox';
 import { computed, ref, watch, watchEffect } from 'vue';
 
@@ -71,6 +72,8 @@ const transactionTypeOptions = [
 
 const {
     type,
+    categoryId,
+    accountId,
     concept,
     amount,
     paidByUserId,
@@ -114,6 +117,7 @@ const paymentSourceOptions = computed(() => [
     { value: 'member_out_of_pocket' as const, label: 'Dinero personal' },
 ]);
 const createAndAddAnother = ref(false);
+const categoryBusy = ref(false);
 const { error: conceptError, touch: touchConcept } = useFormFieldInteraction('concept');
 const { error: amountError, touch: touchAmount } = useFormFieldInteraction('amount');
 const { error: userPaymentsError, touch: touchUserPayments } =
@@ -131,10 +135,10 @@ const financialGoalOptions = computed(() =>
 );
 
 watch(
-    [isSubmitDisabled, isSubmitting, meta, createAndAddAnother],
+    [isSubmitDisabled, isSubmitting, meta, createAndAddAnother, categoryBusy],
     () => {
         emit('stateChange', {
-            canSubmit: !isSubmitDisabled.value,
+            canSubmit: !isSubmitDisabled.value && !categoryBusy.value,
             isSubmitting: isSubmitting.value,
             keepOpen: props.enableCreateAndAddAnother && createAndAddAnother.value,
         });
@@ -203,6 +207,7 @@ watch(showUserSplitToggle, (isVisible) => {
 });
 
 async function handleSubmit(): Promise<void> {
+    if (categoryBusy.value || isSubmitting.value) return;
     const payload = await submitForm();
 
     if (!payload) {
@@ -245,6 +250,12 @@ async function handleSubmit(): Promise<void> {
                 :error="conceptError"
                 @blur="touchConcept"
                 required
+            />
+
+            <TransactionCategorySelect
+                v-model="categoryId"
+                :account-id="accountId"
+                @busy="categoryBusy = $event"
             />
 
             <div class="grid gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
@@ -406,7 +417,7 @@ async function handleSubmit(): Promise<void> {
                         Crear y agregar otro
                     </label>
                     <AppText size="sm" tone="subtle">
-                        Conserva tipo, fecha y meta financiera para capturas rápidas.
+                        Conserva tipo, fecha, categoría y meta financiera para capturas rápidas.
                     </AppText>
                 </div>
 

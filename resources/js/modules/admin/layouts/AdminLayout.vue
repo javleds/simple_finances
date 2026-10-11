@@ -12,6 +12,7 @@ import {
     EnvelopeIcon,
     HomeIcon,
     Squares2X2Icon,
+    TagIcon,
     UserIcon,
     UserCircleIcon,
     WalletIcon,
@@ -99,6 +100,7 @@ const navigationItems: AdminNavigationItem[] = [
 ];
 
 const moreNavigationItems = [
+    { label: 'Categorías', routeName: 'admin.categories', icon: TagIcon },
     { label: 'Distribución', routeName: 'admin.distribution', icon: Squares2X2Icon },
     {
         label: 'Pagos',
@@ -109,7 +111,10 @@ const moreNavigationItems = [
 ];
 
 const isMoreActive = computed(
-    () => isActiveRoute('admin.distribution') || isActiveRoute('admin.settings'),
+    () =>
+        isActiveRoute('admin.distribution') ||
+        isActiveRoute('admin.settings') ||
+        isActiveRoute('admin.categories'),
 );
 
 watch(

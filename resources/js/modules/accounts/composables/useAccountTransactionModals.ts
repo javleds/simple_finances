@@ -60,11 +60,13 @@ export function useAccountTransactionModals(options: UseAccountTransactionModals
   function prepareNextCreateTransaction(payload: {
     accountId: string;
     date: string;
+    categoryId?: string | null;
     financialGoalId: string | null;
     type: Transaction['type'];
   }): void {
     createInitialValues.value = {
       accountId: payload.accountId,
+      categoryId: payload.categoryId ?? null,
       date: payload.date,
       financialGoalId: payload.type === 'income' ? payload.financialGoalId : null,
       type: payload.type,

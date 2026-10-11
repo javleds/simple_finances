@@ -150,6 +150,7 @@ export type AccountMember = {
 
 export type Account = {
   id: string;
+  usesSharedCategories?: boolean;
   ownerId: string;
   name: string;
   description: string;

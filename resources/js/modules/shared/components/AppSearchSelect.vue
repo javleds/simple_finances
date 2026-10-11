@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Select from 'primevue/select';
 import Message from 'primevue/message';
-import { computed, useAttrs } from 'vue';
+import { computed, nextTick, ref, useAttrs, watch } from 'vue';
 
 defineOptions({
     inheritAttrs: false,
@@ -23,6 +23,8 @@ const props = withDefaults(
         searchPlaceholder?: string;
         emptyMessage?: string;
         disabled?: boolean;
+        creatable?: boolean;
+        creating?: boolean;
         openDirection?: 'top' | 'bottom';
         error?: string;
     }>(),
@@ -32,12 +34,37 @@ const props = withDefaults(
         searchPlaceholder: 'Buscar opción',
         emptyMessage: 'No hay resultados disponibles.',
         disabled: false,
+        creatable: false,
+        creating: false,
         openDirection: 'top',
         error: undefined,
     },
 );
 
 const attrs = useAttrs();
+const filterValue = ref('');
+const selectionVersion = ref(0);
+watch(
+    () => props.creating,
+    async (creating, previous) => {
+        if (!creating && previous) {
+            await nextTick();
+            focusControl();
+        }
+    },
+);
+const createValue = '__app_create_option__';
+const normalizedFilter = computed(() => filterValue.value.trim().replace(/\s+/g, ' '));
+const selectOptions = computed(() => {
+    const name = normalizedFilter.value;
+    const exists = props.options.some(
+        (option) =>
+            option.label.trim().replace(/\s+/g, ' ').toLocaleLowerCase() ===
+            name.toLocaleLowerCase(),
+    );
+    if (!props.creatable || !name || exists) return [...props.options];
+    return [...props.options, { value: createValue, label: `Crear «${name}»` }];
+});
 const describedBy = computed(
     () =>
         [attrs['aria-describedby'], props.error ? `${props.id}-error` : undefined]
@@ -52,6 +79,7 @@ const emit = defineEmits<{
     'update:modelValue': [value: string | null];
     change: [value: string | null];
     blur: [event: FocusEvent];
+    create: [name: string];
 }>();
 
 function focusControl(): void {
@@ -59,6 +87,14 @@ function focusControl(): void {
 }
 
 function updateValue(nextValue: unknown): void {
+    if (nextValue === createValue) {
+        if (props.creatable && !props.creating) {
+            selectionVersion.value += 1;
+            emit('create', normalizedFilter.value);
+        }
+        return;
+    }
+
     const normalizedValue = typeof nextValue === 'string' ? nextValue : null;
 
     emit('update:modelValue', normalizedValue);
@@ -85,17 +121,20 @@ function handleBlur(event: Event): void {
         </div>
 
         <Select
+            :key="selectionVersion"
             :input-id="props.id"
             :model-value="props.modelValue"
-            :options="[...props.options]"
+            :options="selectOptions"
             option-value="value"
             option-label="label"
             filter
+            :reset-filter-on-hide="props.creatable"
             show-clear
             fluid
             :filter-placeholder="props.searchPlaceholder"
             :placeholder="props.placeholder"
-            :disabled="props.disabled"
+            :disabled="props.disabled || props.creating"
+            :loading="props.creating"
             overlay-class="app-select-overlay"
             :empty-message="props.emptyMessage"
             :empty-filter-message="props.emptyMessage"
@@ -108,6 +147,8 @@ function handleBlur(event: Event): void {
             v-bind="$attrs"
             @update:model-value="updateValue"
             @blur="handleBlur"
+            @filter="filterValue = $event.value"
+            @hide="filterValue = ''"
         >
             <template #option="{ option }">
                 <div class="max-w-full min-w-0 space-y-0.5">

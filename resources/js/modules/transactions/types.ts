@@ -33,6 +33,8 @@ export type Transaction = {
   id: string;
   accountId: string;
   accountName: string | null;
+  categoryName?: string | null;
+  categoryId?: string | null;
   concept: string;
   amount: number;
   type: TransactionType;
@@ -56,6 +58,7 @@ export type Transaction = {
 export type TransactionFormValues = {
   type: TransactionType;
   status: 'completed';
+  categoryId?: string | null;
   concept: string;
   amount: string;
   accountId: string | null;
@@ -71,6 +74,7 @@ export type TransactionFormValues = {
 export type TransactionWritePayload = {
   type: TransactionType;
   status: 'completed';
+  categoryId?: string | null;
   concept: string;
   amount: number;
   accountId: string;

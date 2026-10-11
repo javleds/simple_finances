@@ -53,6 +53,11 @@ export function useTransactionForm(options: UseTransactionFormOptions = {}) {
         set: (value: TransactionFormValues['status']) => setFieldValue('status', value, true),
     });
 
+    const categoryId = computed({
+        get: () => values.categoryId ?? null,
+        set: (value: string | null) => setFieldValue('categoryId', value, true),
+    });
+
     const concept = computed({
         get: () => values.concept,
         set: (value: string) => setFieldValue('concept', value, true),
@@ -114,6 +119,7 @@ export function useTransactionForm(options: UseTransactionFormOptions = {}) {
     return {
         type,
         status,
+        categoryId,
         concept,
         amount,
         accountId,

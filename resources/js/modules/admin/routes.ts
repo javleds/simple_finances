@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router';
 
+import categoriesRoutes from '@/modules/categories/routes';
 import accountsRoutes from '@/modules/accounts/routes';
 import distributionRoutes from '@/modules/distribution/routes';
 import settingsRoutes from '@/modules/settings/routes';
@@ -28,6 +29,7 @@ const routes: RouteRecordRaw[] = [
         path: 'profile',
         component: () => import('./pages/ProfilePage.vue'),
       },
+      ...categoriesRoutes,
       ...accountsRoutes,
       ...virtualAccountsRoutes,
       ...subscriptionsRoutes,

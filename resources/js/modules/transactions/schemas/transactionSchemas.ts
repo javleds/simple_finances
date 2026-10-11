@@ -55,6 +55,7 @@ export const transactionFormSchema = z
   .object({
     type: z.enum(['income', 'expense']),
     status: z.literal('completed'),
+    categoryId: z.string().nullable().default(null),
     concept: z.string().trim().min(1, 'El concepto es obligatorio.'),
     amount: z
       .string()
@@ -223,6 +224,8 @@ export const transactionApiSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => value ?? null),
+  category_id: z.union([z.string(), z.number()]).nullable().optional().transform(parseEntityId),
+  category: z.object({ name: z.string() }).nullable().optional(),
   concept: z.string(),
   amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
   type: z.unknown().transform(parseType),
@@ -313,6 +316,7 @@ export function createDefaultTransactionFormValues(
   return {
     type: transaction?.type ?? 'expense',
     status: 'completed',
+    categoryId: transaction?.categoryId ?? null,
     concept: transaction?.concept ?? '',
     amount:
       transaction?.amount === null || transaction?.amount === undefined
@@ -336,6 +340,8 @@ export function mapTransactionApiToDomain(
     id: payload.id,
     accountId: payload.account_id ?? payload.account?.id ?? '',
     accountName: payload.account?.name ?? null,
+    categoryId: payload.category_id,
+    categoryName: payload.category?.name ?? null,
     concept: payload.concept,
     amount: payload.amount,
     type: payload.type,
@@ -374,6 +380,7 @@ export function mapTransactionFormToWritePayload(
   return {
     type: values.type,
     status: 'completed',
+    categoryId: values.categoryId ?? null,
     concept: values.concept.trim(),
     amount: parseNullableNumber(values.amount) ?? 0,
     accountId: values.accountId ?? '',

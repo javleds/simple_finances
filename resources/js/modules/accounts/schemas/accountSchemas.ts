@@ -141,6 +141,7 @@ export const accountFormSchema = z
   });
 
 export const accountApiSchema = z.object({
+  uses_shared_categories: z.boolean().optional().default(false),
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   name: z.string(),
@@ -391,6 +392,7 @@ export function createDefaultAccountFormValues(
 export function mapAccountApiToDomain(payload: z.infer<typeof accountApiSchema>): Account {
   return {
     id: payload.id,
+    usesSharedCategories: payload.uses_shared_categories,
     ownerId: payload.user_id,
     name: payload.name,
     description: payload.description,

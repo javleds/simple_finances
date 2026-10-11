@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/vue-query';
 import { computed, ref } from 'vue';
 
+import { categoryQueryKeys } from '@/modules/categories/composables/useCategories';
 import { dashboardQueryKeys } from '@/modules/admin/queries/dashboardQueries';
 import { accountQueryKeys } from '@/modules/accounts/queries/accountQueries';
 import type { Account } from '@/modules/accounts/types';
@@ -119,6 +120,7 @@ export function useTransactionsCrud() {
             if (accountId) {
                 syncAccountState(accountId, result.meta);
             }
+            if (!accountId) void queryClient.invalidateQueries({ queryKey: categoryQueryKeys.all });
             return result;
         } catch (error) {
             deleteError.value = resolveApiErrorMessage(
@@ -142,6 +144,7 @@ export function useTransactionsCrud() {
     function syncAccountState(accountId: string, meta: TransactionMutationMeta): void {
         updateAccountDetailCache(accountId, meta);
         notifyLedgerRows(accountId, meta);
+        void queryClient.invalidateQueries({ queryKey: categoryQueryKeys.all });
         void queryClient.invalidateQueries({ queryKey: accountQueryKeys.all });
         void queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all });
         void queryClient.invalidateQueries({ queryKey: transactionFacilityQueryKeys.all });
