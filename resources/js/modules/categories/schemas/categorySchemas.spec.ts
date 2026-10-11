@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { categoryCatalogSchema, categoryNameSchema } from './categorySchemas';
+import { categoryCatalogSchema, categoryNameSchema, categoryFormSchema } from './categorySchemas';
 
 describe('category catalog contracts', () => {
     it('preserves shared permissions and usage from the API', () => {
@@ -8,6 +8,7 @@ describe('category catalog contracts', () => {
                 {
                     id: 4,
                     name: 'Comida',
+                    transaction_type: 'outcome',
                     account_id: 9,
                     scope: 'shared',
                     transactions_count: 7,
@@ -21,6 +22,7 @@ describe('category catalog contracts', () => {
                 {
                     id: '4',
                     name: 'Comida',
+                    transactionType: 'outcome',
                     accountId: '9',
                     scope: 'shared',
                     transactionsCount: 7,
@@ -48,4 +50,14 @@ describe('category catalog contracts', () => {
         expect(categoryNameSchema.safeParse({ name: 'a'.repeat(101) }).success).toBe(false);
         expect(categoryNameSchema.parse({ name: ' Comida ' })).toEqual({ name: 'Comida' });
     });
+});
+
+it('requires an explicit valid movement type in category administration', () => {
+    expect(categoryFormSchema.safeParse({ name: 'Adjustments' }).success).toBe(false);
+    expect(
+        categoryFormSchema.safeParse({ name: 'Adjustments', transactionType: 'expense' }).success,
+    ).toBe(false);
+    expect(
+        categoryFormSchema.parse({ name: 'Adjustments', transactionType: 'both' }).transactionType,
+    ).toBe('both');
 });

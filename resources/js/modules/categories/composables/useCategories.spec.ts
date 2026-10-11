@@ -18,12 +18,12 @@ const catalog: CategoryCatalog = {
     canManage: true,
 };
 
-function renderCategories() {
+function renderCategories(type: 'income' | 'outcome' | null = null) {
     let state!: ReturnType<typeof useCategories>;
     const wrapper = mount(
         defineComponent({
             setup() {
-                state = useCategories();
+                state = useCategories(null, type);
                 return () => null;
             },
         }),
@@ -46,6 +46,20 @@ function renderCategories() {
 }
 
 describe('category creation from the selector', () => {
+    it('creates a category for the current movement type and rejects incompatible duplicates', async () => {
+        const { state, wrapper } = renderCategories('outcome');
+        await flushPromises();
+        repository.create.mockRejectedValue(new Error('Duplicate'));
+        repository.list.mockResolvedValue({
+            ...catalog,
+            categories: [{ id: '1', name: 'Salary', transactionType: 'income' }],
+        });
+        expect(await state.createCategory('Salary')).toBeNull();
+        expect(repository.create).toHaveBeenCalledWith(null, 'Salary', 'outcome');
+        expect(state.createError.value).toContain('otro tipo');
+        wrapper.unmount();
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         repository.list.mockResolvedValue(catalog);

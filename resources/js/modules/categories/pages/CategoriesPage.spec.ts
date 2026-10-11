@@ -3,17 +3,28 @@ import { defineComponent, ref } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CategoriesPage from './CategoriesPage.vue';
 
-const mocks = vi.hoisted(() => ({ refresh: vi.fn(), remove: vi.fn(), invalidate: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+    refresh: vi.fn(),
+    remove: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    invalidate: vi.fn(),
+}));
 vi.mock('@tanstack/vue-query', () => ({
     useQuery: () => ({ data: ref([]), isError: ref(false), refetch: vi.fn() }),
     useQueryClient: () => ({ invalidateQueries: mocks.invalidate }),
 }));
 vi.mock('../repositories/categoriesRepository', () => ({
-    createCategoriesRepository: () => ({ remove: mocks.remove }),
+    createCategoriesRepository: () => ({
+        remove: mocks.remove,
+        create: mocks.create,
+        update: mocks.update,
+    }),
 }));
 const category = {
     id: '1',
     name: 'Comida',
+    transactionType: 'outcome',
     scope: 'shared',
     accountId: '4',
     transactionsCount: 0,
@@ -50,9 +61,9 @@ function renderPage() {
                 AppModal: modal,
                 AppSearchSelect: selector,
                 AppActionMenu: defineComponent({
-                    emits: ['delete'],
+                    emits: ['delete', 'edit'],
                     template:
-                        '<button data-open-delete @click="$emit(\'delete\')">Eliminar</button>',
+                        '<div><button data-open-delete @click="$emit(\'delete\')">Eliminar</button><button data-edit @click="$emit(\'edit\')">Editar</button></div>',
                 }),
                 AppListState: { template: '<div><slot /></div>' },
                 AppSectionHeader: { template: '<div><slot name="actions" /></div>' },
@@ -128,5 +139,26 @@ describe('category deletion decisions', () => {
         resolve({ data: { categories: [category] }, error: null });
         await flushPromises();
         expect(wrapper.find('[data-modal]').exists()).toBe(false);
+    });
+});
+
+describe('category applicability administration', () => {
+    it('shows applicability and saves the selected type', async () => {
+        const wrapper = renderPage();
+        expect(wrapper.text()).toContain('Egresos');
+        await wrapper.get('[data-edit]').trigger('click');
+        expect(wrapper.get('#category-application').element).toHaveProperty('value', 'outcome');
+        await wrapper.get('#category-application').setValue('both');
+        await wrapper.get('#category-form').trigger('submit');
+        await flushPromises();
+        expect(mocks.update).toHaveBeenCalledWith(null, '1', 'Comida', 'both');
+    });
+
+    it('filters categories by compatible movement type', async () => {
+        const wrapper = renderPage();
+        await wrapper.get('#category-application-filter').setValue('income');
+        expect(wrapper.find('[data-open-delete]').exists()).toBe(false);
+        await wrapper.get('#category-application-filter').setValue('outcome');
+        expect(wrapper.find('[data-open-delete]').exists()).toBe(true);
     });
 });

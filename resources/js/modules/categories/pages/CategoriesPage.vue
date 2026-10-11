@@ -19,14 +19,20 @@ import { usePrimeForm } from '@/modules/shared/composables/usePrimeForm';
 import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 import { categoryQueryKeys, useCategories } from '../composables/useCategories';
 import { createCategoriesRepository } from '../repositories/categoriesRepository';
-import { categoryNameSchema } from '../schemas/categorySchemas';
-import type { Category, CategoryDeletePayload } from '../types';
+import { categoryFormSchema } from '../schemas/categorySchemas';
+import type { Category, CategoryDeletePayload, CategoryTransactionType } from '../types';
 
 const repository = createCategoriesRepository();
 const accountsRepository = createAccountsRepository();
 const client = useQueryClient();
 const selectedCatalog = ref<string | null>(null);
 const search = ref('');
+const applicationFilter = ref<string | null>(null);
+const applicationOptions = [
+    { value: 'income', label: 'Ingresos' },
+    { value: 'outcome', label: 'Egresos' },
+    { value: 'both', label: 'Ambos' },
+];
 const categories = useCategories(selectedCatalog);
 const accountsQuery = useQuery({
     queryKey: ['category-catalog-accounts'],
@@ -52,8 +58,12 @@ const catalogOptions = computed(() => [
         })),
 ]);
 const visibleCategories = computed(() =>
-    categories.categories.value.filter((category) =>
-        category.name.toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase()),
+    categories.categories.value.filter(
+        (category) =>
+            category.name.toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase()) &&
+            (!applicationFilter.value ||
+                category.transactionType === applicationFilter.value ||
+                category.transactionType === 'both'),
     ),
 );
 const editing = ref<Category | null>(null);
@@ -66,7 +76,18 @@ const deleteAction = ref<NonNullable<CategoryDeletePayload['action']> | null>(nu
 const targetId = ref<string | null>(null);
 const isSaving = ref(false);
 const mutationError = ref<string | null>(null);
-const nameForm = usePrimeForm({ schema: categoryNameSchema, initialValues: { name: '' } });
+const nameForm = usePrimeForm({
+    schema: categoryFormSchema,
+    initialValues: { name: '', transactionType: undefined as CategoryTransactionType | undefined },
+});
+const transactionType = computed({
+    get: () => nameForm.values.transactionType ?? null,
+    set: (value: string | null) =>
+        nameForm.setFieldValue(
+            'transactionType',
+            (value ?? undefined) as CategoryTransactionType | undefined,
+        ),
+});
 const name = computed({
     get: () => nameForm.values.name,
     set: (value: string) => nameForm.setFieldValue('name', value),
@@ -87,6 +108,7 @@ const canDelete = computed(
 
 watch(selectedCatalog, () => {
     search.value = '';
+    applicationFilter.value = null;
     preparationError.value = null;
     deleting.value = null;
     isFormOpen.value = false;
@@ -95,7 +117,9 @@ watch(selectedCatalog, () => {
 function openForm(category: Category | null = null): void {
     if (categories.isLoading.value || categories.error.value || isSaving.value) return;
     editing.value = category;
-    nameForm.resetForm({ values: { name: category?.name ?? '' } });
+    nameForm.resetForm({
+        values: { name: category?.name ?? '', transactionType: category?.transactionType },
+    });
     mutationError.value = null;
     isFormOpen.value = true;
 }
@@ -106,9 +130,18 @@ const saveCategory = nameForm.handleSubmit(async (): Promise<void> => {
     mutationError.value = null;
     try {
         if (editing.value) {
-            await repository.update(selectedCatalog.value, editing.value.id, name.value.trim());
+            await repository.update(
+                selectedCatalog.value,
+                editing.value.id,
+                name.value.trim(),
+                nameForm.values.transactionType,
+            );
         } else {
-            await repository.create(selectedCatalog.value, name.value.trim());
+            await repository.create(
+                selectedCatalog.value,
+                name.value.trim(),
+                nameForm.values.transactionType,
+            );
         }
         await invalidate();
         isFormOpen.value = false;
@@ -200,7 +233,7 @@ async function deleteCategory(): Promise<void> {
                 ></template
             >
         </AppSectionHeader>
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div class="grid gap-4 sm:grid-cols-3">
             <AppSearchSelect
                 id="category-catalog"
                 :model-value="selectedCatalog ?? ''"
@@ -215,6 +248,13 @@ async function deleteCategory(): Promise<void> {
                 label="Buscar categorías"
                 placeholder="Buscar por nombre"
                 type="search"
+            />
+            <AppSearchSelect
+                id="category-application-filter"
+                v-model="applicationFilter"
+                label="Tipo de movimiento"
+                :options="applicationOptions"
+                placeholder="Todos"
             />
         </div>
         <Message v-if="accountsQuery.isError.value" severity="error"
@@ -258,7 +298,12 @@ async function deleteCategory(): Promise<void> {
                         <p class="font-medium wrap-anywhere">{{ category.name }}</p>
                         <p class="text-sm text-(--app-color-text-subtle)">
                             {{ category.transactionsCount }} movimientos ·
-                            {{ category.scope === 'shared' ? 'Compartida' : 'Personal' }}
+                            {{ category.scope === 'shared' ? 'Compartida' : 'Personal' }} ·
+                            {{
+                                applicationOptions.find(
+                                    (option) => option.value === category.transactionType,
+                                )?.label
+                            }}
                         </p>
                     </div>
                     <AppActionMenu
@@ -295,6 +340,14 @@ async function deleteCategory(): Promise<void> {
                     maxlength="100"
                     required
                     :error="nameForm.errors.value.name"
+                />
+                <AppSearchSelect
+                    id="category-application"
+                    v-model="transactionType"
+                    label="Aplica a"
+                    required
+                    :options="applicationOptions"
+                    :error="nameForm.errors.value.transactionType"
                 />
                 <p
                     v-if="categories.scope.value === 'shared'"

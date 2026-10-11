@@ -17,6 +17,7 @@ const selectorStub = defineComponent({
 const category: Category = {
     id: 'food',
     name: 'Comida',
+    transactionType: 'both',
     accountId: null,
     scope: 'personal',
     transactionsCount: 0,
@@ -45,7 +46,7 @@ beforeEach(() => {
 
 function render() {
     return mount(TransactionCategorySelect, {
-        props: { accountId: 'first', modelValue: 'food' },
+        props: { accountId: 'first', modelValue: 'food', transactionType: 'expense' },
         global: {
             stubs: {
                 AppSearchSelect: selectorStub,
@@ -57,6 +58,54 @@ function render() {
 }
 
 describe('TransactionCategorySelect', () => {
+    it('shows only categories matching the movement type or both', async () => {
+        state.categories.value = [
+            category,
+            { ...category, id: 'salary', transactionType: 'income' },
+            { ...category, id: 'rent', transactionType: 'outcome' },
+        ];
+        const wrapper = render();
+        expect(
+            wrapper
+                .getComponent(selectorStub)
+                .props('options')
+                .map((option: { value: string }) => option.value),
+        ).toEqual(['food', 'rent']);
+        await wrapper.setProps({ transactionType: 'income' });
+        expect(
+            wrapper
+                .getComponent(selectorStub)
+                .props('options')
+                .map((option: { value: string }) => option.value),
+        ).toEqual(['food', 'salary']);
+    });
+
+    it('clears an incompatible selection after changing the movement type', async () => {
+        state.refresh.mockResolvedValue({
+            data: { categories: [{ ...category, transactionType: 'outcome' }] },
+            error: null,
+        });
+        const wrapper = render();
+        await wrapper.setProps({ transactionType: 'income' });
+        await flushPromises();
+        expect(wrapper.emitted('update:modelValue')).toEqual([[null]]);
+    });
+
+    it('ignores inline creation completed after changing the movement type', async () => {
+        let resolve!: (value: Category) => void;
+        state.createCategory.mockReturnValue(
+            new Promise<Category>((done) => {
+                resolve = done;
+            }),
+        );
+        const wrapper = render();
+        wrapper.getComponent(selectorStub).vm.$emit('create', 'Comida');
+        await wrapper.setProps({ transactionType: 'income' });
+        resolve({ ...category, transactionType: 'outcome' });
+        await flushPromises();
+        expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+    });
+
     it('selects a category created inline', async () => {
         const wrapper = render();
         wrapper.getComponent(selectorStub).vm.$emit('create', 'Comida');

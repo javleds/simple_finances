@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 import { useCategories } from '@/modules/categories/composables/useCategories';
+import type { TransactionType } from '../types';
 import { AppButton, AppSearchSelect, AppText } from '@/modules/shared/components';
 
 const props = defineProps<{
     accountId: string | null;
+    transactionType: TransactionType;
     modelValue: string | null;
 }>();
 const emit = defineEmits<{
@@ -21,21 +23,36 @@ const {
     createError,
     createCategory,
     refresh,
-} = useCategories(() => props.accountId);
+} = useCategories(
+    () => props.accountId,
+    () => (props.transactionType === 'expense' ? 'outcome' : 'income'),
+);
 const options = computed(() =>
-    categories.value.map((category) => ({ value: category.id, label: category.name })),
+    categories.value
+        .filter(
+            (category) =>
+                category.transactionType === 'both' ||
+                category.transactionType ===
+                    (props.transactionType === 'expense' ? 'outcome' : 'income'),
+        )
+        .map((category) => ({ value: category.id, label: category.name })),
 );
 const busy = computed(() => isCreating.value || isLoading.value);
 watch(busy, (value) => emit('busy', value), { immediate: true });
 watch(
-    () => props.accountId,
-    async (next, previous) => {
-        if (next === previous) return;
+    () => [props.accountId, props.transactionType] as const,
+    async ([accountId, type], [previousAccountId, previousType]) => {
+        if (accountId === previousAccountId && type === previousType) return;
         const result = await refresh();
-        if (props.accountId !== next || result.error) return;
+        if (props.accountId !== accountId || props.transactionType !== type || result.error) return;
         if (
             props.modelValue &&
-            !result.data?.categories.some((category) => category.id === props.modelValue)
+            !result.data?.categories.some(
+                (category) =>
+                    category.id === props.modelValue &&
+                    (category.transactionType === 'both' ||
+                        category.transactionType === (type === 'expense' ? 'outcome' : 'income')),
+            )
         ) {
             emit('update:modelValue', null);
         }
@@ -44,8 +61,10 @@ watch(
 
 async function create(name: string): Promise<void> {
     const accountId = props.accountId;
+    const type = props.transactionType;
     const category = await createCategory(name);
-    if (category && props.accountId === accountId) emit('update:modelValue', category.id);
+    if (category && props.accountId === accountId && props.transactionType === type)
+        emit('update:modelValue', category.id);
 }
 </script>
 

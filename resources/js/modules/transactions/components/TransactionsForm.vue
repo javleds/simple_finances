@@ -396,6 +396,7 @@ async function handleSubmit(): Promise<void> {
             <TransactionCategorySelect
                 v-model="categoryId"
                 :account-id="accountId"
+                :transaction-type="type"
                 @busy="categoryBusy = $event"
             />
         </section>

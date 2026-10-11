@@ -1,6 +1,9 @@
+export type CategoryTransactionType = 'income' | 'outcome' | 'both';
+
 export type Category = {
     id: string;
     name: string;
+    transactionType: CategoryTransactionType;
     accountId: string | null;
     scope: 'personal' | 'shared';
     transactionsCount: number;

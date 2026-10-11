@@ -7,6 +7,7 @@ export const categorySchema = z
     .object({
         id: entityId,
         name: z.string(),
+        transaction_type: z.enum(['income', 'outcome', 'both']),
         account_id: entityId.nullable(),
         scope: z.enum(['personal', 'shared']),
         transactions_count: z.coerce.number(),
@@ -15,6 +16,7 @@ export const categorySchema = z
     .transform<Category>((value) => ({
         id: value.id,
         name: value.name,
+        transactionType: value.transaction_type,
         accountId: value.account_id,
         scope: value.scope,
         transactionsCount: value.transactions_count,
@@ -44,4 +46,10 @@ export const categoryCatalogSchema = z
 
 export const categoryNameSchema = z.object({
     name: z.string().trim().min(1, 'Escribe un nombre.').max(100, 'Usa hasta 100 caracteres.'),
+});
+
+export const categoryFormSchema = categoryNameSchema.extend({
+    transactionType: z.enum(['income', 'outcome', 'both'], {
+        error: 'Selecciona a qué movimientos aplica.',
+    }),
 });
