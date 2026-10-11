@@ -27,7 +27,7 @@ function formatCurrency(value: number): string {
 <template>
     <AppCard class="rounded-(--app-radius-control)">
         <div class="space-y-5">
-            <AppHeroMetric label="Balance" :value="formatCurrency(props.balance)">
+            <AppHeroMetric label="Balance" :value="formatCurrency(props.balance)" stacked>
                 <template #adornment>
                     <div
                         class="flex h-12 w-12 items-center justify-center rounded-(--app-radius-control) border bg-(--app-color-surface-muted)"
