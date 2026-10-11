@@ -103,19 +103,21 @@ function handleAccountUsersChange(nextUsers: AccountMember[]): void {
             />
         </div>
 
-        <RouterView v-slot="{ Component }">
-            <component
-                :is="Component"
-                :account="account"
-                :is-loading-account="isLoadingAccount"
-                :account-load-error="loadError"
-                v-bind="
-                    activeSection === 'users'
-                        ? { onAccountUsersChange: handleAccountUsersChange }
-                        : undefined
-                "
-            />
-        </RouterView>
+        <div class="lg:pt-6">
+            <RouterView v-slot="{ Component }">
+                <component
+                    :is="Component"
+                    :account="account"
+                    :is-loading-account="isLoadingAccount"
+                    :account-load-error="loadError"
+                    v-bind="
+                        activeSection === 'users'
+                            ? { onAccountUsersChange: handleAccountUsersChange }
+                            : undefined
+                    "
+                />
+            </RouterView>
+        </div>
     </div>
 
     <AppCard v-else class="rounded-(--app-radius-control)">
