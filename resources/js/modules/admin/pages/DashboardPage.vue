@@ -86,28 +86,22 @@ const filteredGraphAccounts = computed(() =>
             {{ loadError }}
         </Message>
 
-        <PersonalMoneyPanel class="order-1" />
+        <PersonalMoneyPanel />
 
-        <DashboardSummaryCards class="order-2 lg:order-1" :summary="dashboard.accountsSummary" />
+        <DashboardSummaryCards :summary="dashboard.accountsSummary" />
 
-        <div class="contents lg:order-2 lg:block lg:columns-2 lg:gap-6">
+        <div class="contents lg:block lg:columns-2 lg:gap-6">
             <DashboardBalanceSection
-                class="order-1 lg:mb-6 lg:break-inside-avoid"
+                class="lg:mb-6 lg:break-inside-avoid"
                 v-model:graph-mode="accountGraphMode"
                 :accounts="filteredGraphAccounts"
             />
 
-            <Message
-                v-if="transferError"
-                class="order-3 lg:mb-6 lg:break-inside-avoid"
-                severity="error"
-                >{{ transferError }}</Message
-            >
+            <Message v-if="transferError" class="lg:mb-6 lg:break-inside-avoid" severity="error">{{
+                transferError
+            }}</Message>
 
-            <div
-                v-if="accountsWithReimbursements.length > 0"
-                class="order-4 lg:mb-6 lg:break-inside-avoid"
-            >
+            <div v-if="accountsWithReimbursements.length > 0" class="lg:mb-6 lg:break-inside-avoid">
                 <AccountReimbursementsPanel
                     :accounts="accountsWithReimbursements"
                     :active-transfer-key="activeTransferKey"
@@ -121,7 +115,7 @@ const filteredGraphAccounts = computed(() =>
             </div>
 
             <DashboardSubscriptionsPlanning
-                class="order-5 lg:mb-6 lg:break-inside-avoid"
+                class="lg:mb-6 lg:break-inside-avoid"
                 v-model:savings-cadence="savingsCadence"
                 :annual-spend="annualSubscriptionsSpend"
                 :recommended-savings="recommendedSavings"
@@ -129,7 +123,7 @@ const filteredGraphAccounts = computed(() =>
             />
 
             <DashboardPeriodSummary
-                class="order-6 lg:mb-6 lg:break-inside-avoid"
+                class="lg:mb-6 lg:break-inside-avoid"
                 v-model:start-date="periodStartDate"
                 v-model:end-date="periodEndDate"
                 :summary="periodSummary"

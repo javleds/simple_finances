@@ -100,6 +100,7 @@ const navigationItems: AdminNavigationItem[] = [
 ];
 
 const moreNavigationItems = [
+    { label: 'Mi dinero disponible', routeName: 'admin.personal-money', icon: WalletIcon },
     { label: 'Categorías', routeName: 'admin.categories', icon: TagIcon },
     { label: 'Distribución', routeName: 'admin.distribution', icon: Squares2X2Icon },
     {
@@ -112,6 +113,7 @@ const moreNavigationItems = [
 
 const isMoreActive = computed(
     () =>
+        isActiveRoute('admin.personal-money') ||
         isActiveRoute('admin.distribution') ||
         isActiveRoute('admin.settings') ||
         isActiveRoute('admin.categories'),
@@ -151,6 +153,8 @@ function showBackButton(): boolean {
     if (route.name === 'admin.profile' || route.name === 'admin.invitations') {
         return true;
     }
+
+    if (route.name === 'admin.personal-money') return true;
 
     if (route.name === 'admin.transactions' || route.name === 'admin.virtual-accounts') {
         return true;
@@ -208,7 +212,8 @@ async function handleLogout(): Promise<void> {
                                 : route.name === 'admin.profile' ||
                                     route.name === 'admin.invitations' ||
                                     route.name === 'admin.transactions' ||
-                                    route.name === 'admin.virtual-accounts'
+                                    route.name === 'admin.virtual-accounts' ||
+                                    route.name === 'admin.personal-money'
                                   ? { name: 'admin.dashboard' }
                                   : { name: 'admin.accounts' }
                         "
@@ -220,7 +225,8 @@ async function handleLogout(): Promise<void> {
                                 : route.name === 'admin.profile' ||
                                     route.name === 'admin.invitations' ||
                                     route.name === 'admin.transactions' ||
-                                    route.name === 'admin.virtual-accounts'
+                                    route.name === 'admin.virtual-accounts' ||
+                                    route.name === 'admin.personal-money'
                                   ? 'Volver al inicio'
                                   : 'Volver a cuentas'
                         "

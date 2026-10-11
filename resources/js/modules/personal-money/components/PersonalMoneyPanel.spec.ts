@@ -1,6 +1,6 @@
-import { mount, flushPromises } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { ref } from 'vue';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PersonalMoneyPanel from './PersonalMoneyPanel.vue';
 import type { PersonalMoneyState } from '../types';
 
@@ -25,6 +25,7 @@ const global = {
         AppButton: { template: '<button><slot /></button>' },
         AppTitle: { template: '<h2><slot /></h2>' },
         AppText: { template: '<p><slot /></p>' },
+        AppLink: { name: 'AppLink', props: ['to'], template: '<a><slot /></a>' },
     },
 };
 beforeEach(() => {
@@ -51,45 +52,44 @@ beforeEach(() => {
     };
 });
 
-describe('personal money panel', () => {
-    it('warns that unresolved sources make the available amount incomplete and allows resolution', async () => {
-        const wrapper = mount(PersonalMoneyPanel, { global });
-        expect(wrapper.text()).toContain('Tu disponible puede estar incompleto');
-        expect(wrapper.text()).toContain('Mercado');
-        const button = wrapper.findAll('button').find((item) => item.text() === 'Mi dinero');
-        await button!.trigger('click');
-        await flushPromises();
-        expect(mocks.saveLink).toHaveBeenCalledWith({
-            source_type: 'transaction',
-            source_id: 4,
-            resolution: 'personal',
+const wrappers: ReturnType<typeof mount>[] = [];
+afterEach(() => {
+    wrappers.splice(0).forEach((wrapper) => wrapper.unmount());
+});
+function setup() {
+    const wrapper = mount(PersonalMoneyPanel, { global });
+    wrappers.push(wrapper);
+    return wrapper;
+}
+
+describe('personal money home summary', () => {
+    it('shows the amount and direct links without rendering history or settings', () => {
+        const wrapper = setup();
+        expect(wrapper.text()).toContain('$100.00');
+        expect(wrapper.text()).toContain('Mis gastos');
+        expect(wrapper.text()).toContain('1 movimientos por revisar');
+        expect(wrapper.text()).not.toContain('Mercado');
+        expect(wrapper.find('form').exists()).toBe(false);
+        const links = wrapper.findAllComponents({ name: 'AppLink' });
+        expect(links[0]!.props('to')).toEqual({ name: 'admin.personal-money' });
+        expect(links[1]!.props('to')).toEqual({
+            name: 'admin.personal-money',
+            query: { resolution: 'pending' },
         });
     });
-    it('shows activation without personal balances when disabled', () => {
+    it('shows a configuration link while disabled without exposing balances or history', () => {
         state.value!.settings!.enabled = false;
-        state.value!.available_balance = null;
-        state.value!.history = [];
-        const wrapper = mount(PersonalMoneyPanel, { global });
+        const wrapper = setup();
         expect(wrapper.text()).toContain('Configurar mi disponible');
-        expect(wrapper.find('[aria-label="Saldo disponible"]').exists()).toBe(false);
+        expect(wrapper.text()).not.toContain('$100.00');
         expect(wrapper.text()).not.toContain('Mercado');
+        expect(wrapper.find('form').exists()).toBe(false);
     });
-    it('does not offer reclassification for native automatic movements', () => {
-        state.value!.history[0]!.resolution = 'automatic';
-        const wrapper = mount(PersonalMoneyPanel, { global });
-        expect(wrapper.findAll('button').some((item) => item.text() === 'Mi dinero')).toBe(false);
-    });
-    it('requires reconfiguration when the selected account becomes shared or unavailable', () => {
+    it('asks for reconfiguration when the selected account is unavailable', () => {
         state.value!.account_available = false;
         state.value!.available_balance = null;
-        const wrapper = mount(PersonalMoneyPanel, { global });
+        const wrapper = setup();
         expect(wrapper.text()).toContain('Configura otra cuenta individual');
         expect(wrapper.find('[aria-label="Saldo disponible"]').exists()).toBe(false);
-    });
-    it('displays the page clamped by the server', () => {
-        state.value!.meta.current_page = 2;
-        state.value!.meta.last_page = 3;
-        const wrapper = mount(PersonalMoneyPanel, { global });
-        expect(wrapper.text()).toContain('Página 2 de 3');
     });
 });
