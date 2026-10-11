@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CategoryController extends ApiController
@@ -26,7 +27,10 @@ class CategoryController extends ApiController
         $this->ensureAccess($account);
         $canManage = $this->canManage($account);
         $query = $this->catalog($account)->withCount('transactions')->orderBy('name');
-        $filters = $request->validate(['search' => ['nullable', 'string', 'max:100']]);
+        $filters = $request->validate(['search' => ['nullable', 'string', 'max:100'], 'transaction_type' => ['sometimes', 'in:income,outcome']]);
+        if (isset($filters['transaction_type'])) {
+            $query->whereIn('transaction_type', [$filters['transaction_type'], 'both']);
+        }
         $search = trim($filters['search'] ?? '');
         if ('' !== $search) {
             $query->where('name', 'like', '%' . $search . '%');
@@ -47,6 +51,7 @@ class CategoryController extends ApiController
     {
         $this->ensureAccess($account);
         $name = $this->name($request);
+        $data = $request->validate(['transaction_type' => ['sometimes', 'required', 'in:income,outcome,both']]);
         $normalized = mb_strtolower($name);
         if ($this->catalog($account)->where('normalized_name', $normalized)->exists()) {
             throw ValidationException::withMessages(['name' => 'Ya existe una categoría con ese nombre.']);
@@ -55,6 +60,7 @@ class CategoryController extends ApiController
         try {
             $category = Category::query()->create([
                 'name'               => $name,
+                'transaction_type'   => $data['transaction_type'] ?? 'both',
                 'normalized_name'    => $normalized,
                 'user_id'            => $account?->uses_shared_categories ? null : auth()->id(),
                 'account_id'         => $account?->uses_shared_categories ? $account->id : null,
@@ -74,13 +80,22 @@ class CategoryController extends ApiController
         $this->ensureCategory($category, $account);
         abort_unless($this->canManage($account), 403);
         $name = $this->name($request);
+        $data = $request->validate(['transaction_type' => ['sometimes', 'required', 'in:income,outcome,both']]);
         $normalized = mb_strtolower($name);
         if ($this->catalog($account)->where('normalized_name', $normalized)->whereKeyNot($category->id)->exists()) {
             throw ValidationException::withMessages(['name' => 'Ya existe una categoría con ese nombre.']);
         }
 
         try {
-            $category->update(['name' => $name, 'normalized_name' => $normalized]);
+            DB::transaction(static function () use ($category, $name, $normalized, $data): void {
+                $locked = Category::query()->lockForUpdate()->findOrFail($category->id);
+                $type = $data['transaction_type'] ?? $locked->transaction_type;
+                if ('both' !== $type && $locked->transactions()->withoutGlobalScopes()->where('type', '!=', $type)->exists()) {
+                    throw ValidationException::withMessages(['transaction_type' => 'Hay movimientos incompatibles. Reclasifícalos antes de cambiar el tipo.']);
+                }
+                $locked->update(['name' => $name, 'normalized_name' => $normalized, 'transaction_type' => $type]);
+            });
+            $category->refresh();
         } catch (UniqueConstraintViolationException) {
             throw ValidationException::withMessages(['name' => 'Ya existe una categoría con ese nombre.']);
         }

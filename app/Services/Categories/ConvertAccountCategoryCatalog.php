@@ -29,6 +29,7 @@ class ConvertAccountCategoryCatalog
                 ], [
                     'user_id'            => null,
                     'name'               => $category->name,
+                    'transaction_type'   => $category->transaction_type,
                     'created_by_user_id' => $category->created_by_user_id,
                 ]);
                 Transaction::withoutGlobalScopes()->where('account_id', $account->id)->where('category_id', $category->id)->update(['category_id' => $shared->id]);

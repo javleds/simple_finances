@@ -75,7 +75,7 @@ class TransactionUpdater
         if (! $dto->categoryProvided && $transaction->account_id !== $dto->accountId) {
             $categoryId = null;
         }
-        $transaction->category_id = app(\App\Services\Categories\ResolveTransactionCategory::class)->execute($dto->accountId, $categoryId, $transaction->user_id ?? $this->auth->id());
+        $transaction->category_id = app(\App\Services\Categories\ResolveTransactionCategory::class)->execute($dto->accountId, $categoryId, $transaction->user_id ?? $this->auth->id(), $dto->type);
         $sameAccount = $transaction->account_id === $dto->accountId;
         $previousPayerId = $transaction->paid_by_user_id;
         $previousCustodianId = $transaction->custodian_user_id;

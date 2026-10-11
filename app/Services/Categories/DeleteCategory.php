@@ -36,6 +36,10 @@ class DeleteCategory
                 throw ValidationException::withMessages(['target_category_id' => 'Selecciona otra categoría del mismo catálogo.']);
             }
 
+            if ('reassign' === $action && 'both' !== $target->transaction_type && (clone $transactions)->where('type', '!=', $target->transaction_type)->exists()) {
+                throw ValidationException::withMessages(['target_category_id' => 'La categoría de destino no admite todos los tipos de movimiento utilizados.']);
+            }
+
             $transactions->update(['category_id' => 'reassign' === $action ? $target->id : null]);
             $source->delete();
         }, 3);

@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\Categories;
 
+use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\Category;
 use Illuminate\Validation\ValidationException;
 
 class ResolveTransactionCategory
 {
-    public function execute(int $accountId, ?int $categoryId, int $userId): ?int
+    public function execute(int $accountId, ?int $categoryId, int $userId, TransactionType $type): ?int
     {
         $account = Account::withoutGlobalScopes()->lockForUpdate()->findOrFail($accountId);
 
@@ -18,13 +19,13 @@ class ResolveTransactionCategory
             return null;
         }
 
-        $query = Category::query()->whereKey($categoryId);
+        $query = Category::query()->whereKey($categoryId)->whereIn('transaction_type', [$type->value, 'both']);
         $account->uses_shared_categories
             ? $query->where('account_id', $account->id)
             : $query->whereNull('account_id')->where('user_id', $userId);
 
         if (null === $query->lockForUpdate()->first()) {
-            throw ValidationException::withMessages(['category_id' => 'La categoría no está disponible para esta cuenta.']);
+            throw ValidationException::withMessages(['category_id' => 'La categoría no está disponible para esta cuenta y tipo de movimiento.']);
         }
 
         return $categoryId;

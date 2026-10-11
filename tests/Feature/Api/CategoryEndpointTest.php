@@ -59,11 +59,11 @@ it('requires an explicit deletion decision and reclassifies all members without 
 it('copies only categories used by the account and preserves a shared catalog on repeated conversion', function () {
     $owner = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $owner->id]);
-    $personal = Category::create(['user_id' => $owner->id, 'name' => 'Food', 'normalized_name' => 'food', 'created_by_user_id' => $owner->id]);
+    $personal = Category::create(['user_id' => $owner->id, 'transaction_type' => 'outcome', 'name' => 'Food', 'normalized_name' => 'food', 'created_by_user_id' => $owner->id]);
     $transaction = Transaction::factory()->create(['account_id' => $account->id, 'user_id' => $owner->id, 'category_id' => $personal->id]);
     app(ConvertAccountCategoryCatalog::class)->execute($account);
     app(ConvertAccountCategoryCatalog::class)->execute($account);
-    expect($account->fresh()->uses_shared_categories)->toBeTrue()->and($transaction->fresh()->category_id)->not->toBe($personal->id)->and(Category::where('account_id', $account->id)->count())->toBe(1)->and($personal->fresh())->not->toBeNull();
+    expect($account->fresh()->uses_shared_categories)->toBeTrue()->and($transaction->fresh()->category_id)->not->toBe($personal->id)->and(Category::where('account_id', $account->id)->count())->toBe(1)->and($personal->fresh())->not->toBeNull()->and(Category::findOrFail($transaction->fresh()->category_id)->transaction_type)->toBe('outcome');
 });
 
 it('validates transaction category scope and preserves omitted categories on update', function () {
@@ -169,4 +169,28 @@ it('changes only category references when deleting a category used by a split sh
         unset($before['category_id'], $before['updated_at'], $after['category_id'], $after['updated_at']);
         expect($after)->toEqual($before);
     }
+});
+
+
+it('filters categories by movement type and validates category applicability', function () {
+    $user = User::factory()->create();
+    $account = Account::factory()->create(['user_id' => $user->id]);
+    $account->users()->attach($user->id);
+    $this->withHeaders(categoryHeaders($user));
+    $income = $this->postJson('/api/categories', ['name' => 'Salary', 'transaction_type' => 'income'])->assertCreated()->json('data.id');
+    $outcome = $this->postJson('/api/categories', ['name' => 'Food', 'transaction_type' => 'outcome'])->assertCreated()->json('data.id');
+    $both = $this->postJson('/api/categories', ['name' => 'Adjustments'])->assertCreated()->assertJsonPath('data.transaction_type', 'both')->json('data.id');
+    $this->getJson('/api/categories?transaction_type=income')->assertOk()->assertJsonCount(2, 'data');
+    $this->getJson('/api/accounts/' . $account->id . '/categories?transaction_type=outcome')->assertOk()->assertJsonCount(2, 'data');
+    $this->getJson('/api/categories?transaction_type=invalid')->assertUnprocessable();
+    $this->postJson('/api/categories', ['name' => 'Invalid', 'transaction_type' => 'expense'])->assertUnprocessable();
+    $this->putJson('/api/categories/' . $income, ['name' => 'Salary renamed'])->assertOk()->assertJsonPath('data.transaction_type', 'income');
+    $payload = ['account_id' => $account->id, 'type' => 'income', 'status' => 'completed', 'concept' => 'Payment', 'amount' => 10, 'scheduled_at' => '2026-10-10'];
+    $this->postJson('/api/transactions', $payload + ['category_id' => $outcome])->assertUnprocessable()->assertJsonValidationErrors('category_id');
+    $id = $this->postJson('/api/transactions', $payload + ['category_id' => $income])->assertCreated()->json('data.id');
+    $this->putJson('/api/transactions/' . $id, array_replace($payload, ['type' => 'outcome']))->assertUnprocessable()->assertJsonValidationErrors('category_id');
+    $this->putJson('/api/categories/' . $income, ['name' => 'Salary', 'transaction_type' => 'outcome'])->assertUnprocessable()->assertJsonValidationErrors('transaction_type');
+    $this->deleteJson('/api/categories/' . $income, ['action' => 'reassign', 'target_category_id' => $outcome])->assertUnprocessable()->assertJsonValidationErrors('target_category_id');
+    $this->deleteJson('/api/categories/' . $income, ['action' => 'reassign', 'target_category_id' => $both])->assertOk();
+    $this->putJson('/api/categories/' . $outcome, ['name' => 'Food', 'transaction_type' => 'both'])->assertOk()->assertJsonPath('data.transaction_type', 'both');
 });
