@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query';
-import { AppButton, AppModal, AppText } from '@/modules/shared/components';
+import { ApiError } from '@/lib/api/apiClient';
+import { AppButton, AppText } from '@/modules/shared/components';
 import { transactionAttachmentsRepository as repository } from '../repositories/transactionAttachmentsRepository';
 import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 import { transactionFacilityQueryKeys } from '../queries/transactionFacilityQueries';
+import { DocumentTextIcon, ArchiveBoxIcon, PhotoIcon } from '@heroicons/vue/24/outline';
+import TransactionImageViewer from './TransactionImageViewer.vue';
+import { useAttachmentImages } from '../composables/useAttachmentImages';
 import type { AttachmentDraft, TransactionAttachment, Transaction } from '../types';
 
 const props = withDefaults(
@@ -26,8 +30,8 @@ const cameraInput = ref<HTMLInputElement | null>(null);
 const expanded = ref(Boolean(props.transactionId));
 const error = ref<string | null>(null);
 const activeId = ref<string | null>(null);
-const preview = ref<string | null>(null);
-const previewName = ref('');
+const previewId = ref<string | null>(null);
+const previewOrigin = ref<HTMLElement | null>(null);
 const visible = ref(typeof document === 'undefined' || document.visibilityState === 'visible');
 const effectiveId = computed(() => props.draft?.transactionId ?? props.transactionId);
 const config = useQuery({
@@ -40,6 +44,7 @@ const attachments = useQuery({
     enabled: computed(() => Boolean(effectiveId.value) && expanded.value && visible.value),
     queryFn: () => repository.list(effectiveId.value!),
     refetchInterval: (query) =>
+        !(query.state.error instanceof ApiError && [403, 404].includes(query.state.error.status)) &&
         visible.value &&
         query.state.data?.data.some(
             (item) => item.status === 'pending' || item.status === 'processing',
@@ -48,9 +53,65 @@ const attachments = useQuery({
             : false,
 });
 const localFiles = computed(() => props.draft?.files.filter((entry) => !entry.uploaded) ?? []);
+const accessDenied = computed(
+    () =>
+        attachments.error.value instanceof ApiError &&
+        [403, 404].includes(attachments.error.value.status),
+);
+const imageSessionVisible = computed(() => expanded.value && visible.value && !accessDenied.value);
+const imageFiles = computed(() => (accessDenied.value ? [] : (attachments.data.value?.data ?? [])));
+const {
+    resources,
+    localUrls,
+    readyImages,
+    load: loadImage,
+} = useAttachmentImages(effectiveId, imageSessionVisible, imageFiles, localFiles);
+const viewerImages = computed(() => [
+    ...readyImages.value.map((item) => ({
+        id: item.id,
+        name: item.original_name,
+        url: resources.value[item.id]?.url ?? '',
+        failed: resources.value[item.id]?.failed ?? false,
+    })),
+    ...localFiles.value
+        .filter((entry) => localUrls.value[entry.uploadId])
+        .map((entry) => ({
+            id: `local:${entry.uploadId}`,
+            name: entry.file.name,
+            url: localUrls.value[entry.uploadId]!,
+        })),
+]);
+watch([imageSessionVisible, effectiveId], () => closePreview());
+watch(viewerImages, (images) => {
+    if (previewId.value && !images.some((image) => image.id === previewId.value)) closePreview();
+});
+function openPreview(id: string, event: Event): void {
+    previewOrigin.value = event.currentTarget as HTMLElement;
+    previewId.value = id;
+}
+async function downloadPreview(id: string): Promise<void> {
+    const item = readyImages.value.find((image) => image.id === id);
+    if (item) await action(item, 'download');
+    const local = localFiles.value.find((entry) => `local:${entry.uploadId}` === id);
+    if (local && localUrls.value[local.uploadId])
+        downloadUrl(localUrls.value[local.uploadId]!, local.file.name);
+}
+function downloadUrl(url: string, name: string): void {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    link.click();
+}
+function documentIcon(name: string): typeof DocumentTextIcon {
+    if (/\.zip$/i.test(name)) return ArchiveBoxIcon;
+    if (/\.(jpe?g|png|webp|heic|heif)$/i.test(name)) return PhotoIcon;
+    return DocumentTextIcon;
+}
 const canManage = computed(
     () =>
-        !props.readOnly && (!effectiveId.value || attachments.data.value?.meta.can_manage === true),
+        !props.readOnly &&
+        !accessDenied.value &&
+        (!effectiveId.value || attachments.data.value?.meta.can_manage === true),
 );
 const labels = {
     pending: 'En espera',
@@ -124,7 +185,7 @@ function drop(event: DragEvent): void {
 }
 async function action(
     item: TransactionAttachment,
-    operation: 'remove' | 'retry' | 'download' | 'preview',
+    operation: 'remove' | 'retry' | 'download',
 ): Promise<void> {
     if (!effectiveId.value || activeId.value || props.busy) return;
     if (operation === 'remove' && !window.confirm('¿Eliminar este comprobante?')) return;
@@ -133,24 +194,20 @@ async function action(
     try {
         if (operation === 'remove') await repository.remove(effectiveId.value, item.id);
         if (operation === 'retry') await repository.retry(effectiveId.value, item.id);
-        if (operation === 'download' || operation === 'preview') {
-            const blob = await repository.download(effectiveId.value, item.id);
-            const url = URL.createObjectURL(blob);
-            if (operation === 'preview') {
-                closePreview();
-                preview.value = url;
-                previewName.value = item.original_name;
-            }
-            if (operation === 'download') {
-                const link = document.createElement('a');
-                link.href = url;
-                link.download =
-                    item.mime_type === 'image/webp'
-                        ? item.original_name.replace(/\.[^.]+$/, '') + '.webp'
-                        : item.original_name;
-                link.click();
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-            }
+        if (operation === 'download') {
+            const isImage = item.mime_type.startsWith('image/');
+            const url = isImage
+                ? await loadImage(item.id)
+                : URL.createObjectURL(await repository.download(effectiveId.value, item.id));
+            if (!url) throw new Error('No fue posible cargar la imagen. Intenta nuevamente.');
+            downloadUrl(
+                url,
+                item.mime_type === 'image/webp'
+                    ? item.original_name.replace(/\.[^.]+$/, '') + '.webp'
+                    : item.original_name,
+            );
+            if (!isImage) setTimeout(() => URL.revokeObjectURL(url), 1000);
+            return;
         }
         await attachments.refetch();
         await queryClient.invalidateQueries({ queryKey: transactionFacilityQueryKeys.all });
@@ -188,8 +245,9 @@ async function action(
     }
 }
 function closePreview(): void {
-    if (preview.value) URL.revokeObjectURL(preview.value);
-    preview.value = null;
+    previewId.value = null;
+    previewOrigin.value?.focus();
+    previewOrigin.value = null;
 }
 </script>
 
@@ -281,19 +339,41 @@ function closePreview(): void {
                     >También puedes arrastrar archivos aquí.</AppText
                 >
             </div>
-            <ul class="space-y-2">
+            <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <li
                     v-for="entry in localFiles"
                     :key="entry.uploadId"
-                    class="flex min-w-0 items-center justify-between gap-2 text-sm"
+                    class="flex min-w-0 flex-col gap-2 rounded-(--app-radius-control) border border-(--app-color-border) p-2 text-sm"
                 >
-                    <span class="min-w-0 wrap-anywhere"
-                        >{{ entry.file.name }} · {{ size(entry.file.size) }} · Sin subir</span
+                    <AppButton
+                        v-if="localUrls[entry.uploadId]"
+                        type="button"
+                        variant="ghost"
+                        class="w-full p-0!"
+                        :aria-label="`Ver imagen ${entry.file.name}`"
+                        @click="openPreview(`local:${entry.uploadId}`, $event)"
                     >
+                        <img
+                            :src="localUrls[entry.uploadId]"
+                            :alt="entry.file.name"
+                            class="aspect-square w-full rounded-(--app-radius-control) object-cover"
+                        />
+                    </AppButton>
+                    <component
+                        :is="documentIcon(entry.file.name)"
+                        v-else
+                        class="mx-auto h-16 w-16 text-(--app-color-text-subtle)"
+                        aria-hidden="true"
+                    />
+                    <p class="wrap-anywhere">{{ entry.file.name }}</p>
+                    <p class="text-(--app-color-text-subtle)">
+                        {{ size(entry.file.size) }} · Sin subir
+                    </p>
                     <AppButton
                         type="button"
                         variant="ghost"
                         :disabled="busy"
+                        class="mt-auto"
                         @click="
                             emit('filesChange', draft?.files.filter((item) => item !== entry) ?? [])
                         "
@@ -301,13 +381,51 @@ function closePreview(): void {
                     >
                 </li>
                 <li
-                    v-for="item in attachments.data.value?.data ?? []"
+                    v-for="item in imageFiles"
                     :key="item.id"
-                    class="space-y-1 border-t border-(--app-color-border) pt-2 text-sm"
+                    class="flex min-w-0 flex-col gap-2 rounded-(--app-radius-control) border border-(--app-color-border) p-2 text-sm"
                 >
-                    <p class="wrap-anywhere">
-                        {{ item.original_name }} · {{ size(item.size_bytes) }} ·
-                        {{ labels[item.status] }}
+                    <template v-if="item.status === 'ready' && item.mime_type.startsWith('image/')">
+                        <AppButton
+                            v-if="resources[item.id]?.url"
+                            type="button"
+                            variant="ghost"
+                            class="w-full p-0!"
+                            :aria-label="`Ver imagen ${item.original_name}`"
+                            @click="openPreview(item.id, $event)"
+                        >
+                            <img
+                                :src="resources[item.id]?.url"
+                                :alt="item.original_name"
+                                class="aspect-square w-full rounded-(--app-radius-control) object-cover"
+                            />
+                        </AppButton>
+                        <div
+                            v-else
+                            class="flex aspect-square items-center justify-center rounded-(--app-radius-control) bg-(--app-color-surface-muted) p-2 text-center"
+                        >
+                            <div v-if="resources[item.id]?.failed" class="space-y-2">
+                                <p role="alert">No fue posible cargar la imagen.</p>
+                                <AppButton
+                                    type="button"
+                                    variant="ghost"
+                                    :aria-label="`Reintentar imagen ${item.original_name}`"
+                                    @click="loadImage(item.id)"
+                                    >Reintentar</AppButton
+                                >
+                            </div>
+                            <p v-else role="status">Cargando imagen…</p>
+                        </div>
+                    </template>
+                    <component
+                        :is="documentIcon(item.original_name)"
+                        v-else
+                        class="mx-auto h-16 w-16 text-(--app-color-text-subtle)"
+                        aria-hidden="true"
+                    />
+                    <p class="wrap-anywhere">{{ item.original_name }}</p>
+                    <p class="text-(--app-color-text-subtle)">
+                        {{ size(item.size_bytes) }} · {{ labels[item.status] }}
                     </p>
                     <p
                         v-if="item.status === 'pending' || item.status === 'processing'"
@@ -317,15 +435,7 @@ function closePreview(): void {
                         Estamos preparando este archivo. Aparecerá aquí cuando esté listo.
                     </p>
                     <p v-if="item.error_message" role="alert">{{ item.error_message }}</p>
-                    <div class="flex flex-wrap gap-2">
-                        <AppButton
-                            v-if="item.status === 'ready' && item.mime_type.startsWith('image/')"
-                            type="button"
-                            variant="ghost"
-                            :disabled="Boolean(activeId)"
-                            @click="action(item, 'preview')"
-                            >Ver imagen</AppButton
-                        >
+                    <div class="mt-auto flex flex-col gap-1">
                         <AppButton
                             v-if="item.status === 'ready'"
                             type="button"
@@ -360,18 +470,13 @@ function closePreview(): void {
                 >Sin comprobantes.</AppText
             >
         </div>
-        <AppModal :open="Boolean(preview)" :title="previewName" @close="closePreview">
-            <a
-                v-if="preview"
-                :href="preview"
-                target="_blank"
-                rel="noopener"
-                aria-label="Ampliar imagen"
-                ><img
-                    :src="preview"
-                    :alt="previewName"
-                    class="mx-auto max-h-[70vh] max-w-full object-contain"
-            /></a>
-        </AppModal>
+        <TransactionImageViewer
+            :images="viewerImages"
+            :active-id="previewId"
+            @close="closePreview"
+            @select="previewId = $event"
+            @download="downloadPreview"
+            @retry="loadImage"
+        />
     </section>
 </template>

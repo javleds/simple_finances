@@ -20,12 +20,32 @@ const fileConfig = {
     poll_interval_ms: 5000,
 };
 const documentFile = { name: 'factura.xml', mimeType: 'application/xml', buffer: Buffer.from('<?xml version="1.0"?><invoice total="100"/>') };
+
 const browser = await chromium.launch();
 try {
     for (const width of [390, 1280]) {
         for (const shared of [false, true]) {
             const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
             const page = await context.newPage();
+            const imageBase64 = await page.evaluate(() => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 600;
+                canvas.height = 900;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 600, 900);
+                ctx.fillStyle = '#173840';
+                ctx.font = 'bold 36px sans-serif';
+                ctx.fillText('COMPROBANTE', 70, 100);
+                ctx.font = '26px sans-serif';
+                ctx.fillText('Compra de prueba', 70, 180);
+                ctx.fillText('Total: $100.00', 70, 250);
+                ctx.fillRect(70, 300, 460, 2);
+                ctx.fillText('Gracias por tu compra', 70, 370);
+                return canvas.toDataURL('image/png').split(',')[1];
+            });
+            const imageFile = { name: 'ticket.png', mimeType: 'image/png', buffer: Buffer.from(imageBase64, 'base64') };
+
             page.setDefaultTimeout(10000);
             await installAuthSession(page, session);
             await context.route(`${appUrl}/admin/**`, (route) => route.request().resourceType() === 'document' ? route.fulfill({ contentType: 'text/html', body: shell }) : route.fallback());
@@ -41,6 +61,7 @@ try {
             let failUpload = true;
             let attachmentListCount = 0;
             let downloadCount = 0;
+            let imageDownloadCount = 0;
             const unknown = [];
             await context.route(`${appUrl}/api/**`, async (route) => {
                 const request = route.request();
@@ -71,6 +92,10 @@ try {
                     attachmentListCount += 1;
                     return route.fulfill({ json: { data: attachments, meta: { can_manage: true, count: attachments.length, total_bytes: attachments.reduce((sum, item) => sum + item.size_bytes, 0) } } });
                 }
+                if (/^\/api\/transactions\/11\/attachments\/(22|23)\/download$/.test(path)) {
+                    imageDownloadCount += 1;
+                    return route.fulfill({ contentType: 'image/png', body: imageFile.buffer });
+                }
                 if (path === '/api/transactions/11/attachments/21/download') {
                     downloadCount += 1;
                     return route.fulfill({ contentType: 'application/xml', headers: { 'Content-Disposition': 'attachment; filename="factura.xml"' }, body: documentFile.buffer });
@@ -91,6 +116,13 @@ try {
             await dialog.getByRole('button', { name: /Comprobantes/ }).click();
             await dialog.locator('input[type="file"]:not([capture])').setInputFiles(documentFile);
             await dialog.getByText(/factura\.xml/).waitFor();
+            await dialog.locator('input[type="file"]:not([capture])').setInputFiles(imageFile);
+            await dialog.getByRole('button', { name: 'Ver imagen ticket.png', exact: true }).click();
+            const localViewer = page.getByRole('dialog').last();
+            await localViewer.getByRole('status', { name: 'Nivel de zoom' }).waitFor();
+            await localViewer.getByRole('button', { name: 'Cerrar visor', exact: true }).click();
+            await dialog.locator('li').filter({ hasText: 'ticket.png' }).getByRole('button', { name: 'Quitar', exact: true }).click();
+
             await dialog.getByRole('button', { name: 'Crear transacción', exact: true }).click();
             await dialog.getByText(/El movimiento se guardó, pero faltan comprobantes/).waitFor();
             assert.equal(mutationCount, 1, 'Upload failure must preserve exactly one financial mutation');
@@ -103,10 +135,31 @@ try {
             await receipts.getByText(/factura\.xml/).waitFor();
             assert.ok((await receipts.innerText()).includes('espera') || (await receipts.innerText()).includes('preparando'));
             attachments[0].status = 'ready';
-            await receipts.getByRole('button', { name: /Descargar/ }).waitFor({ timeout: 12000 });
-            await receipts.getByRole('button', { name: /Descargar/ }).click();
+            for (const id of [22, 23]) attachments.push({ ...attachments[0], id, original_name: `ticket-${id}.webp`, mime_type: 'image/webp' });
+
+            await receipts.getByRole('button', { name: 'Descargar', exact: true }).first().waitFor({ timeout: 12000 });
+            await receipts.getByRole('button', { name: 'Descargar', exact: true }).first().click();
             await page.waitForTimeout(200);
             assert.equal(downloadCount, 1);
+            await receipts.getByRole('button', { name: 'Ver imagen ticket-22.webp', exact: true }).click();
+            const viewer = page.getByRole('dialog').last();
+            await viewer.getByText('1 / 2', { exact: true }).waitFor();
+            if (width >= 1280) assert.ok((await viewer.boundingBox()).width >= 900, 'Desktop viewer must use a wide modal');
+            await viewer.getByRole('button', { name: 'Ampliar imagen', exact: true }).click();
+            assert.equal(await viewer.getByRole('status', { name: 'Nivel de zoom' }).innerText(), '150%');
+            await viewer.getByRole('button', { name: 'Imagen siguiente', exact: true }).click();
+            await viewer.getByText('2 / 2', { exact: true }).waitFor();
+            assert.equal(await viewer.getByRole('status', { name: 'Nivel de zoom' }).innerText(), '100%');
+            await viewer.getByRole('button', { name: 'Descargar imagen', exact: true }).click();
+            assert.equal(imageDownloadCount, 2, 'Gallery, viewer and downloads must reuse the image blobs');
+            if (process.env.PW_ATTACHMENT_SCREENSHOTS) await page.screenshot({ path: `${process.env.PW_ATTACHMENT_SCREENSHOTS}/viewer-${shared ? 'shared' : 'personal'}-${width}.png` });
+            await page.keyboard.press('Escape');
+            await page.getByRole('toolbar', { name: 'Controles de imagen' }).waitFor({ state: 'hidden' });
+            await receipts.getByRole('button', { name: 'Ver imagen ticket-22.webp', exact: true }).waitFor();
+            await page.waitForTimeout(350);
+            assert.equal(await page.getByRole('dialog').count(), 1, 'Escape must preserve the receipts dialog');
+            await receipts.getByRole('button', { name: 'Ver imagen ticket-22.webp', exact: true }).waitFor();
+
             assert.ok(attachmentListCount >= 2, 'Pending attachments must refresh without manual reload');
             const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
             assert.equal(overflow, false);

@@ -3,9 +3,10 @@ import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
 import { reactive } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TransactionAttachments from './TransactionAttachments.vue';
+import { ApiError } from '@/lib/api/apiClient';
 import type { AttachmentDraft } from '../types';
 
-const mocks = vi.hoisted(() => ({ config: vi.fn(), list: vi.fn() }));
+const mocks = vi.hoisted(() => ({ config: vi.fn(), list: vi.fn(), download: vi.fn() }));
 vi.mock('../repositories/transactionAttachmentsRepository', () => ({
     transactionAttachmentsRepository: mocks,
 }));
@@ -48,6 +49,12 @@ async function select(wrapper: ReturnType<typeof render>, files: File[]): Promis
 beforeEach(() => {
     vi.resetAllMocks();
     mocks.config.mockResolvedValue(limits);
+    mocks.download.mockResolvedValue(new Blob(['image'], { type: 'image/webp' }));
+    Object.defineProperty(URL, 'createObjectURL', {
+        configurable: true,
+        value: vi.fn(() => 'blob:preview'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
 });
 describe('transaction receipts', () => {
     it('starts collapsed and validates selected formats and sizes against server limits', async () => {
@@ -105,4 +112,64 @@ describe('transaction receipts', () => {
         expect(wrapper.find('img').exists()).toBe(false);
         wrapper.unmount();
     });
+});
+
+it('shows authenticated thumbnails for members without management actions', async () => {
+    mocks.list.mockResolvedValue({
+        data: [
+            {
+                id: '1',
+                original_name: 'ticket.jpg',
+                mime_type: 'image/webp',
+                size_bytes: 10,
+                status: 'ready',
+                error_message: null,
+                can_manage: false,
+                can_retry: false,
+                created_at: '',
+            },
+        ],
+        meta: { can_manage: false, count: 1, total_bytes: 10 },
+    });
+    const wrapper = render({ transactionId: '10', readOnly: true });
+    await flushPromises();
+    expect(mocks.download).toHaveBeenCalledExactlyOnceWith('10', '1');
+    expect(wrapper.get('img').attributes('src')).toBe('blob:preview');
+    expect(wrapper.get('img').attributes('alt')).toBe('ticket.jpg');
+    expect(wrapper.text()).toContain('Descargar');
+    expect(wrapper.text()).not.toContain('Eliminar');
+    expect(wrapper.find('input[type=file]').exists()).toBe(false);
+    wrapper.unmount();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
+});
+
+it('clears cached thumbnails when renewed authorization fails', async () => {
+    mocks.list
+        .mockResolvedValueOnce({
+            data: [
+                {
+                    id: '1',
+                    original_name: 'ticket.jpg',
+                    mime_type: 'image/webp',
+                    size_bytes: 10,
+                    status: 'ready',
+                    error_message: null,
+                    can_manage: false,
+                    can_retry: false,
+                    created_at: '',
+                },
+            ],
+            meta: { can_manage: false, count: 1, total_bytes: 10 },
+        })
+        .mockRejectedValue(new ApiError('No tienes acceso', 403));
+    const wrapper = render({ transactionId: '10', readOnly: true });
+    await flushPromises();
+    expect(wrapper.find('img').exists()).toBe(true);
+    await wrapper.get('button').trigger('click');
+    await wrapper.get('button').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('img').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('ticket.jpg');
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
+    wrapper.unmount();
 });

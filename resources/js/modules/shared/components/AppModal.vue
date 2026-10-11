@@ -20,12 +20,14 @@ const props = withDefaults(
         actions?: ReadonlyArray<AppModalAction>;
         closeLabel?: string;
         presentation?: 'dialog' | 'sheet' | 'fullscreen';
+        size?: 'default' | 'wide';
     }>(),
     {
         variant: 'default',
         actions: () => [],
         closeLabel: 'Cerrar',
         presentation: 'dialog',
+        size: 'default',
     },
 );
 
@@ -98,15 +100,17 @@ const resolvedActions = computed<ReadonlyArray<AppModalAction>>(() => {
 });
 
 const presentationClasses = computed(() => {
+    const desktopWidth = props.size === 'wide' ? 'sm:max-w-5xl!' : 'sm:max-w-xl!';
+    const dialogWidth = props.size === 'wide' ? 'max-w-5xl' : 'max-w-xl';
     if (props.presentation === 'fullscreen') {
-        return 'm-0! h-dvh max-h-dvh! w-screen max-w-none! rounded-none! border-0! sm:m-4! sm:h-auto sm:max-h-[90dvh]! sm:w-[calc(100%-2rem)] sm:max-w-xl! sm:rounded-(--app-radius-overlay)! sm:border!';
+        return `m-0! h-dvh max-h-dvh! w-screen max-w-none! rounded-none! border-0! sm:m-4! sm:h-auto sm:max-h-[90dvh]! sm:w-[calc(100%-2rem)] ${desktopWidth} sm:rounded-(--app-radius-overlay)! sm:border!`;
     }
 
     if (props.presentation === 'sheet') {
-        return 'm-0! max-h-[90dvh]! w-full max-w-xl rounded-t-(--app-radius-overlay)! rounded-b-none! sm:m-4! sm:w-[calc(100%-2rem)] sm:rounded-(--app-radius-overlay)!';
+        return `m-0! max-h-[90dvh]! w-full ${dialogWidth} rounded-t-(--app-radius-overlay)! rounded-b-none! sm:m-4! sm:w-[calc(100%-2rem)] sm:rounded-(--app-radius-overlay)!`;
     }
 
-    return 'm-4! max-h-[calc(100dvh-2rem)]! w-[calc(100%-2rem)] max-w-xl rounded-(--app-radius-overlay)!';
+    return `m-4! max-h-[calc(100dvh-2rem)]! w-[calc(100%-2rem)] ${dialogWidth} rounded-(--app-radius-overlay)!`;
 });
 
 function closeModal(): void {
