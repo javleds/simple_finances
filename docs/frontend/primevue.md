@@ -17,6 +17,7 @@ Los componentes de `resources/js/modules/shared/components` adaptan PrimeVue a l
 | `AppInput`, `AppPasswordInput` | InputText y Password; importes editables como cadenas y visibilidad de contraseña |
 | `AppDatePicker` | DatePicker; fecha local `yyyy-MM-dd`, sin conversión de zona horaria, y vacío como `null` |
 | `AppSearchSelect` | Select; búsqueda, limpieza, descripciones y asociación accesible de etiquetas y errores |
+| `AppMultiSearchSelect` | MultiSelect; búsqueda, selección múltiple como `string[]`, limpieza a `[]` y resumen compacto de selecciones |
 | `AppSwitch`, `AppToggleButton` | ToggleSwitch y SelectButton; valores y eventos del consumidor |
 | `AppModal` | Dialog; cierre, variantes, acciones, pie personalizable y presentaciones `dialog`, `sheet` y `fullscreen`; cuerpo desplazable y pie fijo |
 | `AppThemeMenu` | Menu; selección persistida de Claro, Oscuro o Sistema desde los layouts |
@@ -103,6 +104,66 @@ En móvil, el panel se abre desde abajo; desde el breakpoint `sm` se centra como
 
 El orden de cada listado es: encabezado, buscador con botón de filtros, etiquetas activas y lista. Los resúmenes financieros y acciones de reembolso pueden preceder al listado. En transacciones anidadas, las etiquetas se insertan mediante el slot `filters` de `AccountTransactionsActivity`, después de su toolbar; no deben colocarse antes del componente de actividad.
 
+### Espaciado entre filtros
+
+En los paneles de transacciones, separar grupos de filtros **24 px** mediante `grid gap-6`, tanto en móvil como en escritorio. Aplicar la misma separación entre Tipo o Periodo y el grupo de selectores, y entre Categorías y Comprobantes. Cada contenedor administra la separación entre sus hijos directos; evitar márgenes adicionales que dupliquen esos 24 px.
+
+Dentro de cada selector, separar etiqueta y control **8 px** (`grid gap-2`) y conservar una fila de etiqueta de al menos **20 px** (`min-h-5`). `AppMultiSearchSelect` usa una etiqueta `flex items-center`; `AppSearchSelect` conserva su contenedor de etiqueta equivalente. No depender de márgenes verticales sobre etiquetas inline. Los controles mantienen su altura mínima de **48 px** (`min-h-12`).
+
+### Selector múltiple reutilizable
+
+Usar `AppMultiSearchSelect` para catálogos que admiten varias selecciones y necesitan búsqueda, como categorías. Mantener `AppSearchSelect` para selección única y `AppFilterOptions` para grupos pequeños de casillas, como Tipo. Importar los adaptadores desde `@/modules/shared/components` en lugar de repetir la integración de PrimeVue.
+
+`AppMultiSearchSelect` adapta [MultiSelect de PrimeVue](https://primevue.dev/multiselect). Recibe `id` y `label` obligatorios, `options` como arreglo de `{ value: string; label: string }` y un `v-model` de tipo `string[]`. Admite `placeholder`, `searchPlaceholder` y `loading`. La selección vacía es `[]`; limpiar nunca entrega `null`. Muestra hasta dos etiquetas y, para más selecciones, «N seleccionadas». La selección masiva está deshabilitada y el desplegable usa `app-select-overlay` para limitar su ancho al viewport. La etiqueta se asocia al control mediante su identificador.
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { AppMultiSearchSelect, AppSearchSelect } from '@/modules/shared/components';
+
+const categories = ref<string[]>([]);
+const receiptFilter = ref<string | null>('all');
+const categoryOptions = [
+    { value: 'uncategorized', label: 'Sin categoría' },
+    { value: '12', label: 'Comida · Personal' },
+];
+const receiptOptions = [
+    { value: 'all', label: 'Todos' },
+    { value: 'with', label: 'Con comprobantes' },
+    { value: 'without', label: 'Sin comprobantes' },
+];
+</script>
+
+<template>
+    <div class="grid gap-6">
+        <AppMultiSearchSelect
+            id="example-category-filter"
+            v-model="categories"
+            label="Categorías"
+            :options="categoryOptions"
+            placeholder="Todas las categorías"
+            search-placeholder="Buscar categoría"
+        />
+        <AppSearchSelect
+            id="example-receipt-filter"
+            v-model="receiptFilter"
+            label="Comprobantes"
+            :options="receiptOptions"
+        />
+    </div>
+</template>
+```
+
+El adaptador administra presentación e interacción; el módulo administra la consulta de opciones, los borradores, la validación y los filtros aplicados. El límite de **100 categorías** pertenece al filtro de transacciones, no al componente reutilizable.
+
+### Categorías y comprobantes de transacciones
+
+`TransactionAdditionalFilters` reutiliza los dos selectores en los paneles de cuenta y del listado general. Las categorías seleccionadas se combinan con OR y pueden incluir «Sin categoría»; comprobantes, búsqueda y los demás filtros se combinan con AND. «Todos» omite la condición de comprobantes; «Con comprobantes» y «Sin comprobantes» conservan un booleano explícito, incluido `false`.
+
+Las opciones incluyen categorías utilizadas en movimientos visibles para el listado, sin restringirse al periodo. Las etiquetas identifican su origen personal o la cuenta compartida. `useTransactionFilterOptions` usa el prefijo de caché `categories` para actualizar nombres y opciones con las invalidaciones existentes de categorías y movimientos. Una categoría seleccionada que ya no esté disponible permanece removible.
+
+La URL conserva `category_ids`, `uncategorized` y `has_attachments`; el repositorio envía esta última condición como `1` o `0`. El servidor filtra antes de paginar y calcular el resumen. La presencia cuenta archivos no eliminados, incluidos pendientes y fallidos, igual que el contador del movimiento. Tras mutaciones se reaplican los filtros; el refresco por cambios de comprobantes se difiere durante la edición o subida para conservar el borrador. Consulta el contrato en [OpenAPI](../api.json) y las [reglas de adjuntos](../domain/transaction-attachments.md).
+
 ### Borrador y aplicación
 
 - Abrir copia las selecciones aplicadas a un borrador local.
@@ -116,7 +177,7 @@ Cada módulo conserva sus tipos y reglas: el estado de suscripciones admite una 
 
 ### Periodo de transacciones globales
 
-El periodo inicial es el mes actual. **Mes actual** restablece solo las fechas del borrador y requiere aplicar para confirmar. Se rechazan fechas inexistentes, fechas vacías y rangos invertidos; el botón de aplicar queda deshabilitado y el envío del formulario también se protege.
+El periodo inicial es el mes actual. **Limpiar** restablece las fechas al mes actual, vacía las categorías y devuelve Comprobantes a Todos dentro del borrador; requiere aplicar para confirmar. Se rechazan fechas inexistentes, fechas vacías y rangos invertidos; el botón de aplicar queda deshabilitado y el envío del formulario también se protege.
 
 Un periodo distinto al mes actual aparece como una etiqueta y cuenta como un filtro. Quitar esa etiqueta restablece el mes actual. El periodo predeterminado muestra «Periodo: mes actual» sin etiqueta removible ni contador. `AppDatePicker` conserva fechas locales `yyyy-MM-dd`; `transactionPeriod.ts` centraliza el rango inicial y la validación.
 

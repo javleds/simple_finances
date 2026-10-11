@@ -91,6 +91,8 @@ When a feature needs icons, use `@heroicons/vue` as the default icon library.
 ## Filtros de listas
 
 - Reutilizar `AppFilterPanel`, `AppFilterOptions`, `AppFilterTrigger` y `AppActiveFilters` según [la guía de interfaz](../../docs/frontend/primevue.md#filtros-de-listas).
+- Usar `AppMultiSearchSelect` para catálogos multiselección con búsqueda; `v-model` es `string[]` y limpiar produce `[]`. Conservar los límites de selección en el módulo consumidor.
+- En paneles de transacciones, usar `grid gap-6` (24 px) entre grupos y selectores; dentro del selector, `gap-2` (8 px) entre etiqueta y control, etiqueta `min-h-5` y control `min-h-12`. Evitar márgenes adicionales o etiquetas inline que anulen el espaciado.
 - Mantener borradores locales: seleccionar y limpiar no actualizan filtros aplicados hasta confirmar. Cerrar descarta los cambios pendientes.
 - Conservar búsqueda, reglas del módulo, sincronización con URL y reinicio de paginación. Quitar una etiqueta se aplica directamente.
 - Mantener el orden encabezado → buscador con botón compacto y contador → filtros activos → lista. En `AccountTransactionsActivity`, insertar las etiquetas en el slot `filters`, nunca antes del componente de actividad.
