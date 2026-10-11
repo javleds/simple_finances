@@ -166,12 +166,14 @@ try {
             const rect = element.closest('.p-select').getBoundingClientRect();
             return { x: rect.x, y: rect.y, width: rect.width };
         });
+        const dateBox = await dialog.getByLabel('Fecha', { exact: true }).boundingBox();
+        assert.ok(categoryBox.y > dateBox.y, 'Category must follow date');
         if (width < 640) {
-            assert.ok(categoryBox.y > amountBox.y, 'Category must follow amount on mobile');
+            assert.ok(dateBox.y > amountBox.y, 'Date must follow amount on mobile');
             assert.ok(Math.abs(categoryBox.width - amountBox.width) < 5, 'Category must align with amount on mobile');
         } else {
-            assert.ok(Math.abs(categoryBox.y - amountBox.y) < 5, 'Category must share the amount row');
-            assert.ok(categoryBox.x >= amountBox.x + amountBox.width, 'Category must be to the right of amount');
+            assert.ok(Math.abs(dateBox.y - amountBox.y) < 5, 'Date must share the amount row');
+            assert.ok(dateBox.x >= amountBox.x + amountBox.width, 'Date must be to the right of amount');
         }
         await categorySelect.click();
         await page.getByPlaceholder('Buscar o crear categoría').fill('transporte');

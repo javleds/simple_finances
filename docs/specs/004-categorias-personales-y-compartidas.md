@@ -4,7 +4,7 @@
 Agregar clasificación opcional a movimientos existentes y nuevos, conservando las reglas financieras y la separación entre catálogos personales y compartidos.
 
 ## Alcance y comportamiento
-El campo Categoría aparece a la derecha de Cantidad en escritorio y debajo en móvil y permite buscar, crear y seleccionar sin salir del formulario. Más incluye administración de catálogos, nombres y eliminación con decisión explícita entre dejar movimientos sin categoría o reasignarlos dentro del mismo catálogo. La interfaz identifica las categorías compartidas y su alcance sobre otros miembros.
+Los campos principales siguen el orden Concepto, Cantidad, Fecha y Categoría; Cantidad y Fecha comparten fila en escritorio. El campo Categoría aparece después de Fecha y permite buscar, crear y seleccionar sin salir del formulario. Más incluye administración de catálogos, nombres y eliminación con decisión explícita entre dejar movimientos sin categoría o reasignarlos dentro del mismo catálogo. La interfaz identifica las categorías compartidas y su alcance sobre otros miembros.
 
 ## Decisiones técnicas y persistencia
 Las categorías pertenecen a un usuario o a una cuenta, nunca ambos. Los nombres normalizados son únicos por catálogo. Las transacciones tienen categoría nullable; los movimientos actuales permanecen sin categoría. Las cuentas conservan un indicador de catálogo compartido aunque vuelva a quedar un miembro. Al compartir por primera vez se copian las categorías usadas y se reasignan únicamente los movimientos de la cuenta.

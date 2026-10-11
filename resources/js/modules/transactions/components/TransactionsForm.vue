@@ -252,115 +252,25 @@ async function handleSubmit(): Promise<void> {
                 required
             />
 
-            <div class="grid gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-                <div class="contents">
-                    <div v-if="isExpense && hasSharedAccount" class="sm:order-1">
-                        <AppSearchSelect
-                            id="transaction-paid-by"
-                            v-model="paidByUserId"
-                            label="Pagado por"
-                            :options="accountUserOptions"
-                            placeholder="Selecciona usuario"
-                            search-placeholder="Buscar usuario"
-                            empty-message="No hay usuarios disponibles."
-                            required
-                        />
-                    </div>
-
-                    <section
-                        v-if="isExpense && hasSharedAccount"
-                        class="space-y-3 sm:order-3 sm:col-span-2"
-                        :style="{ borderColor: 'var(--app-color-border)' }"
-                    >
-                        <div class="flex flex-wrap items-center justify-between gap-3">
-                            <div class="space-y-1">
-                                <label
-                                    for="transaction-payment-source"
-                                    class="text-sm font-medium text-(--app-color-label)"
-                                >
-                                    ¿Con qué dinero se pagó?
-                                </label>
-                            </div>
-                            <AppToggleButton
-                                id="transaction-payment-source"
-                                :model-value="paymentSource"
-                                :options="paymentSourceOptions"
-                                @update:model-value="paymentSource = $event"
-                            />
-                        </div>
-                        <AppText v-if="requiresPersonalPayment" size="sm" tone="subtle">
-                            La cuenta no tiene saldo disponible. Registra el pago con dinero
-                            personal.
-                        </AppText>
-                    </section>
-
-                    <div class="sm:order-4">
-                        <AppInput
-                            id="transaction-amount"
-                            v-model="amount"
-                            label="Cantidad"
-                            mask="amount"
-                            type="number"
-                            inputmode="decimal"
-                            min="0"
-                            step="0.01"
-                            placeholder="$ 00.00"
-                            :error="amountError"
-                            @blur="touchAmount"
-                            required
-                        />
-                    </div>
-
-                    <TransactionCategorySelect
-                        class="sm:order-5"
-                        v-model="categoryId"
-                        :account-id="accountId"
-                        @busy="categoryBusy = $event"
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <AppInput
+                        id="transaction-amount"
+                        v-model="amount"
+                        label="Cantidad"
+                        mask="amount"
+                        type="number"
+                        inputmode="decimal"
+                        min="0"
+                        step="0.01"
+                        placeholder="$ 00.00"
+                        :error="amountError"
+                        @blur="touchAmount"
+                        required
                     />
-
-                    <section
-                        v-if="showUserSplitToggle"
-                        class="space-y-4 border-t border-(--app-color-border) pt-4 sm:order-6 sm:col-span-2"
-                        :style="{ borderColor: 'var(--app-color-border)' }"
-                    >
-                        <label class="flex items-start gap-3">
-                            <Checkbox
-                                v-model="splitBetweenUsers"
-                                binary
-                                class="mt-1"
-                                @change="touchUserPayments"
-                            />
-                            <div class="space-y-1">
-                                <span class="block text-sm font-medium text-(--app-color-label)">
-                                    Dividir entre usuarios de la cuenta
-                                </span>
-                                <AppText size="sm">
-                                    Usa los porcentajes de participación de los miembros como base y
-                                    ajústalos si hace falta.
-                                </AppText>
-                            </div>
-                        </label>
-
-                        <AppPercentageSplitEditor
-                            v-if="showUserSplitInputs"
-                            :users="props.accountUsers"
-                            :model-value="userPayments"
-                            @update:model-value="
-                                touchUserPayments();
-                                userPayments = $event;
-                            "
-                        />
-
-                        <p v-if="userPaymentsError" class="text-sm text-(--app-color-danger)">
-                            {{ userPaymentsError }}
-                        </p>
-                    </section>
                 </div>
 
-                <div
-                    class="sm:order-2"
-                    :class="{ 'sm:col-span-2': !(isExpense && hasSharedAccount) }"
-                >
+                <div>
                     <AppDatePicker
                         id="transaction-date"
                         v-model="date"
@@ -373,6 +283,89 @@ async function handleSubmit(): Promise<void> {
                     />
                 </div>
             </div>
+
+            <TransactionCategorySelect
+                v-model="categoryId"
+                :account-id="accountId"
+                @busy="categoryBusy = $event"
+            />
+
+            <div v-if="isExpense && hasSharedAccount">
+                <AppSearchSelect
+                    id="transaction-paid-by"
+                    v-model="paidByUserId"
+                    label="Pagado por"
+                    :options="accountUserOptions"
+                    placeholder="Selecciona usuario"
+                    search-placeholder="Buscar usuario"
+                    empty-message="No hay usuarios disponibles."
+                    required
+                />
+            </div>
+
+            <section
+                v-if="isExpense && hasSharedAccount"
+                class="space-y-3"
+                :style="{ borderColor: 'var(--app-color-border)' }"
+            >
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="space-y-1">
+                        <label
+                            for="transaction-payment-source"
+                            class="text-sm font-medium text-(--app-color-label)"
+                        >
+                            ¿Con qué dinero se pagó?
+                        </label>
+                    </div>
+                    <AppToggleButton
+                        id="transaction-payment-source"
+                        :model-value="paymentSource"
+                        :options="paymentSourceOptions"
+                        @update:model-value="paymentSource = $event"
+                    />
+                </div>
+                <AppText v-if="requiresPersonalPayment" size="sm" tone="subtle">
+                    La cuenta no tiene saldo disponible. Registra el pago con dinero personal.
+                </AppText>
+            </section>
+
+            <section
+                v-if="showUserSplitToggle"
+                class="space-y-4 border-t border-(--app-color-border) pt-4"
+                :style="{ borderColor: 'var(--app-color-border)' }"
+            >
+                <label class="flex items-start gap-3">
+                    <Checkbox
+                        v-model="splitBetweenUsers"
+                        binary
+                        class="mt-1"
+                        @change="touchUserPayments"
+                    />
+                    <div class="space-y-1">
+                        <span class="block text-sm font-medium text-(--app-color-label)">
+                            Dividir entre usuarios de la cuenta
+                        </span>
+                        <AppText size="sm">
+                            Usa los porcentajes de participación de los miembros como base y
+                            ajústalos si hace falta.
+                        </AppText>
+                    </div>
+                </label>
+
+                <AppPercentageSplitEditor
+                    v-if="showUserSplitInputs"
+                    :users="props.accountUsers"
+                    :model-value="userPayments"
+                    @update:model-value="
+                        touchUserPayments();
+                        userPayments = $event;
+                    "
+                />
+
+                <p v-if="userPaymentsError" class="text-sm text-(--app-color-danger)">
+                    {{ userPaymentsError }}
+                </p>
+            </section>
         </section>
 
         <section v-if="isIncome" class="space-y-3">
