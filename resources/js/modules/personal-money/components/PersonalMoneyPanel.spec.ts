@@ -70,7 +70,7 @@ describe('personal money panel', () => {
         state.value!.available_balance = null;
         state.value!.history = [];
         const wrapper = mount(PersonalMoneyPanel, { global });
-        expect(wrapper.text()).toContain('Activar seguimiento');
+        expect(wrapper.text()).toContain('Configurar mi disponible');
         expect(wrapper.find('[aria-label="Saldo disponible"]').exists()).toBe(false);
         expect(wrapper.text()).not.toContain('Mercado');
     });

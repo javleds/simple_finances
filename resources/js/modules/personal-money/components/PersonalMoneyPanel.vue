@@ -111,12 +111,17 @@ async function resolve(entry: PersonalMoneyEntry, value: PersonalMoneyResolution
         <div class="flex flex-wrap items-center justify-between gap-3">
             <AppTitle as="h2" size="sm">Mi dinero disponible</AppTitle>
             <AppButton v-if="state && !editing" variant="outline" @click="openSettings">{{
-                enabled ? 'Configurar' : 'Activar seguimiento'
+                enabled ? 'Configurar' : 'Configurar mi disponible'
             }}</AppButton>
         </div>
         <AppText
-            >Tu saldo libre, después de apartar dinero y pagar gastos. Esta información es
-            privada.</AppText
+            >Una estimación de tu saldo libre a partir de los movimientos que registras.</AppText
+        >
+        <AppText size="sm" tone="subtle"
+            >Tú eliges qué aportaciones, pagos de bolsillo y reembolsos afectan este cálculo. Los
+            ingresos y gastos de tu cuenta personal se incluyen desde la fecha inicial. Solo tú
+            puedes consultar tu disponible y elegir estos vínculos; los demás miembros pueden seguir
+            usando las cuentas compartidas como siempre.</AppText
         >
         <p v-if="isLoading" role="status">Cargando tu disponible...</p>
         <div v-if="loadError" role="alert" class="space-y-2">
@@ -143,7 +148,7 @@ async function resolve(entry: PersonalMoneyEntry, value: PersonalMoneyResolution
                 @update:model-value="form.setFieldValue('accountId', $event ?? '')"
             />
             <AppText v-if="!accountOptions.length"
-                >Primero crea una cuenta individual para poder activar el seguimiento.</AppText
+                >Primero crea una cuenta individual para calcular tu disponible.</AppText
             >
             <AppDatePicker
                 id="personal-money-start"
@@ -181,14 +186,14 @@ async function resolve(entry: PersonalMoneyEntry, value: PersonalMoneyResolution
                     variant="danger"
                     :disabled="isSaving"
                     @click="disable"
-                    >Desactivar</AppButton
+                    >Desactivar cálculo</AppButton
                 >
             </div>
         </form>
         <template v-if="enabled && state">
             <p v-if="state.account_available === false" role="alert">
                 La cuenta personal dejó de estar disponible. Configura otra cuenta individual o
-                desactiva el seguimiento.
+                desactiva este cálculo.
             </p>
             <p
                 v-if="state.available_balance !== null"
