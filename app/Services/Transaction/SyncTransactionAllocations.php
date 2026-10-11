@@ -11,13 +11,14 @@ class SyncTransactionAllocations
 {
     public function __construct(
         private readonly BuildSplitTransactionAllocations $buildSplitTransactionAllocations,
-    ) {}
+    ) {
+    }
 
     public function execute(Transaction $transaction, array $userPayments): void
     {
         $transaction->allocations()->delete();
 
-        if ($transaction->type !== TransactionType::Outcome || $userPayments === []) {
+        if ($transaction->uses_shared_account_rules === false || $transaction->type !== TransactionType::Outcome || $userPayments === []) {
             return;
         }
 

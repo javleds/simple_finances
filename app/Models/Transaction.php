@@ -29,6 +29,7 @@ class Transaction extends Model
             'custodian_user_id' => 'integer',
             'account_id' => 'integer',
             'category_id' => 'integer',
+            'uses_shared_account_rules' => 'boolean',
             'type' => TransactionType::class,
             'status' => TransactionStatus::class,
             'payment_source' => TransactionPaymentSource::class,

@@ -23,7 +23,8 @@ class TransactionCreator
         private ResolveOutcomeUserPayments $resolveOutcomeUserPayments,
         private SyncCoveredPayerRecoveryTransaction $syncCoveredPayerRecoveryTransaction,
         private ProcessTransactionSideEffects $processTransactionSideEffects,
-    ) {}
+    ) {
+    }
 
     public function execute(TransactionFormDto $dto): Transaction
     {
@@ -49,16 +50,21 @@ class TransactionCreator
 
     private function createSingleTransaction(TransactionFormDto $dto): Transaction
     {
-        $transaction = new Transaction;
+        $account = Account::withoutGlobalScopes()->whereKey($dto->accountId)->lockForUpdate()->firstOrFail();
+        $members = $account->users()->withoutGlobalScopes()->pluck('users.id');
+        $shared = $members->count() > 1;
+        $personalUserId = (int) ($members->first() ?? $account->user_id);
+        $transaction = new Transaction();
+        $transaction->uses_shared_account_rules = $shared;
         $transaction->type = $dto->type;
         $transaction->status = $dto->status;
         $transaction->concept = $dto->concept;
         $transaction->amount = $dto->amount;
         $transaction->percentage = 100.0;
         $transaction->account_id = $dto->accountId;
-        $transaction->paid_by_user_id = $this->paidByUserId($dto);
-        $transaction->custodian_user_id = $this->custodianUserId($dto);
-        $transaction->payment_source = $this->paymentSource($dto);
+        $transaction->paid_by_user_id = $dto->type === TransactionType::Outcome && ! $shared ? $personalUserId : $this->paidByUserId($dto);
+        $transaction->custodian_user_id = $dto->type === TransactionType::Income && ! $shared ? $personalUserId : $this->custodianUserId($dto);
+        $transaction->payment_source = $dto->type === TransactionType::Outcome && ! $shared ? TransactionPaymentSource::AccountFund : $this->paymentSource($dto);
         $transaction->scheduled_at = $this->resolveScheduleDate($dto->scheduledAt);
         $transaction->financial_goal_id = $dto->financialGoalId ?: null;
         $transaction->user_id = $this->auth->id();
@@ -70,7 +76,7 @@ class TransactionCreator
 
     private function userPayments(Transaction $transaction, TransactionFormDto $dto): array
     {
-        if ($dto->type !== TransactionType::Outcome) {
+        if ($transaction->uses_shared_account_rules === false || $dto->type !== TransactionType::Outcome) {
             return [];
         }
 

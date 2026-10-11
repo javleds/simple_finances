@@ -14,6 +14,7 @@ class AccountTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'uses_shared_account_rules' => ['prohibited'],
             'type' => ['required', 'in:income,outcome'],
             'status' => ['required', 'in:completed'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],

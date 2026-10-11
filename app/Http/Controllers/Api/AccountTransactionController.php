@@ -10,6 +10,7 @@ use App\Models\Transaction;
 use App\Services\Api\AuthorizeAccountAccess;
 use App\Services\Api\ModelIndexCriteria;
 use App\Services\Transaction\BuildTransactionAccountMeta;
+use App\Services\Transaction\AuthorizeTransactionParticipants;
 use App\Services\Transaction\HydrateCurrentUserPendingReimbursements;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
@@ -23,6 +24,7 @@ class AccountTransactionController extends ApiController
     public function __construct(
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
         private readonly BuildTransactionAccountMeta $buildTransactionAccountMeta,
+        private readonly AuthorizeTransactionParticipants $authorizeTransactionParticipants,
     ) {}
 
     public function index(
@@ -74,7 +76,7 @@ class AccountTransactionController extends ApiController
         TransactionCreator $transactionCreator,
     ): JsonResponse {
         $this->ensureAccountMember($account);
-        $this->ensurePayloadUsersBelongToAccount($account, $request);
+        $this->authorizeTransactionParticipants->execute($account, $request->validated());
 
         $payload = $request->validated();
         $payload['account_id'] = $account->id;
@@ -116,7 +118,7 @@ class AccountTransactionController extends ApiController
         $this->ensureAccountTransaction($account, $transaction);
         abort_unless($transaction->user_id === $request->user()->id, 403);
         abort_if($transaction->account_balance_snapshot_id !== null, 422, 'Snapshot adjustment transactions cannot be edited directly.');
-        $this->ensurePayloadUsersBelongToAccount($account, $request);
+        $this->authorizeTransactionParticipants->execute($account, $request->validated(), $transaction);
 
         $previousAccountId = $transaction->account_id;
         $payload = $request->validated();
@@ -161,24 +163,6 @@ class AccountTransactionController extends ApiController
     {
         $this->ensureAccountMember($account);
         $this->authorizeAccountAccess->ensureBelongsToAccount($account, $transaction->account_id);
-    }
-
-    private function ensurePayloadUsersBelongToAccount(Account $account, AccountTransactionRequest $request): void
-    {
-        $userIds = collect([
-            $request->integer('paid_by_user_id') ?: null,
-            $request->integer('custodian_user_id') ?: null,
-        ])
-            ->merge(collect($request->input('user_payments', []))->pluck('user_id'))
-            ->filter()
-            ->unique();
-
-        foreach ($userIds as $userId) {
-            $this->authorizeAccountAccess->ensureAccountUser(
-                $account,
-                \App\Models\User::withoutGlobalScopes()->findOrFail((int) $userId),
-            );
-        }
     }
 
     private function transactionAccountMeta(int $accountId, ?int $previousAccountId = null): array

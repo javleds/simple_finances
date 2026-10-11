@@ -14,7 +14,9 @@ class SyncCoveredPayerRecoveryTransaction
 {
     private const CONCEPT_PREFIX = 'Parte cubierta por ';
 
-    public function __construct(private readonly BuildAccountCustodySummary $buildAccountCustodySummary) {}
+    public function __construct(private readonly BuildAccountCustodySummary $buildAccountCustodySummary)
+    {
+    }
 
     public function execute(Transaction $transaction): void
     {
@@ -34,7 +36,8 @@ class SyncCoveredPayerRecoveryTransaction
 
         $payerName = $transaction->paidByUser?->name ?? 'quien pago';
 
-        $recovery = new Transaction;
+        $recovery = new Transaction();
+        $recovery->uses_shared_account_rules = $transaction->uses_shared_account_rules;
         $recovery->parent_transaction_id = $transaction->id;
         $recovery->type = TransactionType::Income;
         $recovery->status = TransactionStatus::Completed;
@@ -61,7 +64,7 @@ class SyncCoveredPayerRecoveryTransaction
 
     private function shouldCreateRecovery(Transaction $transaction): bool
     {
-        if ($transaction->type !== TransactionType::Outcome
+        if ($transaction->uses_shared_account_rules === false || $transaction->type !== TransactionType::Outcome
             || $transaction->status !== TransactionStatus::Completed
             || $transaction->payment_source !== TransactionPaymentSource::MemberOutOfPocket
             || $transaction->paid_by_user_id === null

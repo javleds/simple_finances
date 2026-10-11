@@ -13,7 +13,9 @@ use Illuminate\Support\Collection;
 
 class SyncAccountMemberLedger
 {
-    public function __construct(private readonly BuildAccountCustodySummary $buildAccountCustodySummary) {}
+    public function __construct(private readonly BuildAccountCustodySummary $buildAccountCustodySummary)
+    {
+    }
 
     public function execute(Transaction $transaction): void
     {
@@ -46,6 +48,11 @@ class SyncAccountMemberLedger
 
     private function recordOutcome(Transaction $transaction): void
     {
+        if ($transaction->uses_shared_account_rules === false) {
+            $this->createEntry($transaction, $transaction->paid_by_user_id ?? $transaction->user_id, AccountMemberLedgerEntryType::AccountFundExpense, $transaction->amount * -1);
+            return;
+        }
+
         $source = $transaction->payment_source ?? TransactionPaymentSource::AccountFund;
         $paidByUserId = $transaction->paid_by_user_id ?? $transaction->user_id;
 

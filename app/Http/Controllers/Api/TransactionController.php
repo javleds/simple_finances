@@ -10,6 +10,7 @@ use App\Models\FinancialGoal;
 use App\Models\Transaction;
 use App\Services\Api\AuthorizeAccountAccess;
 use App\Services\Transaction\BuildTransactionAccountMeta;
+use App\Services\Transaction\AuthorizeTransactionParticipants;
 use App\Services\Transaction\BuildTransactionFacilityQuery;
 use App\Services\Transaction\BuildTransactionSummary;
 use App\Services\Transaction\HydrateCurrentUserPendingReimbursements;
@@ -20,7 +21,10 @@ use Illuminate\Http\JsonResponse;
 
 class TransactionController extends ApiController
 {
-    public function __construct(private readonly AuthorizeAccountAccess $authorizeAccountAccess) {}
+    public function __construct(
+        private readonly AuthorizeAccountAccess $authorizeAccountAccess,
+        private readonly AuthorizeTransactionParticipants $authorizeTransactionParticipants,
+    ) {}
 
     public function index(
         TransactionIndexRequest $request,
@@ -87,7 +91,7 @@ class TransactionController extends ApiController
     ): JsonResponse {
         abort_unless($transaction->user_id === $request->user()->id, 403);
         abort_if($transaction->account_balance_snapshot_id !== null, 422, 'Snapshot adjustment transactions cannot be edited directly.');
-        $this->ensureTransactionPayloadAccess($request);
+        $this->ensureTransactionPayloadAccess($request, $transaction);
 
         $previousAccountId = $transaction->account_id;
         $payload = $request->validated();
@@ -130,11 +134,11 @@ class TransactionController extends ApiController
         $this->authorizeAccountAccess->ensureMember($account);
     }
 
-    private function ensureTransactionPayloadAccess(TransactionRequest $request): void
+    private function ensureTransactionPayloadAccess(TransactionRequest $request, ?Transaction $transaction = null): void
     {
         $account = Account::withoutGlobalScopes()->findOrFail($request->integer('account_id'));
         $this->authorizeAccountAccess->ensureMember($account, $request->user()->id);
-        $this->ensurePayloadUsersBelongToAccount($account, $request);
+        $this->authorizeTransactionParticipants->execute($account, $request->validated(), $transaction);
 
         $financialGoalId = $request->integer('financial_goal_id');
 
@@ -146,21 +150,4 @@ class TransactionController extends ApiController
         $this->authorizeAccountAccess->ensureBelongsToAccount($account, $financialGoal->account_id);
     }
 
-    private function ensurePayloadUsersBelongToAccount(Account $account, TransactionRequest $request): void
-    {
-        $userIds = collect([
-            $request->integer('paid_by_user_id') ?: null,
-            $request->integer('custodian_user_id') ?: null,
-        ])
-            ->merge(collect($request->input('user_payments', []))->pluck('user_id'))
-            ->filter()
-            ->unique();
-
-        foreach ($userIds as $userId) {
-            $this->authorizeAccountAccess->ensureAccountUser(
-                $account,
-                \App\Models\User::withoutGlobalScopes()->findOrFail((int) $userId),
-            );
-        }
-    }
 }
