@@ -18,21 +18,23 @@ use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionRemover;
 use App\Services\Transaction\TransactionUpdater;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use App\Services\Transaction\BuildTransactionFilterOptions;
 
 class TransactionController extends ApiController
 {
     public function __construct(
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
         private readonly AuthorizeTransactionParticipants $authorizeTransactionParticipants,
-    ) {}
+    ) {
+    }
 
     public function index(
         TransactionIndexRequest $request,
         BuildTransactionFacilityQuery $buildTransactionFacilityQuery,
         BuildTransactionSummary $buildTransactionSummary,
         HydrateCurrentUserPendingReimbursements $hydrateCurrentUserPendingReimbursements,
-    ): JsonResponse
-    {
+    ): JsonResponse {
         $query = $buildTransactionFacilityQuery->execute(
             $request->validated(),
             $request->user()->id,
@@ -55,6 +57,14 @@ class TransactionController extends ApiController
                 'summary' => $summary->toArray(),
             ],
         ]);
+    }
+
+    public function filterOptions(
+        Request $request,
+        BuildTransactionFacilityQuery $buildQuery,
+        BuildTransactionFilterOptions $buildOptions,
+    ): JsonResponse {
+        return $this->respond(['data' => ['categories' => $buildOptions->execute($buildQuery->execute([], $request->user()->id))]]);
     }
 
     public function store(

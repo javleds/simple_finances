@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Dto\TransactionFormDto;
 use App\Dto\ApiIndexCriteriaDto;
 use App\Http\Requests\Api\AccountTransactionRequest;
+use App\Http\Requests\Api\TransactionIndexRequest;
+use App\Services\Transaction\ApplyTransactionCategoryAttachmentFilters;
+use App\Services\Transaction\BuildTransactionFilterOptions;
 use App\Models\Account;
 use App\Models\Transaction;
 use App\Services\Api\AuthorizeAccountAccess;
@@ -17,7 +20,6 @@ use App\Services\Transaction\TransactionRemover;
 use App\Services\Transaction\TransactionUpdater;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class AccountTransactionController extends ApiController
 {
@@ -25,15 +27,16 @@ class AccountTransactionController extends ApiController
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
         private readonly BuildTransactionAccountMeta $buildTransactionAccountMeta,
         private readonly AuthorizeTransactionParticipants $authorizeTransactionParticipants,
-    ) {}
+    ) {
+    }
 
     public function index(
         Account $account,
-        Request $request,
+        TransactionIndexRequest $request,
         HydrateCurrentUserPendingReimbursements $hydrateCurrentUserPendingReimbursements,
         ModelIndexCriteria $modelIndexCriteria,
-    ): JsonResponse
-    {
+        ApplyTransactionCategoryAttachmentFilters $applyCategoryAttachmentFilters,
+    ): JsonResponse {
         $this->ensureAccountMember($account);
 
         $query = $account->transactions()
@@ -44,6 +47,8 @@ class AccountTransactionController extends ApiController
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->getQuery();
+
+        $applyCategoryAttachmentFilters->execute($query, $request->validated());
 
         $perPage = min(100, max(1, (int) $request->integer('per_page', 20)));
         $paginator = $modelIndexCriteria
@@ -68,6 +73,14 @@ class AccountTransactionController extends ApiController
                 'total' => $paginator->total(),
             ],
         ]);
+    }
+
+    public function filterOptions(Account $account, BuildTransactionFilterOptions $buildOptions): JsonResponse
+    {
+        $this->ensureAccountMember($account);
+        $query = $account->transactions()->whereNull('legacy_migrated_at')->getQuery();
+
+        return $this->respond(['data' => ['categories' => $buildOptions->execute($query)]]);
     }
 
     public function store(

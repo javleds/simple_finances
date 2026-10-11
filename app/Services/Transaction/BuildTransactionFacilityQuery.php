@@ -9,7 +9,11 @@ use Illuminate\Support\Carbon;
 
 class BuildTransactionFacilityQuery
 {
-    public function __construct(private readonly OwnedTransactionsForUser $ownedTransactionsForUser) {}
+    public function __construct(
+        private readonly OwnedTransactionsForUser $ownedTransactionsForUser,
+        private readonly ApplyTransactionCategoryAttachmentFilters $applyCategoryAttachmentFilters,
+    ) {
+    }
 
     public function execute(array $filters, int $userId): Builder
     {
@@ -21,6 +25,7 @@ class BuildTransactionFacilityQuery
             ->whereNull('parent_transaction_id')
             ->where('status', TransactionStatus::Completed);
 
+        $this->applyCategoryAttachmentFilters->execute($query, $filters);
         $this->applyDateRange($query, $filters);
         $this->applySearch($query, $filters);
 

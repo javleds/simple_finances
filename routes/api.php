@@ -113,6 +113,7 @@ Route::middleware('api.auth')->group(function (): void {
     Route::get('accounts/{account}/ledger/diagnostics', [AccountLedgerDiagnosticController::class, 'index']);
     Route::post('accounts/{account}/ledger/repairs', [AccountLedgerRepairController::class, 'store']);
     Route::post('accounts/{account}/ledger/repairs/{repair}/reverse', [AccountLedgerRepairController::class, 'reverse']);
+    Route::get('accounts/{account}/transactions/filter-options', [AccountTransactionController::class, 'filterOptions']);
     Route::get('accounts/{account}/transactions', [AccountTransactionController::class, 'index']);
     Route::post('accounts/{account}/transactions', [AccountTransactionController::class, 'store']);
     Route::get('accounts/{account}/transactions/{transaction}', [AccountTransactionController::class, 'show']);
@@ -207,6 +208,7 @@ Route::middleware('api.auth')->group(function (): void {
     Route::post('transactions/{transaction}/attachments/{attachment}/retry', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'retry']);
     Route::delete('transactions/{transaction}/attachments/{attachment}', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'delete']);
 
+    Route::get('transactions/filter-options', [TransactionController::class, 'filterOptions']);
     Route::get('transactions', [TransactionController::class, 'index']);
     Route::post('transactions', [TransactionController::class, 'store']);
     Route::get('transactions/{transaction}', [TransactionController::class, 'show']);
