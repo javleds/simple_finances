@@ -15,9 +15,20 @@ log() { printf '[%s] %s\n' "$(date +'%F %T')" "$*" | tee -a "$LOG_FILE" >&2; }
 run() { log "RUN: $*"; "$@" 2>&1 | tee -a "$LOG_FILE"; }
 compose() { docker compose -f "$COMPOSE_FILE" "$@"; }
 maintenance_started=false
+stop_attachment_consumers() {
+  local services
+  services="$(compose config --services)"
+  for service in attachments-worker attachments-maintenance; do
+    if grep -Fxq "$service" <<< "$services"; then
+      run compose stop --timeout 90 "$service"
+    fi
+  done
+}
 on_error() {
   local status=$?
+  trap - ERR
   log "Deployment failed. Log: $LOG_FILE"
+  stop_attachment_consumers || log "Could not stop attachment consumers; stop them manually before recovery."
   if [[ "$maintenance_started" == true ]]; then
     log 'Maintenance remains enabled. Fix the failure and rerun deploy.sh; do not enable traffic with mismatched code and assets.'
   fi
@@ -41,6 +52,7 @@ if [[ -n "$(compose ps -q php)" ]]; then
   run compose exec -T php php artisan down --retry=60
   maintenance_started=true
 fi
+stop_attachment_consumers
 run git pull --ff-only
 run compose config --quiet
 run compose build --pull php
@@ -55,6 +67,8 @@ fi
 run compose --profile build run --rm --no-deps assets node scripts/publish-assets.mjs
 run compose up -d --wait php mysql nginx
 run compose exec -T php php artisan app:post-deploy --migrate
+run compose up -d --force-recreate attachments-worker attachments-maintenance
+run compose exec -T php php artisan attachments:diagnose --timeout=120
 run compose exec -T php php artisan up
 maintenance_started=false
 log "Deployment complete: $(git rev-parse --short HEAD)"

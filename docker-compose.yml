@@ -12,6 +12,7 @@ services:
             - simple_finances_internal
 
     php:
+        image: simple-finances-php:local
         container_name: simple_finances_php_local
         build:
             context: .
@@ -26,6 +27,46 @@ services:
         depends_on:
             - mysql
         working_dir: /app
+        networks:
+            - simple_finances_internal
+
+    attachments-worker:
+        image: simple-finances-php:local
+        restart: unless-stopped
+        env_file:
+            - .env
+        environment:
+            HOME: /tmp
+        working_dir: /app
+        volumes:
+            - .:/app
+        command: ["php", "artisan", "queue:work", "database", "--queue=attachments", "--sleep=3", "--tries=3", "--timeout=60", "--max-time=3600", "--force"]
+        labels:
+            - "traefik.enable=false"
+        mem_limit: 1g
+        stop_grace_period: 90s
+        depends_on:
+            - php
+        networks:
+            - simple_finances_internal
+
+    attachments-maintenance:
+        image: simple-finances-php:local
+        restart: unless-stopped
+        env_file:
+            - .env
+        environment:
+            HOME: /tmp
+        working_dir: /app
+        volumes:
+            - .:/app
+        command: ["php", "artisan", "attachments:maintain", "--interval=3600"]
+        labels:
+            - "traefik.enable=false"
+        mem_limit: 1g
+        stop_grace_period: 90s
+        depends_on:
+            - php
         networks:
             - simple_finances_internal
 

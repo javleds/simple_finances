@@ -2,7 +2,7 @@
 
 ## Versión PHP
 
-La imagen usa `php:8.4-fpm` para satisfacer las dependencias Symfony 8 del lockfile probado. Mantener `composer.lock` sin regenerarlo en producción. Reconstruir PHP al desplegar y comprobar `composer check-platform-reqs --no-dev` dentro de esa imagen.
+La imagen usa `php:8.4-fpm-trixie` para satisfacer las dependencias Symfony 8 del lockfile probado. Mantener `composer.lock` sin regenerarlo en producción. Reconstruir PHP al desplegar y comprobar `composer check-platform-reqs --no-dev` dentro de esa imagen.
 
 ## Contrato operativo
 
@@ -28,11 +28,11 @@ Conserva el identificador Traefik existente si es diferente, `APP_KEY`, secretos
 
 ## Secuencia
 
-El script valida configuración y Git limpio, registra el commit anterior, activa mantenimiento antes de `git pull --ff-only`, construye PHP, instala Composer sin dependencias de desarrollo y ejecuta el constructor Node bajo demanda. El código está montado: actualizar Git antes del mantenimiento expondría versiones mezcladas.
+El script valida configuración y Git limpio, registra el commit anterior, activa mantenimiento y detiene los consumidores de adjuntos antes de `git pull --ff-only`, construye PHP, instala Composer sin dependencias de desarrollo y ejecuta el constructor Node bajo demanda. El código está montado: actualizar Git antes del mantenimiento expondría versiones mezcladas.
 
 `npm ci` y el build compilan a `storage/app/deploy-assets/build`. El publicador valida la entrada Vue y archivos del manifest, copia assets, conserva los anteriores, guarda `manifest.previous.json` y cambia el manifest mediante rename. Retira `public/hot`.
 
-Después inicia PHP/MySQL/Nginx. MySQL dispone de un healthcheck TCP con `mysqladmin ping`; PHP espera a que MySQL esté saludable y `compose up --wait` espera esta comprobación antes de ejecutar `app:post-deploy --migrate`. El healthcheck comprueba disponibilidad del servidor; las credenciales se validan al conectar Laravel. El script desactiva mantenimiento solo si todo termina correctamente. Un error posterior al mantenimiento deja la aplicación cerrada; consulta el log, corrige el fallo y repite el script. No limpies assets retenidos hasta cerrar la ventana de rollback.
+Después inicia PHP/MySQL/Nginx. MySQL dispone de un healthcheck TCP con `mysqladmin ping`; PHP espera a que MySQL esté saludable y `compose up --wait` espera esta comprobación antes de ejecutar `app:post-deploy --migrate`. El healthcheck comprueba disponibilidad del servidor; las credenciales se validan al conectar Laravel. Después de migrar y cachear, recrea los consumidores de adjuntos y ejecuta `attachments:diagnose --timeout=120`, que comprueba procesamiento real mediante la cola. El script desactiva mantenimiento solo si todo termina correctamente. Un fallo detiene ambos consumidores de adjuntos, preservando los jobs pendientes. Un error posterior al mantenimiento deja la aplicación cerrada; consulta el log, corrige el fallo y repite el script. No limpies assets retenidos hasta cerrar la ventana de rollback.
 
 ## Primera transición
 
@@ -61,3 +61,15 @@ Para fallos de build o post-deploy, mantén mantenimiento, corrige el problema y
 Para volver a una versión integrada anterior, restaura primero ese commit mediante el procedimiento operativo habitual, instala sus dependencias y restaura el manifest correspondiente desde `public/build/manifest.previous.json` si corresponde a esa versión; de otro modo reconstruye sus assets. Regenera las caches de Laravel y desactiva mantenimiento tras verificar. No basta cambiar el manifest dejando PHP actualizado.
 
 Para volver a una versión anterior a la integración, restaura el backend y su configuración Compose/Traefik anterior, reinicia el contenedor SPA conservado y devuelve el dominio principal a su router. Esa versión no contiene Vue embebido: restaurar solo un manifest no recupera el frontend. La integración de la SPA no añadió migraciones; WhatsApp sí incorpora tablas nuevas. Además, `post-deploy --migrate` puede ejecutar otras pendientes; evalúa su compatibilidad antes de revertir código y no reviertas datos automáticamente.
+
+## Operación de adjuntos
+
+`attachments-worker` y `attachments-maintenance` usan la misma imagen PHP, UID/GID 1001 y montaje `/app` de la aplicación. Ambos pertenecen solo a la red interna; no publican puertos ni rutas Traefik. Nginx conserva la única entrada HTTP pública y MySQL permanece interno. El worker consume exclusivamente `attachments`, una instancia inicial con 1 GiB de memoria y parada gradual de 90 segundos. `--force` permite comprobar la cola durante mantenimiento; el despliegue lo detiene antes de modificar código. El consumidor existente de `default` sigue siendo responsabilidad de su supervisor actual.
+
+El servicio de mantenimiento ejecuta `attachments:maintain --interval=3600`, no `schedule:work`: evita duplicar tareas financieras. Retira fuentes fallidas y temporales huérfanos tras 24 horas, completa borrados y reconcilia capacidad. Para ejecutarlo manualmente usa `docker compose -f docker-compose.prod.yml exec -T php php artisan attachments:maintain`. Los servicios reinician automáticamente; consulta `docker compose -f docker-compose.prod.yml logs --tail=100 attachments-worker attachments-maintenance` y `php artisan queue:failed`. Reintenta mediante la interfaz del adjunto cuando conserve su fuente; un archivo expirado exige nueva selección. Investiga el error antes de usar `queue:retry`.
+
+Configura límites mediante `TRANSACTION_ATTACHMENTS_*` en `.env`; regenera la caché y recrea los consumidores al cambiarlos. Los valores iniciales reservan 1 GiB libre y limitan el catálogo a 5 GiB, incluyendo temporales y reservas de procesamiento. La política ImageMagick restringe formatos, delegados y acceso indirecto, con techos de 256 MiB de memoria/mapa/disco, un hilo y 45 segundos. La aplicación puede imponer límites menores; elevar estos techos requiere reconstruir la imagen. PHP admite 6 MiB por archivo y 8 MiB por solicitud; Nginx admite 8 MiB. Para aumentar límites coordina esos techos y `retry_after` con el timeout del job. No existe antivirus en este MVP.
+
+Respaldar conjuntamente la base de datos y `storage/app/private/transaction-attachments` durante una ventana consistente, con consumidores detenidos. La base conserva estados, permisos y reservas; los archivos solos no permiten recuperar el catálogo. Restaurar ambos antes de reiniciar consumidores y ejecutar el diagnóstico. No incluir comprobantes en Git ni respaldos públicos.
+
+ImageMagick, Imagick y libheif tienen licencias abiertas; los paquetes del sistema incluyen sus avisos. La disponibilidad de un códec no constituye una garantía universal sobre patentes. Las imágenes se convierten a WebP y se descarta el original: conservar un respaldo del comprobante original fuera de la aplicación si es necesario.

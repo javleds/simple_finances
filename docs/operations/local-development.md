@@ -21,7 +21,7 @@ Configura `DB_*` para una base local y crea la base antes de `php artisan migrat
 composer run dev
 ```
 
-Laravel escucha en `127.0.0.1:8000`; Vite en `127.0.0.1:5173` sirve assets y HMR. Abre la aplicación en `http://127.0.0.1:8000`, incluida una ruta profunda como `/admin/accounts`. Ambos puertos son estrictos: si uno está ocupado, el comando termina. Composer también inicia `php artisan queue:listen --sleep=1 --tries=5 --timeout=60`. `Ctrl+C` o la salida de uno de los procesos detiene los demás.
+Laravel escucha en `127.0.0.1:8000`; Vite en `127.0.0.1:5173` sirve assets y HMR. Abre la aplicación en `http://127.0.0.1:8000`, incluida una ruta profunda como `/admin/accounts`. Ambos puertos son estrictos: si uno está ocupado, el comando termina. Composer también inicia `php artisan queue:listen --queue=default,attachments --sleep=1 --tries=5 --timeout=60`. `Ctrl+C` o la salida de uno de los procesos detiene los demás.
 
 El cliente usa `/api` por defecto. `VITE_API_BASE_URL` permite un override público para integraciones. Mantén `APP_URL`, `SPA_URL` y `FRONTEND_URL` en la URL local. Las variables `VITE_*` se incorporan al navegador y nunca deben contener secretos.
 
@@ -58,3 +58,11 @@ composer format:check
 ```
 
 Para verificar producción local, detén Vite y comprueba que no exista `public/hot`; inicia solo `php artisan serve --host=127.0.0.1 --port=8000` y abre rutas profundas. `npm run preview` no representa la aplicación Laravel integrada.
+
+## Adjuntos de transacciones
+
+El procesamiento usa la cola `attachments` de base de datos, incluida en `composer run dev`. Instala Imagick, ImageMagick con JPEG/PNG/WebP y libheif con HEIC/HEIF; la imagen Docker incluye estas dependencias y comprueba su disponibilidad al construirse. El almacenamiento dedicado vive en `storage/app/private/transaction-attachments` y nunca se publica con `storage:link`.
+
+Para usar Docker, construye PHP antes de iniciar los consumidores: `docker compose build php`. `attachments-worker` procesa un archivo a la vez y `attachments-maintenance` ejecuta únicamente la limpieza de comprobantes cada hora. No sustituyen el scheduler financiero. Para desarrollar en host, ejecuta `php artisan attachments:maintain` cuando necesites limpiar y `php artisan attachments:diagnose --timeout=120` con el worker activo para comprobar cola, almacenamiento y conversión.
+
+Los límites funcionales están en `config/transaction_attachments.php`; `.env.example` muestra sus overrides opcionales. Las barreras PHP/Nginx admiten solicitudes de 8 MiB y archivos de 6 MiB: aumentar el límite de aplicación requiere actualizar también estas barreras. Los controles de ImageMagick y el contenedor son techos de infraestructura, aunque la configuración de aplicación sea mayor. No se realiza análisis antivirus.
