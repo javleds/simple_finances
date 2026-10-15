@@ -20,7 +20,7 @@ class PostDeploy extends Command
             }
         }
 
-        foreach (['config:cache', 'route:cache', 'event:cache'] as $command) {
+        foreach (['view:clear', 'config:cache', 'route:cache', 'event:cache'] as $command) {
             $status = $this->call($command);
 
             if ($status !== self::SUCCESS) {
