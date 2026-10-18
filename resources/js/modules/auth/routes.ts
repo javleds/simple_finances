@@ -34,6 +34,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./pages/EmailVerificationRequiredPage.vue'),
       },
       {
+        name: 'auth.legal-acceptance',
+        path: 'legal-acceptance',
+        component: () => import('./pages/LegalAcceptancePage.vue'),
+      },
+      {
         name: 'auth.terms',
         path: 'terms-and-conditions',
         component: () => import('./pages/TermsAndConditions.vue'),

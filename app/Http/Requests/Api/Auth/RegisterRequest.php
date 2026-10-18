@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Api\Auth;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\Api\Legal\LegalAcceptanceRequest;
 
-class RegisterRequest extends FormRequest
+use function array_merge;
+
+class RegisterRequest extends LegalAcceptanceRequest
 {
     public function authorize(): bool
     {
@@ -13,14 +17,12 @@ class RegisterRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'phone_number' => ['nullable', 'string', 'max:255'],
-            'terms_accepted' => ['required', 'accepted'],
-            'privacy_policy_accepted' => ['required', 'accepted'],
+        return array_merge(parent::rules(), [
+            'name'             => ['required', 'string', 'max:255'],
+            'email'            => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password'         => ['required', 'string', 'min:8', 'confirmed'],
+            'phone_number'     => ['nullable', 'string', 'max:255'],
             'post_auth_action' => ['nullable', 'string', 'in:account-invites'],
-        ];
+        ]);
     }
 }

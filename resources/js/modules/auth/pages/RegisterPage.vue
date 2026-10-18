@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import { ApiError } from '@/lib/api/apiClient';
+import AuthFeedbackBanner from '@/modules/auth/components/AuthFeedbackBanner.vue';
+import { useLegalDocuments } from '@/modules/auth/legal/legalDocuments';
+import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 import RegisterLegalFields from '@/modules/auth/components/RegisterLegalFields.vue';
 import RegisterLegalPreview, {
     type RegisterLegalDocument,
@@ -34,6 +38,7 @@ const {
     email,
     password,
     passwordConfirmation,
+    isAdult,
     termsAccepted,
     privacyPolicyAccepted,
     isSubmitting,
@@ -50,6 +55,27 @@ const { error: termsAcceptedError, touch: touchTermsAccepted } =
 const { error: privacyPolicyAcceptedError, touch: touchPrivacyPolicyAccepted } =
     useFormFieldInteraction('privacyPolicyAccepted');
 const isRegisterPending = ref(false);
+const feedback = ref('');
+const {
+    data: legalDocuments,
+    isError: legalError,
+    refetch: refreshLegalDocuments,
+} = useLegalDocuments();
+const legalAvailable = computed(
+    () => legalDocuments.value?.available === true && !legalError.value,
+);
+const { error: adultError, touch: touchAdult } = useFormFieldInteraction('isAdult');
+watch(
+    () => [
+        legalDocuments.value?.documents.terms.hash,
+        legalDocuments.value?.documents.privacy.hash,
+    ],
+    () => {
+        termsAccepted.value = false;
+        privacyPolicyAccepted.value = false;
+        isAdult.value = false;
+    },
+);
 
 watch(
     () => route.query.email,
@@ -96,24 +122,47 @@ async function navigateAfterRegister(session: AuthSession): Promise<void> {
 }
 
 async function handleSubmit(): Promise<void> {
-    if (isRegisterPending.value) {
-        return;
-    }
-
-    const payload = await submitForm();
-
-    if (!payload) {
-        return;
-    }
-
+    if (isRegisterPending.value || isSubmitting.value || !legalAvailable.value) return;
     isRegisterPending.value = true;
-
+    feedback.value = '';
+    const revisions = legalDocuments.value?.documents;
     try {
+        const payload = await submitForm();
+        if (
+            !payload ||
+            !revisions ||
+            !legalDocuments.value ||
+            !legalAvailable.value ||
+            !termsAccepted.value ||
+            !privacyPolicyAccepted.value ||
+            !isAdult.value
+        )
+            return;
+        if (
+            revisions.terms.hash !== legalDocuments.value.documents.terms.hash ||
+            revisions.privacy.hash !== legalDocuments.value.documents.privacy.hash
+        ) {
+            feedback.value = 'Los documentos cambiaron. Revísalos y vuelve a aceptar.';
+            return;
+        }
         const session = await authRepository.register({
             ...payload,
+            termsHash: revisions.terms.hash,
+            privacyHash: revisions.privacy.hash,
             postAuthAction: resolvePostAuthAction(route.query.post_auth_action),
         });
         await navigateAfterRegister(session);
+    } catch (error) {
+        feedback.value = resolveApiErrorMessage(
+            error,
+            'No pudimos crear tu cuenta. Intenta nuevamente.',
+        );
+        if (error instanceof ApiError && error.status === 409) {
+            termsAccepted.value = false;
+            privacyPolicyAccepted.value = false;
+            isAdult.value = false;
+            await refreshLegalDocuments();
+        }
     } finally {
         isRegisterPending.value = false;
     }
@@ -135,6 +184,19 @@ async function handleSubmit(): Promise<void> {
                         <AppText>Completa tus datos para registrarte y comenzar.</AppText>
                     </div>
 
+                    <AuthFeedbackBanner v-if="feedback" :message="feedback" />
+                    <div v-if="!legalAvailable" role="alert" class="space-y-3">
+                        <AppText
+                            >La información legal debe estar disponible para completar el
+                            registro.</AppText
+                        >
+                        <AppButton
+                            type="button"
+                            variant="secondary"
+                            @click="refreshLegalDocuments()"
+                            >Reintentar</AppButton
+                        >
+                    </div>
                     <form class="space-y-4 sm:space-y-5" @submit.prevent="handleSubmit">
                         <AppInput
                             id="name"
@@ -181,6 +243,9 @@ async function handleSubmit(): Promise<void> {
                         />
 
                         <RegisterLegalFields
+                            v-model:is-adult="isAdult"
+                            :adult-error="adultError"
+                            @touch-adult="touchAdult"
                             v-model:privacy-policy-accepted="privacyPolicyAccepted"
                             v-model:terms-accepted="termsAccepted"
                             :active-document="activeDocument"
@@ -203,7 +268,12 @@ async function handleSubmit(): Promise<void> {
                             variant="primary"
                             full-width
                             :loading="isSubmitting || isRegisterPending"
-                            :disabled="isSubmitDisabled || isSubmitting || isRegisterPending"
+                            :disabled="
+                                !legalAvailable ||
+                                isSubmitDisabled ||
+                                isSubmitting ||
+                                isRegisterPending
+                            "
                         >
                             {{
                                 isSubmitting || isRegisterPending ? 'Registrando...' : 'Registrarme'

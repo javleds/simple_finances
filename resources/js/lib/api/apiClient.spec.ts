@@ -13,6 +13,61 @@ afterEach(() => {
 });
 
 describe('integrated API transport', () => {
+    it('preserves authentication and the destination when current legal acceptance is required', async () => {
+        const assign = vi.fn();
+        const localStorage = window.localStorage;
+        vi.stubGlobal('window', {
+            localStorage,
+            location: {
+                assign,
+                pathname: '/admin/accounts/4',
+                search: '?tab=ledger',
+                hash: '#last',
+            },
+        });
+        setStoredAuthToken('current-token');
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue(
+                new Response(
+                    JSON.stringify({
+                        code: 'legal_acceptance_required',
+                        message: 'Revisa los documentos.',
+                    }),
+                    { status: 428, headers: { 'Content-Type': 'application/json' } },
+                ),
+            ),
+        );
+
+        await expect(createApiClient().get('/accounts/4')).rejects.toMatchObject({ status: 428 });
+
+        expect(assign).toHaveBeenCalledWith(
+            '/auth/legal-acceptance?redirect=%2Fadmin%2Faccounts%2F4%3Ftab%3Dledger%23last',
+        );
+        expect(localStorage.getItem('finsi_20_auth_token')).toBe('current-token');
+    });
+
+    it('does not redirect repeatedly while reviewing legal documents', async () => {
+        const assign = vi.fn();
+        vi.stubGlobal('window', {
+            localStorage: window.localStorage,
+            location: { assign, pathname: '/auth/legal-acceptance', search: '', hash: '' },
+        });
+        setStoredAuthToken('current-token');
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue(
+                new Response(JSON.stringify({ code: 'legal_acceptance_required' }), {
+                    status: 428,
+                    headers: { 'Content-Type': 'application/json' },
+                }),
+            ),
+        );
+
+        await expect(createApiClient().get('/accounts')).rejects.toMatchObject({ status: 428 });
+        expect(assign).not.toHaveBeenCalled();
+    });
+
     it('uses the Laravel API on the current origin by default', async () => {
         const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
             new Response('{}', {

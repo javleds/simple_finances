@@ -31,6 +31,11 @@ export function useRegisterForm() {
         set: (value: string) => setFieldValue('passwordConfirmation', value, true),
     });
 
+    const isAdult = computed({
+        get: () => values.isAdult,
+        set: (value: boolean) => setFieldValue('isAdult', value, true),
+    });
+
     const termsAccepted = computed({
         get: () => values.termsAccepted,
         set: (value: boolean) => setFieldValue('termsAccepted', value, true),
@@ -56,6 +61,7 @@ export function useRegisterForm() {
         email,
         password,
         passwordConfirmation,
+        isAdult,
         termsAccepted,
         privacyPolicyAccepted,
         errors,

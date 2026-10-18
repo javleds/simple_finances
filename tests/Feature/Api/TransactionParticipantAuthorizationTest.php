@@ -4,7 +4,6 @@ use App\Enums\TransactionPaymentSource;
 use App\Models\Account;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\Auth\JwtTokenService;
 
 function participantScenario(): array
 {
@@ -34,7 +33,7 @@ function participantScenario(): array
 
 function participantHeaders(User $user): array
 {
-    return ['Authorization' => 'Bearer '.app(JwtTokenService::class)->generate($user)['token'], 'Accept' => 'application/json'];
+    return ['Authorization' => 'Bearer '.\Tests\Support\AcceptedUserToken::generate($user)['token'], 'Accept' => 'application/json'];
 }
 
 it('allows an author to retain historical participants after membership changes', function (bool $nested) {

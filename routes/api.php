@@ -43,6 +43,13 @@ use App\Http\Controllers\Api\WhatsAppVerificationCodeController;
 use App\Http\Controllers\Api\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('legal-documents', [\App\Http\Controllers\Api\Legal\LegalDocumentsController::class, 'show']);
+Route::middleware('api.auth')->group(function (): void {
+    Route::get('legal-acceptance', [\App\Http\Controllers\Api\Legal\LegalAcceptanceController::class, 'show']);
+    Route::post('legal-acceptance', [\App\Http\Controllers\Api\Legal\LegalAcceptanceController::class, 'store']);
+    Route::get('profile', [ProfileController::class, 'show']);
+});
+
 Route::get('whatsapp/webhook', [WhatsAppWebhookController::class, 'verify']);
 Route::post('whatsapp/webhook', [WhatsAppWebhookController::class, 'receive']);
 
@@ -65,14 +72,13 @@ Route::prefix('auth')->group(function (): void {
     });
 });
 
-Route::middleware('api.auth')->group(function (): void {
+Route::middleware(['api.auth', 'api.legal'])->group(function (): void {
     Route::get('whatsapp-connection', [WhatsAppConnectionController::class, 'show']);
     Route::post('whatsapp-verification-codes', [WhatsAppVerificationCodeController::class, 'store'])
         ->middleware('throttle:whatsapp-code');
     Route::post('whatsapp-connection', [WhatsAppConnectionController::class, 'store'])
         ->middleware('throttle:whatsapp-confirm');
     Route::delete('whatsapp-connection', [WhatsAppConnectionController::class, 'delete']);
-    Route::get('profile', [ProfileController::class, 'show']);
     Route::put('profile', [ProfileController::class, 'update']);
 
     Route::get('personal-money', [\App\Http\Controllers\Api\PersonalMoneyController::class, 'index']);

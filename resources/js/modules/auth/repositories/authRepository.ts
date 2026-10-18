@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { LegalAcceptanceInput } from '../legal/legalDocuments';
 
 import { clearStoredAuthToken, createApiClient, setStoredAuthToken } from '@/lib/api/apiClient';
 import {
@@ -32,13 +33,16 @@ function buildLoginPayload(payload: LoginFormValues) {
   };
 }
 
-function buildRegisterPayload(payload: RegisterFormValues) {
+function buildRegisterPayload(payload: RegisterFormValues & LegalAcceptanceInput) {
   return {
     name: payload.name,
     email: payload.email,
     password: payload.password,
     password_confirmation: payload.passwordConfirmation,
     phone_number: payload.phoneNumber.trim() || null,
+    is_adult: payload.isAdult,
+    terms_hash: payload.termsHash,
+    privacy_hash: payload.privacyHash,
     terms_accepted: payload.termsAccepted,
     privacy_policy_accepted: payload.privacyPolicyAccepted,
     post_auth_action: payload.postAuthAction,
@@ -85,7 +89,7 @@ export function createAuthRepository() {
       const response = await apiClient.post<unknown>('/auth/login', buildLoginPayload(payload));
       return storeSession(mapAuthResponseApiToSession(authResponseApiSchema.parse(response)));
     },
-    async register(payload: RegisterFormValues): Promise<AuthSession> {
+    async register(payload: RegisterFormValues & LegalAcceptanceInput): Promise<AuthSession> {
       const response = await apiClient.post<unknown>(
         '/auth/register',
         buildRegisterPayload(payload),

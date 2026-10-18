@@ -3,11 +3,10 @@
 use App\Models\Account;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\Auth\JwtTokenService;
 
 function transactionFacilityHeaders(User $user): array
 {
-    $token = app(JwtTokenService::class)->generate($user)['token'];
+    $token = \Tests\Support\AcceptedUserToken::generate($user)['token'];
 
     return [
         'Accept' => 'application/json',

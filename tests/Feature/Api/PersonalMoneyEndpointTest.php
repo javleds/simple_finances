@@ -6,11 +6,10 @@ use App\Models\Account;
 use App\Models\PersonalMoneyLink;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\Auth\JwtTokenService;
 
 function personalMoneyApiHeaders(User $user): array
 {
-    return ['Authorization' => 'Bearer ' . app(JwtTokenService::class)->generate($user)['token']];
+    return ['Authorization' => 'Bearer ' . \Tests\Support\AcceptedUserToken::generate($user)['token']];
 }
 
 beforeEach(function (): void {

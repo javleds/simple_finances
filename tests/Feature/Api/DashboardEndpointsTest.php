@@ -11,13 +11,12 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Notifications\SharedTransactionBatchChangedEmail;
 use App\Notifications\SharedTransactionChangedEmail;
-use App\Services\Auth\JwtTokenService;
 use App\Services\SharedTransactions\ProcessSharedTransactionNotificationBatchesAction;
 use Illuminate\Support\Facades\Notification;
 
 function dashboardApiHeaders(User $user): array
 {
-    $token = app(JwtTokenService::class)->generate($user)['token'];
+    $token = \Tests\Support\AcceptedUserToken::generate($user)['token'];
 
     return [
         'Accept' => 'application/json',

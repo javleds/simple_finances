@@ -18,7 +18,6 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Notifications\InviteAccountApiEmail;
 use App\Notifications\InviteAccountEmail;
-use App\Services\Auth\JwtTokenService;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +25,7 @@ use Illuminate\Support\Facades\Notification;
 
 function apiHeaders(User $user): array
 {
-    $token = app(JwtTokenService::class)->generate($user)['token'];
+    $token = \Tests\Support\AcceptedUserToken::generate($user)['token'];
 
     return [
         'Accept' => 'application/json',
@@ -64,6 +63,9 @@ it('registers, logs in, shows profile and logs out', function () {
         'password' => 'password123',
         'password_confirmation' => 'password123',
         'phone_number' => '555-0000',
+        'is_adult' => true,
+        'terms_hash' => app(\App\Services\Legal\GetLegalDocuments::class)->execute()['documents']['terms']['hash'],
+        'privacy_hash' => app(\App\Services\Legal\GetLegalDocuments::class)->execute()['documents']['privacy']['hash'],
         'terms_accepted' => true,
         'privacy_policy_accepted' => true,
     ]);
@@ -177,6 +179,9 @@ it('rate limits register requests by email and ip', function () {
         'password' => 'password123',
         'password_confirmation' => 'password123',
         'phone_number' => '555-1000',
+        'is_adult' => true,
+        'terms_hash' => app(\App\Services\Legal\GetLegalDocuments::class)->execute()['documents']['terms']['hash'],
+        'privacy_hash' => app(\App\Services\Legal\GetLegalDocuments::class)->execute()['documents']['privacy']['hash'],
         'terms_accepted' => true,
         'privacy_policy_accepted' => true,
     ];
@@ -210,6 +215,9 @@ it('returns the pending invitations redirect after registering from an invitatio
         'password' => 'password123',
         'password_confirmation' => 'password123',
         'phone_number' => null,
+        'is_adult' => true,
+        'terms_hash' => app(\App\Services\Legal\GetLegalDocuments::class)->execute()['documents']['terms']['hash'],
+        'privacy_hash' => app(\App\Services\Legal\GetLegalDocuments::class)->execute()['documents']['privacy']['hash'],
         'terms_accepted' => true,
         'privacy_policy_accepted' => true,
         'post_auth_action' => 'account-invites',

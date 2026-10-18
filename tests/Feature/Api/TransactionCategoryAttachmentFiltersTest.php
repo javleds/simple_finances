@@ -7,7 +7,6 @@ use App\Models\Category;
 use App\Models\Transaction;
 use App\Models\TransactionAttachment;
 use App\Models\User;
-use App\Services\Auth\JwtTokenService;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -17,7 +16,7 @@ beforeEach(function (): void {
     $this->account->users()->sync([$this->owner->id, $this->other->id]);
     $this->personal = Category::create(['user_id' => $this->owner->id, 'name' => 'Food', 'normalized_name' => 'food', 'created_by_user_id' => $this->owner->id]);
     $this->shared = Category::create(['account_id' => $this->account->id, 'name' => 'Food', 'normalized_name' => 'food', 'created_by_user_id' => $this->owner->id]);
-    $this->withHeaders(['Authorization' => 'Bearer '.app(JwtTokenService::class)->generate($this->owner)['token']]);
+    $this->withHeaders(['Authorization' => 'Bearer '.\Tests\Support\AcceptedUserToken::generate($this->owner)['token']]);
 });
 
 function categoryFilterTransaction(\Tests\TestCase $context, ?Category $category, float $amount = 10, array $attributes = []): Transaction

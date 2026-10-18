@@ -6,12 +6,11 @@ use App\Models\Account;
 use App\Models\Category;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\Auth\JwtTokenService;
 use App\Services\Categories\ConvertAccountCategoryCatalog;
 
 function categoryHeaders(User $user): array
 {
-    return ['Authorization' => 'Bearer ' . app(JwtTokenService::class)->generate($user)['token']];
+    return ['Authorization' => 'Bearer ' . \Tests\Support\AcceptedUserToken::generate($user)['token']];
 }
 
 it('isolates personal catalogs and rejects normalized duplicate names', function () {

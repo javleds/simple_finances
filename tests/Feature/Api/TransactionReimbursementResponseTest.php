@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Models\Account;
 use App\Models\User;
-use App\Services\Auth\JwtTokenService;
 
 it('returns immediate reimbursement indicators on create edit and show for the authenticated user', function (bool $nested, bool $authorPays): void {
     $author = User::factory()->create();
@@ -14,7 +13,7 @@ it('returns immediate reimbursement indicators on create edit and show for the a
         $author->id => ['percentage' => 50],
         $member->id => ['percentage' => 50],
     ]);
-    $this->withHeaders(['Authorization' => 'Bearer '.app(JwtTokenService::class)->generate($author)['token']]);
+    $this->withHeaders(['Authorization' => 'Bearer '.\Tests\Support\AcceptedUserToken::generate($author)['token']]);
     $base = $nested ? "/api/accounts/{$account->id}/transactions" : '/api/transactions';
     $payload = [
         'account_id' => $account->id,

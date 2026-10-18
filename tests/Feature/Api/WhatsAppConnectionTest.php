@@ -3,7 +3,6 @@
 use App\Models\User;
 use App\Models\WhatsAppConnection;
 use App\Models\WhatsAppVerificationCode;
-use App\Services\Auth\JwtTokenService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 
@@ -23,7 +22,7 @@ beforeEach(function (): void {
 
 function whatsappHeaders(User $user): array
 {
-    return ['Authorization' => 'Bearer '.app(JwtTokenService::class)->generate($user)['token']];
+    return ['Authorization' => 'Bearer '.\Tests\Support\AcceptedUserToken::generate($user)['token']];
 }
 
 function pendingWhatsappCode(User $user, string $phone = '+525512345678', string $code = '001234'): WhatsAppVerificationCode

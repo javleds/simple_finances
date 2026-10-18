@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'api.auth' => AuthenticateApiToken::class,
+            'api.legal' => \App\Http\Middleware\RequireCurrentLegalAcceptance::class,
         ]);
 
         $middleware->prependToPriorityList(ThrottleRequests::class, AuthenticateApiToken::class);

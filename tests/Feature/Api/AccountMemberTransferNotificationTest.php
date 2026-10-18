@@ -6,12 +6,11 @@ use App\Models\NotificationType;
 use App\Models\SharedTransactionNotificationBatch;
 use App\Models\SharedTransactionNotificationItem;
 use App\Models\User;
-use App\Services\Auth\JwtTokenService;
 use Illuminate\Support\Facades\Notification;
 
 function accountMemberTransferNotificationHeaders(User $user): array
 {
-    $token = app(JwtTokenService::class)->generate($user)['token'];
+    $token = \Tests\Support\AcceptedUserToken::generate($user)['token'];
 
     return [
         'Accept' => 'application/json',

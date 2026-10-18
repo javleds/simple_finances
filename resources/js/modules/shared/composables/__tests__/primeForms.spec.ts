@@ -47,6 +47,7 @@ describe('PrimeVue Forms integration', () => {
         form.email.value = 'test@example.com';
         form.password.value = 'password123';
         form.passwordConfirmation.value = 'different';
+        form.isAdult.value = true;
         form.termsAccepted.value = true;
         form.privacyPolicyAccepted.value = true;
         confirmation.touch();

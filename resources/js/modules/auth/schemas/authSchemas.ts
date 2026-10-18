@@ -53,6 +53,7 @@ export type RegisterFormValues = {
   phoneNumber: string;
   password: string;
   passwordConfirmation: string;
+  isAdult: boolean;
   termsAccepted: boolean;
   privacyPolicyAccepted: boolean;
   postAuthAction?: AuthPostAuthAction;
@@ -82,6 +83,7 @@ export const registerFormSchema = z
     phoneNumber: z.string().trim(),
     password: z.string().trim().min(8, 'La contraseña debe tener al menos 8 caracteres.'),
     passwordConfirmation: z.string().trim().min(1, 'Confirma tu contraseña.'),
+    isAdult: z.boolean().refine((value) => value, 'Debes declarar que tienes al menos 18 años.'),
     termsAccepted: z.boolean().refine((value) => value, 'Debes aceptar los términos.'),
     privacyPolicyAccepted: z
       .boolean()
@@ -201,6 +203,7 @@ export function createDefaultRegisterFormValues(): RegisterFormValues {
     phoneNumber: '',
     password: '',
     passwordConfirmation: '',
+    isAdult: false,
     termsAccepted: false,
     privacyPolicyAccepted: false,
   };

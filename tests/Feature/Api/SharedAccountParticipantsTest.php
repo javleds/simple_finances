@@ -3,7 +3,6 @@
 use App\Models\Account;
 use App\Models\AccountInvite;
 use App\Models\User;
-use App\Services\Auth\JwtTokenService;
 
 beforeEach(function (): void {
     $this->owner = User::factory()->create(['name' => 'Account Owner']);
@@ -19,7 +18,7 @@ beforeEach(function (): void {
         'email' => $this->member->email,
         'percentage' => 35,
     ]));
-    $token = app(JwtTokenService::class)->generate($this->member)['token'];
+    $token = \Tests\Support\AcceptedUserToken::generate($this->member)['token'];
     $this->withHeaders(['Authorization' => 'Bearer '.$token]);
 });
 
@@ -60,7 +59,7 @@ it('rejects outsiders and invitations belonging to another account', function ()
     $foreignInvite = AccountInvite::withoutEvents(fn (): AccountInvite => AccountInvite::factory()->create());
     $this->getJson("/api/accounts/{$this->account->id}/invites/{$foreignInvite->id}")->assertNotFound();
     $outsider = User::factory()->create();
-    $token = app(JwtTokenService::class)->generate($outsider)['token'];
+    $token = \Tests\Support\AcceptedUserToken::generate($outsider)['token'];
     $this->withHeaders(['Authorization' => 'Bearer '.$token]);
     $this->getJson("/api/accounts/{$this->account->id}/users")->assertForbidden();
     $this->getJson("/api/accounts/{$this->account->id}/invites")->assertForbidden();

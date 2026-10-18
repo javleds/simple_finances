@@ -5,6 +5,8 @@ import Message from 'primevue/message';
 import { AppLink } from '@/modules/shared/components';
 
 const props = defineProps<{
+    isAdult: boolean;
+    adultError?: string;
     activeDocument?: 'terms' | 'privacy' | null;
     privacyPolicyAccepted: boolean;
     privacyPolicyError?: string;
@@ -13,6 +15,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+    'update:isAdult': [value: boolean];
+    touchAdult: [];
     openPrivacy: [];
     openTerms: [];
     touchPrivacyPolicy: [];
@@ -39,10 +43,10 @@ function updatePrivacyPolicyAccepted(value: boolean): void {
     >
         <label class="flex items-start gap-3">
             <Checkbox
-                :model-value="props.termsAccepted"
+                :modelValue="props.termsAccepted"
                 binary
                 :invalid="Boolean(props.termsError)"
-                @update:model-value="updateTermsAccepted"
+                @update:modelValue="updateTermsAccepted"
             />
             <span class="text-sm text-(--app-color-text)">
                 Acepto los
@@ -65,10 +69,10 @@ function updatePrivacyPolicyAccepted(value: boolean): void {
 
         <label class="flex items-start gap-3">
             <Checkbox
-                :model-value="props.privacyPolicyAccepted"
+                :modelValue="props.privacyPolicyAccepted"
                 binary
                 :invalid="Boolean(props.privacyPolicyError)"
-                @update:model-value="updatePrivacyPolicyAccepted"
+                @update:modelValue="updatePrivacyPolicyAccepted"
             />
             <span class="text-sm text-(--app-color-text)">
                 Acepto la
@@ -83,10 +87,27 @@ function updatePrivacyPolicyAccepted(value: boolean): void {
                 >
                     política de privacidad
                 </AppLink>
+                y consiento expresamente el tratamiento de mis datos financieros y patrimoniales
+                para las finalidades necesarias descritas.
             </span>
         </label>
         <Message v-if="props.privacyPolicyError" severity="error" size="small" variant="simple">
             {{ props.privacyPolicyError }}
         </Message>
+        <label class="flex items-start gap-3">
+            <Checkbox
+                :modelValue="props.isAdult"
+                binary
+                :invalid="Boolean(props.adultError)"
+                @update:modelValue="
+                    emit('update:isAdult', $event);
+                    emit('touchAdult');
+                "
+            />
+            <span class="text-sm text-(--app-color-text)">Declaro que tengo al menos 18 años.</span>
+        </label>
+        <Message v-if="props.adultError" severity="error" size="small" variant="simple">{{
+            props.adultError
+        }}</Message>
     </div>
 </template>

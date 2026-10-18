@@ -18,11 +18,10 @@ use App\Models\SubscriptionPayment;
 use App\Models\TelegramVerificationCode;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\Auth\JwtTokenService;
 
 function endpointAuthorizationHeaders(User $user): array
 {
-    $token = app(JwtTokenService::class)->generate($user)['token'];
+    $token = \Tests\Support\AcceptedUserToken::generate($user)['token'];
 
     return [
         'Accept' => 'application/json',

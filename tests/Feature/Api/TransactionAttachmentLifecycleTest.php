@@ -6,7 +6,6 @@ use App\Models\Account;
 use App\Models\Transaction;
 use App\Models\TransactionAttachment;
 use App\Models\User;
-use App\Services\Auth\JwtTokenService;
 use App\Services\TransactionAttachments\AcceptTransactionAttachment;
 use App\Services\TransactionAttachments\MaintainAttachments;
 use App\Services\TransactionAttachments\ProcessAttachment;
@@ -25,7 +24,7 @@ beforeEach(function (): void {
     $this->account->users()->attach($this->author->id);
     $this->movement = Transaction::factory()->create(['account_id' => $this->account->id, 'user_id' => $this->author->id]);
     $this->endpoint = '/api/transactions/'.$this->movement->id.'/attachments';
-    $this->withHeaders(['Accept' => 'application/json', 'Authorization' => 'Bearer '.app(JwtTokenService::class)->generate($this->author)['token']]);
+    $this->withHeaders(['Accept' => 'application/json', 'Authorization' => 'Bearer '.\Tests\Support\AcceptedUserToken::generate($this->author)['token']]);
 });
 
 function lifecycleReceipt(): UploadedFile
@@ -84,9 +83,9 @@ it('adopts the destination account membership when a movement changes account', 
     $attachment = app(AcceptTransactionAttachment::class)->execute($this->movement, $this->author->id, lifecycleReceipt(), (string) Str::uuid());
     app(ProcessAttachment::class)->execute($attachment->id);
     $this->movement->update(['account_id' => $destination->id]);
-    $this->withHeaders(['Authorization' => 'Bearer '.app(JwtTokenService::class)->generate($oldMember)['token']]);
+    $this->withHeaders(['Authorization' => 'Bearer '.\Tests\Support\AcceptedUserToken::generate($oldMember)['token']]);
     $this->get($this->endpoint.'/'.$attachment->id.'/download')->assertForbidden();
-    $this->withHeaders(['Authorization' => 'Bearer '.app(JwtTokenService::class)->generate($newMember)['token']]);
+    $this->withHeaders(['Authorization' => 'Bearer '.\Tests\Support\AcceptedUserToken::generate($newMember)['token']]);
     $this->get($this->endpoint.'/'.$attachment->id.'/download')->assertOk();
 });
 

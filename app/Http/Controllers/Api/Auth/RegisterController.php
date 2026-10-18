@@ -1,12 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Dto\Auth\RegisterUserData;
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Requests\Api\Auth\RegisterRequest;
-use App\Models\User;
 use App\Services\Auth\JwtTokenService;
+use App\Services\Auth\RegisterUser;
 use App\Services\Auth\ResolveInvitePostAuthRedirect;
+
+use function event;
+
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 
@@ -16,14 +22,15 @@ class RegisterController extends ApiController
         RegisterRequest $request,
         JwtTokenService $jwtTokenService,
         ResolveInvitePostAuthRedirect $resolveInvitePostAuthRedirect,
-    ): JsonResponse
-    {
-        $user = User::create([
-            'name' => $request->string('name')->toString(),
-            'email' => $request->string('email')->toString(),
-            'password' => $request->string('password')->toString(),
-            'phone_number' => $request->string('phone_number')->toString() ?: null,
-        ]);
+        RegisterUser $registerUser,
+    ): JsonResponse {
+        $user = $registerUser->execute(new RegisterUserData(
+            $request->string('name')->toString(),
+            $request->string('email')->toString(),
+            $request->string('password')->toString(),
+            $request->string('phone_number')->toString() ?: null,
+            $request->acceptanceData(),
+        ));
 
         event(new Registered($user));
         $user->sendEmailVerificationNotification();
@@ -36,14 +43,14 @@ class RegisterController extends ApiController
             $request->string('post_auth_action')->toString() ?: null,
         );
 
-        if ($postAuthRedirect !== null) {
+        if (null !== $postAuthRedirect) {
             $meta['post_auth_redirect'] = $postAuthRedirect;
         }
 
         return $this->respond([
             'message' => 'User registered successfully.',
-            'data' => $user,
-            'meta' => $meta,
+            'data'    => $user,
+            'meta'    => $meta,
         ], 201);
     }
 }

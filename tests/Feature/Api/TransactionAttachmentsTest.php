@@ -7,7 +7,6 @@ use App\Models\Account;
 use App\Models\Transaction;
 use App\Models\TransactionAttachment;
 use App\Models\User;
-use App\Services\Auth\JwtTokenService;
 use App\Services\TransactionAttachments\AcceptTransactionAttachment;
 use App\Services\TransactionAttachments\ConvertAttachmentImage;
 use App\Services\TransactionAttachments\MaintainAttachments;
@@ -29,7 +28,7 @@ beforeEach(function (): void {
     $this->account->users()->sync([$this->owner->id, $this->member->id]);
     $this->transaction = Transaction::factory()->create(['account_id' => $this->account->id, 'user_id' => $this->owner->id]);
     $this->url = '/api/transactions/'.$this->transaction->id.'/attachments';
-    $this->withHeaders(['Accept' => 'application/json', 'Authorization' => 'Bearer '.app(JwtTokenService::class)->generate($this->owner)['token']]);
+    $this->withHeaders(['Accept' => 'application/json', 'Authorization' => 'Bearer '.\Tests\Support\AcceptedUserToken::generate($this->owner)['token']]);
 });
 
 function xmlAttachment(): UploadedFile
@@ -56,7 +55,7 @@ it('accepts private asynchronous uploads idempotently without changing finances'
 it('allows current members to read but only authors to mutate', function (): void {
     $attachment = app(AcceptTransactionAttachment::class)->execute($this->transaction, $this->owner->id, xmlAttachment(), (string) Str::uuid());
     app(ProcessAttachment::class)->execute($attachment->id);
-    $this->withHeaders(['Accept' => 'application/json', 'Authorization' => 'Bearer '.app(JwtTokenService::class)->generate($this->member)['token']]);
+    $this->withHeaders(['Accept' => 'application/json', 'Authorization' => 'Bearer '.\Tests\Support\AcceptedUserToken::generate($this->member)['token']]);
     $this->getJson($this->url)->assertOk()->assertJsonPath('meta.can_manage', false);
     $this->get($this->url.'/'.$attachment->id.'/download')->assertOk();
     $this->deleteJson($this->url.'/'.$attachment->id)->assertForbidden();
