@@ -12,6 +12,18 @@ const props = defineProps<{
 const emit = defineEmits<{
     close: [];
 }>();
+
+function returnToForm(): void {
+    const fields = window.document.getElementById('register-legal-fields');
+    const link = window.document.getElementById(`register-${props.document}-link`);
+    link?.focus({ preventScroll: true });
+    fields?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            ? 'instant'
+            : 'smooth',
+        block: 'start',
+    });
+}
 </script>
 
 <template>
@@ -24,6 +36,9 @@ const emit = defineEmits<{
         <AppCard class="space-y-4">
             <TermsAndConditionsContent v-if="props.document === 'terms'" embedded />
             <PrivacyPolicyContent v-else embedded />
+            <AppButton type="button" full-width @click="returnToForm">
+                Volver al formulario
+            </AppButton>
             <div class="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
                 <AppLink
                     :to="{ name: props.document === 'terms' ? 'auth.terms' : 'auth.privacy' }"
