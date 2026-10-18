@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ApiError } from '@/lib/api/apiClient';
 import AuthFeedbackBanner from '../components/AuthFeedbackBanner.vue';
 import RegisterLegalFields from '../components/RegisterLegalFields.vue';
-import RegisterLegalPreview from '../components/RegisterLegalPreview.vue';
 import {
     acceptLegalDocuments,
     safeLegalRedirect,
@@ -19,7 +18,6 @@ const { data, isError, refetch } = useLegalDocuments();
 const termsAccepted = ref(false);
 const privacyPolicyAccepted = ref(false);
 const isAdult = ref(false);
-const activeDocument = ref<'terms' | 'privacy' | null>(null);
 const pending = ref(false);
 const feedback = ref('');
 const available = computed(() => data.value?.available === true && !isError.value);
@@ -29,19 +27,6 @@ function resetConsent(): void {
     isAdult.value = false;
 }
 watch(() => [data.value?.documents.terms.hash, data.value?.documents.privacy.hash], resetConsent);
-async function openDocument(document: 'terms' | 'privacy'): Promise<void> {
-    activeDocument.value = document;
-    await nextTick();
-    const preview = window.document.getElementById('register-legal-document');
-    preview?.focus({ preventScroll: true });
-    preview?.scrollIntoView({ block: 'nearest' });
-}
-async function closeDocument(): Promise<void> {
-    const previousDocument = activeDocument.value;
-    activeDocument.value = null;
-    await nextTick();
-    window.document.getElementById(`register-${previousDocument}-link`)?.focus();
-}
 async function submit(): Promise<void> {
     if (
         pending.value ||
@@ -111,14 +96,6 @@ async function logout(): Promise<void> {
                     v-model:terms-accepted="termsAccepted"
                     v-model:privacy-policy-accepted="privacyPolicyAccepted"
                     v-model:is-adult="isAdult"
-                    :active-document="activeDocument"
-                    @open-terms="openDocument('terms')"
-                    @open-privacy="openDocument('privacy')"
-                />
-                <RegisterLegalPreview
-                    v-if="activeDocument"
-                    :document="activeDocument"
-                    @close="closeDocument"
                 />
                 <AppButton
                     type="submit"

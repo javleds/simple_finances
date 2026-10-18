@@ -7,7 +7,6 @@ import { AppLink } from '@/modules/shared/components';
 const props = defineProps<{
     isAdult: boolean;
     adultError?: string;
-    activeDocument?: 'terms' | 'privacy' | null;
     privacyPolicyAccepted: boolean;
     privacyPolicyError?: string;
     termsAccepted: boolean;
@@ -17,8 +16,6 @@ const props = defineProps<{
 const emit = defineEmits<{
     'update:isAdult': [value: boolean];
     touchAdult: [];
-    openPrivacy: [];
-    openTerms: [];
     touchPrivacyPolicy: [];
     touchTerms: [];
     'update:privacyPolicyAccepted': [value: boolean];
@@ -38,8 +35,7 @@ function updatePrivacyPolicyAccepted(value: boolean): void {
 
 <template>
     <div
-        id="register-legal-fields"
-        class="scroll-mt-24 space-y-3 rounded-(--app-radius-control) border px-4 py-4"
+        class="space-y-3 rounded-(--app-radius-control) border px-4 py-4"
         :style="{ borderColor: 'var(--app-color-border)' }"
     >
         <label class="flex items-start gap-3">
@@ -52,15 +48,13 @@ function updatePrivacyPolicyAccepted(value: boolean): void {
             <span class="text-sm text-(--app-color-text)">
                 Acepto los
                 <AppLink
-                    id="register-terms-link"
                     href="/auth/terms-and-conditions"
-                    :aria-expanded="props.activeDocument === 'terms'"
-                    aria-controls="register-legal-document"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     variant="primary"
                     class="font-semibold"
-                    @click.prevent="emit('openTerms')"
                 >
-                    términos y condiciones
+                    términos y condiciones (nueva pestaña)
                 </AppLink>
             </span>
         </label>
@@ -78,15 +72,13 @@ function updatePrivacyPolicyAccepted(value: boolean): void {
             <span class="text-sm text-(--app-color-text)">
                 Acepto la
                 <AppLink
-                    id="register-privacy-link"
                     href="/auth/privacy-policy"
-                    :aria-expanded="props.activeDocument === 'privacy'"
-                    aria-controls="register-legal-document"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     variant="primary"
                     class="font-semibold"
-                    @click.prevent="emit('openPrivacy')"
                 >
-                    política de privacidad
+                    política de privacidad (nueva pestaña)
                 </AppLink>
                 y consiento expresamente el tratamiento de mis datos financieros y patrimoniales
                 para las finalidades necesarias descritas.

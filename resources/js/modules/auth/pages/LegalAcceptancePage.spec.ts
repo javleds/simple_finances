@@ -35,7 +35,6 @@ function mountPage() {
         global: {
             stubs: {
                 RegisterLegalFields: fieldStub,
-                RegisterLegalPreview: true,
                 AuthFeedbackBanner: {
                     props: ['message'],
                     template: '<p role="alert">{{ message }}</p>',

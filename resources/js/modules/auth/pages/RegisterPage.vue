@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { ApiError } from '@/lib/api/apiClient';
@@ -7,9 +7,6 @@ import AuthFeedbackBanner from '@/modules/auth/components/AuthFeedbackBanner.vue
 import { useLegalDocuments } from '@/modules/auth/legal/legalDocuments';
 import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
 import RegisterLegalFields from '@/modules/auth/components/RegisterLegalFields.vue';
-import RegisterLegalPreview, {
-    type RegisterLegalDocument,
-} from '@/modules/auth/components/RegisterLegalPreview.vue';
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { useRegisterForm } from '@/modules/auth/composables/useRegisterForm';
 import {
@@ -31,7 +28,6 @@ import {
 const route = useRoute();
 const router = useRouter();
 const authRepository = createAuthRepository();
-const activeDocument = ref<RegisterLegalDocument | null>(null);
 
 const {
     name,
@@ -86,21 +82,6 @@ watch(
     },
     { immediate: true },
 );
-
-async function openDocument(document: RegisterLegalDocument): Promise<void> {
-    activeDocument.value = document;
-    await nextTick();
-    const preview = window.document.getElementById('register-legal-document');
-    preview?.focus({ preventScroll: true });
-    preview?.scrollIntoView({ block: 'nearest' });
-}
-
-async function closeDocument(): Promise<void> {
-    const previousDocument = activeDocument.value;
-    activeDocument.value = null;
-    await nextTick();
-    window.document.getElementById(`register-${previousDocument}-link`)?.focus();
-}
 
 async function navigateAfterRegister(session: AuthSession): Promise<void> {
     if (!session.user.isEmailVerified) {
@@ -248,19 +229,10 @@ async function handleSubmit(): Promise<void> {
                             @touch-adult="touchAdult"
                             v-model:privacy-policy-accepted="privacyPolicyAccepted"
                             v-model:terms-accepted="termsAccepted"
-                            :active-document="activeDocument"
                             :privacy-policy-error="privacyPolicyAcceptedError"
                             :terms-error="termsAcceptedError"
-                            @open-privacy="openDocument('privacy')"
-                            @open-terms="openDocument('terms')"
                             @touch-privacy-policy="touchPrivacyPolicyAccepted"
                             @touch-terms="touchTermsAccepted"
-                        />
-
-                        <RegisterLegalPreview
-                            v-if="activeDocument"
-                            :document="activeDocument"
-                            @close="closeDocument"
                         />
 
                         <AppButton
