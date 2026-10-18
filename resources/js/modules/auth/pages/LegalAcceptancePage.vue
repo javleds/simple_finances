@@ -75,44 +75,61 @@ async function logout(): Promise<void> {
 </script>
 <template>
     <section class="mx-auto w-full max-w-2xl px-4 pt-24 pb-8">
-        <AppCard class="space-y-5">
-            <AppTitle as="h1">Actualización de información legal</AppTitle>
-            <AppText
-                >Revisa los términos y el aviso de privacidad vigentes para continuar usando Fin-si.
-                Puedes consultar los documentos y cerrar sesión antes de decidir.</AppText
-            >
-            <AuthFeedbackBanner v-if="feedback" :message="feedback" />
-            <div v-if="!available" role="alert" class="space-y-3">
+        <AppCard>
+            <div class="space-y-5">
+                <AppTitle as="h1">Actualización de información legal</AppTitle>
                 <AppText
-                    >La información legal no está disponible temporalmente. Tu aceptación no se ha
-                    guardado.</AppText
+                    >Revisa los términos y el aviso de privacidad vigentes para continuar usando
+                    Fin-si. Puedes consultar los documentos y cerrar sesión antes de
+                    decidir.</AppText
                 >
-                <AppButton type="button" variant="secondary" :disabled="pending" @click="refetch()"
-                    >Reintentar</AppButton
-                >
+                <AuthFeedbackBanner v-if="feedback" :message="feedback" />
+                <div v-if="!available" role="alert" class="space-y-3">
+                    <AppText
+                        >La información legal no está disponible temporalmente. Tu aceptación no se
+                        ha guardado.</AppText
+                    >
+                    <AppButton
+                        type="button"
+                        variant="secondary"
+                        :disabled="pending"
+                        @click="refetch()"
+                        >Reintentar</AppButton
+                    >
+                </div>
+                <form class="space-y-5" @submit.prevent="submit">
+                    <RegisterLegalFields
+                        v-model:terms-accepted="termsAccepted"
+                        v-model:privacy-policy-accepted="privacyPolicyAccepted"
+                        v-model:is-adult="isAdult"
+                    />
+                    <div
+                        class="flex flex-col gap-3 border-t border-(--app-color-border) pt-5 sm:flex-row-reverse"
+                    >
+                        <AppButton
+                            type="submit"
+                            class="w-full sm:w-auto sm:min-w-40"
+                            :loading="pending"
+                            :disabled="
+                                pending ||
+                                !available ||
+                                !termsAccepted ||
+                                !privacyPolicyAccepted ||
+                                !isAdult
+                            "
+                            >Aceptar y continuar</AppButton
+                        >
+                        <AppButton
+                            type="button"
+                            variant="outline"
+                            class="w-full sm:w-auto sm:min-w-40"
+                            :disabled="pending"
+                            @click="logout"
+                            >Cerrar sesión</AppButton
+                        >
+                    </div>
+                </form>
             </div>
-            <form class="space-y-5" @submit.prevent="submit">
-                <RegisterLegalFields
-                    v-model:terms-accepted="termsAccepted"
-                    v-model:privacy-policy-accepted="privacyPolicyAccepted"
-                    v-model:is-adult="isAdult"
-                />
-                <AppButton
-                    type="submit"
-                    :loading="pending"
-                    :disabled="
-                        pending ||
-                        !available ||
-                        !termsAccepted ||
-                        !privacyPolicyAccepted ||
-                        !isAdult
-                    "
-                    >Aceptar y continuar</AppButton
-                >
-            </form>
-            <AppButton type="button" variant="secondary" :disabled="pending" @click="logout"
-                >Cerrar sesión</AppButton
-            >
         </AppCard>
     </section>
 </template>
