@@ -13,7 +13,10 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
         <meta name="app-whatsapp-enabled" content="{{ app(\App\Services\WhatsApp\IsWhatsAppConfigured::class)->execute() ? 'true' : 'false' }}">
-        <link rel="icon" href="/favicon.ico">
+        <link rel="icon" href="/favicon.ico?v=3" sizes="16x16 32x32 48x48">
+        <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/brand/favicon-16.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
         <title>fin-si</title>
         @vite('resources/js/main.ts')
     </head>

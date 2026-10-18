@@ -235,9 +235,16 @@ async function handleLogout(): Promise<void> {
                     </RouterLink>
                 </div>
 
-                <div class="min-w-0 flex-1">
+                <div class="flex min-w-0 flex-1 items-center gap-2">
+                    <img
+                        src="/brand/logo.png"
+                        alt=""
+                        width="40"
+                        height="40"
+                        class="h-10 w-10 shrink-0 object-contain"
+                    />
                     <p
-                        class="text-left text-base font-semibold tracking-tight text-(--app-color-text) sm:text-lg"
+                        class="truncate text-left text-base font-semibold tracking-tight text-(--app-color-text) sm:text-lg"
                     >
                         {{ activeFacilityName }}
                     </p>
@@ -302,7 +309,16 @@ async function handleLogout(): Promise<void> {
             :style="{ borderColor: 'var(--app-color-border-strong)' }"
             aria-label="Navegación principal"
         >
-            <p class="mb-8 hidden px-3 text-lg font-semibold lg:block">Finanzas Simples</p>
+            <div class="mb-8 hidden items-center gap-3 px-3 lg:flex">
+                <img
+                    src="/brand/logo.png"
+                    alt=""
+                    width="48"
+                    height="48"
+                    class="h-12 w-12 shrink-0 object-contain"
+                />
+                <p class="text-lg leading-tight font-semibold">Finanzas Simples</p>
+            </div>
             <ul class="grid grid-cols-5 sm:gap-1 lg:flex lg:flex-col lg:gap-2">
                 <li v-for="item in navigationItems" :key="item.routeName">
                     <RouterLink
