@@ -2,7 +2,9 @@
 
 ## Versión PHP
 
-La imagen usa `php:8.4-fpm-trixie` para satisfacer las dependencias Symfony 8 del lockfile probado. Mantener `composer.lock` sin regenerarlo en producción. Reconstruir PHP al desplegar y comprobar `composer check-platform-reqs --no-dev` dentro de esa imagen.
+La imagen compartida por producción y desarrollo fija PHP 8.4.27 mediante `php:8.4.27-fpm-trixie`, incorporando la [actualización de seguridad de PHP 8.4.27](https://www.php.net/releases/8_4_27.php). Las futuras actualizaciones de PHP requieren cambiar explícitamente esta etiqueta. Mantener `composer.lock` sin regenerarlo en producción. El despliegue reconstruye PHP con `--pull` y comprueba `composer check-platform-reqs --no-dev --lock` dentro de esa imagen.
+
+Después de desplegar, verificar la versión activa con `docker compose -f docker-compose.prod.yml exec -T php php -v`; debe indicar PHP 8.4.27.
 
 ## Contrato operativo
 
