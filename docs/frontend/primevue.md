@@ -1,5 +1,7 @@
 # Interfaz con PrimeVue
 
+Las rutas de código indicadas aquí son relativas a `apps/finance`, salvo referencias explícitas al paquete `packages/finance-domain` o a `docs`. Los modelos y permisos compartidos se describen en [límites arquitectónicos](../architecture/boundaries.md).
+
 ## Alcance actual
 
 La SPA Vue 3 integrada en Laravel usa PrimeVue 5 para los controles de autenticación, dashboard, cuentas, transacciones, libro, invitaciones, metas, usuarios, cuentas virtuales, suscripciones, distribución, perfil y configuración, incluida la vinculación de WhatsApp. Las páginas de contenido estático conservan su composición Vue.

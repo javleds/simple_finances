@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Services\Transaction;
+
+use FinSi\FinanceDomain\Queries\OwnedTransactionsForUser;
+use FinSi\FinanceDomain\Enums\TransactionStatus;
+use FinSi\FinanceDomain\Models\Transaction;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
+
+class BuildTransactionFacilityQuery
+{
+    public function __construct(
+        private readonly OwnedTransactionsForUser $ownedTransactionsForUser,
+        private readonly ApplyTransactionCategoryAttachmentFilters $applyCategoryAttachmentFilters,
+    ) {
+    }
+
+    public function execute(array $filters, int $userId): Builder
+    {
+        $query = $this->ownedTransactionsForUser
+            ->query($userId)
+            ->withCount('attachments')
+            ->with(['category', 'account', 'user', 'paidByUser', 'custodianUser', 'financialGoal', 'subTransactions', 'allocations.user'])
+            ->whereNull('legacy_migrated_at')
+            ->whereNull('parent_transaction_id')
+            ->where('status', TransactionStatus::Completed);
+
+        $this->applyCategoryAttachmentFilters->execute($query, $filters);
+        $this->applyDateRange($query, $filters);
+        $this->applySearch($query, $filters);
+
+        return $query
+            ->orderByDesc('scheduled_at')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+
+    private function applyDateRange(Builder $query, array $filters): void
+    {
+        $startDate = $filters['start_date'] ?? null;
+        $endDate = $filters['end_date'] ?? null;
+
+        if (is_string($startDate) && $startDate !== '') {
+            $query->where('scheduled_at', '>=', Carbon::createFromFormat('Y-m-d', $startDate)->startOfDay());
+        }
+
+        if (is_string($endDate) && $endDate !== '') {
+            $query->where('scheduled_at', '<=', Carbon::createFromFormat('Y-m-d', $endDate)->endOfDay());
+        }
+    }
+
+    private function applySearch(Builder $query, array $filters): void
+    {
+        $search = trim((string) ($filters['search'] ?? ''));
+
+        if ($search === '') {
+            return;
+        }
+
+        $query->where(function (Builder $query) use ($search): void {
+            $query->where('concept', 'like', '%'.$search.'%');
+        });
+    }
+}

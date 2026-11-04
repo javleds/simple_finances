@@ -1,5 +1,7 @@
 # Mi dinero disponible
 
+Las rutas de código indicadas aquí son relativas a `apps/finance`, salvo referencias explícitas al paquete `packages/finance-domain` o a `docs`. Los modelos y permisos compartidos se describen en [límites arquitectónicos](../architecture/boundaries.md).
+
 Referencia funcional y técnica para agentes de IA. Describe el comportamiento implementado; consultar también [cuentas compartidas](shared-accounts.md) y [modelo compartido](../shared-account-model.md) antes de modificar transacciones o reembolsos.
 
 ## Propósito y límites

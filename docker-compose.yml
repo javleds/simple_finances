@@ -4,7 +4,7 @@ services:
         image: nginx:alpine
         restart: unless-stopped
         volumes:
-            - .:/app
+            - .:/workspace
             - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
         depends_on:
             - php
@@ -19,14 +19,14 @@ services:
             dockerfile: docker/php/Dockerfile
         restart: unless-stopped
         env_file:
-            - .env
+            - ./apps/finance/.env
         environment:
             HOME: /tmp
         volumes:
-            - .:/app
+            - .:/workspace
         depends_on:
             - mysql
-        working_dir: /app
+        working_dir: /workspace/apps/finance
         networks:
             - simple_finances_internal
 
@@ -34,12 +34,12 @@ services:
         image: simple-finances-php:local
         restart: unless-stopped
         env_file:
-            - .env
+            - ./apps/finance/.env
         environment:
             HOME: /tmp
-        working_dir: /app
+        working_dir: /workspace/apps/finance
         volumes:
-            - .:/app
+            - .:/workspace
         command: ["php", "artisan", "queue:work", "database", "--queue=attachments", "--sleep=3", "--tries=3", "--timeout=60", "--max-time=3600", "--force"]
         labels:
             - "traefik.enable=false"
@@ -54,12 +54,12 @@ services:
         image: simple-finances-php:local
         restart: unless-stopped
         env_file:
-            - .env
+            - ./apps/finance/.env
         environment:
             HOME: /tmp
-        working_dir: /app
+        working_dir: /workspace/apps/finance
         volumes:
-            - .:/app
+            - .:/workspace
         command: ["php", "artisan", "attachments:maintain", "--interval=3600"]
         labels:
             - "traefik.enable=false"

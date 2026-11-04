@@ -2,17 +2,17 @@
 
 El repositorio activo es `api` (remote `simple_finances`); concentra el código y los historiales de Laravel y Vue. El directorio hermano `spa` es un checkout histórico: no desarrollar nuevas funcionalidades allí.
 
-Este repositorio contiene Laravel en la raíz y Vue en `resources/js`. Mantener las responsabilidades: Laravel administra dominio, persistencia, permisos, JWT y contratos `/api`; Vue conserva router, Pinia, TanStack Query y módulos. No introducir Inertia ni desarrollar UI Filament.
+Este monorepo contiene Laravel y Vue/Vite integrados en `apps/finance`; Vue permanece en `apps/finance/resources/js`. Los modelos, enums asociados, policies y reglas de visibilidad compartidas viven en `packages/finance-domain` (`FinSi\FinanceDomain`). Las Actions, migraciones y efectos externos pertenecen a Finance. El paquete no puede depender de `App` ni resolver implícitamente el usuario HTTP. Mantener las responsabilidades: Laravel administra dominio, persistencia, permisos, JWT y contratos `/api`; Vue conserva router, Pinia, TanStack Query y módulos. No introducir Inertia ni desarrollar UI Filament.
 
-La aplicación es mobile-first. Reutilizar componentes compartidos y consultar `resources/js/AGENTS.md`. Documentación: `docs/architecture/overview.md`, `docs/architecture/boundaries.md`, `docs/domain/shared-accounts.md`, `docs/shared-account-model.md`, `docs/operations/local-development.md` y `docs/operations/deployment.md`.
+La aplicación es mobile-first. Reutilizar componentes compartidos y consultar `apps/finance/resources/js/AGENTS.md`. Documentación: `docs/architecture/overview.md`, `docs/architecture/boundaries.md`, `docs/domain/shared-accounts.md`, `docs/shared-account-model.md`, `docs/operations/local-development.md` y `docs/operations/deployment.md`.
 
-Preparación en la raíz Laravel: `composer install` y `npm ci`. Desarrollo en host: `composer run dev`, aplicación en http://127.0.0.1:8000. PHP y Vite también pueden iniciarse por separado. Antes de completar frontend: `npm run type-check`. Validar comportamiento con `php artisan test`, `npm run test:unit -- --run` y `npm run build`.
+Preparación desde `apps/finance`: `composer install` y `npm ci`. Desarrollo en host: `composer run dev`, aplicación en http://127.0.0.1:8000. PHP y Vite también pueden iniciarse por separado. Antes de completar frontend: `npm run type-check`. Validar comportamiento con `php artisan test`, `npm run test:unit -- --run` y `npm run build`.
 
 Mantener alineados los contratos Laravel y su consumo Vue. Evitar cambios de dominio o dependencias ajenos al objetivo. No incluir secretos, dumps, capturas ni archivos temporales. Cada cambio completado debe tener commits convencionales en inglés. Trabajar únicamente en local; no conectarse por SSH ni ejecutar acciones en el servidor remoto.
 
 ## Documentación centralizada
 
-Las instrucciones de IA se mantienen en este archivo y en `resources/js/AGENTS.md`. La documentación vigente está en `docs`; los documentos anteriores del workspace se conservan en `docs/history/workspace` como referencia histórica. La propuesta original de casos de prueba está en `docs/testing/test-cases.md`; para reglas vigentes consultar `docs/shared-account-model.md`.
+Las instrucciones de IA se mantienen en este archivo y en `apps/finance/resources/js/AGENTS.md`. La documentación vigente está en `docs`; los documentos anteriores del workspace se conservan en `docs/history/workspace` como referencia histórica. La propuesta original de casos de prueba está en `docs/testing/test-cases.md`; para reglas vigentes consultar `docs/shared-account-model.md`.
 
 ## Mi dinero disponible
 
@@ -56,5 +56,9 @@ Do not remove or bypass these rules as a cosmetic cleanup. If a change needs to 
 - Subscripciones: registrar servicios (Netflix, YouTube Premium, etc.), periodo y monto; generar proyecciones mensuales/anuales y sugerir ahorro mensual o quincenal para pagos anuales.
 - Cuentas compartidas entre multiples usuarios: cada usuario puede editar/eliminar solo sus transacciones; otros usuarios las ven y reciben notificaciones por email en cada movimiento.
 - Notificacion semanal: cada domingo se envia email con transacciones en CSV segun configuracion de notificaciones (por transaccion, por cuenta y por movimientos).
-- Eloquent usa un scope global para filtrar por el usuario activo; todos los modelos tienen `user_id` salvo relaciones many-to-many y cuentas compartidas que se resuelven por joins.
+- El aislamiento se aplica mediante las reglas y consultas de visibilidad del paquete compartido, con actor explícito; no asumir scopes globales por usuario. Los modelos compartidos por sí solos no autorizan consultas.
 - Orquestacion sobre eventos: para este proyecto, preferir clases de orquestacion explicita sobre eventos/listeners en flujos nuevos o refactors. Las clases de orquestacion (ej. `CreateTransaction`) llaman servicios para crear transaccion, recalcular balance y enviar notificacion sin contener logica de dominio. En otros proyectos, preguntar si se prefiere orquestacion o eventos y guardar la decision en las instrucciones locales del proyecto.
+
+## Paquete compartido
+
+Después de editar `packages/finance-domain`, ejecutar `composer run domain:sync` desde `apps/finance` antes de probar la aplicación: Composer instala una copia local. Ejecutar `composer test` desde el paquete para verificar aislamiento y permisos sin Finance. Actualizar la documentación vigente junto con cada cambio, conservando las referencias de `docs/history` como históricas.

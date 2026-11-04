@@ -1,0 +1,48 @@
+{
+    "name": "fin-si/finance-domain",
+    "description": "Shared finance models and authorization for Laravel applications",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "illuminate/auth": "^12.0",
+        "illuminate/database": "^12.0",
+        "illuminate/notifications": "^12.0",
+        "illuminate/support": "^12.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^10.0",
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "FinSi\\FinanceDomain\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FinSi\\FinanceDomain\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "FinSi\\FinanceDomain\\FinanceDomainServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "archive": {
+        "exclude": [
+            "/vendor",
+            "/.phpunit.cache",
+            "/.phpunit.result.cache",
+            "/composer.lock"
+        ]
+    }
+}

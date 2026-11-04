@@ -4,7 +4,7 @@ services:
         image: nginx:alpine
         restart: unless-stopped
         volumes:
-            - .:/app
+            - .:/workspace
             - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
         depends_on:
             - php
@@ -38,15 +38,15 @@ services:
         restart: unless-stopped
         user: "1001:1001"
         env_file:
-            - .env
+            - ./apps/finance/.env
         environment:
             HOME: /tmp
         volumes:
-            - .:/app
+            - .:/workspace
         depends_on:
             mysql:
                 condition: service_healthy
-        working_dir: /app
+        working_dir: /workspace/apps/finance
         networks:
             - simple_finances_internal
 
@@ -55,12 +55,12 @@ services:
         restart: unless-stopped
         user: "1001:1001"
         env_file:
-            - .env
+            - ./apps/finance/.env
         environment:
             HOME: /tmp
-        working_dir: /app
+        working_dir: /workspace/apps/finance
         volumes:
-            - .:/app
+            - .:/workspace
         command: ["php", "artisan", "queue:work", "database", "--queue=attachments", "--sleep=3", "--tries=3", "--timeout=60", "--max-time=3600", "--force"]
         labels:
             - "traefik.enable=false"
@@ -76,12 +76,12 @@ services:
         restart: unless-stopped
         user: "1001:1001"
         env_file:
-            - .env
+            - ./apps/finance/.env
         environment:
             HOME: /tmp
-        working_dir: /app
+        working_dir: /workspace/apps/finance
         volumes:
-            - .:/app
+            - .:/workspace
         command: ["php", "artisan", "attachments:maintain", "--interval=3600"]
         labels:
             - "traefik.enable=false"
@@ -96,11 +96,11 @@ services:
         image: node:24-bookworm-slim
         profiles: [build]
         user: "1001:1001"
-        working_dir: /app
+        working_dir: /workspace/apps/finance
         environment:
             npm_config_cache: /tmp/npm-cache
         volumes:
-            - .:/app
+            - .:/workspace
         command: ["bash", "scripts/build-assets.sh"]
 
     mysql:

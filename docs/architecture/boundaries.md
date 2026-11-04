@@ -1,5 +1,11 @@
 # Límites arquitectónicos
 
+## Paquete compartido
+
+`packages/finance-domain` depende de Laravel, pero no de `apps/finance`. Contiene modelos, relaciones, casts, enums, policies y consultas de visibilidad con actor explícito. Importar un modelo no autoriza consultas: los consumidores deben aplicar las reglas compartidas antes de filtrar, paginar o agregar. Las credenciales de lectura del futuro consumidor serán otra barrera independiente.
+
+Finance conserva autenticación JWT, validación de payloads, Actions, migraciones y efectos externos. Sus hooks locales conservan asignación de propietario y eventos existentes. Los callbacks se registran en `FinanceModelServiceProvider`; el paquete no los ejecuta. Los nombres antiguos de modelos/enums se resuelven con aliases locales para payloads persistidos y las notificaciones conservan `App\Models\User` como tipo morph.
+
 ## Backend y transporte
 
 Laravel controla validación, autorización, persistencia, reglas financieras y efectos externos. Los controladores API consumen FormRequest, servicios y modelos existentes. La SPA consume sus contratos JSON; compartir repositorio no mueve autorización al navegador ni cambia JWT por cookies.
@@ -14,7 +20,7 @@ Blade solo proporciona el HTML de entrada. La navegación pertenece a Vue Router
 
 ## Operación
 
-PHP y Nginx comparten el checkout y assets; Node solo construye. El montaje obliga a activar mantenimiento antes de actualizar Git. MySQL conserva nombres y volumen anteriores. Traefik atiende dominio principal y antiguo host API sin redirigir enlaces firmados o webhooks.
+PHP y Nginx comparten el checkout en `/workspace`, con aplicación en `/workspace/apps/finance`; Node solo construye. El montaje obliga a activar mantenimiento antes de actualizar Git. MySQL conserva nombres y volumen anteriores. Traefik atiende dominio principal y antiguo host API sin redirigir enlaces firmados o webhooks.
 
 ## Categorías
 

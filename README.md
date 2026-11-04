@@ -1,10 +1,15 @@
-# Fin SI
+# Monorepo Fin-si
+
+La aplicación Laravel y Vue/Vite está en `apps/finance`. Los modelos y permisos compartidos están en `packages/finance-domain`.
+
+Consultar [desarrollo local](docs/operations/local-development.md), [arquitectura](docs/architecture/overview.md) y [despliegue](docs/operations/deployment.md). Ejecutar Composer, Artisan y npm desde `apps/finance`; las pruebas independientes del paquete se ejecutan con `composer test` desde `packages/finance-domain`.
+
 
 Aplicación de finanzas personales y cuentas compartidas en un único repositorio Laravel 12. Laravel sirve la SPA Vue 3 y la API HTTP; Vue conserva TypeScript, Vue Router, Pinia, TanStack Query y Tailwind 4. La interfaz usa PrimeVue 5, PrimeVue Forms con Zod y PrimeUI Charts.
 
 ## Inicio rápido
 
-Requiere PHP 8.4 o superior con Imagick y soporte JPEG/PNG/WebP/HEIC, Composer, Node 24 y npm. Desde la raíz de este repositorio:
+Requiere PHP 8.4 o superior con Imagick y soporte JPEG/PNG/WebP/HEIC, Composer, Node 24 y npm. Desde `apps/finance`:
 
 ```bash
 cp .env.example .env
@@ -23,9 +28,9 @@ Abre `http://127.0.0.1:8000`. El comando supervisa PHP, Vite y el worker de cola
 
 ## Organización y validación
 
-- `resources/js`: frontend modular y pruebas Vue.
-- `app`, `routes/api.php`, `database`: negocio, contratos y persistencia Laravel.
-- `resources/views/spa.blade.php`: entrada HTML con Vite.
+- `apps/finance/resources/js`: frontend modular y pruebas Vue.
+- `apps/finance/app`, `apps/finance/routes/api.php`, `apps/finance/database`: negocio, contratos y persistencia Laravel.
+- `apps/finance/resources/views/spa.blade.php`: entrada HTML con Vite.
 - `docs/api.json`: contrato HTTP, sin enlaces a otro checkout.
 
 ```bash

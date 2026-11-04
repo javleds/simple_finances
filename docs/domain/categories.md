@@ -1,5 +1,7 @@
 # Categorías de transacciones
 
+Las rutas de código indicadas aquí son relativas a `apps/finance`, salvo referencias explícitas al paquete `packages/finance-domain` o a `docs`. Los modelos y permisos compartidos se describen en [límites arquitectónicos](../architecture/boundaries.md).
+
 Las categorías clasifican ingresos y egresos de forma opcional. No modifican importes, saldos, asignaciones, custodia ni reembolsos.
 
 ## Catálogos y permisos

@@ -1,5 +1,7 @@
 # Pruebas y validación
 
+Las rutas de código indicadas aquí son relativas a `apps/finance`, salvo referencias explícitas al paquete `packages/finance-domain` o a `docs`. Los modelos y permisos compartidos se describen en [límites arquitectónicos](../architecture/boundaries.md).
+
 Desde la raíz Laravel:
 
 ```bash

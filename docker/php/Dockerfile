@@ -35,4 +35,4 @@ COPY docker/php/imagemagick-policy.xml /etc/ImageMagick-7/policy.xml
 
 RUN php -r 'foreach (["JPEG", "PNG", "WEBP", "HEIC"] as $format) { if (!Imagick::queryFormats($format)) { fwrite(STDERR, "Missing image codec: $format\n"); exit(1); } }'
 
-WORKDIR /app
+WORKDIR /workspace/apps/finance

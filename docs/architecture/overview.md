@@ -1,6 +1,6 @@
-# Arquitectura integrada
+# Arquitectura del monorepo
 
-Laravel 12 contiene backend y frontend en un solo repositorio. Laravel entrega el HTML de `resources/views/spa.blade.php`, y `@vite` carga `resources/js/main.ts`. Vue Router gestiona navegación desde `/`; la base de assets compilados no determina las rutas del navegador.
+`apps/finance` contiene Laravel 12 y su frontend integrado. `packages/finance-domain` contiene los modelos Eloquent, enums de dominio, policies y reglas de autorización/visibilidad reutilizables. Finance consume el paquete mediante Composer y conserva Actions, migraciones, autenticación HTTP, jobs y efectos externos. Las rutas de código de esta página son relativas a `apps/finance`. Laravel entrega el HTML de `resources/views/spa.blade.php`, y `@vite` carga `resources/js/main.ts`. Vue Router gestiona navegación desde `/`; la base de assets compilados no determina las rutas del navegador.
 
 Vue conserva módulos, componentes compartidos, TypeScript, Pinia para estado de cliente y TanStack Query para estado de servidor. Los repositorios llaman al cliente HTTP con `/api` por defecto y JWT Bearer. Laravel valida y autoriza cada petición y mantiene servicios, modelos Eloquent, migraciones e integraciones de correo, WhatsApp, Telegram y OpenAI. PrimeVue 5 aporta los controles compartidos y de los módulos, formularios, diálogos, menús y mensajes. Usa Aura adaptado en azul, Tailwind 4 y el selector `.dark`. PrimeVue Forms integra los esquemas Zod; el gráfico del dashboard usa PrimeUI Charts con renderer SVG. Consulta [la interfaz actual](../frontend/primevue.md) para los contratos que conservan los adaptadores y la cobertura de la migración.
 

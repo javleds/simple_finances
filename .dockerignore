@@ -1,0 +1,12 @@
+.git
+**/vendor
+**/node_modules
+**/.env
+**/.env.*
+**/storage
+**/public/build
+**/.phpunit.cache
+**/.php-cs-fixer.cache
+**/.eslintcache
+**/coverage
+**/tmp

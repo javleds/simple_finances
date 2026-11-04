@@ -1,0 +1,167 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Api;
+
+use FinSi\FinanceDomain\Authorization\AuthorizeCategoryAccess;
+use FinSi\FinanceDomain\Queries\VisibleCategoriesForUser;
+use FinSi\FinanceDomain\Models\Account;
+use FinSi\FinanceDomain\Models\Category;
+use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
+use App\Services\Categories\DeleteCategory;
+
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class CategoryController extends ApiController
+{
+    public function __construct(
+        private readonly AuthorizeCategoryAccess $categoryAccess,
+        private readonly VisibleCategoriesForUser $visibleCategories,
+        private readonly AuthorizeAccountAccess $authorizeAccountAccess,
+    )
+    {
+    }
+
+    public function index(Request $request, ?Account $account = null): JsonResponse
+    {
+        $this->ensureAccess($account);
+        $canManage = $this->canManage($account);
+        $query = $this->catalog($account)->withCount('transactions')->orderBy('name');
+        $filters = $request->validate(['search' => ['nullable', 'string', 'max:100'], 'transaction_type' => ['sometimes', 'in:income,outcome']]);
+        if (isset($filters['transaction_type'])) {
+            $query->whereIn('transaction_type', [$filters['transaction_type'], 'both']);
+        }
+        $search = trim($filters['search'] ?? '');
+        if ('' !== $search) {
+            $query->where('name', 'like', '%' . $search . '%');
+        }
+
+        return $this->respond([
+            'data' => $query->get()->each(static fn (Category $category) => $category->setAttribute('can_manage', $canManage)),
+            'meta' => [
+                'scope'        => $account?->uses_shared_categories ? 'shared' : 'personal',
+                'account_id'   => $account?->uses_shared_categories ? $account->id : null,
+                'account_name' => $account?->name,
+                'can_manage'   => $canManage,
+            ],
+        ]);
+    }
+
+    public function store(Request $request, ?Account $account = null): JsonResponse
+    {
+        $this->ensureAccess($account);
+        $name = $this->name($request);
+        $data = $request->validate(['transaction_type' => ['sometimes', 'required', 'in:income,outcome,both']]);
+        $normalized = mb_strtolower($name);
+        if ($this->catalog($account)->where('normalized_name', $normalized)->exists()) {
+            throw ValidationException::withMessages(['name' => 'Ya existe una categoría con ese nombre.']);
+        }
+
+        try {
+            $category = Category::query()->create([
+                'name'               => $name,
+                'transaction_type'   => $data['transaction_type'] ?? 'both',
+                'normalized_name'    => $normalized,
+                'user_id'            => $account?->uses_shared_categories ? null : auth()->id(),
+                'account_id'         => $account?->uses_shared_categories ? $account->id : null,
+                'created_by_user_id' => auth()->id(),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['name' => 'Ya existe una categoría con ese nombre.']);
+        }
+        $category->setAttribute('can_manage', $this->canManage($account));
+        $category->setAttribute('transactions_count', 0);
+
+        return $this->respondModel($category, status: 201);
+    }
+
+    public function update(Request $request, Category $category, ?Account $account = null): JsonResponse
+    {
+        $this->ensureCategory($category, $account);
+        abort_unless($this->canManage($account), 403);
+        $name = $this->name($request);
+        $data = $request->validate(['transaction_type' => ['sometimes', 'required', 'in:income,outcome,both']]);
+        $normalized = mb_strtolower($name);
+        if ($this->catalog($account)->where('normalized_name', $normalized)->whereKeyNot($category->id)->exists()) {
+            throw ValidationException::withMessages(['name' => 'Ya existe una categoría con ese nombre.']);
+        }
+
+        try {
+            DB::transaction(static function () use ($category, $name, $normalized, $data): void {
+                $locked = Category::query()->lockForUpdate()->findOrFail($category->id);
+                $type = $data['transaction_type'] ?? $locked->transaction_type;
+                if ('both' !== $type && $locked->transactions()->withoutGlobalScopes()->where('type', '!=', $type)->exists()) {
+                    throw ValidationException::withMessages(['transaction_type' => 'Hay movimientos incompatibles. Reclasifícalos antes de cambiar el tipo.']);
+                }
+                $locked->update(['name' => $name, 'normalized_name' => $normalized, 'transaction_type' => $type]);
+            });
+            $category->refresh();
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['name' => 'Ya existe una categoría con ese nombre.']);
+        }
+        $category->loadCount('transactions')->setAttribute('can_manage', true);
+
+        return $this->respondModel($category);
+    }
+
+    public function delete(Request $request, Category $category, DeleteCategory $deleteCategory, ?Account $account = null): JsonResponse
+    {
+        $this->ensureCategory($category, $account);
+        abort_unless($this->canManage($account), 403);
+        $data = $request->validate([
+            'action'             => ['nullable', 'in:uncategorize,reassign'],
+            'target_category_id' => ['required_if:action,reassign', 'nullable', 'integer'],
+        ]);
+        $deleteCategory->execute($category, $data['action'] ?? null, isset($data['target_category_id']) ? (int) $data['target_category_id'] : null);
+
+        return $this->respondDeleted('Categoría eliminada.');
+    }
+
+    public function updateShared(Request $request, Account $account, Category $category): JsonResponse
+    {
+        return $this->update($request, $category, $account);
+    }
+
+    public function deleteShared(Request $request, Account $account, Category $category, DeleteCategory $deleteCategory): JsonResponse
+    {
+        return $this->delete($request, $category, $deleteCategory, $account);
+    }
+
+    private function catalog(?Account $account): Builder
+    {
+        return $this->visibleCategories->query((int) auth()->id(), $account);
+    }
+
+    private function ensureAccess(?Account $account): void
+    {
+        if (null !== $account) {
+            $this->authorizeAccountAccess->ensureMember($account, (int) auth()->id());
+        }
+    }
+
+    private function ensureCategory(Category $category, ?Account $account): void
+    {
+        $this->categoryAccess->ensureVisible($category, (int) auth()->id(), $account);
+    }
+
+    private function canManage(?Account $account): bool
+    {
+        return $this->categoryAccess->canManage((int) auth()->id(), $account);
+    }
+
+    private function name(Request $request): string
+    {
+        $request->validate(['name' => ['required', 'string']]);
+        $name = preg_replace('/\s+/u', ' ', trim($request->string('name')->toString()));
+        $request->merge(['name' => $name]);
+        $request->validate(['name' => ['required', 'string', 'max:100']]);
+
+        return $name;
+    }
+}

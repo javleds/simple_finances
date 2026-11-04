@@ -3,7 +3,10 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 PROJECT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+APP_DIR="$PROJECT_DIR/apps/finance"
+ENV_FILE="$APP_DIR/.env"
 COMPOSE_FILE=docker-compose.prod.yml
+[[ "${1:-}" == "" || "${1:-}" == "--no-pull" ]] || { printf 'Usage: bash deploy.sh [--no-pull]\n' >&2; exit 1; }
 LOG_DIR="${DEPLOY_LOG_DIR:-$HOME/deploy-logs}"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/fin-si-$(date +'%Y%m%d-%H%M%S').log"
@@ -13,7 +16,7 @@ cd "$PROJECT_DIR"
 
 log() { printf '[%s] %s\n' "$(date +'%F %T')" "$*" | tee -a "$LOG_FILE" >&2; }
 run() { log "RUN: $*"; "$@" 2>&1 | tee -a "$LOG_FILE"; }
-compose() { docker compose -f "$COMPOSE_FILE" "$@"; }
+compose() { docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"; }
 maintenance_started=false
 stop_attachment_consumers() {
   local services
@@ -36,14 +39,23 @@ on_error() {
 }
 trap on_error ERR
 
-[[ -f .env ]] || { log 'Missing Laravel .env'; exit 1; }
-for key in TRAEFIK_APP_NAME APP_DOMAIN API_DOMAIN APP_URL SPA_URL FRONTEND_URL; do
-  if ! grep -Eq "^[[:space:]]*${key}=[^[:space:]]+" .env; then
+[[ -f "$ENV_FILE" ]] || { log 'Missing apps/finance/.env; use the separate monorepo transition procedure for an old checkout.'; exit 1; }
+for key in TRAEFIK_APP_NAME APP_DOMAIN API_DOMAIN APP_URL SPA_URL FRONTEND_URL COMPOSE_PROJECT_NAME; do
+  if ! grep -Eq "^[[:space:]]*${key}=[^[:space:]]+" "$ENV_FILE"; then
     log "Missing required configuration: $key"
     exit 1
   fi
 done
 [[ -z "$(git status --porcelain --untracked-files=all)" ]] || { log 'Commit or remove local changes before deployment.'; exit 1; }
+configured_project="$(sed -n 's/^COMPOSE_PROJECT_NAME=\([a-z0-9][a-z0-9_-]*\)$/\1/p' "$ENV_FILE")"
+[[ -n "$configured_project" && "$configured_project" != *$'\n'* ]] || { log 'COMPOSE_PROJECT_NAME must be one unquoted explicit project name.'; exit 1; }
+[[ -z "${COMPOSE_PROJECT_NAME:-}" || "$COMPOSE_PROJECT_NAME" == "$configured_project" ]] || { log 'Shell and application Compose project names differ.'; exit 1; }
+export COMPOSE_PROJECT_NAME="$configured_project"
+if docker inspect simple_finances_db_prod >/dev/null 2>&1; then
+  existing_project="$(docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' simple_finances_db_prod)"
+  existing_volume="$(docker inspect --format '{{ range .Mounts }}{{ if eq .Destination "/var/lib/mysql" }}{{ .Name }}{{ end }}{{ end }}' simple_finances_db_prod)"
+  [[ "$existing_project" == "$COMPOSE_PROJECT_NAME" && "$existing_volume" == "${COMPOSE_PROJECT_NAME}_simplefinancesdb" ]] || { log 'Existing MySQL project or volume differs; reconcile the recorded deployment identity before continuing.'; exit 1; }
+fi
 run compose config --quiet
 previous_commit="$(git rev-parse HEAD)"
 log "Previous revision: $previous_commit"
@@ -53,11 +65,14 @@ if [[ -n "$(compose ps -q php)" ]]; then
   maintenance_started=true
 fi
 stop_attachment_consumers
-run git pull --ff-only
+if [[ "${1:-}" != "--no-pull" ]]; then
+  run git pull --ff-only
+fi
 run compose config --quiet
 run compose build --pull php
 run compose run --rm --no-deps php composer check-platform-reqs --no-dev --lock
 run compose run --rm --no-deps php composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+run compose run --rm --no-deps php composer reinstall fin-si/finance-domain --no-interaction --optimize-autoloader
 run compose --profile build run --rm --no-deps assets
 
 if [[ "$maintenance_started" == false ]]; then
@@ -67,6 +82,7 @@ fi
 run compose --profile build run --rm --no-deps assets node scripts/publish-assets.mjs
 run compose up -d --wait php mysql nginx
 run compose exec -T php php artisan app:post-deploy --migrate
+run compose exec -T php php artisan storage:link --force
 run compose up -d --force-recreate attachments-worker attachments-maintenance
 run compose exec -T php php artisan attachments:diagnose --timeout=120
 run compose exec -T php php artisan up

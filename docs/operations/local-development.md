@@ -2,9 +2,10 @@
 
 ## Preparación
 
-Trabaja desde la raíz del repositorio Laravel (`api` dentro del workspace anterior). Requiere PHP 8.4 (requerido por las dependencias del lockfile), Composer, Node 24 y npm. Habilita las extensiones requeridas por Composer y el driver de la base elegida; las pruebas necesitan SQLite/PDO SQLite.
+El repositorio es un monorepo. Ejecuta comandos Laravel, Composer, npm y Vite desde `apps/finance`; Compose y `deploy.sh` permanecen en la raíz Git. Requiere PHP 8.4 (requerido por las dependencias del lockfile), Composer, Node 24 y npm. Habilita las extensiones requeridas por Composer y el driver de la base elegida; las pruebas necesitan SQLite/PDO SQLite.
 
 ```bash
+cd apps/finance
 cp .env.example .env
 composer install
 npm ci
@@ -74,8 +75,28 @@ php -r 'echo PHP_BINARY.PHP_EOL; echo extension_loaded("imagick") ? "Imagick dis
 
 En Homebrew, instala las bibliotecas con `brew install imagemagick libheif`, instala la extensión mediante `pecl install imagick-3.8.0` del PHP correspondiente y habilita `extension=imagick.so` en el directorio de configuración que indique `php --ini`, si todavía no está habilitada. Instalar la extensión sin habilitarla no basta. Reinicia `composer run dev` después de cambiar PHP o sus extensiones y usa **Reintentar** en los comprobantes fallidos que aún conserven la fuente. El diagnóstico de cola es la comprobación completa; detectar la extensión o el nombre de un códec no prueba una conversión real.
 
-Para usar Docker, construye PHP antes de iniciar los consumidores: `docker compose build php`. `attachments-worker` procesa un archivo a la vez y `attachments-maintenance` ejecuta únicamente la limpieza de comprobantes cada hora. No sustituyen el scheduler financiero. Para desarrollar en host, ejecuta `php artisan attachments:maintain` cuando necesites limpiar y `php artisan attachments:diagnose --timeout=120` con el worker activo para comprobar cola, almacenamiento y conversión.
+Para usar Docker, construye PHP antes de iniciar los consumidores: `docker compose --env-file apps/finance/.env build php` desde la raíz Git. `attachments-worker` procesa un archivo a la vez y `attachments-maintenance` ejecuta únicamente la limpieza de comprobantes cada hora. No sustituyen el scheduler financiero. Para desarrollar en host, ejecuta `php artisan attachments:maintain` cuando necesites limpiar y `php artisan attachments:diagnose --timeout=120` con el worker activo para comprobar cola, almacenamiento y conversión.
 
 Los límites funcionales están en `config/transaction_attachments.php`; `.env.example` muestra sus overrides opcionales. Las barreras PHP/Nginx admiten solicitudes de 8 MiB y archivos de 6 MiB: aumentar el límite de aplicación requiere actualizar también estas barreras. Los controles de ImageMagick y el contenedor son techos de infraestructura, aunque la configuración de aplicación sea mayor. No se realiza análisis antivirus.
 
 Consulta [comprobantes de transacciones](../domain/transaction-attachments.md) para comportamiento, galería, permisos y límites predeterminados.
+
+## Paquete compartido y Docker
+
+`packages/finance-domain` se instala mediante el repositorio Composer local declarado por Finance. La instalación copia el paquete a `vendor`; después de editarlo ejecuta el comando de sincronización documentado en el manifiesto Composer de Finance. No ejecutes `composer update` general para sincronizar cambios locales.
+
+Compose monta la raíz Git en `/workspace` y usa `/workspace/apps/finance` como directorio de trabajo de PHP y consumidores. Nginx sirve `/workspace/apps/finance/public`, se comunica con PHP por la red interna y no publica un puerto local por defecto. MySQL conserva el volumen `debtstb` y el puerto configurado mediante `DB_PORT`; dentro de Docker utiliza `DB_HOST=mysql` y el puerto interno `3306`. `--env-file apps/finance/.env` alimenta la interpolación Compose; `env_file` introduce las variables de Laravel en PHP y workers. Ejecuta desde la raíz:
+
+```bash
+docker compose --env-file apps/finance/.env config --quiet
+docker compose --env-file apps/finance/.env build php
+docker compose --env-file apps/finance/.env run --rm php composer install
+```
+
+Conserva el nombre de proyecto Compose existente al cambiar de layout. Los servicios de adjuntos necesitan las dependencias Composer instaladas; construir la imagen no las instala. La SPA continúa integrada y no requiere workspace npm adicional.
+
+## Desarrollo del paquete compartido
+
+`packages/finance-domain` contiene modelos y permisos, sin Actions ni migraciones. Finance lo instala por copia mediante un repositorio Composer `path`. Después de editarlo, ejecuta `composer run domain:sync` desde `apps/finance`; no actualiza las dependencias externas. Desde el paquete, ejecuta `composer install` y `composer test` para sus pruebas independientes. Las exclusiones `.gitattributes` evitan copiar las dependencias de pruebas dentro del vendor de Finance.
+
+El comando de Telegram resuelve su servicio únicamente al ejecutarse; instalar dependencias o listar comandos no requiere un token de Telegram. Para probar envíos reales sí es necesaria la configuración correspondiente.
