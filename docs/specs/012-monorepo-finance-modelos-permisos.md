@@ -236,14 +236,53 @@ Desde la raíz, comprobar sintaxis shell, ambos Compose con `config --quiet` usa
 
 ## Estrategia de commits
 
-1. `test: characterize finance authorization and model lifecycle`
-2. `refactor: move integrated finance app into monorepo`
-3. `refactor: extract shared finance models and dependencies`
-4. `refactor: centralize finance authorization and visibility rules`
-5. `test: verify shared package isolation and monorepo workflows`
-6. `docs: update monorepo development and deployment instructions`
+| Orden y mensaje convencional | Contenido y documentación del mismo commit | Comprobaciones antes de confirmar |
+| --- | --- | --- |
+| 1. `test: characterize finance authorization and model lifecycle` | Pruebas de permisos y callbacks actuales; registrar en esta especificación la matriz comprobada y diferencias respecto a supuestos iniciales | Suites de caracterización y registro de fallos preexistentes |
+| 2. `refactor: move integrated finance app into monorepo` | Traslado y ajustes de ejecución, build y Docker; actualizar `AGENTS.md`, enlaces frontend, `overview.md`, `local-development.md` y `deployment.md` con las rutas efectivas | Pruebas de aplicación, type-check, pruebas Vue, build, scripts operativos y validación Compose |
+| 3. `refactor: extract shared finance models and dependencies` | Paquete, consumidores, factories, hooks locales y compatibilidad; actualizar `boundaries.md`, instalación Composer y procedimiento de compatibilidad/rollback | Pruebas de modelos, host independiente, factories, autenticación, eventos, morphs y colas |
+| 4. `refactor: centralize finance authorization and visibility rules` | Reglas compartidas, policies y consultas consumidoras; actualizar límites de autorización y referencias de dominio afectadas | Matriz de acceso, aislamiento de listados/agregados, privacidad y regresiones de escritura |
+| 5. `test: verify shared package isolation and monorepo workflows` | Cobertura de integración restante y ajustes necesarios; actualizar comandos verificados y limitaciones operativas documentadas | Validación integrada completa, instalación limpia y ensayo local de operación/rollback |
+| 6. `docs: finalize monorepo migration verification` | Conciliar esta especificación con el resultado, revisar enlaces y retirar instrucciones obsoletas restantes | Correspondencia entre documentación, scripts y resultados reales; diff limpio |
 
 Cada commit debe ser coherente: el traslado incorpora sus ajustes operativos; la extracción de modelos incorpora todos sus consumidores y compatibilidad; la extracción de permisos incorpora las llamadas desde Finance. No separar cambios que dejen imports rotos entre commits.
+
+Los mensajes serán convencionales y en inglés. Si una etapa requiere varios commits, dividir por una capacidad completa y comprobable, manteniendo sus pruebas y documentación juntas. No dejar las pruebas de seguridad para el commit 5 ni las instrucciones de uso para el commit 6. No incluir cambios ajenos ni reescribir commits existentes para ocultar correcciones.
+
+Antes de cada commit: revisar `git diff` y archivos preparados, aplicar las skills pertinentes, comprobar tipos/imports/nombres, ejecutar las validaciones de la etapa y `git diff --check`, y confirmar que no se incorporan secretos, dependencias generadas o datos locales. Resolver las regresiones introducidas antes de avanzar. Un fallo preexistente o una herramienta no disponible debe quedar identificado, sin presentar la comprobación como superada.
+
+## Skills e instrucciones durante la implementación
+
+Antes de cada etapa, consultar `AGENTS.md` y las instrucciones de directorio aplicables. Para frontend, conservar y consultar `apps/finance/resources/js/AGENTS.md` después del traslado. Utilizar la documentación vigente en `docs`, especialmente arquitectura, límites, cuentas compartidas, dinero personal y operación; `docs/history/workspace` es referencia histórica y no sustituye esas reglas.
+
+Leer las skills correspondientes antes de aplicarlas y comunicar su uso la primera vez. No asumir su contenido solo por el nombre ni aplicar todas indiscriminadamente:
+
+| Skill | Aplicación en este plan |
+| --- | --- |
+| `development-plan` e `implementation-plan` | Mantener alcance, decisiones, dependencias y validación de esta especificación alineados con los hallazgos |
+| `php-laravel` | Extracción del paquete, modelos, policies, providers, adaptación de consumidores e inyección de dependencias |
+| `test-design` | Caracterización de permisos, límites de integración, invariantes financieras y cobertura del paquete |
+| `docker-compose-traefik` | Cambios de contexto, mounts, redes, configuración y ejecución local de servicios existentes |
+| `markdown-plantuml-docs` | Actualizar documentación técnica existente en español; agregar diagramas solo si aclaran una decisión |
+| `vue3` | Cuando sea necesario modificar código Vue/TypeScript; respetar módulos y contratos actuales |
+| `api-change` | Al adaptar la aplicación de autorización en endpoints, preservar contratos y semántica de errores |
+| `database-change` | Al modificar comportamiento de consultas, mapeos persistidos o compatibilidad morph; no implica crear migraciones |
+| `debugging-playbook` | Investigar regresiones con evidencia antes de cambiar código |
+
+Si una necesidad real exige alterar componentes PrimeVue, estilos o migraciones, leer también las skills específicas antes de hacerlo; esas modificaciones no forman parte del alcance inicial. No crear nuevas Actions compartidas ni ampliar la tarea como consecuencia de una recomendación genérica de una skill.
+
+Aplicar los lineamientos de `AGENTS.md`: código en inglés, tipos explícitos, casts conservados, autorización y validación de escrituras, inyección de dependencias, early returns, DTOs cuando representen una responsabilidad clara y pruebas para cada service class nueva o modificada. Conservar las invariantes de ledger, custodia, reembolsos y privacidad personal. Mantener trabajo y validaciones en local.
+
+## Documentación incremental
+
+La documentación forma parte de cada etapa y se actualiza en el mismo commit que cambia el comportamiento o la operación descritos. Editar los documentos vigentes en `docs` y las instrucciones afectadas; no generar documentación paralela que compita con ellos.
+
+- Antes de modificar una capacidad, leer su referencia vigente y comprobar sus invariantes contra el código.
+- Al cambiar rutas o comandos, actualizar de inmediato las guías de desarrollo, despliegue e instrucciones que los mencionan.
+- Al extraer modelos o permisos, actualizar los límites de responsabilidad y mapas de implementación afectados; las reglas de producto permanecen intactas.
+- Mantener en esta especificación el estado de las etapas, decisiones ajustadas y resultados de validación con sus limitaciones. Registrar solo comprobaciones realmente ejecutadas, sin copiar logs ni secretos.
+- Revisar enlaces y rutas después de cada movimiento. Mantener documentos nuevos o modificados en español y conservar el historial documental sin reescribirlo.
+- El cierre revisa consistencia y pendientes; no es el momento de documentar por primera vez cambios ya realizados.
 
 ## Archivos estimados a modificar
 
@@ -274,8 +313,8 @@ Antes de una futura operación de despliegue deberán identificarse el nombre ef
 | 3. Paquete de modelos | Crear Composer/provider; mover modelos y dependencias; desacoplar Actions/eventos/auth; actualizar consumidores, factories y nombres persistidos | 2 | Paquete carga sin Finance; modelos conservan relaciones/casts; escrituras y eventos de Finance conservan comportamiento |
 | 4. Autorización completa | Extraer reglas y restricciones de lectura, mantener permisos de escritura; conectar policies y todos los consumidores con actor explícito | 3 | Matriz de permisos cubierta; consultas, detalles, agregados y rutas anidadas conservan aislamiento y respuestas |
 | 5. Validación integrada | Ejecutar suites, host mínimo del paquete, comprobaciones de arquitectura, build y ensayo local de operación/rollback | 4 | Sin regresiones nuevas; sin dependencias inversas; sin cambios de esquema ni servicios adicionales |
-| 6. Cierre | Actualizar documentación vigente e instrucciones, revisar diff y completar commits convencionales | 5 | Monorepo utilizable con Finance consumiendo exclusivamente los modelos y permisos compartidos |
+| 6. Cierre | Verificar la documentación actualizada durante cada etapa, conciliar el plan con lo implementado, revisar diff y completar commits convencionales | 5 | Monorepo utilizable con Finance consumiendo exclusivamente los modelos y permisos compartidos |
 
 ### Criterio de aceptación
 
-La implementación termina cuando Finance funciona desde su nueva ubicación, no mantiene copias de reglas compartidas, todos los modelos viven en el paquete, las Actions siguen locales, los permisos de lectura pueden ejecutarse sin contexto HTTP y las verificaciones anteriores pasan. No existen aplicaciones MCP/agentes ni infraestructura nueva para ellas.
+La implementación termina cuando Finance funciona desde su nueva ubicación, no mantiene copias de reglas compartidas, todos los modelos viven en el paquete, las Actions siguen locales, los permisos de lectura pueden ejecutarse sin contexto HTTP y las verificaciones anteriores pasan. La documentación vigente refleja cada cambio completado, las skills aplicables se han utilizado y los cambios están registrados en commits convencionales coherentes. No existen aplicaciones MCP/agentes ni infraestructura nueva para ellas.
