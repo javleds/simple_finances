@@ -100,3 +100,15 @@ Conserva el nombre de proyecto Compose existente al cambiar de layout. Los servi
 `packages/finance-domain` contiene modelos y permisos, sin Actions ni migraciones. Finance lo instala por copia mediante un repositorio Composer `path`. Después de editarlo, ejecuta `composer run domain:sync` desde `apps/finance`; no actualiza las dependencias externas. Desde el paquete, ejecuta `composer install` y `composer test` para sus pruebas independientes. Las exclusiones `.gitattributes` evitan copiar las dependencias de pruebas dentro del vendor de Finance.
 
 El comando de Telegram resuelve su servicio únicamente al ejecutarse; instalar dependencias o listar comandos no requiere un token de Telegram. Para probar envíos reales sí es necesaria la configuración correspondiente.
+
+## Actualizar un checkout local del layout anterior
+
+Un merge o fast-forward mueve solo archivos versionados. `.env`, `vendor`, `node_modules`, `storage`, caches y assets anteriores pueden permanecer en la raíz, aunque el código ya esté en `apps/finance`. Completar esa transición antes de iniciar la aplicación:
+
+1. Detener los procesos locales que usan el checkout y verificar que los destinos no contengan otros datos. No sobrescribir una configuración existente.
+2. Respaldar `.env` y datos persistentes fuera del repositorio, en un directorio privado. Trasladar la configuración y el contenido de `storage` a `apps/finance`, conservando `APP_KEY`, archivos, permisos y sesiones. Revisar rutas absolutas locales y enlaces simbólicos.
+3. Trasladar dependencias, assets y temporales a sus ubicaciones equivalentes dentro de Finance. Apartar caches antiguas de bootstrap y vistas compiladas; no reutilizar configuración cacheada del layout anterior.
+4. Desde `apps/finance`, ejecutar `composer install`, `composer run domain:sync`, `npm ci` y `npm run build`. Comprobar que Artisan arranca y que no quedan carpetas Laravel locales en la raíz.
+5. Conservar el respaldo hasta comprobar el entorno. No ejecutar `git clean`, borrar storage ni regenerar `APP_KEY` para resolver los restos del traslado.
+
+Este procedimiento local no migra bases de datos ni despliega servicios. Para una instalación activa con Docker, utilizar el procedimiento de transición de la guía de despliegue, que preserva además la identidad del volumen MySQL.
