@@ -128,3 +128,7 @@ Un merge o fast-forward mueve solo archivos versionados. `.env`, `vendor`, `node
 5. Conservar el respaldo hasta comprobar el entorno. No ejecutar `git clean`, borrar storage ni regenerar `APP_KEY` para resolver los restos del traslado.
 
 Este procedimiento local no migra bases de datos ni despliega servicios. Para una instalación activa con Docker, utilizar el procedimiento de transición de la guía de despliegue, que preserva además la identidad del volumen MySQL.
+
+## Asistente financiero
+
+El stack optativo del chat se prepara con `make chat-config` y `make chat-setup`, y se ejecuta con `make dev-chat`. Finance debe ejecutarse dentro de Docker para alcanzar la API privada. Consultar [preparación, credenciales y datos locales](assistant.md); el launcher no publica FastAPI ni MCP.

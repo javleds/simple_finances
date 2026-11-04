@@ -376,3 +376,20 @@ No bloquean escribir el plan, pero sí el paso indicado:
 - [Persistencia de LangGraph](https://docs.langchain.com/oss/python/langgraph/persistence): checkpoints por thread y separación de memoria entre conversaciones.
 - [Laravel MCP](https://laravel.com/framework/docs/12.x/mcp): servidor, herramientas, schemas y autenticación.
 - [Redes de Docker Compose](https://docs.docker.com/reference/compose-file/networks/): pertenencia explícita de servicios y redes internas. La configuración concreta descrita arriba es una decisión propuesta para este proyecto.
+
+## Implementación y validación realizada
+
+Implementadas las fases de dominio, MCP, persistencia/API, grafo, gateway, UI e infraestructura. El chat se carga de forma diferida y conserva el contexto de la ruta por mensaje. Las respuestas internas utilizan JSON directo (crear thread devuelve `id`); Finance expone el envelope `data`. El historial devuelve la página más reciente en orden cronológico y cursor hacia mensajes anteriores. SSE publica estados y el mensaje final completo; no transmite tokens parciales del modelo.
+
+La referencia de “Por pagar” es el panel de reembolsos del dashboard: deuda del actor según el ledger. Los ajustes sin transacción atribuible se identifican explícitamente. Los reportes se leen en una transacción MySQL REPEATABLE READ, con el mismo snapshot para autorización, cifras y referencias. La moneda actual es MXN; gasto total de cuentas no equivale a participación o desembolso personal.
+
+Validación ejecutada con datos ficticios:
+
+- Finance: 370 pruebas aprobadas, 1 omitida, 2001 aserciones; incluye 10 pruebas del gateway.
+- Paquete compartido: 21 pruebas, 213 aserciones. MCP: 7 pruebas, 61 aserciones; credencial MySQL SELECT rechaza escrituras y DDL.
+- Agente: 28 pruebas deterministas y 3 de PostgreSQL real; Ruff, formato y mypy correctos. SDK MCP probado con dos actores concurrentes y rechazo cruzado.
+- Chat Vue: 8 pruebas, tipos, lint y build correctos; recorrido en navegador móvil y escritorio con respuestas simuladas. El panel es un chunk diferido de aproximadamente 10.56 KB (4.50 KB gzip).
+- Integración real entre gateway Laravel, FastAPI, worker, LangGraph, MCP y ambas bases con proveedor HTTP simulado: respuesta, SSE, historial, aislamiento e idempotencia comprobados. El recorrido desde Laravel aprobó 15 aserciones.
+- Imágenes Docker construidas y composiciones local/producción validadas sin publicar servicios internos. La validación del recorrido usó procesos locales y bases efímeras; no constituye un despliegue productivo.
+
+Pendiente externo antes del piloto: configurar proveedor/modelo y ejecutar `apps/agents/evaluations/cases.json` para evaluar calidad semántica, latencia y consumo reales. Los dobles no acreditan calidad de un modelo real. Configurar hashes legales y confirmar retención. WhatsApp queda como canal futuro; este cambio implementa el chat web. Seguir `docs/operations/assistant.md` para iniciar el stack y para rollback.

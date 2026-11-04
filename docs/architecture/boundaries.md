@@ -29,3 +29,9 @@ Laravel resuelve el catálogo efectivo y autoriza creación, selección, renombr
 ## Comprobantes de transacciones
 
 La API recibe archivos individuales, verifica permisos y reserva capacidad; los jobs validan contenido y convierten imágenes. Vue mantiene selecciones locales, presenta estados y descarga mediante JWT. La transacción financiera se guarda antes de subir comprobantes: los fallos de archivos no repiten notificaciones ni mutaciones financieras. Los archivos nunca se exponen mediante el disco público. La galería reutiliza el WebP privado para miniatura, visor y descarga; los blobs pertenecen a la sesión visible y se liberan al terminarla. Consulta [comprobantes de transacciones](../domain/transaction-attachments.md).
+
+## Asistente financiero
+
+`apps/mcp` consume el paquete compartido y tiene credenciales MySQL de solo lectura. No importa Actions de Finance ni recalcula datos al consultar. `apps/agents` conserva conversaciones en PostgreSQL y obtiene información exclusivamente mediante herramientas MCP autorizadas; no recibe credenciales MySQL.
+
+La SPA utiliza `/api/chat` de Finance. Finance deriva el actor de su autenticación y llama a FastAPI por Docker con una credencial de servicio. El actor no puede elegirse desde el navegador ni desde argumentos del modelo. La identidad explícita es un dato confiado entre servicios autenticados, no un mecanismo de autenticación por sí mismo. Ver [el contrato y plan](../specs/015-agente-financiero-chat-mcp.md) y [operación local](../operations/assistant.md).

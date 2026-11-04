@@ -9,3 +9,13 @@ dev-list:
 
 dev-test:
 	@node --test scripts/dev.test.mjs
+
+.PHONY: chat-config chat-setup dev-chat chat-down
+chat-config:
+	@node scripts/chat.mjs config
+chat-setup:
+	@node scripts/chat.mjs setup
+dev-chat:
+	@node scripts/chat.mjs up
+chat-down:
+	@node scripts/chat.mjs down

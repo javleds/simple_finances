@@ -62,3 +62,9 @@ Do not remove or bypass these rules as a cosmetic cleanup. If a change needs to 
 ## Paquete compartido
 
 Después de editar `packages/finance-domain`, ejecutar `composer run domain:sync` desde `apps/finance` antes de probar la aplicación: Composer instala una copia local. Ejecutar `composer test` desde el paquete para verificar aislamiento y permisos sin Finance. Actualizar la documentación vigente junto con cada cambio, conservando las referencias de `docs/history` como históricas.
+
+## Asistente financiero
+
+`apps/mcp` es una aplicación Laravel independiente, de solo lectura financiera, que consume `packages/finance-domain`. `apps/agents` contiene FastAPI, el worker LangGraph y persistencia PostgreSQL. Finance es el único gateway del navegador: deriva el actor autenticado y envía una credencial interna distinta de la credencial agente→MCP. Nunca aceptar identidad elegida por el modelo ni publicar FastAPI/MCP.
+
+Las lecturas financieras compartidas reciben actor explícito; preservar autorización, snapshots consistentes y equivalencia con el dashboard. No introducir escrituras financieras en MCP. Al modificar el paquete, ejecutar `composer run domain:sync` en ambos consumidores antes de verificar. Validar paquete/MCP con sus suites PHPUnit, agente con pytest/Ruff/mypy y gateway/chat con las suites de Finance. La operación local y el aprovisionamiento están en `docs/operations/assistant.md`; `make dev-chat` utiliza el stack privado Docker.

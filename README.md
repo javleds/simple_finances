@@ -56,3 +56,5 @@ Configuración permite vincular un teléfono mexicano al usuario autenticado med
 El acceso a la SPA sigue usando correo, contraseña y JWT. El código de WhatsApp verifica la vinculación del teléfono; no inicia sesión. La prueba real de vinculación queda pendiente de disponer de una plantilla de autenticación aprobada. Consulta [configuración, contratos y pruebas de WhatsApp](docs/integrations/whatsapp.md).
 
 Consulta [desarrollo local](docs/operations/local-development.md), [despliegue](docs/operations/deployment.md), [arquitectura](docs/architecture/overview.md) y [pruebas](docs/testing/strategy.md) e [interfaz PrimeVue](docs/frontend/primevue.md). WhatsApp, Telegram, OpenAI y correo se configuran desde Laravel; no publiques tokens en variables `VITE_*`.
+
+El asistente financiero tiene un stack Docker optativo: [preparación del chat, modelo y credenciales](docs/operations/assistant.md). FastAPI y MCP permanecen privados; el navegador utiliza el gateway de Finance.
