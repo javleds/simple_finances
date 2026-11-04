@@ -29,6 +29,7 @@ abstract class TestCase extends OrchestraTestCase
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password')->nullable();
+            $table->timestamp('email_verified_at')->nullable();
             $table->timestamps();
         });
         Schema::create('accounts', static function (Blueprint $table): void {
@@ -68,6 +69,10 @@ abstract class TestCase extends OrchestraTestCase
             $table->decimal('amount');
             $table->string('type');
             $table->string('status');
+            $table->string('concept')->default('Expense');
+            $table->timestamp('scheduled_at')->nullable();
+            $table->unsignedBigInteger('category_id')->nullable();
+            $table->unsignedBigInteger('parent_transaction_id')->nullable();
             $table->timestamps();
         });
         Schema::create('shared_transaction_notification_batches', static function (Blueprint $table): void {
@@ -78,6 +83,16 @@ abstract class TestCase extends OrchestraTestCase
         Schema::create('shared_transaction_notification_items', static function (Blueprint $table): void {
             $table->id();
             $table->foreignId('batch_id');
+            $table->timestamps();
+        });
+        Schema::create('account_member_ledger_entries', static function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('account_id');
+            $table->foreignId('user_id');
+            $table->unsignedBigInteger('transaction_id')->nullable();
+            $table->unsignedBigInteger('related_user_id')->nullable();
+            $table->string('type');
+            $table->decimal('amount');
             $table->timestamps();
         });
         Schema::create('legal_acceptances', static function (Blueprint $table): void {
