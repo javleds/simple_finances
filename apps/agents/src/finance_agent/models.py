@@ -36,6 +36,8 @@ class Thread(Base):
     owner_user_id: Mapped[int] = mapped_column(BigInteger, index=True)
     channel: Mapped[str] = mapped_column(String(16))
     request_id: Mapped[str] = mapped_column(String(36))
+    title: Mapped[str | None] = mapped_column(String(80), default=None)
+    title_references: Mapped[list[dict[str, str]]] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 

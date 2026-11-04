@@ -40,13 +40,20 @@ async def execute(
             run.context,
             history,
             checkpointer,
+            needs_title=store.needs_title(run.thread_id, actor),
         )
         if result.references:
             allowed = await visible_messages(tools, [{"references": result.references}])
             if not allowed:
                 store.finish(run.id, error="access_revoked")
                 return
-        store.finish(run.id, result.content, result.references, result.warnings)
+        store.finish(
+            run.id,
+            result.content,
+            result.references,
+            result.warnings,
+            conversation_title=result.conversation_title,
+        )
 
 
 async def supervise(store: Store, settings: Settings, run: Run, operation: Any) -> None:

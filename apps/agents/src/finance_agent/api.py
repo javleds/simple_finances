@@ -15,6 +15,7 @@ from finance_agent.mcp_client import ToolDenied, connect_tools, visible_messages
 from finance_agent.schemas import Actor, CreateRun, CreateThread
 from finance_agent.settings import Settings, get_settings
 from finance_agent.store import Store, StoreError, make_engine
+from finance_agent.titles import visible_threads
 
 
 def create_app(settings: Settings | None = None, store: Store | None = None) -> FastAPI:
@@ -94,15 +95,18 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
 
     @app.post("/internal/v1/threads", dependencies=auth, status_code=201)
     async def create_thread(body: CreateThread) -> dict[str, Any]:
-        async with authorized_tools(body):
-            return repository.create_thread(body)
+        async with authorized_tools(body) as tools:
+            result = repository.create_thread(body)
+            return (await visible_threads(tools, [result]))[0]
 
     @app.get("/internal/v1/threads", dependencies=auth)
     async def threads(
         actor: Annotated[Actor, Depends(query_actor)], cursor: UUID | None = None
     ) -> dict[str, Any]:
-        async with authorized_tools(actor):
-            return repository.list_threads(actor, str(cursor) if cursor else None)
+        async with authorized_tools(actor) as tools:
+            result = repository.list_threads(actor, str(cursor) if cursor else None)
+            result["items"] = await visible_threads(tools, result["items"])
+            return result
 
     @app.get("/internal/v1/threads/{thread_id}/messages", dependencies=auth)
     async def messages(

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from finance_agent.models import Event, Message, Run, Thread, now
 from finance_agent.schemas import Actor, CreateRun, CreateThread
+from finance_agent.titles import valid_title
 
 TERMINAL = {"completed", "failed", "cancelled"}
 
@@ -39,6 +40,8 @@ def thread_data(thread: Thread) -> dict[str, Any]:
     return {
         "id": thread.id,
         "channel": thread.channel,
+        "title": thread.title,
+        "title_references": thread.title_references,
         "created_at": thread.created_at.replace(tzinfo=UTC).isoformat(),
         "updated_at": thread.updated_at.replace(tzinfo=UTC).isoformat(),
     }
@@ -124,6 +127,10 @@ class Store:
                 "items": [thread_data(row) for row in rows[:30]],
                 "next_cursor": rows[29].id if len(rows) > 30 else None,
             }
+
+    def needs_title(self, thread_id: str, actor: Actor) -> bool:
+        with self.sessions() as session:
+            return self.owned_thread(session, thread_id, actor).title is None
 
     def create_run(self, thread_id: str, request: CreateRun) -> dict[str, Any]:
         digest = hashlib.sha256(
@@ -344,6 +351,7 @@ class Store:
         references: list[dict[str, str]] | None = None,
         warnings: list[str] | None = None,
         error: str | None = None,
+        conversation_title: str | None = None,
     ) -> bool:
         with self.sessions.begin() as session:
             run = session.scalar(select(Run).where(Run.id == run_id).with_for_update())
@@ -381,6 +389,10 @@ class Store:
             thread = session.get(Thread, run.thread_id)
             assert thread is not None
             thread.updated_at = now()
+            title = valid_title(conversation_title)
+            if thread.title is None and title is not None:
+                thread.title = title
+                thread.title_references = refs + self.context_references(run.context)
             return True
 
     def purge(self, retention_days: int) -> list[str]:
