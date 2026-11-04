@@ -16,11 +16,25 @@ Configura `DB_*` para una base local y crea la base antes de `php artisan migrat
 
 `.npmrc` conserva `legacy-peer-deps=true` por incompatibilidades de peer dependencies heredadas de la SPA. Usa el lockfile con `npm ci`; esta integración no corrige ni actualiza esas dependencias.
 
-## Un único comando
+## Un único comando desde la raíz
+
+```bash
+make dev
+make dev-list
+make dev SERVICES="finance"
+```
+
+Requiere Node 24 (`.nvmrc` en raíz), Make y Bash. `make dev` inicia todas las aplicaciones con `apps/<nombre>/scripts/dev.sh`; actualmente solo Finance. La selección acepta varios nombres separados por espacios, valida todos antes de arrancar y elimina duplicados. `Ctrl+C` detiene todos los grupos de procesos; si un servicio termina, el supervisor detiene los demás y conserva su código de salida. Tras cinco segundos fuerza la terminación de procesos que no responden. No instala dependencias, inicia bases de datos ni ejecuta migraciones.
+
+Cuando se implementen MCP y agentes, cada aplicación añadirá su propio `scripts/dev.sh`, ejecutado con su carpeta como directorio de trabajo. Entonces podrán seleccionarse, por ejemplo, con `make dev SERVICES="finance mcp agents"`. Hoy esos nombres se rechazan porque todavía no existen. Cada servicio debe permanecer en primer plano y configurar sus propios puertos.
+
+El arranque específico de Finance sigue disponible desde `apps/finance`:
 
 ```bash
 composer run dev
 ```
+
+Las pruebas aisladas del supervisor se ejecutan desde la raíz con `make dev-test`.
 
 Laravel escucha en `127.0.0.1:8000`; Vite en `127.0.0.1:5173` sirve assets y HMR. Abre la aplicación en `http://127.0.0.1:8000`, incluida una ruta profunda como `/admin/accounts`. Ambos puertos son estrictos: si uno está ocupado, el comando termina. Composer también inicia `php artisan queue:listen --queue=default,attachments --sleep=1 --tries=5 --timeout=60`. `Ctrl+C` o la salida de uno de los procesos detiene los demás.
 

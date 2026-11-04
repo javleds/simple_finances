@@ -18,11 +18,13 @@ npm ci
 php artisan key:generate
 ```
 
-Configura una base local en `.env`, créala y ejecuta `php artisan migrate`. Después:
+Configura una base local en `.env`, créala y ejecuta `php artisan migrate`. Después, desde la raíz del monorepo:
 
 ```bash
-composer run dev
+make dev
 ```
+
+`make dev-list` lista las aplicaciones disponibles. `make dev SERVICES="finance"` permite seleccionarlas. Actualmente solo existe Finance; `composer run dev` sigue disponible dentro de `apps/finance`.
 
 Abre `http://127.0.0.1:8000`. El comando supervisa PHP, Vite y el worker de colas; `Ctrl+C` detiene los tres procesos. No instala dependencias, ejecuta migraciones ni inicia el scheduler.
 
