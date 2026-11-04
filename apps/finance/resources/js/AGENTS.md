@@ -34,7 +34,7 @@ Current shared components:
   Path: `resources/js/modules/shared/components/AppListState.vue`
 - `AppLoadMoreFooter`: inline infinite-scroll status with optional retry action.
   Path: `resources/js/modules/shared/components/AppLoadMoreFooter.vue`
-- `AppModal`: base modal mobile-first with header, content area and footer actions; presentations `dialog`, `sheet` and `fullscreen`; optional `size="wide"` for larger content.
+- `AppModal`: base modal mobile-first with header, content area and footer actions; presentations `dialog`, `sheet`, `fullscreen` and `chat`; the chat presentation is nonmodal on desktop (>=1024 px), fullscreen/modal on mobile, supports a `header` slot and `showFooter`; optional `size="wide"` for larger content.
   Path: `resources/js/modules/shared/components/AppModal.vue`
 - `AppPasswordInput`: password input with show/hide action.
   Path: `resources/js/modules/shared/components/AppPasswordInput.vue`

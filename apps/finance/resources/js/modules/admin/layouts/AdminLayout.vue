@@ -252,6 +252,7 @@ async function handleLogout(): Promise<void> {
                 </div>
 
                 <div class="relative flex items-center justify-end gap-2">
+                    <ChatLauncher />
                     <AppThemeMenu />
                     <Button
                         variant="text"
@@ -392,7 +393,6 @@ async function handleLogout(): Promise<void> {
                 </li>
             </ul>
         </nav>
-        <ChatLauncher />
         <AppModal
             :open="isMoreOpen && !isDesktop"
             title="Más opciones"

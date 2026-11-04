@@ -5,7 +5,7 @@ import {
     ExclamationTriangleIcon,
     InformationCircleIcon,
 } from '@heroicons/vue/24/outline';
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 
@@ -19,7 +19,8 @@ const props = withDefaults(
         variant?: AppModalVariant;
         actions?: ReadonlyArray<AppModalAction>;
         closeLabel?: string;
-        presentation?: 'dialog' | 'sheet' | 'fullscreen';
+        presentation?: 'dialog' | 'sheet' | 'fullscreen' | 'chat';
+        showFooter?: boolean;
         size?: 'default' | 'wide';
     }>(),
     {
@@ -28,6 +29,7 @@ const props = withDefaults(
         closeLabel: 'Cerrar',
         presentation: 'dialog',
         size: 'default',
+        showFooter: true,
     },
 );
 
@@ -67,6 +69,41 @@ const modalVariantStyles = {
     },
 } as const;
 
+const desktop = ref(false);
+const viewportHeight = ref<number>();
+const viewportTop = ref(0);
+let media: MediaQueryList | undefined;
+function updateViewport(): void {
+    desktop.value = media?.matches ?? false;
+    viewportHeight.value = window.visualViewport?.height ?? window.innerHeight;
+    viewportTop.value = window.visualViewport?.offsetTop ?? 0;
+}
+onMounted(() => {
+    if (props.presentation !== 'chat') return;
+    media = window.matchMedia('(min-width: 1024px)');
+    updateViewport();
+    media.addEventListener('change', updateViewport);
+    window.visualViewport?.addEventListener('resize', updateViewport);
+    window.visualViewport?.addEventListener('scroll', updateViewport);
+    window.addEventListener('resize', updateViewport);
+});
+onBeforeUnmount(() => {
+    media?.removeEventListener('change', updateViewport);
+    window.visualViewport?.removeEventListener('resize', updateViewport);
+    window.visualViewport?.removeEventListener('scroll', updateViewport);
+    window.removeEventListener('resize', updateViewport);
+});
+const isChat = computed(() => props.presentation === 'chat');
+const isModal = computed(() => !isChat.value || !desktop.value);
+const chatViewportStyle = computed(() =>
+    isChat.value && !desktop.value
+        ? {
+              height: `${viewportHeight.value ?? window.innerHeight}px`,
+              top: `${viewportTop.value}px`,
+          }
+        : undefined,
+);
+
 const modalStyle = computed(() => modalVariantStyles[props.variant]);
 
 const resolvedActions = computed<ReadonlyArray<AppModalAction>>(() => {
@@ -100,6 +137,7 @@ const resolvedActions = computed<ReadonlyArray<AppModalAction>>(() => {
 });
 
 const presentationClasses = computed(() => {
+    if (props.presentation === 'chat') return 'app-modal-chat';
     const desktopWidth = props.size === 'wide' ? 'sm:max-w-5xl!' : 'sm:max-w-xl!';
     const dialogWidth = props.size === 'wide' ? 'max-w-5xl' : 'max-w-xl';
     if (props.presentation === 'fullscreen') {
@@ -112,6 +150,12 @@ const presentationClasses = computed(() => {
 
     return `m-4! max-h-[calc(100dvh-2rem)]! w-[calc(100%-2rem)] ${dialogWidth} rounded-(--app-radius-overlay)!`;
 });
+
+function onEscape(event: KeyboardEvent): void {
+    if (!isChat.value || event.isComposing) return;
+    event.stopPropagation();
+    closeModal();
+}
 
 function closeModal(): void {
     emit('close');
@@ -142,15 +186,19 @@ function isCloseAction(action: AppModalAction): boolean {
 
 <template>
     <Dialog
+        :key="isChat ? (desktop ? 'chat-desktop' : 'chat-mobile') : 'modal'"
         :visible="props.open"
         :header="props.title"
         :aria-label="props.title"
-        modal
-        dismissable-mask
-        block-scroll
+        :modal="isModal"
+        :dismissable-mask="!isChat"
+        :block-scroll="isModal"
+        :position="isChat ? 'bottomright' : 'center'"
+        :close-on-escape="!isChat"
+        @keydown.esc="onEscape"
         :draggable="false"
         :close-button-props="{
-            'aria-label': 'Cerrar modal',
+            'aria-label': isChat ? 'Cerrar chat' : 'Cerrar modal',
             severity: 'secondary',
             text: true,
             class: 'min-h-11 min-w-11 shrink-0',
@@ -160,15 +208,20 @@ function isCloseAction(action: AppModalAction): boolean {
         :pt="{
             mask: {
                 class: props.presentation === 'sheet' ? 'items-end! sm:items-center!' : undefined,
+                style: chatViewportStyle,
             },
             header: {
                 class: 'shrink-0 border-b border-(--app-color-border) px-4 py-3',
                 style:
-                    props.presentation === 'fullscreen'
+                    props.presentation === 'fullscreen' || (isChat && !desktop)
                         ? { paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }
                         : undefined,
             },
-            content: { class: 'min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4' },
+            content: {
+                class: isChat
+                    ? 'min-h-0 flex-1 overflow-hidden p-4'
+                    : 'min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4',
+            },
             footer: {
                 class: 'flex shrink-0 gap-3 border-t border-(--app-color-border) p-4',
                 style: { paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' },
@@ -177,24 +230,26 @@ function isCloseAction(action: AppModalAction): boolean {
         @update:visible="!$event && closeModal()"
     >
         <template #header>
-            <div class="flex min-w-0 flex-1 items-center gap-3">
-                <div
-                    v-if="props.presentation !== 'sheet'"
-                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-(--app-radius-control)"
-                    :style="modalStyle.iconStyle"
-                >
-                    <component :is="modalStyle.icon" class="h-5 w-5" />
+            <slot name="header">
+                <div class="flex min-w-0 flex-1 items-center gap-3">
+                    <div
+                        v-if="props.presentation !== 'sheet'"
+                        class="flex h-6 w-6 shrink-0 items-center justify-center rounded-(--app-radius-control)"
+                        :style="modalStyle.iconStyle"
+                    >
+                        <component :is="modalStyle.icon" class="h-5 w-5" />
+                    </div>
+                    <AppTitle
+                        as="h2"
+                        size="sm"
+                        class="min-w-0 flex-1 text-left text-base! sm:text-lg!"
+                        >{{ props.title }}</AppTitle
+                    >
                 </div>
-                <AppTitle
-                    as="h2"
-                    size="sm"
-                    class="min-w-0 flex-1 text-left text-base! sm:text-lg!"
-                    >{{ props.title }}</AppTitle
-                >
-            </div>
+            </slot>
         </template>
         <slot />
-        <template #footer>
+        <template v-if="props.showFooter" #footer>
             <slot name="footer">
                 <Button
                     v-for="action in resolvedActions"
@@ -226,3 +281,23 @@ function isCloseAction(action: AppModalAction): boolean {
         </template>
     </Dialog>
 </template>
+
+<style>
+.app-modal-chat {
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+@media (min-width: 1024px) {
+    .app-modal-chat {
+        width: 440px !important;
+        height: min(640px, calc(100dvh - var(--app-header-height) - 48px)) !important;
+        max-width: calc(100vw - 48px) !important;
+        margin: 24px !important;
+        border-radius: var(--app-radius-overlay) !important;
+    }
+}
+</style>

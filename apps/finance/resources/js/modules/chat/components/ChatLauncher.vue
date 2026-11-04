@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, ref } from 'vue';
+import { defineAsyncComponent, nextTick, ref } from 'vue';
 import { ChatBubbleLeftRightIcon } from '@heroicons/vue/24/outline';
 import AppIconButton from '@/modules/shared/components/AppIconButton.vue';
 const ChatPanel = defineAsyncComponent(() => import('./ChatPanel.vue'));
@@ -7,24 +7,27 @@ const enabled =
     document.querySelector<HTMLMetaElement>('meta[name="chat-enabled"]')?.content === 'true';
 const open = ref(false);
 const loaded = ref(false);
-function show(): void {
+function toggle(): void {
     loaded.value = true;
-    open.value = true;
+    open.value = !open.value;
+}
+async function close(): Promise<void> {
+    open.value = false;
+    await nextTick();
+    document.getElementById('chat-trigger')?.focus();
 }
 </script>
 <template>
-    <div
-        v-if="enabled"
-        class="fixed right-4 bottom-[calc(var(--app-bottom-nav-height)+env(safe-area-inset-bottom)+1rem)] z-30 lg:right-8 lg:bottom-8"
+    <AppIconButton
+        id="chat-trigger"
+        aria-label="Abrir chat"
+        ariaLabel="Abrir chat"
+        aria-haspopup="dialog"
+        :aria-expanded="open"
+        aria-controls="finance-chat"
+        @click="toggle"
     >
-        <AppIconButton
-            :ariaLabel="'Abrir asistente'"
-            aria-haspopup="dialog"
-            :aria-expanded="open"
-            class="h-14! w-14! rounded-full! bg-(--app-color-surface)! shadow-lg"
-            @click="show"
-            ><ChatBubbleLeftRightIcon class="h-6 w-6"
-        /></AppIconButton>
-    </div>
-    <ChatPanel v-if="loaded" :open="open" @close="open = false" />
+        <ChatBubbleLeftRightIcon class="h-5 w-5" />
+    </AppIconButton>
+    <ChatPanel v-if="loaded" :open="open" :enabled="enabled" @close="close" />
 </template>
