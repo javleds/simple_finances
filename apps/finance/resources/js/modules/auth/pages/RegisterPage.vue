@@ -15,15 +15,13 @@ import {
 } from '@/modules/auth/lib/postAuthRedirect';
 import type { AuthSession } from '@/modules/auth/schemas/authSchemas';
 import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
-import {
-    AppButton,
-    AppCard,
-    AppInput,
-    AppLink,
-    AppPasswordInput,
-    AppText,
-    AppTitle,
-} from '@/modules/shared/components';
+import AppButton from '@/modules/shared/components/AppButton.vue';
+import AppCard from '@/modules/shared/components/AppCard.vue';
+import AppInput from '@/modules/shared/components/AppInput.vue';
+import AppLink from '@/modules/shared/components/AppLink.vue';
+import AppPasswordInput from '@/modules/shared/components/AppPasswordInput.vue';
+import AppText from '@/modules/shared/components/AppText.vue';
+import AppTitle from '@/modules/shared/components/AppTitle.vue';
 
 const route = useRoute();
 const router = useRouter();

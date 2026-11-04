@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useLegalDocuments } from '@/modules/auth/legal/legalDocuments';
-import { AppButton, AppText, AppTitle } from '@/modules/shared/components';
+import AppButton from '@/modules/shared/components/AppButton.vue';
+import AppText from '@/modules/shared/components/AppText.vue';
+import AppTitle from '@/modules/shared/components/AppTitle.vue';
 const props = withDefaults(defineProps<{ kind: 'terms' | 'privacy'; embedded?: boolean }>(), {
     embedded: false,
 });

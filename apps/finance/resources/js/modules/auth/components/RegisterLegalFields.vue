@@ -2,7 +2,7 @@
 import Checkbox from 'primevue/checkbox';
 import Message from 'primevue/message';
 
-import { AppLink } from '@/modules/shared/components';
+import AppLink from '@/modules/shared/components/AppLink.vue';
 
 const props = defineProps<{
     isAdult: boolean;

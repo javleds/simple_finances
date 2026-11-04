@@ -87,3 +87,14 @@ Ninguna bloqueante; medir antes de ampliar alcance.
 2. Reemplazar imports de auth y mover CSS; verificar que no queden imports al índice en auth.
 3. Compilar y comparar dependencias. Si persiste un chunk que reúne controles ajenos, identificar su causa antes de ampliar cambios.
 4. Ejecutar pruebas dirigidas y comprobar en navegador los recursos solicitados. Actualizar resultados y crear commit.
+
+## Resultados de implementación
+
+- Imports directos aplicados también a los componentes legales internos de auth, evitando dependencias transitivas al índice.
+- Build y TypeScript correctos; ESLint de auth, main y gráfico correcto; 24 pruebas existentes aprobadas en 6 archivos.
+- JavaScript inicial del build: 916733 → 596160 bytes (-35%); gzip estimado por archivo: 229478 → 165515 bytes (-28%). Los chunks pasan de 13 a 21; se favorece descargar solo controles necesarios, sin afirmar que menos bytes garantizan menor latencia en todas las redes.
+- Chromium en desarrollo: 123 → 82 solicitudes; componentes compartidos solicitados: 31 → 9. La muestra optimizada no solicita AppDatePicker, AppMultiSearchSelect, AppFilterPanel ni chart-style. Login visible y campos editables sin enviar el formulario.
+- Comparación de desarrollo con contextos nuevos: baseline en servidor main existente y versión optimizada en Vite temporal 5174 y servidor HTML 8001. Se mantiene el HTML de Laravel y sus herramientas de depuración. No representa un benchmark de servidor frío ni producción desplegada.
+- El manifiesto asocia los 13 KB de CSS de gráficos a DashboardBalanceChart, fuera de la entrada principal.
+- Smoke del build de producción servido localmente: login visible, campos editables y sin errores de JavaScript en temas claro y oscuro. Se usó un HTML mínimo con las entradas del manifiesto; no sustituye una prueba desplegada de Laravel ni una sesión autenticada del dashboard.
+- Servidores temporales cerrados al finalizar. Cambios conservados en el worktree, pendientes de integrar en main.
