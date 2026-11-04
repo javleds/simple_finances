@@ -134,3 +134,34 @@ Este procedimiento local no migra bases de datos ni despliega servicios. Para un
 El stack optativo del chat se prepara con `make chat-config` y `make chat-setup`, y se ejecuta con `make dev-chat`. Finance debe ejecutarse dentro de Docker para alcanzar la API privada. Consultar [preparación, credenciales y datos locales](assistant.md); el launcher no publica FastAPI ni MCP.
 
 La infraestructura Docker se configura en `.env` raíz; cada aplicación utiliza `apps/<app>/.env`. OpenRouter pertenece a `apps/agents/.env`, y los hashes legales a `apps/mcp/.env`. El archivo `.env.chat` anterior requiere la migración descrita en la guía del asistente.
+
+## LangGraph Studio
+
+`make dev` inicia Finance y el servidor LangGraph dev descubierto en `apps/agents/scripts/dev.sh`. Requiere `uv` y Python 3.12–3.13; `uv run --frozen` instala las dependencias fijadas, incluido el CLI de desarrollo. Escucha exclusivamente en `http://127.0.0.1:2024`, con recarga automática. Abre [LangSmith Studio local](https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024) y selecciona el grafo `finance`.
+
+```bash
+make dev                   # Finance + LangGraph dev
+make dev SERVICES=finance  # Solo Finance
+make dev SERVICES=agents   # Solo LangGraph dev
+```
+
+El launcher supervisa ambos procesos y los detiene con Ctrl+C. Studio muestra los mismos nodos/aristas que compila el worker; no es un dibujo separado. La visualización no necesita credenciales de OpenRouter, PostgreSQL ni conexión MCP. Este servidor no sustituye FastAPI ni expone sus conversaciones: guarda estado de desarrollo independiente en `apps/agents/.langgraph_api` (ignorado por Git).
+
+Para ejecutar manualmente el grafo desde Studio, configura `AGENT_DEV_ACTOR_USER_ID` con un usuario de desarrollo autorizado en `apps/agents/.env`, además de OpenRouter y un `MCP_URL` alcanzable desde el host con su token. El actor no se recibe como input del modelo. El DNS `agent-mcp` del stack privado Docker no es resoluble desde el host; `make dev` no publica MCP ni levanta ese stack. Para el flujo completo web sigue usando `make dev-chat`.
+
+El input manual de Studio usa el estado del grafo:
+
+```json
+{
+  "messages": [{"type": "human", "content": "¿Cuál es el balance de mis cuentas?"}],
+  "tool_count": 0,
+  "detail_count": 0,
+  "references": [],
+  "warnings": [],
+  "answer": {}
+}
+```
+
+Mantén `LANGSMITH_TRACING=false` si solo quieres visualizar. Para registrar trazas, configura `LANGSMITH_API_KEY`, `LANGSMITH_PROJECT` y habilita tracing explícitamente en el entorno del proceso que deseas observar; sus mensajes y resultados pueden enviarse a LangSmith. Studio local no muestra automáticamente ejecuciones del worker Docker.
+
+Referencia: [CLI oficial de LangGraph](https://reference.langchain.com/python/langgraph-cli).

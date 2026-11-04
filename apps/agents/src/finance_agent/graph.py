@@ -7,6 +7,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langchain_openrouter import ChatOpenRouter
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel, Field, SecretStr
 
 from finance_agent.mcp_client import FinancialTools, ToolDenied, ToolValidation
@@ -112,7 +113,6 @@ async def run_graph(
     history: list[dict[str, Any]],
     checkpointer: BaseCheckpointSaver[Any] | None = None,
 ) -> GraphResult:
-    catalog = await tools.catalog()
     clock = datetime.now(ZoneInfo(settings.agent_timezone)).isoformat()
     prompt = SYSTEM_PROMPT + f"\nFecha actual: {clock}. Versión del grafo: 1."
     messages: list[BaseMessage] = [SystemMessage(content=prompt)]
@@ -129,7 +129,51 @@ async def run_graph(
         ]
     )
 
+    graph = build_graph(settings, tools, reasoner, checkpointer)
+    inherited_accounts: set[str] = set()
+    for item in history:
+        inherited_accounts.update(str(ref["account_id"]) for ref in item.get("references", []))
+        if item.get("context", {}).get("account_id"):
+            inherited_accounts.add(str(item["context"]["account_id"]))
+    if context.get("account_id"):
+        inherited_accounts.add(str(context["account_id"]))
+    inherited_refs = [{"account_id": account_id} for account_id in sorted(inherited_accounts)]
+    state = await graph.ainvoke(
+        {
+            "messages": messages,
+            "tool_count": 0,
+            "detail_count": 0,
+            "references": inherited_refs,
+            "warnings": [],
+            "answer": {},
+        },
+        config={
+            "configurable": {"thread_id": thread_id, "checkpoint_ns": run_id},
+            "recursion_limit": settings.agent_tool_limit * 2 + 5,
+        },
+    )
+    final = Answer.model_validate(state["answer"])
+    return GraphResult(
+        content=final.content,
+        references=state["references"],
+        warnings=list(dict.fromkeys([*state["warnings"], *final.warnings])),
+        period=final.period,
+        scope=final.scope,
+    )
+
+
+def build_graph(
+    settings: Settings,
+    tools: FinancialTools,
+    reasoner: Reasoner,
+    checkpointer: BaseCheckpointSaver[Any] | None = None,
+) -> CompiledStateGraph[Any, Any, Any, Any]:
+    catalog: list[dict[str, Any]] | None = None
+
     async def interpret(state: GraphState) -> dict[str, Any]:
+        nonlocal catalog
+        if catalog is None:
+            catalog = await tools.catalog()
         response = await reasoner.next(state["messages"], catalog)
         return {"messages": [*state["messages"], response]}
 
@@ -219,34 +263,4 @@ async def run_graph(
     builder.add_conditional_edges("interpret", route)
     builder.add_conditional_edges("tools", after_query)
     builder.add_edge("answer", END)
-    graph = builder.compile(checkpointer=checkpointer)
-    inherited_accounts: set[str] = set()
-    for item in history:
-        inherited_accounts.update(str(ref["account_id"]) for ref in item.get("references", []))
-        if item.get("context", {}).get("account_id"):
-            inherited_accounts.add(str(item["context"]["account_id"]))
-    if context.get("account_id"):
-        inherited_accounts.add(str(context["account_id"]))
-    inherited_refs = [{"account_id": account_id} for account_id in sorted(inherited_accounts)]
-    state = await graph.ainvoke(
-        {
-            "messages": messages,
-            "tool_count": 0,
-            "detail_count": 0,
-            "references": inherited_refs,
-            "warnings": [],
-            "answer": {},
-        },
-        config={
-            "configurable": {"thread_id": thread_id, "checkpoint_ns": run_id},
-            "recursion_limit": settings.agent_tool_limit * 2 + 5,
-        },
-    )
-    final = Answer.model_validate(state["answer"])
-    return GraphResult(
-        content=final.content,
-        references=state["references"],
-        warnings=list(dict.fromkeys([*state["warnings"], *final.warnings])),
-        period=final.period,
-        scope=final.scope,
-    )
+    return builder.compile(checkpointer=checkpointer)

@@ -53,3 +53,7 @@ AGENT_TEST_DATABASE_URL=postgresql+psycopg://runtime:password@localhost:5432/tes
 La suite PostgreSQL requiere una base efímera previamente migrada y el rol runtime: comprueba exclusión de runs concurrentes, recuperación tras reinicio, checkpoints reales y rechazo de DDL. Usa exclusivamente el actor ficticio90001. No ejecutar contra datos reales.
 
 `evaluations/cases.json` define los casos de aceptación para un modelo real sobre fixtures ficticios. Son evaluaciones separadas: comprobar herramientas, cifras, referencias y aclaraciones, además del texto. Registrar proveedor/modelo, latencia y consumo al ejecutarlas; no afirmar calidad semántica real a partir de los dobles de CI. El SDK MCP también se prueba contra la app Laravel real para verificar propagación aislada de headers entre actores.
+
+## Studio local
+
+Desde la raíz, `make dev` inicia también LangGraph dev en `127.0.0.1:2024`; `make dev SERVICES=agents` lo inicia solo. Configuración y condiciones de ejecución: [desarrollo local](../../docs/operations/local-development.md#langgraph-studio). El grafo se puede visualizar sin claves; los runs manuales requieren `AGENT_DEV_ACTOR_USER_ID` y conectividad MCP configurada.

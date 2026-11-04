@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     openrouter_api_key: SecretStr = SecretStr("")
     agent_model: str = ""
     agent_model_base_url: str = "https://openrouter.ai/api/v1"
+    agent_dev_actor_user_id: int | None = Field(default=None, gt=0)
     agent_timezone: str = "America/Mexico_City"
     agent_run_timeout: int = Field(default=120, ge=10, le=600)
     agent_tool_limit: int = Field(default=12, ge=1, le=30)

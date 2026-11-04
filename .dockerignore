@@ -16,3 +16,4 @@
 **/.ruff_cache
 **/.mypy_cache
 .env.chat
+**/.langgraph_api
