@@ -2,7 +2,7 @@
 
 ## Contexto
 
-Estado: implementación local realizada; validación y cierre en curso. No se ha ejecutado despliegue remoto.
+Estado: implementación local completada y validada, con incidencias preexistentes documentadas abajo. No se ha ejecutado despliegue remoto.
 
 Laravel 12 y la SPA Vue/Vite están integrados en la raíz. Laravel sirve `resources/views/spa.blade.php`; Vite compila `resources/js/main.ts`. Composer, npm, scripts, Docker y pruebas asumen actualmente esa raíz.
 
@@ -323,13 +323,21 @@ La implementación termina cuando Finance funciona desde su nueva ubicación, no
 
 - Etapas 1–4 implementadas: aplicación trasladada, modelos/enums/traits extraídos, hooks locales, compatibilidad de nombres, policies y restricciones compartidas conectadas a Finance. No se crearon MCP ni agentes.
 - Composer instala el paquete por copia; `domain:sync` actualiza desarrollo y el despliegue lo reinstala explícitamente incluso si la versión/lock no cambia. `.gitattributes` evita copiar el vendor de pruebas del paquete.
-- La caracterización se registró en `d7823c2`. El traslado y la extracción se agrupan en un commit funcional porque sus cambios de autoload, consumidores y ejecución deben quedar coherentes; el cierre y verificaciones se registran después.
+- La caracterización se registró en `d7823c2`; la migración funcional en `e902444` y la corrección de permisos de transición en `6425445`. El traslado y la extracción se agrupan en un commit funcional porque sus cambios de autoload, consumidores y ejecución deben quedar coherentes; el cierre y verificaciones se registran después.
 - Se corrigió el arranque de comandos Telegram para resolver sus dependencias al ejecutar el comando, permitiendo instalar Finance sin credenciales de esa integración. Se agregó una prueba de consola.
 - Se conservó el comportamiento de permisos por endpoint, incluida la lectura global de transacciones con cuenta archivada y la exclusión de cuentas archivadas en listas/adjuntos.
 - Se actualizó el cálculo del correo antiguo para invocar la Action local fuera de Blade, evitando depender del método retirado del modelo.
 - Revisión independiente sin regresiones críticas confirmadas; corregidas referencias Blade a enums antiguos y argumentos redundantes.
-- PHP: 359 pruebas aprobadas y una omitida en la última suite completa; las pruebas enfocadas posteriores de consola y ciclo de vida pasan (8 pruebas, 23 aserciones). Paquete independiente: 14 pruebas, 183 aserciones.
+- PHP: 360 pruebas aprobadas, una omitida y 1979 aserciones en la suite completa. Sintaxis validada en 518 archivos PHP. Paquete independiente: 14 pruebas, 183 aserciones.
 - Vue: type-check y build pasan; 263 pruebas pasan y 2 fallan en `TransactionsForm.spec.ts`, exactamente los mismos fallos obtenidos antes de modificar código.
 - MySQL 8.0 aislado: 23 pruebas pasan y una falla por comparación estricta de `pivot.percentage` (`"65.00"` frente a `65`). Reproducido también en `d7823c2` mediante checkout temporal: no es una regresión de esta migración.
-- Formatter: se corrigió una opción inválida preexistente y se deshabilitó la conversión a closures estáticas incompatible con Pest. El paquete y archivos nuevos se formatean de forma enfocada; el chequeo general detecta cientos de diferencias de estilo heredadas, que no se corrigen masivamente en este cambio.
-- Navegador: verificación de SPA con assets compilados y rutas profundas aprobada en host. La validación de contenedores y el cierre documental continúan.
+- Formatter: se corrigió una opción inválida preexistente y se deshabilitó la conversión a closures estáticas incompatible con Pest. El paquete y archivos nuevos se formatean de forma enfocada; el chequeo general detecta cientos de diferencias de estilo heredadas, que no se corrigen masivamente en este cambio. La misma configuración corregida sobre `d7823c2` detecta 455 archivos con diferencias, confirmando la línea base.
+- Navegador: verificación de SPA con assets compilados y rutas profundas aprobada en host. La misma comprobación pasa sobre Nginx/PHP Docker aislados. Las pruebas de ciclo de vida financiero y reembolsos dentro de Docker/MySQL pasan: 9 pruebas, 248 aserciones.
+
+- Instalación limpia de producción: `composer install --no-dev` y arranque de consola aprobados desde una copia temporal del monorepo, sin `.env` ni vendor previos.
+- Operación: 11 pruebas Node de despliegue, transición y publicación de assets aprobadas; sintaxis shell y ambas configuraciones Compose válidas. Se corrigió la máscara de permisos de transición, manteniendo respaldo privado y archivos públicos accesibles.
+- Formato enfocado: 75 archivos del paquete y adaptaciones nuevas pasan el formatter.
+
+- Imagen `fin-si-monorepo-validation:c5cb` construida correctamente desde el Dockerfile actual; PHP 8.4.27 comprobado. Las 9 pruebas financieras/MySQL vuelven a pasar en esa imagen. No se realizaron conexiones SSH ni despliegues remotos.
+
+- Comprobación final de SPA aprobada sobre la imagen recién construida y Nginx. Servidor, contenedores, volúmenes anónimos y red de validación retirados al terminar; se conserva la imagen construida localmente.
