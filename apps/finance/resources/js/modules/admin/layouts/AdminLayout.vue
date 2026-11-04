@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Button from 'primevue/button';
+import ChatLauncher from '@/modules/chat/components/ChatLauncher.vue';
 import Menu from 'primevue/menu';
 import {
     AdjustmentsHorizontalIcon,
@@ -391,6 +392,7 @@ async function handleLogout(): Promise<void> {
                 </li>
             </ul>
         </nav>
+        <ChatLauncher />
         <AppModal
             :open="isMoreOpen && !isDesktop"
             title="Más opciones"

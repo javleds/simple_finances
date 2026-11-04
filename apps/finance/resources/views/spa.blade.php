@@ -10,6 +10,7 @@
 <!DOCTYPE html>
 <html lang="es">
     <head>
+    <meta name="chat-enabled" content="{{ config('chat.enabled') ? 'true' : 'false' }}">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
         <meta name="app-whatsapp-enabled" content="{{ app(\App\Services\WhatsApp\IsWhatsAppConfigured::class)->execute() ? 'true' : 'false' }}">
