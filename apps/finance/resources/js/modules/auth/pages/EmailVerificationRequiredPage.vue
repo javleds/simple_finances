@@ -14,7 +14,11 @@ import {
     setStoredAuthSession,
 } from '@/modules/auth/lib/authSession';
 import { resolvePostAuthRedirectRoute } from '@/modules/auth/lib/postAuthRedirect';
-import { AppButton, AppCard, AppLink, AppText, AppTitle } from '@/modules/shared/components';
+import AppButton from '@/modules/shared/components/AppButton.vue';
+import AppCard from '@/modules/shared/components/AppCard.vue';
+import AppLink from '@/modules/shared/components/AppLink.vue';
+import AppText from '@/modules/shared/components/AppText.vue';
+import AppTitle from '@/modules/shared/components/AppTitle.vue';
 
 const route = useRoute();
 const router = useRouter();

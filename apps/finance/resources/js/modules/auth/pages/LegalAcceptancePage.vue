@@ -11,7 +11,10 @@ import {
 } from '../legal/legalDocuments';
 import { createAuthRepository } from '../repositories/authRepository';
 import { resolveApiErrorMessage } from '@/modules/shared/lib/apiErrors';
-import { AppButton, AppCard, AppText, AppTitle } from '@/modules/shared/components';
+import AppButton from '@/modules/shared/components/AppButton.vue';
+import AppCard from '@/modules/shared/components/AppCard.vue';
+import AppText from '@/modules/shared/components/AppText.vue';
+import AppTitle from '@/modules/shared/components/AppTitle.vue';
 const route = useRoute();
 const router = useRouter();
 const { data, isError, refetch } = useLegalDocuments();

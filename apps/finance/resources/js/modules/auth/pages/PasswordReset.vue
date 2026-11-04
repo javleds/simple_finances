@@ -7,14 +7,12 @@ import { clearPendingVerificationEmail } from '@/modules/auth/lib/authSession';
 import { createAuthRepository } from '@/modules/auth/repositories/authRepository';
 import { usePasswordResetForm } from '@/modules/auth/composables/usePasswordResetForm';
 import { useFormFieldInteraction } from '@/modules/shared/composables/useFormFieldInteraction';
-import {
-  AppButton,
-  AppCard,
-  AppLink,
-  AppPasswordInput,
-  AppText,
-  AppTitle,
-} from '@/modules/shared/components';
+import AppButton from '@/modules/shared/components/AppButton.vue';
+import AppCard from '@/modules/shared/components/AppCard.vue';
+import AppLink from '@/modules/shared/components/AppLink.vue';
+import AppPasswordInput from '@/modules/shared/components/AppPasswordInput.vue';
+import AppText from '@/modules/shared/components/AppText.vue';
+import AppTitle from '@/modules/shared/components/AppTitle.vue';
 
 const router = useRouter();
 const route = useRoute();

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AppThemeMenu } from '@/modules/shared/components';
+import AppThemeMenu from '@/modules/shared/components/AppThemeMenu.vue';
 </script>
 
 <template>

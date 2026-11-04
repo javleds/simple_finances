@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import TermsAndConditionsContent from '@/modules/auth/components/TermsAndConditionsContent.vue';
-import { AppCard, AppLink } from '@/modules/shared/components';
+import AppCard from '@/modules/shared/components/AppCard.vue';
+import AppLink from '@/modules/shared/components/AppLink.vue';
 </script>
 
 <template>

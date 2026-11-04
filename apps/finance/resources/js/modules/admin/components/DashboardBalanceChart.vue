@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import '@primeui/chart-style/style.css';
+import '@primeui/chart-style/themes/primeone.css';
 import { computed, h, type VNode } from 'vue';
 import {
     ChartAccessibility,
