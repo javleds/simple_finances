@@ -1,6 +1,6 @@
 # Chat contextual desde el navbar con historial y títulos por IA
 
-Estado: especificación para implementación; este documento no implementa el feature.
+Estado: implementado y validado localmente; pendiente de configurar/evaluar el proveedor real en el entorno de uso.
 
 ## Contexto
 
@@ -248,3 +248,18 @@ No hay decisiones bloqueantes. Se adoptan: breakpoint 1024 px, historial por fec
 8. Cerrar, cambiar vistas o seleccionar otra conversación no cancela ni mezcla runs.
 9. Se mantienen contexto por ruta, seguridad del gateway, carga diferida y accesibilidad.
 10. Pruebas, documentación y verificaciones visuales demuestran el resultado antes de integrar a main.
+
+## Resultado de implementación
+
+Se implementaron los títulos autorizados con migración Alembic 002, el estado por thread y la UI de navbar. El panel utiliza la presentación `chat` de AppModal. Para corregir el ciclo de foco y scroll de PrimeVue al cambiar de breakpoint, se recrea únicamente Dialog; el propietario de la sesión ChatPanel/useChat no se desmonta y conserva borradores/runs. La carga del historial incorpora versiones de petición y de estado para que respuestas antiguas no sustituyan mensajes recientes.
+
+Validación realizada con datos ficticios:
+
+- Agente: 55 pruebas aprobadas, incluidas PostgreSQL real, migraciones, checkpoints, títulos, revocación e idempotencia. Ruff, formato y mypy correctos.
+- Gateway Laravel: 12 pruebas, 27 aserciones; conserva metadatos y títulos ocultos.
+- Suite Vue completa: 288 pruebas aprobadas; después de añadir la regresión de Escape, 30 pruebas enfocadas de chat/controles compartidos aprobadas. Type-check, lint de archivos afectados y build correctos.
+- Navegador con API simulada: 1440×900, 1024×768, 390×844 y 320×640; navbar, historial, selección, UUID nuevo, respuesta, título, cierre/reapertura y estado deshabilitado sin llamadas comprobados. Cambios desktop↔móvil conservan borrador y corrigen foco/scroll; Tab permanece dentro en móvil y sale a la página en desktop.
+- PrimeVue MCP: Textarea validado directamente; Dialog validado con nombres canónicos camelCase porque el validador no normaliza atributos kebab-case de Vue. Tipos y navegador verifican el código real.
+- El panel sigue diferido, aproximadamente 17.2 KB (6.8 KB gzip). En el entorno de build de pruebas aparece el aviso de licencia PrimeUI preexistente; no se alteró la configuración de licencia.
+
+No se enviaron datos financieros reales al proveedor ni se habilitó el chat automáticamente. La evaluación semántica del título con el modelo real sigue pendiente de credenciales/configuración. La prueba de navegador simula el gateway; las pruebas backend cubren la generación/persistencia y autorización por separado. Aplicar la migración 002 antes de arrancar la nueva versión del agente, según `docs/operations/assistant.md`.

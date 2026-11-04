@@ -50,7 +50,7 @@ cd ../..
 make dev-chat
 ```
 
-El launcher exige que no exista `apps/finance/public/hot`, para que Laravel use el build. Si quedó un archivo después de detener Vite, comprobar que es obsoleto antes de retirarlo. No se elimina automáticamente. Abrir `http://127.0.0.1:8080`; `CHAT_WEB_PORT` permite cambiarlo. El chat aparece solo cuando `CHAT_ENABLED=true` y la sesión tiene acceso.
+El launcher exige que no exista `apps/finance/public/hot`, para que Laravel use el build. Si quedó un archivo después de detener Vite, comprobar que es obsoleto antes de retirarlo. No se elimina automáticamente. Abrir `http://127.0.0.1:8080`; `CHAT_WEB_PORT` permite cambiarlo. El botón de chat aparece en el navbar autenticado. Con `CHAT_ENABLED=false`, abre un estado no disponible sin llamar al agente; habilitarlo y cumplir los requisitos de sesión permite conversar.
 
 `make dev` mantiene el desarrollo habitual en host; no puede resolver el DNS privado de FastAPI. Para probar chat completo usar Finance dentro del stack Docker. No publicar FastAPI para adaptar ese modo host.
 
@@ -100,3 +100,18 @@ Antes de ejecutar `make chat-config`, distribuye los valores existentes sin gene
 - Agentes: claves `OPENROUTER_*`, `AGENT_MODEL`, `AGENT_MODEL_BASE_URL`, `AGENT_RETENTION_DAYS` y ambos tokens. `DATABASE_URL` utiliza el rol `agent_runtime` y su contraseña PostgreSQL anterior; codificar caracteres especiales en la URL. `MCP_URL=http://agent-mcp:8080/mcp`.
 
 Retira `.env.chat` del checkout después de verificar la distribución (cualquier copia de respaldo debe permanecer privada). `chat-config` se detiene si detecta ese archivo para evitar crear credenciales distintas accidentalmente. Reinicia los contenedores para aplicar los nuevos env; no elimines volúmenes.
+
+## Conversaciones en el navbar
+
+El panel no cambia la ruta de Finance. En desktop ocupa una ventana inferior derecha; en móvil, toda la pantalla. Historial sustituye el transcript dentro de esa ventana. Nuevo chat crea un UUID en FastAPI; volver a una conversación conserva su ID y el contexto del siguiente mensaje se obtiene de la pantalla actual. Cerrar o cambiar de conversación no cancela un run; Detener sí lo solicita. Los borradores se conservan en memoria durante la sesión.
+
+El título se infiere en la respuesta estructurada del primer intercambio válido y se guarda una sola vez. Si no hay título válido, la UI muestra una fecha; al revocar acceso a referencias se oculta también el título. No se envían peticiones adicionales al modelo solo para titular.
+
+Para actualizar un stack existente, construir la imagen del agente y aplicar la migración aditiva `002_conversation_titles` antes de reiniciar API/worker:
+
+```bash
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.chat.yml -f docker-compose.chat.local.yml --profile chat build agent-api
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.chat.yml -f docker-compose.chat.local.yml --profile chat run --rm agent-migrate
+```
+
+PostgreSQL debe estar iniciado. El migrador usa la credencial propietaria; la API sigue usando el rol runtime. Compilar Finance con `npm run build` y reiniciar el stack con `make dev-chat`. En producción usar su archivo base sin el override local. No hace falta migrar MySQL. El esquema acepta threads previos sin título; el rollback funcional mantiene las columnas aditivas.

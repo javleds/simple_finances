@@ -273,3 +273,9 @@ El visor conserva foco y cierra únicamente su propia capa con Escape. Las imág
 En autenticación importar los adaptadores `App*` directamente desde su archivo `.vue`, conservando su reutilización. Importar desde el índice `shared/components` carga en desarrollo también los controles que esa pantalla no necesita y puede agruparlos en chunks compartidos del build.
 
 Los estilos `@primeui/chart-style/style.css` y `themes/primeone.css` pertenecen a `DashboardBalanceChart.vue`, que se carga de forma diferida. Si se añade otro consumidor de gráficos, debe importar ambos estilos para que una entrada directa conserve su presentación. No volver a importarlos desde `main.ts`.
+
+## Chat de navbar
+
+El chat reutiliza AppModal/PrimeVue Dialog con `presentation="chat"`. A partir de 1024 px es no modal, inferior derecho y de 440×640 px limitado al viewport. Por debajo utiliza VisualViewport y safe areas para ocupar la pantalla y convivir con el teclado. `header` permite controles de historial/nuevo chat; `showFooter=false` oculta compositor en historial. Los defaults de las demás presentaciones permanecen intactos.
+
+Al cruzar el breakpoint se recrea únicamente Dialog: PrimeVue inicializa foco y scroll al montar, y no reconstruye el focus trap al cambiar modalidad. ChatPanel/useChat permanecen montados, preservando borrador, thread y run. El panel se carga de forma diferida desde el botón de navbar. No introducir un segundo overlay para el historial.

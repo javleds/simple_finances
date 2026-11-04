@@ -57,3 +57,7 @@ La suite PostgreSQL requiere una base efímera previamente migrada y el rol runt
 ## Studio local
 
 Desde la raíz, `make dev` inicia también LangGraph dev en `127.0.0.1:2024`; `make dev SERVICES=agents` lo inicia solo. Configuración y condiciones de ejecución: [desarrollo local](../../docs/operations/local-development.md#langgraph-studio). El grafo se puede visualizar sin claves; los runs manuales requieren `AGENT_DEV_ACTOR_USER_ID` y conectividad MCP configurada.
+
+## Títulos de conversación
+
+La migración `002_conversation_titles` agrega un título opcional y sus referencias. El primer título válido generado en la respuesta estructurada se guarda junto al mensaje completado, sin una llamada extra al modelo. Un título inválido o ausente no invalida la respuesta. Listado y creación idempotente revalidan acceso antes de devolver `title`; referencias internas no se exponen. Threads anteriores conservan fallback por fecha. Ejecutar migraciones como propietario antes de iniciar la nueva API/worker.
