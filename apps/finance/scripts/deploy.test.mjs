@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, copyFile, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, copyFile, writeFile, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -101,6 +101,9 @@ fi
             encoding: 'utf8',
         });
         assert.equal(result.status, 0, result.stderr);
+        assert.equal((await stat(join(repository, 'apps/finance/public'))).mode & 0o777, 0o777 & ~process.umask());
+        assert.equal((await stat(join(repository, 'apps/finance/.env'))).mode & 0o777, 0o600);
+        assert.equal((await stat(backup)).mode & 0o777, 0o700);
         assert.equal(await readFile(join(repository, 'apps/finance/storage/app/private/receipt'), 'utf8'), 'retained receipt');
         assert.equal(await readFile(join(backup, 'storage/app/private/receipt'), 'utf8'), 'retained receipt');
         assert.match(await readFile(join(repository, 'apps/finance/.env'), 'utf8'), /APP_KEY=retained-key\n\nCOMPOSE_PROJECT_NAME=retained/);

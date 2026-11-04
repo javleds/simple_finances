@@ -31,6 +31,7 @@ for service in attachments-worker attachments-maintenance; do
   fi
 done
 compose stop --timeout 90 nginx php
+original_umask="$(umask)"
 umask 077
 mkdir -p "$backup"
 git rev-parse HEAD > "$backup/previous-commit"
@@ -50,9 +51,10 @@ for path in vendor node_modules bootstrap/cache public/hot public/storage .phpun
     mv "$path" "$destination"
   fi
 done
+umask "$original_umask"
 git checkout --detach "$target"
 cp -p "$backup/.env" apps/finance/.env
-sed '/^[[:space:]]*COMPOSE_PROJECT_NAME=/d' apps/finance/.env > apps/finance/.env.transition
+(umask 077; sed '/^[[:space:]]*COMPOSE_PROJECT_NAME=/d' apps/finance/.env > apps/finance/.env.transition)
 printf '\nCOMPOSE_PROJECT_NAME=%s\n' "$project" >> apps/finance/.env.transition
 mv apps/finance/.env.transition apps/finance/.env
 cp -a "$backup/storage/." apps/finance/storage/
