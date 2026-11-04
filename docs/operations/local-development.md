@@ -113,7 +113,7 @@ Conserva el nombre de proyecto Compose existente al cambiar de layout. Los servi
 
 ## Desarrollo del paquete compartido
 
-`packages/finance-domain` contiene modelos y permisos, sin Actions ni migraciones. Finance lo instala por copia mediante un repositorio Composer `path`. Después de editarlo, ejecuta `composer run domain:sync` desde `apps/finance`; no actualiza las dependencias externas. Desde el paquete, ejecuta `composer install` y `composer test` para sus pruebas independientes. Las exclusiones `.gitattributes` evitan copiar las dependencias de pruebas dentro del vendor de Finance.
+`packages/finance-domain` contiene modelos y permisos, sin Actions ni migraciones. Finance lo instala por copia mediante un repositorio Composer `path`. El arranque `make dev` y `composer run dev` sincroniza esa copia antes de iniciar PHP/Vite/queue. Si la aplicación ya está ejecutándose cuando editas el paquete o integras cambios, ejecuta `composer run domain:sync` desde `apps/finance` y reinicia los procesos persistentes; no actualiza dependencias externas. Desde el paquete, ejecuta `composer install` y `composer test` para sus pruebas independientes. Las exclusiones `.gitattributes` evitan copiar las dependencias de pruebas dentro del vendor de Finance.
 
 El comando de Telegram resuelve su servicio únicamente al ejecutarse; instalar dependencias o listar comandos no requiere un token de Telegram. Para probar envíos reales sí es necesaria la configuración correspondiente.
 

@@ -22,6 +22,8 @@ foreach (["JPEG", "PNG", "WEBP", "HEIC"] as $format) {
 echo "PHP de desarrollo: ".PHP_BINARY." (Imagick disponible)\n";
 '
 
+composer run domain:sync
+
 exec npx --no-install concurrently --kill-others --names=php,vite,queue \
     "php artisan serve --host=127.0.0.1 --port=8000 --tries=1" \
     "npm run dev" \
