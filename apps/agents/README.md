@@ -1,6 +1,6 @@
 # Agente financiero privado
 
-FastAPI recibe identidad de servicio y actor de Finance. El worker ejecuta un grafo LangGraph con herramientas MCP de solo lectura; el proveedor compatible con OpenAI se configura con `AGENT_MODEL`, `OPENAI_API_KEY` y opcionalmente `AGENT_MODEL_BASE_URL`. No se consulta MySQL desde Python.
+FastAPI recibe identidad de servicio y actor de Finance. El worker ejecuta un grafo LangGraph con herramientas MCP de solo lectura; OpenRouter se conecta mediante `langchain-openrouter` (`ChatOpenRouter`) y se configura con `AGENT_MODEL`, `OPENROUTER_API_KEY` y opcionalmente `AGENT_MODEL_BASE_URL`. No se consulta MySQL desde Python.
 
 ## Preparación y ejecución
 

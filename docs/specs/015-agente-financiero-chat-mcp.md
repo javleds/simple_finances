@@ -393,3 +393,9 @@ Validación ejecutada con datos ficticios:
 - Imágenes Docker construidas y composiciones local/producción validadas sin publicar servicios internos. La validación del recorrido usó procesos locales y bases efímeras; no constituye un despliegue productivo.
 
 Pendiente externo antes del piloto: configurar proveedor/modelo y ejecutar `apps/agents/evaluations/cases.json` para evaluar calidad semántica, latencia y consumo reales. Los dobles no acreditan calidad de un modelo real. Configurar hashes legales y confirmar retención. WhatsApp queda como canal futuro; este cambio implementa el chat web. Seguir `docs/operations/assistant.md` para iniciar el stack y para rollback.
+
+### Proveedor confirmado: OpenRouter
+
+Las llamadas del modelo usan `langchain-openrouter` 0.2.9 y su clase `ChatOpenRouter`, con SDK OpenRouter transitivo y lockfile actualizado. Configuración: `OPENROUTER_API_KEY`, `AGENT_MODEL` explícito y URL predeterminada de OpenRouter. El modelo debe admitir herramientas y JSON Schema; el timeout se convierte de segundos a milisegundos para este conector. Se mantienen LangGraph, MCP y los contratos del chat.
+
+Validación del cambio: 31 pruebas Python aprobadas; 3 integraciones PostgreSQL omitidas sin base efímera. Ruff, formato y mypy correctos. La prueba del conector atraviesa LangChain y el SDK con transporte HTTP simulado y verifica autenticación, modelo, herramientas y parseo estructurado. Sigue pendiente la evaluación con la clave y modelo reales. Referencia: [ChatOpenRouter de LangChain](https://reference.langchain.com/python/langchain-openrouter/chat_models/ChatOpenRouter).

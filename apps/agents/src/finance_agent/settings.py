@@ -11,9 +11,9 @@ class Settings(BaseSettings):
     finance_agent_service_token: SecretStr = SecretStr("")
     agent_mcp_service_token: SecretStr = SecretStr("")
     mcp_url: str = "http://agent-mcp/mcp"
-    openai_api_key: SecretStr = SecretStr("")
-    agent_model: str = "gpt-4.1-mini"
-    agent_model_base_url: str | None = None
+    openrouter_api_key: SecretStr = SecretStr("")
+    agent_model: str = ""
+    agent_model_base_url: str = "https://openrouter.ai/api/v1"
     agent_timezone: str = "America/Mexico_City"
     agent_run_timeout: int = Field(default=120, ge=10, le=600)
     agent_tool_limit: int = Field(default=12, ge=1, le=30)

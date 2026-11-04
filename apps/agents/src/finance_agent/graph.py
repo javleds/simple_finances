@@ -4,7 +4,7 @@ from typing import Any, Literal, Protocol, TypedDict
 from zoneinfo import ZoneInfo
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
-from langchain_openai import ChatOpenAI
+from langchain_openrouter import ChatOpenRouter
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field, SecretStr
@@ -59,15 +59,15 @@ class ModelNotConfigured(Exception):
 
 class ChatReasoner:
     def __init__(self, settings: Settings) -> None:
-        if not settings.openai_api_key.get_secret_value() or not settings.agent_model:
+        if not settings.openrouter_api_key.get_secret_value() or not settings.agent_model:
             raise ModelNotConfigured("Model name and credential are required")
-        self.model = ChatOpenAI(
+        self.model = ChatOpenRouter(
             model=settings.agent_model,
-            api_key=SecretStr(settings.openai_api_key.get_secret_value()),
+            api_key=SecretStr(settings.openrouter_api_key.get_secret_value()),
             base_url=settings.agent_model_base_url,
-            timeout=settings.agent_run_timeout,
+            timeout=settings.agent_run_timeout * 1000,
             max_retries=0,
-            max_completion_tokens=settings.agent_max_output_tokens,
+            max_tokens=settings.agent_max_output_tokens,
         )
 
     async def next(self, messages: list[BaseMessage], catalog: list[dict[str, Any]]) -> AIMessage:

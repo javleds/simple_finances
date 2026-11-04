@@ -10,7 +10,7 @@ Requisitos: Docker Compose 2.24.4 o superior (override `!reset`), Node 24, depen
 make chat-config
 ```
 
-Crea `.env.chat` con permisos 0600 y contraseñas/tokens aleatorios. No muestra secretos ni reemplaza una configuración existente. Configura el modelo y la clave del proveedor en ese archivo; no pegarlos en el chat ni usar variables `VITE_*`. Configura los hashes legales mediante el comando de Finance `php artisan chat:legal-hashes` desde `apps/finance`; copiar sus valores a `.env.chat`. Repetir cuando cambien documentos legales. MCP rechaza acceso si los hashes faltan o la aceptación no coincide.
+Crea `.env.chat` con permisos 0600 y contraseñas/tokens aleatorios. No muestra secretos ni reemplaza una configuración existente. Configura `AGENT_MODEL` con el identificador de tu modelo en OpenRouter y `OPENROUTER_API_KEY` con su clave en ese archivo; no pegarlos en el chat ni usar variables `VITE_*`. Configura los hashes legales mediante el comando de Finance `php artisan chat:legal-hashes` desde `apps/finance`; copiar sus valores a `.env.chat`. Repetir cuando cambien documentos legales. MCP rechaza acceso si los hashes faltan o la aceptación no coincide.
 
 El `COMPOSE_PROJECT_NAME=fin-si-chat` separa los volúmenes locales de este stack de otros proyectos Docker. Su MySQL comienza vacío si no existe ese volumen. Para utilizar un conjunto de datos local existente, importarlo o elegir deliberadamente una configuración compatible; no apuntar pruebas a producción. `.env.chat` determina DB_DATABASE y la contraseña root de este MySQL. Finance conserva el resto de su configuración local de `apps/finance/.env`.
 
@@ -72,3 +72,7 @@ La composición de producción parte de `docker-compose.prod.yml` + `docker-comp
 Los secretos de `.env.chat` son una opción local; usar el mecanismo de secretos del entorno de despliegue. Los ficheros env de ejemplo nunca contienen valores reales. El servicio `agent-maintenance` ejecuta limpieza al arrancar y cada 24 horas; `AGENT_RETENTION_DAYS` define el plazo (30 por defecto). Solo elimina conversaciones elegibles sin runs activos, junto con eventos y checkpoints. Mantener backup/restore de PostgreSQL y MySQL por separado, con pruebas de recuperación. El rol propietario de PostgreSQL se usa solo para migraciones/operación; nunca por el worker/API.
 
 Rollback funcional: deshabilitar CHAT_ENABLED y parar worker/API/MCP sin tocar tablas de Finance ni borrar volúmenes. Mantener compatibilidad de esquemas al volver a una imagen previa. La implementación y sus limitaciones se registran en [la especificación](../specs/015-agente-financiero-chat-mcp.md).
+
+## Proveedor del modelo
+
+Las llamadas usan el conector oficial de LangChain `ChatOpenRouter`, dentro del grafo existente. `AGENT_MODEL_BASE_URL` apunta por defecto a `https://openrouter.ai/api/v1`. El modelo elegido debe soportar llamadas a herramientas y salida estructurada JSON Schema. Si ya creaste `.env.chat`, cambia `OPENAI_API_KEY` por `OPENROUTER_API_KEY` y elimina la URL anterior de OpenAI o sustitúyela por la de OpenRouter. No es necesario cambiar FastAPI, MCP ni los clientes del chat.

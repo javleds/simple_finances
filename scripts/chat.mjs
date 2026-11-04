@@ -53,7 +53,7 @@ try {
         process.exit(0);
     }
     if (action === 'up') {
-        for (const name of ['OPENAI_API_KEY', 'AGENT_MODEL', 'MCP_LEGAL_TERMS_HASH', 'MCP_LEGAL_PRIVACY_HASH']) {
+        for (const name of ['OPENROUTER_API_KEY', 'AGENT_MODEL', 'MCP_LEGAL_TERMS_HASH', 'MCP_LEGAL_PRIVACY_HASH']) {
             if (!env[name]) throw new Error(`Configure ${name} in .env.chat before starting the assistant.`);
         }
         if (existsSync(`${root}apps/finance/public/hot`)) throw new Error('Stop the host Vite server and remove its stale public/hot file before using the compiled Docker stack.');
