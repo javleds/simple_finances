@@ -3,7 +3,6 @@ import { createPinia } from 'pinia';
 import { VueQueryPlugin } from '@tanstack/vue-query';
 import PrimeVue from 'primevue/config';
 import { appPreset, spanishLocale } from './lib/primevue';
-import './main.css';
 import '@primeui/chart-style/style.css';
 import '@primeui/chart-style/themes/primeone.css';
 

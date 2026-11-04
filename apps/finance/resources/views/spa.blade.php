@@ -18,7 +18,20 @@
         <link rel="icon" type="image/png" sizes="16x16" href="/brand/favicon-16.png">
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
         <title>fin-si</title>
-        @vite('resources/js/main.ts')
+        <script>
+            (() => {
+                let mode = 'system';
+                try {
+                    mode = localStorage.getItem('theme-mode') ?? 'system';
+                } catch {}
+                const isDark = mode === 'dark' || (
+                    mode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches
+                );
+                document.documentElement.classList.toggle('dark', isDark);
+                document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+            })();
+        </script>
+        @vite(['resources/js/main.css', 'resources/js/main.ts'])
     </head>
     <body>
         <div id="app">

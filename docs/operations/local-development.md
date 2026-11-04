@@ -32,6 +32,8 @@ Usa `QUEUE_CONNECTION=database` para WhatsApp y aplica las migraciones antes de 
 
 ## Assets de desarrollo y compilados
 
+El CSS principal es una entrada independiente de Vite y Blade lo carga en el `<head>` para que el HTML inicial tenga estilos sin esperar al módulo Vue. La preferencia `theme-mode` se aplica antes de cargar los assets; Pinia mantiene el control del tema después del arranque. Conservar ambas entradas (`main.css` y `main.ts`) en Blade y en la configuración de Vite.
+
 Si la aplicación ya está levantada, reutiliza el servidor existente. Comprueba qué entrada carga el navegador: `/@vite/client` indica HMR; `/build/assets/…` indica el build compilado. Laravel usa `public/hot` para seleccionar Vite; sin ese archivo usa `public/build/manifest.json`.
 
 Cuando se sirve el build, editar un archivo Vue no actualiza la página: ejecuta `npm run build` y recarga el navegador. Esta comprobación evita atribuir a los componentes errores visuales de un build anterior. No crees `public/hot` manualmente ni elimines uno que pertenezca a un Vite activo.
