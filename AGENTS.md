@@ -6,7 +6,7 @@ Este monorepo contiene Laravel y Vue/Vite integrados en `apps/finance`; Vue perm
 
 La aplicación es mobile-first. Reutilizar componentes compartidos y consultar `apps/finance/resources/js/AGENTS.md`. Documentación: `docs/architecture/overview.md`, `docs/architecture/boundaries.md`, `docs/domain/shared-accounts.md`, `docs/shared-account-model.md`, `docs/operations/local-development.md` y `docs/operations/deployment.md`.
 
-Preparación desde `apps/finance`: `composer install` y `npm ci`. Desarrollo en host: `composer run dev`, aplicación en http://127.0.0.1:8000. PHP y Vite también pueden iniciarse por separado. Antes de completar frontend: `npm run type-check`. Validar comportamiento con `php artisan test`, `npm run test:unit -- --run` y `npm run build`.
+Preparación desde `apps/finance`: `composer install` y `npm ci`. Desarrollo en host desde la raíz: `make dev`; listar aplicaciones con `make dev-list` o seleccionar con `make dev SERVICES="finance"`. Cada aplicación expone `scripts/dev.sh`. Dentro de Finance sigue disponible `composer run dev`, aplicación en http://127.0.0.1:8000. PHP y Vite también pueden iniciarse por separado. Antes de completar frontend: `npm run type-check`. Validar comportamiento con `php artisan test`, `npm run test:unit -- --run` y `npm run build`.
 
 Mantener alineados los contratos Laravel y su consumo Vue. Evitar cambios de dominio o dependencias ajenos al objetivo. No incluir secretos, dumps, capturas ni archivos temporales. Cada cambio completado debe tener commits convencionales en inglés. Trabajar únicamente en local; no conectarse por SSH ni ejecutar acciones en el servidor remoto.
 
