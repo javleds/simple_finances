@@ -132,3 +132,5 @@ Este procedimiento local no migra bases de datos ni despliega servicios. Para un
 ## Asistente financiero
 
 El stack optativo del chat se prepara con `make chat-config` y `make chat-setup`, y se ejecuta con `make dev-chat`. Finance debe ejecutarse dentro de Docker para alcanzar la API privada. Consultar [preparación, credenciales y datos locales](assistant.md); el launcher no publica FastAPI ni MCP.
+
+La infraestructura Docker se configura en `.env` raíz; cada aplicación utiliza `apps/<app>/.env`. OpenRouter pertenece a `apps/agents/.env`, y los hashes legales a `apps/mcp/.env`. El archivo `.env.chat` anterior requiere la migración descrita en la guía del asistente.

@@ -1,10 +1,10 @@
-import { randomBytes } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { configure, readSettings } from './chat-config.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const envPath = `${root}.env.chat`;
+const envPath = `${root}.env`;
 const action = process.argv[2];
 const compose = ['compose', '--env-file', envPath, '-f', 'docker-compose.yml', '-f', 'docker-compose.chat.yml', '-f', 'docker-compose.chat.local.yml', '--profile', 'chat'];
 
@@ -14,47 +14,40 @@ function run(args, input) {
     if (result.status !== 0) throw new Error(`Docker exited with status ${result.status}`);
 }
 
-function settings() {
-    if (!existsSync(envPath)) throw new Error('Run make chat-config first.');
-    return Object.fromEntries(readFileSync(envPath, 'utf8').split('\n').filter(line => /^[A-Z_]+=/.test(line)).map(line => {
-        const split = line.indexOf('=');
-        return [line.slice(0, split), line.slice(split + 1)];
-    }));
-}
-
-function configure() {
-    if (existsSync(envPath)) throw new Error('.env.chat already exists; edit it without replacing existing passwords.');
-    let content = readFileSync(`${root}.env.chat.example`, 'utf8');
-    for (const name of ['DB_PASSWORD', 'AGENT_DATABASE_OWNER_PASSWORD', 'AGENT_DATABASE_PASSWORD', 'MCP_DATABASE_PASSWORD', 'FINANCE_AGENT_SERVICE_TOKEN', 'AGENT_MCP_SERVICE_TOKEN']) {
-        content = content.replace(`${name}=\n`, `${name}=${randomBytes(32).toString('hex')}\n`);
-    }
-    content = content.replace('MCP_APP_KEY=\n', `MCP_APP_KEY=base64:${randomBytes(32).toString('base64')}\n`);
-    writeFileSync(envPath, content, { flag: 'wx', mode: 0o600 });
-    chmodSync(envPath, 0o600);
-    console.log('Created .env.chat. Configure model/provider and legal hashes before enabling chat.');
-}
-
 try {
     if (action === 'config') {
-        configure();
+        configure(root);
+        console.log('Prepared per-application environments. Configure each app as documented in docs/operations/assistant.md.');
         process.exit(0);
     }
-    const env = settings();
+    const env = readSettings(root, '.env');
+    const mcp = readSettings(root, 'apps/mcp/.env');
+    const agent = readSettings(root, 'apps/agents/.env');
     if (action === 'setup') {
-        if (!/^[a-zA-Z0-9_]+$/.test(env.DB_DATABASE ?? '') || !/^[a-f0-9]{64}$/.test(env.MCP_DATABASE_PASSWORD ?? '')) {
-            throw new Error('Setup requires an alphanumeric DB_DATABASE and the generated 64-character hex MCP_DATABASE_PASSWORD.');
+        if (!/^[a-zA-Z0-9_]+$/.test(mcp.DB_DATABASE ?? '') || !/^[a-f0-9]{64}$/.test(mcp.DB_PASSWORD ?? '')) {
+            throw new Error('Setup requires an alphanumeric DB_DATABASE and the generated 64-character hex DB_PASSWORD in apps/mcp/.env.');
         }
+        if (mcp.DB_USERNAME !== 'finance_mcp' || mcp.DB_HOST !== 'mysql' || mcp.DB_DATABASE !== env.DB_DATABASE) throw new Error('Local setup requires MCP to use finance_mcp on mysql and the infrastructure DB_DATABASE.');
         run([...compose, 'build', 'php', 'mcp-php', 'agent-api']);
         run([...compose, 'up', '-d', '--wait', 'mysql', 'agent-postgres']);
-        const sql = `CREATE USER IF NOT EXISTS 'finance_mcp'@'%' IDENTIFIED BY '${env.MCP_DATABASE_PASSWORD}';\nALTER USER 'finance_mcp'@'%' IDENTIFIED BY '${env.MCP_DATABASE_PASSWORD}';\nREVOKE ALL PRIVILEGES, GRANT OPTION FROM 'finance_mcp'@'%';\nGRANT SELECT ON \`${env.DB_DATABASE}\`.* TO 'finance_mcp'@'%';\n`;
+        const sql = `CREATE USER IF NOT EXISTS 'finance_mcp'@'%' IDENTIFIED BY '${mcp.DB_PASSWORD}';\nALTER USER 'finance_mcp'@'%' IDENTIFIED BY '${mcp.DB_PASSWORD}';\nREVOKE ALL PRIVILEGES, GRANT OPTION FROM 'finance_mcp'@'%';\nGRANT SELECT ON \`${mcp.DB_DATABASE}\`.* TO 'finance_mcp'@'%';\n`;
         run([...compose, 'exec', '-T', 'mysql', 'sh', '-c', 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -u root'], sql);
         run([...compose, 'run', '--rm', '--no-deps', 'agent-migrate']);
         console.log('Chat infrastructure initialized. Finance schema/data are unchanged; see docs/operations/assistant.md.');
         process.exit(0);
     }
     if (action === 'up') {
-        for (const name of ['OPENROUTER_API_KEY', 'AGENT_MODEL', 'MCP_LEGAL_TERMS_HASH', 'MCP_LEGAL_PRIVACY_HASH']) {
-            if (!env[name]) throw new Error(`Configure ${name} in .env.chat before starting the assistant.`);
+        for (const [file, values, keys] of [
+            ['apps/agents/.env', agent, ['OPENROUTER_API_KEY', 'AGENT_MODEL', 'DATABASE_URL']],
+            ['apps/mcp/.env', mcp, ['MCP_LEGAL_TERMS_HASH', 'MCP_LEGAL_PRIVACY_HASH']],
+        ]) {
+            for (const key of keys) if (!values[key]) throw new Error(`Configure ${key} in ${file} before starting the assistant.`);
+        }
+        const finance = readSettings(root, 'apps/finance/.env');
+        for (const [left, right, key] of [
+            [finance, agent, 'FINANCE_AGENT_SERVICE_TOKEN'], [agent, mcp, 'AGENT_MCP_SERVICE_TOKEN'],
+        ]) {
+            if (!left[key] || left[key] !== right[key]) throw new Error(`Configure matching ${key} in its two application environments.`);
         }
         if (existsSync(`${root}apps/finance/public/hot`)) throw new Error('Stop the host Vite server and remove its stale public/hot file before using the compiled Docker stack.');
         if (!existsSync(`${root}apps/finance/public/build/manifest.json`)) throw new Error('Run npm run build in apps/finance first.');

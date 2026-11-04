@@ -1,19 +1,5 @@
-x-agent-environment: &agent-environment
-    DATABASE_URL: postgresql+psycopg://agent_runtime:${AGENT_DATABASE_PASSWORD:?Set AGENT_DATABASE_PASSWORD}@agent-postgres:5432/agent
-    FINANCE_AGENT_SERVICE_TOKEN: ${FINANCE_AGENT_SERVICE_TOKEN:?Set FINANCE_AGENT_SERVICE_TOKEN}
-    AGENT_MCP_SERVICE_TOKEN: ${AGENT_MCP_SERVICE_TOKEN:?Set AGENT_MCP_SERVICE_TOKEN}
-    MCP_URL: http://agent-mcp:8080/mcp
-    OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-    AGENT_MODEL: ${AGENT_MODEL:-}
-    AGENT_MODEL_BASE_URL: ${AGENT_MODEL_BASE_URL:-https://openrouter.ai/api/v1}
-    AGENT_RETENTION_DAYS: ${AGENT_RETENTION_DAYS:-30}
-
 services:
     php:
-        environment:
-            CHAT_ENABLED: ${CHAT_ENABLED:-false}
-            CHAT_AGENT_URL: http://agent-api:8000
-            FINANCE_AGENT_SERVICE_TOKEN: ${FINANCE_AGENT_SERVICE_TOKEN:?Set FINANCE_AGENT_SERVICE_TOKEN}
         networks:
             - chat_gateway
 
@@ -53,7 +39,6 @@ services:
         image: fin-si-agent:local
         profiles: [chat-setup]
         environment:
-            <<: *agent-environment
             DATABASE_URL: postgresql+psycopg://agent_owner:${AGENT_DATABASE_OWNER_PASSWORD:?Set AGENT_DATABASE_OWNER_PASSWORD}@agent-postgres:5432/agent
         command: [sh, -c, 'alembic upgrade head && python -m finance_agent.setup_checkpoints']
         networks: [agent_state]
@@ -65,7 +50,7 @@ services:
             dockerfile: docker/agents/Dockerfile
         image: fin-si-agent:local
         profiles: [chat]
-        environment: *agent-environment
+        env_file: ./apps/agents/.env
         depends_on:
             agent-postgres: {condition: service_healthy}
         healthcheck:
@@ -82,7 +67,7 @@ services:
     agent-worker:
         image: fin-si-agent:local
         profiles: [chat]
-        environment: *agent-environment
+        env_file: ./apps/agents/.env
         command: [python, -m, finance_agent.worker]
         depends_on:
             agent-postgres: {condition: service_healthy}
@@ -96,7 +81,7 @@ services:
     agent-maintenance:
         image: fin-si-agent:local
         profiles: [chat]
-        environment: *agent-environment
+        env_file: ./apps/agents/.env
         command: [sh, -c, "trap 'exit 0' TERM INT; while true; do python -m finance_agent.cleanup || exit 1; sleep 86400 & wait $$!; done"]
         depends_on:
             agent-postgres: {condition: service_healthy}
@@ -112,22 +97,7 @@ services:
             dockerfile: docker/mcp/Dockerfile
         image: fin-si-mcp:local
         profiles: [chat]
-        environment:
-            APP_ENV: production
-            APP_DEBUG: 'false'
-            APP_KEY: ${MCP_APP_KEY:?Set MCP_APP_KEY}
-            DB_CONNECTION: mysql
-            DB_HOST: mysql
-            DB_PORT: 3306
-            DB_DATABASE: ${DB_DATABASE:?Set DB_DATABASE}
-            DB_USERNAME: finance_mcp
-            DB_PASSWORD: ${MCP_DATABASE_PASSWORD:?Set MCP_DATABASE_PASSWORD}
-            AGENT_MCP_SERVICE_TOKEN: ${AGENT_MCP_SERVICE_TOKEN:?Set AGENT_MCP_SERVICE_TOKEN}
-            MCP_LEGAL_TERMS_HASH: ${MCP_LEGAL_TERMS_HASH:-}
-            MCP_LEGAL_PRIVACY_HASH: ${MCP_LEGAL_PRIVACY_HASH:-}
-            LOG_CHANNEL: stderr
-            SESSION_DRIVER: array
-            CACHE_STORE: array
+        env_file: ./apps/mcp/.env
         networks: [mcp_web, mcp_finance_data]
         labels: {traefik.enable: 'false'}
         restart: unless-stopped

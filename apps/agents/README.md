@@ -16,7 +16,7 @@ uv run python -m finance_agent.worker
 
 Los dos comandos de migración reciben `DATABASE_URL` del propietario del esquema. API, worker y limpieza reciben el rol runtime sin permisos DDL. La creación de checkpoints se ejecuta explícitamente; no ocurre durante el arranque del worker. La instalación ordinaria utiliza el stack Docker documentado en `docs/operations/local-development.md`; no publicar el puerto de FastAPI ni el MCP.
 
-Copiar la configuración de `.env.example` al entorno de desarrollo privado. No utilizar una clave del proveedor real en pruebas deterministas. `FINANCE_AGENT_SERVICE_TOKEN` y `AGENT_MCP_SERVICE_TOKEN` son credenciales diferentes; ninguna se incorpora a mensajes, checkpoints o URLs. Los logs del worker solo contienen identificador del run y tipo de excepción.
+Configurar `apps/agents/.env` desde su `.env.example` o mediante `make chat-config` en la raíz. Docker carga ese mismo archivo mediante `env_file`. No utilizar una clave del proveedor real en pruebas deterministas. `FINANCE_AGENT_SERVICE_TOKEN` y `AGENT_MCP_SERVICE_TOKEN` son credenciales diferentes; ninguna se incorpora a mensajes, checkpoints o URLs. Los logs del worker solo contienen identificador del run y tipo de excepción.
 
 ## Contrato
 
