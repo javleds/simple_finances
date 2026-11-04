@@ -30,7 +30,12 @@ const runSchema = z.object({
 });
 export type ChatMessage = z.infer<typeof messageSchema>;
 export type ChatRun = z.infer<typeof runSchema>;
-const threadSchema = z.object({ id: z.string(), created_at: z.string() });
+export const threadSchema = z.object({
+    id: z.string(),
+    title: z.string().nullable().optional(),
+    created_at: z.string(),
+    updated_at: z.string().optional(),
+});
 export type ChatThread = z.infer<typeof threadSchema>;
 export type ChatEvent = { sequence: number; type: string; payload: unknown };
 const eventSchema = z.object({

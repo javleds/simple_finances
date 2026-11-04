@@ -1,3 +1,4 @@
+import { threadSchema } from './chatRepository';
 import { describe, expect, it } from 'vitest';
 import { createEventParser } from './chatRepository';
 import { routeChatContext } from '../composables/context';
@@ -25,4 +26,19 @@ describe('assistant transport', () => {
         expect(routeChatContext('admin.dashboard', '42').scope).toBe('global');
         expect(routeChatContext('admin.accounts.users', ['42']).scope).toBe('global');
     });
+});
+
+it('accepts authorized thread titles and legacy metadata without titles', () => {
+    expect(threadSchema.parse({ id: 'thread', created_at: '2026-01-01' }).title).toBeUndefined();
+    expect(
+        threadSchema.parse({ id: 'thread', created_at: '2026-01-01', title: null }).title,
+    ).toBeNull();
+    expect(
+        threadSchema.parse({
+            id: 'thread',
+            created_at: '2026-01-01',
+            title: 'Gastos por categoría',
+            updated_at: '2026-01-02',
+        }).title,
+    ).toBe('Gastos por categoría');
 });
