@@ -8,7 +8,7 @@ export default mergeConfig(
     defineConfig({
         plugins: [
             laravel({
-                input: ['resources/js/main.ts'],
+                input: ['resources/js/main.css', 'resources/js/main.ts'],
                 refresh: ['resources/views/**', 'routes/**'],
             }),
             vueDevTools(),
