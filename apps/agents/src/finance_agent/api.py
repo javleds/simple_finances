@@ -7,7 +7,7 @@ from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -98,6 +98,17 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
         async with authorized_tools(body) as tools:
             result = repository.create_thread(body)
             return (await visible_threads(tools, [result]))[0]
+
+    @app.head("/internal/v1/threads/{thread_id}", dependencies=auth, status_code=204)
+    def thread_exists(thread_id: UUID, actor: Annotated[Actor, Depends(query_actor)]) -> Response:
+        with repository.sessions() as session:
+            repository.owned_thread(session, str(thread_id), actor)
+        return Response(status_code=204)
+
+    @app.delete("/internal/v1/threads/{thread_id}", dependencies=auth, status_code=204)
+    def delete_thread(thread_id: UUID, body: Actor) -> Response:
+        repository.delete_thread(str(thread_id), body)
+        return Response(status_code=204)
 
     @app.get("/internal/v1/threads", dependencies=auth)
     async def threads(

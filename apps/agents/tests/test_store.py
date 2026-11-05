@@ -4,7 +4,6 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import select
 
-from finance_agent.cleanup import cleanup
 from finance_agent.models import Message, Run, Thread, now
 from finance_agent.schemas import Actor, CreateRun, CreateThread
 from finance_agent.store import Store, StoreError
@@ -127,14 +126,5 @@ async def test_cleanup_preserves_active_threads_and_deletes_checkpoints(store: S
         for row in session.scalars(select(Thread)):
             row.updated_at = now() - timedelta(days=31)
 
-    class Saver:
-        def __init__(self) -> None:
-            self.deleted: list[str] = []
-
-        async def adelete_thread(self, thread_id: str) -> None:
-            self.deleted.append(thread_id)
-
-    saver = Saver()
-    assert await cleanup(store, saver, 30) == 1
-    assert saver.deleted == [inactive]
+    assert store.purge(30) == [inactive]
     assert store.list_threads(ACTOR, None)["items"][0]["id"] == active

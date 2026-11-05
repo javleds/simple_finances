@@ -1,9 +1,11 @@
 import hashlib
 import json
-from datetime import UTC, timedelta
+from collections.abc import Iterator
+from contextlib import contextmanager
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal, cast
 
-from sqlalchemy import Engine, create_engine, delete, select
+from sqlalchemy import Engine, create_engine, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from finance_agent.models import Event, Message, Run, Thread, now
@@ -61,7 +63,7 @@ class Store:
             Thread.channel == actor.channel,
         )
         if lock:
-            query = query.with_for_update()
+            query = query.with_for_update().execution_options(populate_existing=True)
         thread = session.scalar(query)
         if thread is None:
             raise StoreError("not_found", 404)
@@ -395,18 +397,81 @@ class Store:
                 thread.title_references = refs + self.context_references(run.context)
             return True
 
-    def purge(self, retention_days: int) -> list[str]:
+    @staticmethod
+    def lock_key(thread_id: str) -> int:
+        return int.from_bytes(hashlib.sha256(thread_id.encode()).digest()[:8], signed=True)
+
+    def acquire_thread_lock(self, session: Session, thread_id: str) -> bool:
+        if self.engine.dialect.name != "postgresql":
+            return True
+        return bool(
+            session.scalar(
+                text("SELECT pg_try_advisory_xact_lock(:key)"),
+                {"key": self.lock_key(thread_id)},
+            )
+        )
+
+    @contextmanager
+    def execution_guard(self, run: Run) -> Iterator[bool]:
         with self.sessions.begin() as session:
-            ids = list(
-                session.scalars(
-                    select(Thread.id).where(
-                        Thread.updated_at < now() - timedelta(days=retention_days),
-                        ~select(Run.id)
-                        .where(Run.thread_id == Thread.id, Run.status.in_(["queued", "running"]))
-                        .exists(),
-                    )
+            if not self.acquire_thread_lock(session, run.thread_id):
+                raise StoreError("thread_busy", 409)
+            current = session.get(Run, run.id)
+            yield current is not None and current.status == "running"
+
+    def delete_thread(
+        self, thread_id: str, actor: Actor, updated_before: datetime | None = None
+    ) -> None:
+        with self.sessions.begin() as session:
+            self.owned_thread(session, thread_id, actor)
+            if not self.acquire_thread_lock(session, thread_id):
+                raise StoreError("thread_busy", 409)
+            thread = self.owned_thread(session, thread_id, actor, lock=True)
+            if (
+                updated_before is not None
+                and thread.updated_at.replace(tzinfo=UTC) >= updated_before
+            ):
+                raise StoreError("thread_recent", 409)
+            active = session.scalar(
+                select(Run.id).where(
+                    Run.thread_id == thread_id,
+                    Run.status.in_(["queued", "running"]),
                 )
             )
-            if ids:
-                session.execute(delete(Thread).where(Thread.id.in_(ids)))
-            return ids
+            if active is not None:
+                raise StoreError("run_active", 409)
+            if self.engine.dialect.name == "postgresql":
+                for table in ("checkpoint_writes", "checkpoint_blobs", "checkpoints"):
+                    session.execute(
+                        text(f"DELETE FROM {table} WHERE thread_id = :thread_id"),
+                        {"thread_id": thread_id},
+                    )
+            session.delete(thread)
+
+    def purge(self, retention_days: int) -> list[str]:
+        cutoff = now() - timedelta(days=retention_days)
+        with self.sessions() as session:
+            candidates = [
+                (
+                    thread.id,
+                    Actor(
+                        actor_user_id=thread.owner_user_id,
+                        channel=cast(Literal["web", "whatsapp"], thread.channel),
+                    ),
+                )
+                for thread in session.scalars(
+                    select(Thread).where(
+                        Thread.updated_at < cutoff,
+                    )
+                )
+            ]
+        deleted = []
+        for thread_id, actor in candidates:
+            try:
+                self.delete_thread(thread_id, actor, updated_before=cutoff)
+            except StoreError as error:
+                if error.status not in {404, 409}:
+                    raise
+                continue
+            deleted.append(thread_id)
+        return deleted

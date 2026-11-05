@@ -10,7 +10,7 @@ from finance_agent.mcp_client import connect_tools, visible_messages
 from finance_agent.models import Run
 from finance_agent.schemas import Actor
 from finance_agent.settings import Settings, get_settings
-from finance_agent.store import Store, make_engine
+from finance_agent.store import Store, StoreError, make_engine
 
 logger = logging.getLogger("finance_agent.worker")
 
@@ -18,42 +18,60 @@ logger = logging.getLogger("finance_agent.worker")
 async def execute(
     store: Store, settings: Settings, run: Run, actor: Actor, checkpointer: AsyncPostgresSaver
 ) -> None:
-    async with connect_tools(settings, actor.actor_user_id) as tools:
-        await tools.call("list_account_balances", {"limit": 1})
-        if run.context.get("account_id"):
-            await tools.call("get_account_balance", {"account_id": int(run.context["account_id"])})
-        history = await visible_messages(
-            tools,
-            store.recent_history(
+    while True:
+        try:
+            await execute_locked(store, settings, run, actor, checkpointer)
+            return
+        except StoreError as error:
+            if error.code != "thread_busy":
+                raise
+        await asyncio.sleep(0.2)
+
+
+async def execute_locked(
+    store: Store, settings: Settings, run: Run, actor: Actor, checkpointer: AsyncPostgresSaver
+) -> None:
+    with store.execution_guard(run) as executable:
+        if not executable:
+            return
+        async with connect_tools(settings, actor.actor_user_id) as tools:
+            await tools.call("list_account_balances", {"limit": 1})
+            if run.context.get("account_id"):
+                await tools.call(
+                    "get_account_balance", {"account_id": int(run.context["account_id"])}
+                )
+            history = await visible_messages(
+                tools,
+                store.recent_history(
+                    run.thread_id,
+                    run.id,
+                    settings.agent_history_limit,
+                ),
+            )
+            result = await run_graph(
+                settings,
+                tools,
+                ChatReasoner(settings),
                 run.thread_id,
                 run.id,
-                settings.agent_history_limit,
-            ),
-        )
-        result = await run_graph(
-            settings,
-            tools,
-            ChatReasoner(settings),
-            run.thread_id,
-            run.id,
-            run.input_text,
-            run.context,
-            history,
-            checkpointer,
-            needs_title=store.needs_title(run.thread_id, actor),
-        )
-        if result.references:
-            allowed = await visible_messages(tools, [{"references": result.references}])
-            if not allowed:
-                store.finish(run.id, error="access_revoked")
-                return
-        store.finish(
-            run.id,
-            result.content,
-            result.references,
-            result.warnings,
-            conversation_title=result.conversation_title,
-        )
+                run.input_text,
+                run.context,
+                history,
+                checkpointer,
+                needs_title=store.needs_title(run.thread_id, actor),
+            )
+            if result.references:
+                allowed = await visible_messages(tools, [{"references": result.references}])
+                if not allowed:
+                    store.finish(run.id, error="access_revoked")
+                    return
+            store.finish(
+                run.id,
+                result.content,
+                result.references,
+                result.warnings,
+                conversation_title=result.conversation_title,
+            )
 
 
 async def supervise(store: Store, settings: Settings, run: Run, operation: Any) -> None:
