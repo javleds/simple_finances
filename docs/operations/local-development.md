@@ -58,7 +58,7 @@ composer run dev
 
 Las pruebas aisladas del supervisor se ejecutan desde la raíz con `make dev-test`.
 
-Laravel escucha en `127.0.0.1:8000`; Vite en `127.0.0.1:5173` sirve assets y HMR. Abre la aplicación en `http://127.0.0.1:8000`, incluida una ruta profunda como `/admin/accounts`. Ambos puertos son estrictos: si uno está ocupado, el comando termina. Composer también inicia `php artisan queue:listen --queue=default,attachments --sleep=1 --tries=5 --timeout=60`. `Ctrl+C` o la salida de uno de los procesos detiene los demás.
+Laravel escucha en `127.0.0.1:8000` con cuatro workers (`PHP_CLI_SERVER_WORKERS`, configurable) y `--no-reload`, para que un stream SSE del chat no bloquee cancelaciones ni otras peticiones. Los cambios de `.env` requieren reiniciar `make dev`; el código PHP sigue leyéndose en cada petición. Varios workers requieren macOS/Linux/WSL. Vite en `127.0.0.1:5173` sirve assets y HMR. Abre la aplicación en `http://127.0.0.1:8000`, incluida una ruta profunda como `/admin/accounts`. Ambos puertos son estrictos: si uno está ocupado, el comando termina. Composer también inicia `php artisan queue:listen --queue=default,attachments --sleep=1 --tries=5 --timeout=60`. `Ctrl+C` o la salida de uno de los procesos detiene los demás.
 
 `composer run dev` invoca `scripts/dev.sh`. En macOS con Homebrew selecciona el PHP de `brew --prefix php` para servidor y colas; en otros entornos usa el PHP del `PATH`. Antes de iniciar comprueba Imagick y soporte JPEG, PNG, WebP y HEIC, e imprime el binario elegido. Si falta alguna dependencia, no inicia los procesos.
 

@@ -118,3 +118,15 @@ El comando construye la imagen e inicia PostgreSQL, esperando a que esté dispon
 ## Chat con Finance en el host
 
 `make dev` inicia Finance, FastAPI (127.0.0.1:8001), MCP (127.0.0.1:8002), worker, PostgreSQL y Studio (127.0.0.1:2024). Requiere configuración y migraciones previas. El override `docker-compose.chat.host.yml` es exclusivo de desarrollo; producción conserva FastAPI/MCP sin puertos publicados. Consulta [desarrollo local](local-development.md) para la conexión al MySQL existente y el apagado. `CHAT_ENABLED=true` en Finance habilita el panel; OpenRouter y el modelo se configuran en `apps/agents/.env`.
+
+## Diagnóstico del flujo real
+
+Si el historial responde 502, comprobar también MCP: FastAPI puede estar saludable respecto a PostgreSQL y no poder autorizar lecturas en MySQL. Un `SQLSTATE 1045` para `finance_mcp` requiere aprovisionar o reconciliar ese usuario en la base realmente utilizada por Finance, con la contraseña de `apps/mcp/.env` y exclusivamente `SELECT` sobre esa base. En desarrollo host, `make dev` no crea usuarios ni migra el MySQL heredado; no eliminar contenedores/volúmenes ni sustituir al lector por root para resolverlo.
+
+Las respuestas estructuradas de OpenRouter usan un esquema estricto generado con LangChain: todas las propiedades se declaran requeridas, con `null` donde corresponde y sin propiedades adicionales. Esto evita rechazos de proveedores por campos opcionales de Pydantic como `conversation_title`. El resultado sigue validándose con `Answer`.
+
+La validación manual con Chrome DevTools del 4 de noviembre de 2026 comprobó historial, creación de UUID, consulta de balances y pendientes con OpenRouter real, título generado, reapertura de conversaciones y pantalla completa móvil. Los importes de las consultas globales coincidieron con el dashboard. Se corrigió además la recuperación de la primera pregunta cuando falla la creación inicial del hilo; la prueba automatizada verifica que conserve texto, identidad idempotente y contexto capturado.
+
+La misma prueba verificó contexto de cuenta, desglose de pendientes, consulta de gastos por categoría y cancelación real. El servidor PHP local necesita varios workers: con uno solo, SSE bloqueaba el POST de cancelación hasta terminar la respuesta. El arranque usa cuatro workers y `--no-reload`; producción conserva PHP-FPM. En la prueba concurrente, Finance respondió HTTP 200 en unos 40 ms mientras había un stream abierto.
+
+Validación automatizada de estas correcciones: 52 pruebas Python aprobadas (3 de PostgreSQL omitidas sin DSN de pruebas), 25 pruebas del módulo Vue, 20 del lanzador; Ruff, mypy, type-check, ESLint y build aprobados. Las conversaciones de prueba quedan en el historial local; no se alteraron transacciones financieras.
