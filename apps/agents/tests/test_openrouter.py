@@ -88,4 +88,8 @@ async def test_openrouter_tool_call_and_structured_answer(monkeypatch: pytest.Mo
     assert requests[0]["parallel_tool_calls"] is False
     assert requests[0]["max_tokens"] == 2000
     assert requests[1]["response_format"]["type"] == "json_schema"
+    schema = requests[1]["response_format"]["json_schema"]
+    assert schema["strict"] is True
+    assert set(schema["schema"]["required"]) == set(schema["schema"]["properties"])
+    assert schema["schema"]["additionalProperties"] is False
     assert reasoner.model.request_timeout == 120000

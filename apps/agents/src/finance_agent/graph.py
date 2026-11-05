@@ -4,6 +4,7 @@ from typing import Any, Literal, Protocol, TypedDict
 from zoneinfo import ZoneInfo
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.utils.function_calling import convert_to_json_schema
 from langchain_openrouter import ChatOpenRouter
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
@@ -84,7 +85,9 @@ class ChatReasoner:
         return result
 
     async def answer(self, messages: list[BaseMessage]) -> Answer:
-        result = await self.model.with_structured_output(Answer, method="json_schema").ainvoke(
+        result = await self.model.with_structured_output(
+            convert_to_json_schema(Answer, strict=True), method="json_schema", strict=True
+        ).ainvoke(
             [
                 *messages,
                 SystemMessage(content="Entrega la respuesta final o pregunta de aclaración."),
