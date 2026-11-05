@@ -24,16 +24,12 @@ const context = computed(() => routeChatContext(route.name, route.params.account
 const { account } = useAccountRelationshipAccount(
     computed(() => (props.enabled ? (context.value.account_id ?? '') : '')),
 );
-const contextLabel = computed(() =>
-    context.value.account_id
-        ? `Contexto: ${account.value?.name ?? `cuenta #${context.value.account_id}`}`
-        : 'Contexto: todas tus cuentas',
-);
 const chat = useChat();
 const {
     threads,
     thread,
     messages,
+    conversationContext,
     run,
     busy,
     error,
@@ -51,6 +47,19 @@ const {
     deleting,
     deletionError,
 } = chat;
+const contextLabel = computed(() => {
+    const remembered = conversationContext.value;
+    if (remembered?.awaiting_account) return 'Contexto: pendiente de elegir una cuenta';
+    if (remembered?.scope === 'account')
+        return remembered.active_account
+            ? `Cuenta: ${remembered.active_account.name}`
+            : 'Contexto: pendiente de elegir una cuenta';
+    if (remembered?.scope === 'multiple') return 'Contexto: varias cuentas';
+    if (remembered?.scope === 'global') return 'Contexto: todas tus cuentas';
+    return context.value.account_id
+        ? `Contexto inicial: ${account.value?.name ?? `cuenta #${context.value.account_id}`}`
+        : 'Contexto inicial: todas tus cuentas';
+});
 const deletionTarget = ref<ChatThread | null>(null);
 function requestDeletion(item: ChatThread): void {
     if (deleting.value) return;

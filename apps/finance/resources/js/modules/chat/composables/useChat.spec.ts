@@ -502,3 +502,67 @@ it('restarts pagination after deleting its boundary without discarding another d
     expect(chat.draft.value).toBe('Keep this draft');
     wrapper.unmount();
 });
+
+it('restores conversation context from history without sharing it with other threads', async () => {
+    const wrapper = mountChat();
+    const remembered = {
+        scope: 'account' as const,
+        active_account: { account_id: '42', name: 'Retiro' },
+        candidates: [],
+        awaiting_account: false,
+    };
+    vi.mocked(chatRepository.messages).mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        active_run: null,
+        conversation_context: remembered,
+    });
+    await chat.select('old');
+    expect(chat.conversationContext.value).toEqual(remembered);
+    await chat.select('other');
+    expect(chat.conversationContext.value).toBeNull();
+    vi.mocked(chatRepository.messages).mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        active_run: null,
+        conversation_context: remembered,
+    });
+    await chat.select('old');
+    await chat.newConversation();
+    expect(chat.conversationContext.value).toBeNull();
+    wrapper.unmount();
+});
+
+it('updates account context from completed events and clears it on denied history', async () => {
+    const wrapper = mountChat();
+    let receive: ((event: ChatEvent) => void) | undefined;
+    vi.mocked(chatRepository.stream).mockImplementation(
+        async (_thread, _run, _after, _signal, callback) => {
+            receive = callback;
+            await new Promise(() => {});
+        },
+    );
+    await chat.send('Balance', { scope: 'global', account_id: null, route_name: null });
+    receive?.({
+        sequence: 1,
+        type: 'message.completed',
+        payload: {
+            id: 'answer',
+            role: 'assistant',
+            content: 'Elige una cuenta',
+            created_at: '2026-01-01',
+            conversation_context: {
+                scope: 'multiple',
+                active_account: null,
+                candidates: [{ account_id: '42', name: 'Retiro' }],
+                awaiting_account: true,
+            },
+        },
+    });
+    expect(chat.conversationContext.value?.awaiting_account).toBe(true);
+    const { ApiError } = await import('@/lib/api/apiClient');
+    vi.mocked(chatRepository.messages).mockRejectedValueOnce(new ApiError('Denied', 403));
+    await chat.history();
+    expect(chat.conversationContext.value).toBeNull();
+    wrapper.unmount();
+});

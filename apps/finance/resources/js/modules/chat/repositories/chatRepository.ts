@@ -6,6 +6,13 @@ export type ChatContext = {
     account_id: string | null;
     route_name: string | null;
 };
+export const conversationContextSchema = z.object({
+    scope: z.enum(['unset', 'account', 'multiple', 'global']),
+    active_account: z.object({ account_id: z.string(), name: z.string() }).nullable(),
+    candidates: z.array(z.object({ account_id: z.string(), name: z.string() })),
+    awaiting_account: z.boolean(),
+});
+export type ConversationContext = z.infer<typeof conversationContextSchema>;
 export const messageSchema = z.object({
     id: z.string(),
     role: z.enum(['user', 'assistant']),
@@ -20,6 +27,7 @@ export const messageSchema = z.object({
         )
         .default([]),
     warnings: z.array(z.string()).default([]),
+    conversation_context: conversationContextSchema.optional(),
 });
 const runSchema = z.object({
     thread_id: z.string(),
@@ -67,6 +75,7 @@ export const chatRepository = {
                 items: z.array(messageSchema),
                 next_cursor: z.string().nullable(),
                 active_run: runSchema.nullable(),
+                conversation_context: conversationContextSchema.optional(),
             }),
         ),
     send: (

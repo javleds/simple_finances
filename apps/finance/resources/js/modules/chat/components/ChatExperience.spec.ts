@@ -1,4 +1,4 @@
-import { defineComponent, nextTick, ref } from 'vue';
+import { defineComponent, nextTick, reactive, ref } from 'vue';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import PrimeVue from 'primevue/config';
@@ -8,7 +8,8 @@ import ChatLauncher from './ChatLauncher.vue';
 import ChatConversationList from './ChatConversationList.vue';
 import { chatRepository } from '../repositories/chatRepository';
 
-vi.mock('vue-router', () => ({ useRoute: () => ({ name: 'admin.dashboard', params: {} }) }));
+const route = reactive({ name: 'admin.dashboard', params: {} as { accountId?: string } });
+vi.mock('vue-router', () => ({ useRoute: () => route }));
 vi.mock('@/modules/accounts/composables/useAccountRelationshipAccount', () => ({
     useAccountRelationshipAccount: () => ({ account: ref(null) }),
 }));
@@ -47,6 +48,8 @@ function keep(wrapper: VueWrapper): VueWrapper {
 }
 beforeEach(() => {
     vi.resetAllMocks();
+    route.name = 'admin.dashboard';
+    route.params = {};
     vi.stubGlobal(
         'matchMedia',
         vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
@@ -242,4 +245,37 @@ it('confirms deletion, supports cancellation and preserves failed requests for r
         false,
     );
     expect(wrapper.text()).not.toContain('no se puede deshacer');
+});
+
+it('displays the remembered account after reopening history despite navigation to another account', async () => {
+    vi.mocked(chatRepository.messages).mockResolvedValue({
+        items: [],
+        next_cursor: null,
+        active_run: null,
+        conversation_context: {
+            scope: 'account',
+            active_account: { account_id: '42', name: 'Retiro de Javi' },
+            candidates: [],
+            awaiting_account: false,
+        },
+    });
+    const wrapper = keep(mount(ChatPanel, { props: { open: true, enabled: true }, global }));
+    await flushPromises();
+    await wrapper.get('[aria-label="Abrir historial"]').trigger('click');
+    await flushPromises();
+    await wrapper
+        .findAll('button')
+        .find((button) => button.text().includes(existing.title))!
+        .trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('Cuenta: Retiro de Javi');
+    route.name = 'admin.accounts.transactions';
+    route.params = { accountId: '99' };
+    await nextTick();
+    expect(wrapper.text()).toContain('Cuenta: Retiro de Javi');
+    expect(wrapper.text()).not.toContain('cuenta #99');
+    await wrapper.setProps({ open: false });
+    await wrapper.setProps({ open: true });
+    await flushPromises();
+    expect(wrapper.text()).toContain('Cuenta: Retiro de Javi');
 });

@@ -4,6 +4,7 @@ import {
     chatRepository,
     messageSchema,
     type ChatContext,
+    type ConversationContext,
     type ChatMessage,
     type ChatRun,
     type ChatThread,
@@ -13,6 +14,7 @@ type Pending = { client_request_id: string; message: string; context: ChatContex
 function conversation() {
     return reactive({
         messages: [] as ChatMessage[],
+        conversationContext: null as ConversationContext | null,
         run: null as ChatRun | null,
         busy: false,
         error: '',
@@ -61,6 +63,7 @@ export function useChat() {
         return states.get(id)!;
     }
     function append(target: ReturnType<typeof conversation>, message: ChatMessage): void {
+        if (message.conversation_context) target.conversationContext = message.conversation_context;
         if (!target.messages.some((item) => item.id === message.id)) target.messages.push(message);
     }
     async function refreshThreads(more = false): Promise<void> {
@@ -121,7 +124,10 @@ export function useChat() {
                   ]
                 : result.items;
             target.historyCursor = result.next_cursor;
-            if (!more) target.run = result.active_run;
+            if (!more) {
+                target.run = result.active_run;
+                target.conversationContext = result.conversation_context ?? null;
+            }
         } catch (error) {
             if (isCurrent()) {
                 target.historyError = failure;
@@ -129,6 +135,7 @@ export function useChat() {
                     target.messages = [];
                     target.partial = '';
                     target.run = null;
+                    target.conversationContext = null;
                     threads.value = threads.value.map((item) =>
                         item.id === id ? { ...item, title: null } : item,
                     );
@@ -396,6 +403,7 @@ export function useChat() {
         remove,
         draft,
         messages: toRef(() => selected.value.messages),
+        conversationContext: toRef(() => selected.value.conversationContext),
         run: toRef(() => selected.value.run),
         busy: toRef(() => selected.value.busy),
         error: toRef(() => selected.value.error),
