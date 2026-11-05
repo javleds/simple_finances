@@ -133,7 +133,7 @@ async def visible_messages(
     for message in messages:
         refs = list(message.get("references", []))
         account_id = message.get("context", {}).get("account_id")
-        if account_id:
+        if account_id and "conversation_context" not in message.get("context", {}):
             refs.append({"account_id": str(account_id)})
         allowed = True
         for ref in refs:

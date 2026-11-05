@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from finance_agent.conversation_context import ConversationContext, visible_context
 from finance_agent.mcp_client import ToolDenied, connect_tools, visible_messages
 from finance_agent.schemas import Actor, CreateRun, CreateThread
 from finance_agent.settings import Settings, get_settings
@@ -126,6 +127,10 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
         result = repository.history(str(thread_id), actor, str(cursor) if cursor else None)
         async with authorized_tools(actor) as tools:
             result["items"] = await visible_messages(tools, result["items"])
+            context = await visible_context(
+                tools, repository.conversation_context(str(thread_id), actor)
+            )
+            result["conversation_context"] = context.public()
         return result
 
     @app.post("/internal/v1/threads/{thread_id}/runs", dependencies=auth, status_code=202)
@@ -133,7 +138,10 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
         with repository.sessions.begin() as session:
             repository.owned_thread(session, str(thread_id), body)
         async with authorized_tools(body) as tools:
-            if body.context.account_id:
+            if (
+                body.context.account_id
+                and repository.conversation_context(str(thread_id), body).scope == "unset"
+            ):
                 await tools.call(
                     "get_account_balance", {"account_id": int(body.context.account_id)}
                 )
@@ -186,6 +194,9 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
                                 event["payload"] = {
                                     **event["payload"],
                                     "content": "",
+                                    "conversation_context": ConversationContext(
+                                        scope="multiple"
+                                    ).public(),
                                     "references": [],
                                     "context": {"scope": "global"},
                                     "warnings": ["references_no_longer_visible"],

@@ -93,3 +93,58 @@ async def test_openrouter_tool_call_and_structured_answer(monkeypatch: pytest.Mo
     assert set(schema["schema"]["required"]) == set(schema["schema"]["properties"])
     assert schema["schema"]["additionalProperties"] is False
     assert reasoner.model.request_timeout == 120000
+
+
+async def test_context_resolution_uses_strict_schema_and_fake_credential(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def send(
+        client: httpx.AsyncClient, request: httpx.Request, **kwargs: object
+    ) -> httpx.Response:
+        assert request.headers["authorization"] == "Bearer context-test-key"
+        payload = json.loads(request.content)
+        schema = payload["response_format"]["json_schema"]
+        assert schema["strict"] is True
+        assert set(schema["schema"]["required"]) == set(schema["schema"]["properties"])
+        assert schema["schema"]["additionalProperties"] is False
+        return httpx.Response(
+            200,
+            request=request,
+            json={
+                "id": "context-test",
+                "system_fingerprint": None,
+                "object": "chat.completion",
+                "created": 1,
+                "model": "test/model",
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": json.dumps(
+                                {
+                                    "mode": "reference",
+                                    "account_queries": [],
+                                    "account_ids": [],
+                                    "resume_pending": False,
+                                    "abandon_pending": False,
+                                }
+                            ),
+                        },
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+            },
+        )
+
+    monkeypatch.setattr(httpx.AsyncClient, "send", send)
+    reasoner = ChatReasoner(
+        Settings(
+            _env_file=None,
+            openrouter_api_key=SecretStr("context-test-key"),
+            agent_model="test/model",
+        )
+    )
+    result = await reasoner.resolve([HumanMessage(content="¿Cuánto abono a esta cuenta?")])
+    assert result.mode == "reference"

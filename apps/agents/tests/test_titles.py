@@ -224,7 +224,9 @@ async def test_worker_publishes_title_only_after_reference_authorization(
         )
 
     monkeypatch.setattr(worker, "connect_tools", connector)
-    monkeypatch.setattr(worker, "ChatReasoner", lambda _: object())
+    from test_conversation_context import IntentReasoner
+
+    monkeypatch.setattr(worker, "ChatReasoner", lambda _: IntentReasoner("continue"))
     monkeypatch.setattr(worker, "run_graph", graph)
     await worker.execute(store, Settings(), claimed[0], claimed[1], None)  # type: ignore[arg-type]
     replay = store.list_threads(Actor(actor_user_id=1), None)["items"][0]

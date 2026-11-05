@@ -3,8 +3,10 @@ import logging
 from contextlib import suppress
 from typing import Any
 
+from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
+from finance_agent.conversation_context import ScopedTools, resolve_context
 from finance_agent.graph import ChatReasoner, ModelNotConfigured, run_graph
 from finance_agent.mcp_client import connect_tools, visible_messages
 from finance_agent.models import Run
@@ -36,10 +38,6 @@ async def execute_locked(
             return
         async with connect_tools(settings, actor.actor_user_id) as tools:
             await tools.call("list_account_balances", {"limit": 1})
-            if run.context.get("account_id"):
-                await tools.call(
-                    "get_account_balance", {"account_id": int(run.context["account_id"])}
-                )
             history = await visible_messages(
                 tools,
                 store.recent_history(
@@ -48,18 +46,50 @@ async def execute_locked(
                     settings.agent_history_limit,
                 ),
             )
+            reasoner = ChatReasoner(settings)
+            resolved = await resolve_context(
+                tools,
+                reasoner,
+                store.conversation_context(run.thread_id, actor),
+                run.context,
+                run.input_text,
+                [
+                    (HumanMessage if item["role"] == "user" else AIMessage)(content=item["content"])
+                    for item in history
+                ],
+            )
+            if resolved.clarification:
+                if not await visible_messages(tools, [{"references": resolved.state.references()}]):
+                    store.finish(run.id, error="access_revoked")
+                    return
+                store.finish(
+                    run.id,
+                    resolved.clarification,
+                    resolved.state.references(),
+                    conversation_context=resolved.state,
+                )
+                return
+            scoped_tools = ScopedTools(tools, resolved.state)
             result = await run_graph(
                 settings,
-                tools,
-                ChatReasoner(settings),
+                scoped_tools,
+                reasoner,
                 run.thread_id,
                 run.id,
-                run.input_text,
-                run.context,
+                resolved.question,
+                resolved.state.public(),
                 history,
                 checkpointer,
                 needs_title=store.needs_title(run.thread_id, actor),
             )
+            if resolved.state.scope in {"global", "unset"} and scoped_tools.observed_accounts:
+                resolved.state = resolved.state.model_copy(
+                    update={
+                        "scope": "global",
+                        "candidates": list(scoped_tools.observed_accounts.values()),
+                    }
+                )
+            result.references = [*result.references, *resolved.state.references()]
             if result.references:
                 allowed = await visible_messages(tools, [{"references": result.references}])
                 if not allowed:
@@ -71,6 +101,7 @@ async def execute_locked(
                 result.references,
                 result.warnings,
                 conversation_title=result.conversation_title,
+                conversation_context=resolved.state,
             )
 
 

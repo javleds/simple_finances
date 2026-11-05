@@ -79,7 +79,12 @@ def test_revoked_references_hidden_in_history_poll_replay_and_sse(
     base = f"/internal/v1/threads/{tid}"
     rid = client.post(f"{base}/runs", json=body).json()["run_id"]
     assert store.claim(30)
-    store.finish(rid, "Private $999", [{"account_id": "42"}])
+    from finance_agent.conversation_context import AccountSelection, ConversationContext
+
+    context = ConversationContext(
+        scope="account", active_account=AccountSelection(account_id="42", name="Private account")
+    )
+    store.finish(rid, "Private $999", [{"account_id": "42"}], conversation_context=context)
     tools.denied.add(42)
     assert client.get(f"{base}/messages", params={"actor_user_id": 1}).json()["items"] == []
     for response in [
@@ -123,3 +128,28 @@ def test_sse_resume_and_cancel(client: TestClient, store: Store) -> None:
     assert response.headers["x-accel-buffering"] == "no"
     assert "run.started" not in response.text
     assert "run.cancelled" in response.text
+
+
+def test_remembered_selection_does_not_validate_unrelated_screen(
+    client: TestClient, store: Store, tools: Any
+) -> None:
+    from finance_agent.conversation_context import AccountSelection, ConversationContext
+
+    tid = make_thread(client)
+    rid = client.post(f"/internal/v1/threads/{tid}/runs", json=run_body()).json()["run_id"]
+    assert store.claim(30)
+    store.finish(
+        rid,
+        "Saldo",
+        conversation_context=ConversationContext(
+            scope="account", active_account=AccountSelection(account_id="42", name="Ahorro")
+        ),
+    )
+    tools.denied.add(99)
+    response = client.post(
+        f"/internal/v1/threads/{tid}/runs",
+        json={**run_body(), "context": {"scope": "account", "account_id": "99"}},
+    )
+    assert response.status_code == 202
+    history = client.get(f"/internal/v1/threads/{tid}/messages", params={"actor_user_id": 1}).json()
+    assert history["conversation_context"]["active_account"]["account_id"] == "42"

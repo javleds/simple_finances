@@ -7,6 +7,7 @@ import pytest
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from sqlalchemy import delete, text
 from sqlalchemy.exc import DBAPIError
+from test_conversation_context import IntentReasoner
 from test_graph import FakeModel
 
 from finance_agent.graph import run_graph
@@ -262,7 +263,7 @@ async def test_worker_holds_guard_until_graph_cancellation_finishes(
             raise
 
     monkeypatch.setattr(worker, "connect_tools", connector)
-    monkeypatch.setattr(worker, "ChatReasoner", lambda _: None)
+    monkeypatch.setattr(worker, "ChatReasoner", lambda _: IntentReasoner("continue"))
     monkeypatch.setattr(worker, "run_graph", graph)
     task = asyncio.create_task(worker.execute(pg_store, Settings(), claimed[0], actor, None))
     try:
@@ -308,7 +309,7 @@ async def test_competing_worker_waits_and_completes_after_previous_releases(
         return GraphResult(content="Completado", references=[], warnings=[])
 
     monkeypatch.setattr(worker, "connect_tools", connector)
-    monkeypatch.setattr(worker, "ChatReasoner", lambda _: None)
+    monkeypatch.setattr(worker, "ChatReasoner", lambda _: IntentReasoner("continue"))
     monkeypatch.setattr(worker, "run_graph", graph)
     with pg_store.execution_guard(first_claimed[0]) as allowed:
         assert allowed
@@ -328,3 +329,31 @@ async def test_competing_worker_waits_and_completes_after_previous_releases(
     await asyncio.wait_for(task, timeout=3)
     assert pg_store.get_run(tid, second, actor)["status"] == "completed"
     pg_store.delete_thread(tid, actor)
+
+
+def test_conversation_context_persists_atomically_and_is_physically_deleted(
+    pg_store: Store,
+) -> None:
+    from finance_agent.conversation_context import AccountSelection, ConversationContext
+
+    actor = Actor(actor_user_id=90001)
+    tid = pg_store.create_thread(CreateThread(actor_user_id=90001, client_request_id=uuid4()))["id"]
+    rid = pg_store.create_run(
+        tid, CreateRun(actor_user_id=90001, client_request_id=uuid4(), message="Esta cuenta")
+    )["run_id"]
+    assert pg_store.claim(30)
+    context = ConversationContext(
+        scope="multiple",
+        candidates=[AccountSelection(account_id="1", name="Ahorro")],
+        pending_question="¿Cuánto gasté?",
+    )
+    assert pg_store.finish(rid, "¿Cuál cuenta?", conversation_context=context)
+    reopened = Store(make_engine(str(URL)))
+    try:
+        assert reopened.conversation_context(tid, actor) == context
+        assert reopened.history(tid, actor)["items"][-1]["conversation_context"]["awaiting_account"]
+        reopened.delete_thread(tid, actor)
+        with reopened.sessions() as session:
+            assert session.get(Thread, tid) is None
+    finally:
+        reopened.engine.dispose()

@@ -140,3 +140,15 @@ El agente borra en una transacción el thread, mensajes, runs, eventos y checkpo
 No requiere migraciones nuevas. Al desplegar, detener API, workers y procesos de limpieza anteriores antes de iniciar la versión nueva: los procesos antiguos no participan en el bloqueo. Reconstruir el agente y los assets de Finance. El borrado no incluye backups, trazas externas de OpenRouter/LangSmith ni threads independientes de Studio.
 
 Validación: 67 pruebas Python, incluidas las de PostgreSQL real; 32 pruebas Vue del chat; 21 pruebas Laravel del gateway y capturas. Ruff, mypy, type-check, ESLint y build aprobados. La prueba de integración local devolvió DELETE 204 y confirmó cero filas en las siete tablas de conversaciones/checkpoints de una base temporal aislada.
+
+## Cuenta activa de una conversación
+
+El worker resuelve el alcance antes de ejecutar consultas financieras. LangChain interpreta una intención estructurada; el código resuelve nombres con MCP y verifica la autorización. Una cuenta elegida permanece en el thread aunque cambie la pantalla o se trunque el historial. Después de una consulta colectiva, una referencia singular requiere aclaración; la pregunta pendiente se retoma al seleccionar una cuenta. Una consulta global explícita cambia a alcance global. Las herramientas se restringen al alcance resuelto, sin ampliar silenciosamente a otras cuentas.
+
+`agent_threads.conversation_context` conserva cuenta activa, candidatos y pregunta pendiente; se actualiza atómicamente junto con la respuesta completada. Cancelar o fallar no publica cambios de contexto. El historial y los mensajes/SSE incluyen una versión pública sin pregunta pendiente para la etiqueta del panel. Las cuentas recordadas se reautorizan; perder acceso no selecciona otra ni restaura la pantalla automáticamente. Las conversaciones previas comienzan sin selección explícita, evitando inferirla de un historial ambiguo. Studio sigue siendo un grafo de herramientas independiente: la selección persistente descrita aquí pertenece al flujo del worker/FastAPI.
+
+Antes de reiniciar API y worker, ejecutar `make migrate-chat` para aplicar `003_conversation_context`. La migración agrega una columna nullable; no requiere backfill ni cambios en MySQL. Su rollback pierde solo la selección y pregunta pendiente. Construir los assets de Finance para mostrar el contexto. Esta funcionalidad añade una llamada estructurada al modelo por turno; no incorpora consultas de ingresos/abonos.
+
+Las pruebas de desarrollo utilizan respuestas y credenciales ficticias, con tracing deshabilitado. No usar la clave real fuera de una prueba end-to-end explícita con MCP.
+
+Validación de contexto: 85 pruebas Python (incluido PostgreSQL temporal), 35 Vue, Ruff/mypy/ESLint/type-check/build y upgrade/downgrade de la migración aprobados. Los casos semánticos en `apps/agents/evaluations/cases.json` incluyen varias preguntas consecutivas; esta entrega se validó con modelos simulados, sin ejecutar esos casos con la clave real.

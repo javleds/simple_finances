@@ -8,6 +8,7 @@ from typing import Any, Literal, cast
 from sqlalchemy import Engine, create_engine, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
+from finance_agent.conversation_context import ConversationContext
 from finance_agent.models import Event, Message, Run, Thread, now
 from finance_agent.schemas import Actor, CreateRun, CreateThread
 from finance_agent.titles import valid_title
@@ -30,6 +31,11 @@ def message_data(message: Message) -> dict[str, Any]:
     return {
         "id": message.id,
         "role": message.role,
+        **(
+            {"conversation_context": message.context["conversation_context"]}
+            if "conversation_context" in message.context
+            else {}
+        ),
         "content": message.content,
         "context": message.context,
         "references": message.references,
@@ -129,6 +135,11 @@ class Store:
                 "items": [thread_data(row) for row in rows[:30]],
                 "next_cursor": rows[29].id if len(rows) > 30 else None,
             }
+
+    def conversation_context(self, thread_id: str, actor: Actor) -> ConversationContext:
+        with self.sessions() as session:
+            thread = self.owned_thread(session, thread_id, actor)
+            return ConversationContext.model_validate(thread.conversation_context or {})
 
     def needs_title(self, thread_id: str, actor: Actor) -> bool:
         with self.sessions() as session:
@@ -354,6 +365,7 @@ class Store:
         warnings: list[str] | None = None,
         error: str | None = None,
         conversation_title: str | None = None,
+        conversation_context: ConversationContext | None = None,
     ) -> bool:
         with self.sessions.begin() as session:
             run = session.scalar(select(Run).where(Run.id == run_id).with_for_update())
@@ -365,7 +377,11 @@ class Store:
                 run.error = error
                 self.emit(session, run, "run.failed", {"code": error})
                 return True
-            refs = references or []
+            refs = list(references or [])
+            if conversation_context:
+                for reference in conversation_context.references():
+                    if reference not in refs:
+                        refs.append(reference)
             user_message = session.scalar(
                 select(Message).where(
                     Message.run_id == run_id,
@@ -373,13 +389,27 @@ class Store:
                 )
             )
             if user_message:
-                user_message.references = refs + self.context_references(run.context)
+                user_message.references = refs + (
+                    [] if conversation_context else self.context_references(run.context)
+                )
+                if conversation_context is not None:
+                    user_message.context = {
+                        **run.context,
+                        "conversation_context": conversation_context.public(),
+                    }
             message = Message(
                 thread_id=run.thread_id,
                 run_id=run.id,
                 role="assistant",
                 content=content or "",
-                context=run.context,
+                context={
+                    **run.context,
+                    **(
+                        {"conversation_context": conversation_context.public()}
+                        if conversation_context
+                        else {}
+                    ),
+                },
                 references=refs,
                 warnings=warnings or [],
             )
@@ -391,10 +421,14 @@ class Store:
             thread = session.get(Thread, run.thread_id)
             assert thread is not None
             thread.updated_at = now()
+            if conversation_context is not None:
+                thread.conversation_context = conversation_context.model_dump()
             title = valid_title(conversation_title)
             if thread.title is None and title is not None:
                 thread.title = title
-                thread.title_references = refs + self.context_references(run.context)
+                thread.title_references = refs + (
+                    [] if conversation_context else self.context_references(run.context)
+                )
             return True
 
     @staticmethod

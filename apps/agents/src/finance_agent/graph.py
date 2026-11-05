@@ -11,6 +11,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel, Field, SecretStr, field_validator
 
+from finance_agent.conversation_context import ContextIntent
 from finance_agent.mcp_client import FinancialTools, ToolDenied, ToolValidation
 from finance_agent.settings import Settings
 from finance_agent.titles import valid_title
@@ -32,10 +33,12 @@ Explicita periodos y alcance. Para sugerir ahorro pregunta necesidades y periodo
 compatibles. No declares gastos prescindibles sin esa información. Las clasificaciones inferidas
 no se guardan: identifica grupos de transacciones, usa aggregate_expense_groups para sus sumas,
 y etiqueta inferencias. No calcules ahorros monetarios sin una herramienta que los calcule.
-Prioridad de contexto: cuenta/alcance explícito > aclaración confirmada > pantalla actual >
-referencia conversacional compatible > global. 'Todas mis cuentas' anula la pantalla actual.
-'Aquí/esta cuenta' usa pantalla actual. Si 'esa' puede indicar cuenta anterior o pantalla nueva,
-pregunta. El contexto es una preferencia, no un filtro obligatorio. WhatsApp inicia global.
+El contexto resuelto del turno determina las cuentas de la consulta. La selección persistente
+prevalece sobre la pantalla; no cambies cuentas ni amplíes a global por tu cuenta. Usa los IDs
+resueltos con get_account_balance; para varias cuentas consulta cada balance por separado.
+Si faltan herramientas para ingresos/abonos, explica esa limitación concreta, no afirmes que
+careces de acceso a todos los movimientos: sí puedes consultar gastos y pendientes.
+WhatsApp no tiene contexto de pantalla.
 Una aclaración es una respuesta final del turno. No expongas razonamiento interno ni secretos.
 No incluyas enlaces arbitrarios ni HTML. Incluye importes exactos y fechas en texto sencillo.
 Las referencias se adjuntan fuera del modelo a partir de resultados reales de herramientas.
@@ -79,6 +82,12 @@ class ChatReasoner:
             max_retries=0,
             max_tokens=settings.agent_max_output_tokens,
         )
+
+    async def resolve(self, messages: list[BaseMessage]) -> ContextIntent:
+        result = await self.model.with_structured_output(
+            convert_to_json_schema(ContextIntent, strict=True), method="json_schema", strict=True
+        ).ainvoke(messages)
+        return ContextIntent.model_validate(result)
 
     async def next(self, messages: list[BaseMessage], catalog: list[dict[str, Any]]) -> AIMessage:
         result = await self.model.bind_tools(catalog, parallel_tool_calls=False).ainvoke(messages)
@@ -146,7 +155,7 @@ async def run_graph(
         messages.append(cls(content=item["content"]))
     messages.extend(
         [
-            SystemMessage(content="Contexto de pantalla de este turno: " + json.dumps(context)),
+            SystemMessage(content="Contexto resuelto de este turno: " + json.dumps(context)),
             HumanMessage(content=message),
         ]
     )
@@ -155,7 +164,9 @@ async def run_graph(
     inherited_accounts: set[str] = set()
     for item in history:
         inherited_accounts.update(str(ref["account_id"]) for ref in item.get("references", []))
-        if item.get("context", {}).get("account_id"):
+        if item.get("context", {}).get("account_id") and "conversation_context" not in item.get(
+            "context", {}
+        ):
             inherited_accounts.add(str(item["context"]["account_id"]))
     if context.get("account_id"):
         inherited_accounts.add(str(context["account_id"]))
