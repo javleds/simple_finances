@@ -55,6 +55,9 @@ export const chatRepository = {
         ),
     create: (id: string) =>
         data(api.post('/chat/threads', { client_request_id: id }), threadSchema),
+    async remove(id: string): Promise<void> {
+        await api.delete(`/chat/threads/${id}`);
+    },
     messages: (id: string, cursor?: string) =>
         data(
             api.get(

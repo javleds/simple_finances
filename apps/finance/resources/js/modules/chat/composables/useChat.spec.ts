@@ -15,6 +15,7 @@ vi.mock('../repositories/chatRepository', async (original) => {
             stream: vi.fn(),
             run: vi.fn(),
             cancel: vi.fn(),
+            remove: vi.fn(),
         },
     };
 });
@@ -337,7 +338,11 @@ it('invalidates pending pagination when live events mutate the conversation', as
 
 it('recovers the first question when retrying failed thread creation', async () => {
     const wrapper = mountChat();
-    const context: ChatContext = { scope: 'account', account_id: '42', route_name: 'admin.accounts.transactions' };
+    const context: ChatContext = {
+        scope: 'account',
+        account_id: '42',
+        route_name: 'admin.accounts.transactions',
+    };
     chat.draft.value = 'Balance de esta cuenta';
     vi.mocked(chatRepository.create).mockRejectedValueOnce(new Error('unavailable'));
     expect(await chat.send(chat.draft.value, context)).toBe(false);
@@ -346,12 +351,154 @@ it('recovers the first question when retrying failed thread creation', async () 
     context.account_id = '99';
     expect(await chat.newConversation()).toBe(true);
     expect(chatRepository.create).toHaveBeenNthCalledWith(
-        2, vi.mocked(chatRepository.create).mock.calls[0]?.[0],
+        2,
+        vi.mocked(chatRepository.create).mock.calls[0]?.[0],
     );
-    expect(chatRepository.send).toHaveBeenCalledExactlyOnceWith('thread', expect.objectContaining({
-        message: 'Balance de esta cuenta',
-        context: { scope: 'account', account_id: '42', route_name: 'admin.accounts.transactions' },
-    }));
+    expect(chatRepository.send).toHaveBeenCalledExactlyOnceWith(
+        'thread',
+        expect.objectContaining({
+            message: 'Balance de esta cuenta',
+            context: {
+                scope: 'account',
+                account_id: '42',
+                route_name: 'admin.accounts.transactions',
+            },
+        }),
+    );
     expect(chat.draft.value).toBe('');
+    wrapper.unmount();
+});
+
+it('clears selected conversation and ignores a stale list after deletion', async () => {
+    const wrapper = mountChat();
+    await chat.select('thread');
+    chat.draft.value = 'Private draft';
+    let resolveList!: (value: {
+        items: { id: string; created_at: string }[];
+        next_cursor: null;
+    }) => void;
+    vi.mocked(chatRepository.threads).mockImplementationOnce(
+        () =>
+            new Promise((resolve) => {
+                resolveList = resolve;
+            }),
+    );
+    const listing = chat.refreshThreads();
+    expect(await chat.remove('thread')).toBe(true);
+    resolveList({ items: [{ id: 'thread', created_at: '2026-01-01' }], next_cursor: null });
+    await listing;
+    await chat.select('thread');
+    expect(chat.thread.value).toBeNull();
+    expect(chat.messages.value).toEqual([]);
+    expect(chat.draft.value).toBe('');
+    expect(chat.run.value).toBeNull();
+    expect(chat.threads.value).toEqual([]);
+    wrapper.unmount();
+});
+it('preserves another draft and blocks duplicate deletion, sends and selection', async () => {
+    const wrapper = mountChat();
+    await chat.select('other');
+    chat.draft.value = 'Keep me';
+    let complete!: () => void;
+    vi.mocked(chatRepository.remove).mockImplementationOnce(
+        () =>
+            new Promise((resolve) => {
+                complete = resolve;
+            }),
+    );
+    const deleting = chat.remove('thread');
+    expect(await chat.remove('thread')).toBe(false);
+    await chat.select('thread');
+    expect(
+        await chat.send('Balance', { scope: 'global', account_id: null, route_name: null }),
+    ).toBe(false);
+    complete();
+    expect(await deleting).toBe(true);
+    expect(chat.thread.value).toBe('other');
+    expect(chat.draft.value).toBe('Keep me');
+    expect(chatRepository.remove).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+});
+it('keeps a conversation on conflict and accepts 404 as already deleted', async () => {
+    const { ApiError } = await import('@/lib/api/apiClient');
+    const wrapper = mountChat();
+    await chat.select('thread');
+    chat.draft.value = 'Keep until success';
+    vi.mocked(chatRepository.remove).mockRejectedValueOnce(new ApiError('Busy', 409));
+    expect(await chat.remove('thread')).toBe(false);
+    expect(chat.deletionError.value).toContain('detén');
+    expect(chat.draft.value).toBe('Keep until success');
+    vi.mocked(chatRepository.remove).mockRejectedValueOnce(new ApiError('Missing', 404));
+    expect(await chat.remove('thread')).toBe(true);
+    expect(chat.thread.value).toBeNull();
+    wrapper.unmount();
+});
+it('invalidates late message history and streaming callbacks when the selected thread is deleted', async () => {
+    const wrapper = mountChat();
+    let receive: ((event: ChatEvent) => void) | undefined;
+    let signal: AbortSignal | undefined;
+    vi.mocked(chatRepository.stream).mockImplementation(
+        async (_id, _run, _after, abort, callback) => {
+            signal = abort;
+            receive = callback;
+            await new Promise(() => {});
+        },
+    );
+    await chat.select('thread');
+    let complete!: (value: Awaited<ReturnType<typeof chatRepository.messages>>) => void;
+    vi.mocked(chatRepository.messages).mockImplementationOnce(
+        () =>
+            new Promise((resolve) => {
+                complete = resolve;
+            }),
+    );
+    const history = chat.history();
+    await chat.remove('thread');
+    complete({
+        items: [
+            {
+                id: 'old',
+                role: 'user',
+                content: 'Private',
+                created_at: '',
+                references: [],
+                warnings: [],
+            },
+        ],
+        next_cursor: null,
+        active_run: active,
+    });
+    await history;
+    receive?.({
+        sequence: 2,
+        type: 'message.completed',
+        payload: { id: 'late', role: 'assistant', content: 'Private', created_at: '' },
+    });
+    expect(signal?.aborted).toBe(true);
+    expect(chat.messages.value).toEqual([]);
+    expect(chat.run.value).toBeNull();
+    wrapper.unmount();
+});
+
+it('restarts pagination after deleting its boundary without discarding another draft', async () => {
+    const wrapper = mountChat();
+    await chat.select('other');
+    chat.draft.value = 'Keep this draft';
+    vi.mocked(chatRepository.threads).mockResolvedValueOnce({
+        items: [{ id: 'boundary', created_at: '2026-01-01' }],
+        next_cursor: 'boundary',
+    });
+    await chat.refreshThreads();
+    vi.mocked(chatRepository.threads).mockResolvedValueOnce({
+        items: [{ id: 'replacement', created_at: '2025-12-31' }],
+        next_cursor: 'replacement',
+    });
+    expect(await chat.remove('boundary')).toBe(true);
+    expect(chatRepository.threads).toHaveBeenLastCalledWith(undefined);
+    expect(chat.threadsCursor.value).toBe('replacement');
+    await chat.refreshThreads(true);
+    expect(chatRepository.threads).toHaveBeenLastCalledWith('replacement');
+    expect(chat.thread.value).toBe('other');
+    expect(chat.draft.value).toBe('Keep this draft');
     wrapper.unmount();
 });

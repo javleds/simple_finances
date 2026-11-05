@@ -1,5 +1,5 @@
-import { threadSchema } from './chatRepository';
-import { describe, expect, it } from 'vitest';
+import { chatRepository, threadSchema } from './chatRepository';
+import { describe, expect, it, vi } from 'vitest';
 import { createEventParser } from './chatRepository';
 import { routeChatContext } from '../composables/context';
 
@@ -41,4 +41,18 @@ it('accepts authorized thread titles and legacy metadata without titles', () => 
             updated_at: '2026-01-02',
         }).title,
     ).toBe('Gastos por categoría');
+});
+
+it('deletes via the authenticated gateway and accepts an empty 204 response', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetch);
+    try {
+        await expect(chatRepository.remove('thread-id')).resolves.toBeUndefined();
+        expect(fetch).toHaveBeenCalledWith(
+            '/api/chat/threads/thread-id',
+            expect.objectContaining({ method: 'DELETE' }),
+        );
+    } finally {
+        vi.unstubAllGlobals();
+    }
 });

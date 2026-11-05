@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { TrashIcon } from '@heroicons/vue/24/outline';
+import AppIconButton from '@/modules/shared/components/AppIconButton.vue';
 import AppButton from '@/modules/shared/components/AppButton.vue';
 import AppEmptyState from '@/modules/shared/components/AppEmptyState.vue';
 import AppListState from '@/modules/shared/components/AppListState.vue';
@@ -10,8 +12,9 @@ defineProps<{
     loading: boolean;
     error: string;
     hasMore: boolean;
+    disabled?: boolean;
 }>();
-defineEmits<{ select: [id: string]; retry: []; more: [] }>();
+defineEmits<{ select: [id: string]; remove: [thread: ChatThread]; retry: []; more: [] }>();
 function date(value: string): string {
     return new Date(value).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
 }
@@ -30,10 +33,11 @@ function date(value: string): string {
                 message="Aún no tienes conversaciones. Crea un nuevo chat para comenzar."
             />
             <ul v-else class="space-y-3">
-                <li v-for="item in threads" :key="item.id">
+                <li v-for="item in threads" :key="item.id" class="flex items-center gap-2">
                     <AppButton
                         variant="outline"
-                        class="h-auto! w-full justify-start! px-3! py-3! text-left!"
+                        class="h-auto! min-w-0 flex-1 justify-start! px-3! py-3! text-left!"
+                        :disabled="disabled"
                         :aria-current="item.id === selected ? 'true' : undefined"
                         :class="
                             item.id === selected
@@ -55,6 +59,13 @@ function date(value: string): string {
                             }}</span>
                         </span>
                     </AppButton>
+                    <AppIconButton
+                        :ariaLabel="`Eliminar conversación ${item.title || item.id}`"
+                        :disabled="disabled"
+                        @click="$emit('remove', item)"
+                    >
+                        <TrashIcon class="h-5 w-5" />
+                    </AppIconButton>
                 </li>
             </ul>
             <AppLoadMoreFooter

@@ -37,6 +37,9 @@ export function useChat() {
     const threadsError = ref('');
     const creating = ref(false);
     const creationError = ref('');
+    const deleting = ref<string | null>(null);
+    const deletionError = ref('');
+    const deleted = new Set<string>();
     const states = new Map<string, ReturnType<typeof conversation>>();
     const initial = conversation();
     const selected = computed(() => (thread.value ? state(thread.value) : initial));
@@ -69,6 +72,7 @@ export function useChat() {
                 more ? (threadsCursor.value ?? undefined) : undefined,
             );
             if (disposed || current !== listGeneration) return;
+            result.items = result.items.filter((item) => !deleted.has(item.id));
             threads.value = more
                 ? [
                       ...threads.value,
@@ -90,7 +94,7 @@ export function useChat() {
     }
     async function history(more = false): Promise<void> {
         const id = thread.value;
-        if (!id) return;
+        if (!id || deleting.value === id || deleted.has(id)) return;
         const target = state(id);
         const current = generation;
         const request = ++target.historyRequest;
@@ -206,6 +210,7 @@ export function useChat() {
             void follow(selected.value.run);
     }
     async function select(id: string): Promise<void> {
+        if (deleting.value || deleted.has(id)) return;
         generation++;
         controller?.abort();
         thread.value = id;
@@ -213,7 +218,7 @@ export function useChat() {
         await resume();
     }
     async function createThread(): Promise<ChatThread | null> {
-        if (creating.value) return null;
+        if (creating.value || deleting.value) return null;
         creating.value = true;
         creationError.value = '';
         creationId ??= crypto.randomUUID();
@@ -245,6 +250,7 @@ export function useChat() {
     async function send(message: string, context: ChatContext, retry = false): Promise<boolean> {
         let target = selected.value;
         if (
+            deleting.value ||
             target.busy ||
             (target.run && !retry) ||
             creating.value ||
@@ -302,6 +308,7 @@ export function useChat() {
         }
     }
     async function recover(): Promise<void> {
+        if (deleting.value) return;
         const target = selected.value;
         target.error = '';
         if (target.pending) {
@@ -324,6 +331,48 @@ export function useChat() {
             if (!disposed) target.error = failure;
         }
     }
+    async function remove(id: string): Promise<boolean> {
+        if (deleting.value || creating.value || states.get(id)?.busy) return false;
+        deleting.value = id;
+        deletionError.value = '';
+        try {
+            try {
+                await chatRepository.remove(id);
+            } catch (error) {
+                if (!(error instanceof ApiError) || error.status !== 404) throw error;
+            }
+            if (disposed) return false;
+            deleted.add(id);
+            listGeneration++;
+            threadsLoading.value = false;
+            threadsCursor.value = null;
+            threads.value = threads.value.filter((item) => item.id !== id);
+            const target = states.get(id);
+            if (target) {
+                const invalidatedRequest = target.historyRequest + 1;
+                Object.assign(target, conversation());
+                target.historyRequest = invalidatedRequest;
+            }
+            states.delete(id);
+            if (thread.value === id) {
+                generation++;
+                controller?.abort();
+                thread.value = null;
+                Object.assign(initial, conversation());
+            }
+            await refreshThreads();
+            return true;
+        } catch (error) {
+            if (!disposed)
+                deletionError.value =
+                    error instanceof ApiError && error.status === 409
+                        ? 'La conversación tiene una respuesta en curso. Ábrela, detén la respuesta, espera a que termine y vuelve a intentar eliminarla.'
+                        : 'No pudimos eliminar la conversación. Puedes reintentar; tu historial se conserva.';
+            return false;
+        } finally {
+            deleting.value = null;
+        }
+    }
     onBeforeUnmount(() => {
         disposed = true;
         generation++;
@@ -342,6 +391,9 @@ export function useChat() {
         threadsError,
         creating,
         creationError,
+        deleting,
+        deletionError,
+        remove,
         draft,
         messages: toRef(() => selected.value.messages),
         run: toRef(() => selected.value.run),

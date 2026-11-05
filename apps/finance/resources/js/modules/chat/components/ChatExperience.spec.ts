@@ -24,6 +24,7 @@ vi.mock('../repositories/chatRepository', async (original) => {
             stream: vi.fn(),
             run: vi.fn(),
             cancel: vi.fn(),
+            remove: vi.fn(),
         },
     };
 });
@@ -205,4 +206,40 @@ it('handles Escape locally for chat and preserves bubbling for standard dialogs'
     } finally {
         document.body.removeEventListener('keydown', listener);
     }
+});
+
+it('confirms deletion, supports cancellation and preserves failed requests for retry', async () => {
+    const wrapper = keep(mount(ChatPanel, { props: { open: true, enabled: true }, global }));
+    await flushPromises();
+    await wrapper.get('[aria-label="Abrir historial"]').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('button button').exists()).toBe(false);
+    await wrapper.get('[aria-label="Eliminar conversación Gastos por categoría"]').trigger('click');
+    expect(wrapper.text()).toContain('no se puede deshacer');
+    expect(chatRepository.remove).not.toHaveBeenCalled();
+    await wrapper
+        .findAll('button')
+        .find((button) => button.text() === 'Cancelar')!
+        .trigger('click');
+    expect(wrapper.text()).not.toContain('no se puede deshacer');
+    await wrapper.get('[aria-label="Eliminar conversación Gastos por categoría"]').trigger('click');
+    vi.mocked(chatRepository.remove).mockRejectedValueOnce(new Error('offline'));
+    await wrapper
+        .findAll('button')
+        .find((button) => button.text() === 'Eliminar permanentemente')!
+        .trigger('click');
+    await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain('No pudimos eliminar');
+    expect(wrapper.find('[aria-label="Eliminar conversación Gastos por categoría"]').exists()).toBe(
+        true,
+    );
+    await wrapper
+        .findAll('button')
+        .find((button) => button.text() === 'Eliminar permanentemente')!
+        .trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[aria-label="Eliminar conversación Gastos por categoría"]').exists()).toBe(
+        false,
+    );
+    expect(wrapper.text()).not.toContain('no se puede deshacer');
 });

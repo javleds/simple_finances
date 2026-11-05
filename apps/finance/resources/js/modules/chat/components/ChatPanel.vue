@@ -14,6 +14,7 @@ import ChatMessageContent from './ChatMessageContent.vue';
 import ChatConversationList from './ChatConversationList.vue';
 import { routeChatContext } from '../composables/context';
 import { useAccountRelationshipAccount } from '@/modules/accounts/composables/useAccountRelationshipAccount';
+import type { ChatThread } from '../repositories/chatRepository';
 import { useChat } from '../composables/useChat';
 
 const props = defineProps<{ open: boolean; enabled: boolean }>();
@@ -47,7 +48,22 @@ const {
     threadsError,
     historyLoading,
     historyError,
+    deleting,
+    deletionError,
 } = chat;
+const deletionTarget = ref<ChatThread | null>(null);
+function requestDeletion(item: ChatThread): void {
+    if (deleting.value) return;
+    deletionError.value = '';
+    deletionTarget.value = item;
+}
+function closeDeletion(): void {
+    if (!deleting.value) deletionTarget.value = null;
+}
+async function confirmDeletion(): Promise<void> {
+    if (!deletionTarget.value) return;
+    if (await chat.remove(deletionTarget.value.id)) deletionTarget.value = null;
+}
 const view = ref<'conversation' | 'history'>('conversation');
 const transcript = ref<HTMLElement | null>(null);
 const nearBottom = ref(true);
@@ -95,6 +111,7 @@ function trackScroll(): void {
     if (el) nearBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
 }
 async function toggleHistory(): Promise<void> {
+    if (deleting.value) return;
     if (view.value === 'conversation') {
         view.value = 'history';
         chat.suspend();
@@ -106,6 +123,7 @@ async function toggleHistory(): Promise<void> {
     await focusInput();
 }
 async function select(id: string): Promise<void> {
+    if (deleting.value) return;
     view.value = 'conversation';
     nearBottom.value = true;
     await chat.select(id);
@@ -154,7 +172,7 @@ function keydown(event: KeyboardEvent): void {
                     v-if="enabled"
                     ariaLabel="Nuevo chat"
                     :loading="creating"
-                    :disabled="busy"
+                    :disabled="busy || !!deleting"
                     @click="create"
                 >
                     <PlusIcon class="h-5 w-5" />
@@ -180,6 +198,8 @@ function keydown(event: KeyboardEvent): void {
                 :loading="threadsLoading"
                 :error="threadsError"
                 :has-more="!!threadsCursor"
+                :disabled="!!deleting || busy || creating"
+                @remove="requestDeletion"
                 @select="select"
                 @retry="chat.refreshThreads()"
                 @more="chat.refreshThreads(true)"
@@ -290,6 +310,29 @@ function keydown(event: KeyboardEvent): void {
                     >
                 </div>
             </form>
+        </template>
+    </AppModal>
+    <AppModal
+        :open="!!deletionTarget && open"
+        title="Eliminar conversación"
+        variant="danger"
+        @close="closeDeletion"
+    >
+        <p>
+            Eliminarás permanentemente esta conversación, sus mensajes y su contexto guardado. Esta
+            acción no se puede deshacer.
+        </p>
+        <p v-if="deletionTarget" class="mt-3 font-semibold break-words">
+            {{ deletionTarget.title || deletionTarget.id }}
+        </p>
+        <p v-if="deletionError" class="mt-3" role="alert">{{ deletionError }}</p>
+        <template #footer>
+            <AppButton variant="ghost" :disabled="!!deleting" @click="closeDeletion"
+                >Cancelar</AppButton
+            >
+            <AppButton variant="danger" :loading="!!deleting" @click="confirmDeletion"
+                >Eliminar permanentemente</AppButton
+            >
         </template>
     </AppModal>
 </template>
