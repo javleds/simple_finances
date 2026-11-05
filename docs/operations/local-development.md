@@ -16,6 +16,22 @@ Configura `DB_*` para una base local y crea la base antes de `php artisan migrat
 
 `.npmrc` conserva `legacy-peer-deps=true` por incompatibilidades de peer dependencies heredadas de la SPA. Usa el lockfile con `npm ci`; esta integración no corrige ni actualiza esas dependencias.
 
+## Migraciones del stack Docker local
+
+Desde la raíz, con los archivos `.env` preparados según [la guía del asistente](assistant.md):
+
+```bash
+make migrate-finances
+make migrate-chat
+make migrate
+```
+
+`migrate-finances` construye PHP, inicia MySQL y ejecuta `php artisan migrate` usando `apps/finance/.env`. Requiere las dependencias Composer instaladas. `migrate-chat` construye el migrador del agente, inicia PostgreSQL y aplica Alembic y los checkpoints de LangGraph con la credencial propietaria de infraestructura. Ambos esperan a que su base esté disponible y dejan la base iniciada.
+
+`migrate` ejecuta Finance y después chat, secuencialmente incluso con `make -j`, y se detiene ante el primer error. No hay una transacción conjunta entre ambas bases: si chat falla, las migraciones ya aplicadas de Finance permanecen. Se puede corregir el error y repetir el comando para aplicar las pendientes. MCP no tiene migraciones financieras propias.
+
+Estos comandos usan los archivos Compose del stack local, no ejecutan seeds ni reinician API/workers. No usan `migrate:fresh` ni fuerzan confirmaciones de Laravel. Para Finance en host, conserva `php artisan migrate` desde `apps/finance` con su configuración local correspondiente.
+
 ## Un único comando desde la raíz
 
 ```bash

@@ -19,3 +19,20 @@ dev-chat:
 	@node scripts/chat.mjs up
 chat-down:
 	@node scripts/chat.mjs down
+
+MIGRATION_COMPOSE = docker compose --env-file .env -f docker-compose.yml -f docker-compose.chat.yml -f docker-compose.chat.local.yml --profile chat
+
+.PHONY: migrate migrate-chat migrate-finances
+migrate:
+	@$(MAKE) migrate-finances
+	@$(MAKE) migrate-chat
+
+migrate-chat:
+	@$(MIGRATION_COMPOSE) build agent-migrate
+	@$(MIGRATION_COMPOSE) up -d --wait agent-postgres
+	@$(MIGRATION_COMPOSE) run --rm --no-deps agent-migrate
+
+migrate-finances:
+	@$(MIGRATION_COMPOSE) build php
+	@$(MIGRATION_COMPOSE) up -d --wait mysql
+	@$(MIGRATION_COMPOSE) run --rm --no-deps php php artisan migrate

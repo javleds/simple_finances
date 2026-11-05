@@ -110,8 +110,7 @@ El título se infiere en la respuesta estructurada del primer intercambio válid
 Para actualizar un stack existente, construir la imagen del agente y aplicar la migración aditiva `002_conversation_titles` antes de reiniciar API/worker:
 
 ```bash
-docker compose --env-file .env -f docker-compose.yml -f docker-compose.chat.yml -f docker-compose.chat.local.yml --profile chat build agent-api
-docker compose --env-file .env -f docker-compose.yml -f docker-compose.chat.yml -f docker-compose.chat.local.yml --profile chat run --rm agent-migrate
+make migrate-chat
 ```
 
-PostgreSQL debe estar iniciado. El migrador usa la credencial propietaria; la API sigue usando el rol runtime. Compilar Finance con `npm run build` y reiniciar el stack con `make dev-chat`. En producción usar su archivo base sin el override local. No hace falta migrar MySQL. El esquema acepta threads previos sin título; el rollback funcional mantiene las columnas aditivas.
+El comando construye la imagen e inicia PostgreSQL, esperando a que esté disponible. El migrador usa la credencial propietaria; la API sigue usando el rol runtime. Compilar Finance con `npm run build` y reiniciar el stack con `make dev-chat`. En producción usar su archivo base sin el override local. No hace falta migrar MySQL. El esquema acepta threads previos sin título; el rollback funcional mantiene las columnas aditivas.
