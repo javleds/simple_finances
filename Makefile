@@ -8,7 +8,7 @@ dev-list:
 	@node scripts/dev.mts --list
 
 dev-test:
-	@node --test scripts/dev.test.mjs scripts/finance-dev.test.mjs
+	@node --test scripts/dev.test.mjs scripts/finance-dev.test.mjs scripts/migrations.test.mjs
 
 .PHONY: chat-config chat-setup dev-chat chat-down
 chat-config:
@@ -33,6 +33,4 @@ migrate-chat:
 	@$(MIGRATION_COMPOSE) run --rm --no-deps agent-migrate
 
 migrate-finances:
-	@$(MIGRATION_COMPOSE) build php
-	@$(MIGRATION_COMPOSE) up -d --wait mysql
-	@$(MIGRATION_COMPOSE) run --rm --no-deps php php artisan migrate
+	@bash apps/finance/scripts/migrate.sh

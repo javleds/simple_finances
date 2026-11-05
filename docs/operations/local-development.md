@@ -16,9 +16,9 @@ Configura `DB_*` para una base local y crea la base antes de `php artisan migrat
 
 `.npmrc` conserva `legacy-peer-deps=true` por incompatibilidades de peer dependencies heredadas de la SPA. Usa el lockfile con `npm ci`; esta integración no corrige ni actualiza esas dependencias.
 
-## Migraciones del stack Docker local
+## Migraciones locales
 
-Desde la raíz, con los archivos `.env` preparados según [la guía del asistente](assistant.md):
+Desde la raíz, con `apps/finance/.env` configurado para Finance y, para chat, los archivos `.env` preparados según [la guía del asistente](assistant.md):
 
 ```bash
 make migrate-finances
@@ -26,11 +26,13 @@ make migrate-chat
 make migrate
 ```
 
-`migrate-finances` construye PHP, inicia MySQL y ejecuta `php artisan migrate` usando `apps/finance/.env`. Requiere las dependencias Composer instaladas. `migrate-chat` construye el migrador del agente, inicia PostgreSQL y aplica Alembic y los checkpoints de LangGraph con la credencial propietaria de infraestructura. Ambos esperan a que su base esté disponible y dejan la base iniciada.
+`migrate-finances` ejecuta `php artisan migrate` desde `apps/finance` en el host, usando su `.env` y la misma selección de PHP Homebrew que `make dev` en macOS. Requiere las dependencias Composer instaladas y la base configurada ya disponible. No crea ni recrea MySQL en Docker. `migrate-chat` construye el migrador del agente, inicia PostgreSQL y aplica Alembic y los checkpoints de LangGraph con la credencial propietaria de infraestructura. El comando del chat espera a que PostgreSQL esté disponible y lo deja iniciado.
 
 `migrate` ejecuta Finance y después chat, secuencialmente incluso con `make -j`, y se detiene ante el primer error. No hay una transacción conjunta entre ambas bases: si chat falla, las migraciones ya aplicadas de Finance permanecen. Se puede corregir el error y repetir el comando para aplicar las pendientes. MCP no tiene migraciones financieras propias.
 
-Estos comandos usan los archivos Compose del stack local, no ejecutan seeds ni reinician API/workers. No usan `migrate:fresh` ni fuerzan confirmaciones de Laravel. Para Finance en host, conserva `php artisan migrate` desde `apps/finance` con su configuración local correspondiente.
+Solo el comando del chat usa los archivos Compose del stack local. Estos comandos no ejecutan seeds ni reinician API/workers. No usan `migrate:fresh` ni fuerzan confirmaciones de Laravel. Para Finance ejecutado dentro del stack Docker, usa el comando `docker compose ... run --rm php php artisan migrate` documentado en la guía del asistente en lugar de `make migrate-finances`.
+
+Si existe `simple_finances_db_local` de un proyecto anterior, consérvalo junto con su volumen. El desarrollo en host puede seguir usando esa base; no es necesario eliminar el contenedor, renombrar volúmenes ni cambiar el proyecto Compose para ejecutar `make migrate-finances`.
 
 ## Un único comando desde la raíz
 
