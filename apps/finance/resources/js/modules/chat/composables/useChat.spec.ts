@@ -334,3 +334,24 @@ it('invalidates pending pagination when live events mutate the conversation', as
     expect(chat.historyLoading.value).toBe(false);
     wrapper.unmount();
 });
+
+it('recovers the first question when retrying failed thread creation', async () => {
+    const wrapper = mountChat();
+    const context: ChatContext = { scope: 'account', account_id: '42', route_name: 'admin.accounts.transactions' };
+    chat.draft.value = 'Balance de esta cuenta';
+    vi.mocked(chatRepository.create).mockRejectedValueOnce(new Error('unavailable'));
+    expect(await chat.send(chat.draft.value, context)).toBe(false);
+    expect(chat.draft.value).toBe('Balance de esta cuenta');
+    expect(chatRepository.send).not.toHaveBeenCalled();
+    context.account_id = '99';
+    expect(await chat.newConversation()).toBe(true);
+    expect(chatRepository.create).toHaveBeenNthCalledWith(
+        2, vi.mocked(chatRepository.create).mock.calls[0]?.[0],
+    );
+    expect(chatRepository.send).toHaveBeenCalledExactlyOnceWith('thread', expect.objectContaining({
+        message: 'Balance de esta cuenta',
+        context: { scope: 'account', account_id: '42', route_name: 'admin.accounts.transactions' },
+    }));
+    expect(chat.draft.value).toBe('');
+    wrapper.unmount();
+});

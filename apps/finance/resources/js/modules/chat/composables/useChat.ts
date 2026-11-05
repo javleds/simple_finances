@@ -232,6 +232,7 @@ export function useChat() {
         }
     }
     async function newConversation(): Promise<boolean> {
+        if (!thread.value && initial.pending) return send('', initial.pending.context, true);
         const current = generation;
         const created = await createThread();
         if (!created || disposed || current !== generation) return false;
