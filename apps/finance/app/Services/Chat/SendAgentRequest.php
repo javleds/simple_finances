@@ -29,7 +29,7 @@ class SendAgentRequest
                 ->accept($stream ? 'text/event-stream' : 'application/json')
                 ->connectTimeout(5)->timeout($stream ? 150 : 15)
                 ->withOptions(['stream' => $stream, 'allow_redirects' => false])
-                ->send($method, $path, ['GET' === $method ? 'query' : 'json' => [...$payload, ...$identity]]);
+                ->send($method, $path, [in_array($method, ['GET', 'HEAD'], true) ? 'query' : 'json' => [...$payload, ...$identity]]);
         } catch (ConnectionException) {
             abort(503, 'No se pudo conectar con el asistente.');
         }

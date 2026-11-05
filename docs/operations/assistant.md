@@ -130,3 +130,13 @@ La validación manual con Chrome DevTools del 4 de noviembre de 2026 comprobó h
 La misma prueba verificó contexto de cuenta, desglose de pendientes, consulta de gastos por categoría y cancelación real. El servidor PHP local necesita varios workers: con uno solo, SSE bloqueaba el POST de cancelación hasta terminar la respuesta. El arranque usa cuatro workers y `--no-reload`; producción conserva PHP-FPM. En la prueba concurrente, Finance respondió HTTP 200 en unos 40 ms mientras había un stream abierto.
 
 Validación automatizada de estas correcciones: 52 pruebas Python aprobadas (3 de PostgreSQL omitidas sin DSN de pruebas), 25 pruebas del módulo Vue, 20 del lanzador; Ruff, mypy, type-check, ESLint y build aprobados. Las conversaciones de prueba quedan en el historial local; no se alteraron transacciones financieras.
+
+## Eliminación permanente de conversaciones
+
+Cada conversación del historial permite eliminarse mediante confirmación. Finance valida al propietario con HEAD interno, purga capturas Debugbar locales que contienen el UUID y solicita DELETE al agente. Las nuevas solicitudes de chat quedan excluidas de Debugbar. Solo se limpian capturas JSON del almacenamiento local configurado; otros sistemas de logs requieren su propia política de retención.
+
+El agente borra en una transacción el thread, mensajes, runs, eventos y checkpoints de LangGraph (incluidos blobs y writes). Un bloqueo PostgreSQL compartido con los workers impide escrituras posteriores al borrado. Si existe un run activo o un worker sigue ejecutándose, responde 409: detener, esperar y reintentar. Las conversaciones ajenas devuelven 404. MCP no persiste conversaciones y no se borran cuentas ni transacciones financieras.
+
+No requiere migraciones nuevas. Al desplegar, detener API, workers y procesos de limpieza anteriores antes de iniciar la versión nueva: los procesos antiguos no participan en el bloqueo. Reconstruir el agente y los assets de Finance. El borrado no incluye backups, trazas externas de OpenRouter/LangSmith ni threads independientes de Studio.
+
+Validación: 67 pruebas Python, incluidas las de PostgreSQL real; 32 pruebas Vue del chat; 21 pruebas Laravel del gateway y capturas. Ruff, mypy, type-check, ESLint y build aprobados. La prueba de integración local devolvió DELETE 204 y confirmó cero filas en las siete tablas de conversaciones/checkpoints de una base temporal aislada.

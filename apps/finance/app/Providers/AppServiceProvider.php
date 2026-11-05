@@ -48,6 +48,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        config(['debugbar.except' => [...(array) config('debugbar.except', []), 'api/chat*']]);
+
         RateLimiter::for('whatsapp-code', function (Request $request): array {
             $userKey = 'whatsapp-user:'.$request->user()->getAuthIdentifier();
             $phone = $request->input('phone_number');

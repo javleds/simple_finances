@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use function abort_unless;
 
 use App\Http\Requests\Api\Chat\ChatRequest;
+use App\Services\Chat\PurgeConversationDebugCaptures;
 use App\Services\Chat\SendAgentRequest;
 
 use function auth;
@@ -17,6 +18,7 @@ use FinSi\FinanceDomain\Queries\VisibleAccountsForUser;
 use function flush;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 use function ob_flush;
 use function ob_get_level;
@@ -33,6 +35,15 @@ class ChatController extends ApiController
     public function threads(ChatRequest $request): JsonResponse
     {
         return $this->forward($request, '/threads');
+    }
+
+    public function delete(ChatRequest $request, string $thread, PurgeConversationDebugCaptures $captures): Response
+    {
+        $this->agent->execute('HEAD', '/threads/' . $thread, (int) auth()->id());
+        $captures->execute($thread);
+        $this->agent->execute('DELETE', '/threads/' . $thread, (int) auth()->id());
+
+        return response()->noContent();
     }
 
     public function messages(ChatRequest $request, string $thread): JsonResponse
