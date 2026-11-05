@@ -56,7 +56,7 @@ La suite PostgreSQL requiere una base efímera previamente migrada y el rol runt
 
 ## Studio local
 
-Desde la raíz, `make dev` inicia también LangGraph dev en `127.0.0.1:2024`; `make dev SERVICES=agents` lo inicia solo. Configuración y condiciones de ejecución: [desarrollo local](../../docs/operations/local-development.md#langgraph-studio). El grafo se puede visualizar sin claves; los runs manuales requieren `AGENT_DEV_ACTOR_USER_ID` y conectividad MCP configurada.
+Desde la raíz, `make dev` inicia también LangGraph dev en `127.0.0.1:2024`; `make dev SERVICES=agents` inicia Studio junto con FastAPI, worker, MCP y PostgreSQL, sin Finance. Configuración y condiciones de ejecución: [desarrollo local](../../docs/operations/local-development.md#langgraph-studio). Para visualizar únicamente el grafo sin levantar el runtime, ejecutar `uv run --frozen langgraph dev --host 127.0.0.1 --port 2024 --no-browser` desde esta carpeta. Los runs manuales requieren `AGENT_DEV_ACTOR_USER_ID` y conectividad MCP configurada.
 
 ## Títulos de conversación
 

@@ -42,9 +42,13 @@ make dev-list
 make dev SERVICES="finance"
 ```
 
-Requiere Node 24 (`.nvmrc` en raíz), Make y Bash. `make dev` inicia todas las aplicaciones con `apps/<nombre>/scripts/dev.sh`; actualmente solo Finance. La selección acepta varios nombres separados por espacios, valida todos antes de arrancar y elimina duplicados. `Ctrl+C` detiene todos los grupos de procesos; si un servicio termina, el supervisor detiene los demás y conserva su código de salida. Tras cinco segundos fuerza la terminación de procesos que no responden. No instala dependencias, inicia bases de datos ni ejecuta migraciones.
+Requiere Node 24 (`.nvmrc` en raíz), Make y Bash. `make dev` inicia todas las aplicaciones con `apps/<nombre>/scripts/dev.sh`; actualmente Finance y agentes. La selección acepta varios nombres separados por espacios, valida todos antes de arrancar y elimina duplicados. `Ctrl+C` detiene todos los grupos de procesos; si un servicio termina, el supervisor detiene los demás y conserva su código de salida. Tras cinco segundos fuerza la terminación de procesos que no responden. El servicio de agentes construye sus imágenes e inicia PostgreSQL; no aplica migraciones ni crea MySQL.
 
-Cuando se implementen MCP y agentes, cada aplicación añadirá su propio `scripts/dev.sh`, ejecutado con su carpeta como directorio de trabajo. Entonces podrán seleccionarse, por ejemplo, con `make dev SERVICES="finance mcp agents"`. Hoy esos nombres se rechazan porque todavía no existen. Cada servicio debe permanecer en primer plano y configurar sus propios puertos.
+`make dev SERVICES="finance"` inicia solo Finance. `make dev SERVICES="agents"` inicia FastAPI, worker y MCP en Docker, además de LangGraph Studio en el host. Ambos usan los mismos servicios al ejecutar `make dev` sin filtro. Se requiere Docker y uv para agentes; configura los tokens coincidentes, el usuario lector y hashes legales de MCP, y aplica `make migrate` antes del primer arranque.
+
+Finance usa `http://127.0.0.1:8001` para FastAPI durante este arranque (puede sobrescribirse mediante la variable de proceso `CHAT_AGENT_URL`). Studio conserva `127.0.0.1:2024` y usa MCP en `127.0.0.1:8002/mcp`. El override `docker-compose.chat.host.yml` publica únicamente loopback y no se usa en producción. MCP conserva sus credenciales lectoras y toma host, puerto y nombre de base del `.env` de Finance; loopback se convierte en `host.docker.internal`. MySQL debe estar iniciado y permitir al usuario lector conectarse desde Docker. No se recrea el MySQL existente.
+
+Al detener agentes se detienen API, worker y MCP; PostgreSQL permanece iniciado. No ejecutar simultáneamente este modo y `make dev-chat`, que sirve Finance también dentro de Docker. Si Laravel tiene configuración cacheada, ejecutar `php artisan config:clear` en Finance para que tome la URL de desarrollo.
 
 El arranque específico de Finance sigue disponible desde `apps/finance`:
 
@@ -158,14 +162,14 @@ La infraestructura Docker se configura en `.env` raíz; cada aplicación utiliza
 `make dev` inicia Finance y el servidor LangGraph dev descubierto en `apps/agents/scripts/dev.sh`. Requiere `uv` y Python 3.12–3.13; `uv run --frozen` instala las dependencias fijadas, incluido el CLI de desarrollo. Escucha exclusivamente en `http://127.0.0.1:2024`, con recarga automática. Abre [LangSmith Studio local](https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024) y selecciona el grafo `finance`.
 
 ```bash
-make dev                   # Finance + LangGraph dev
+make dev                   # Finance + runtime del chat + Studio
 make dev SERVICES=finance  # Solo Finance
-make dev SERVICES=agents   # Solo LangGraph dev
+make dev SERVICES=agents   # Runtime del chat + Studio
 ```
 
-El launcher supervisa ambos procesos y los detiene con Ctrl+C. Studio muestra los mismos nodos/aristas que compila el worker; no es un dibujo separado. La visualización no necesita credenciales de OpenRouter, PostgreSQL ni conexión MCP. Este servidor no sustituye FastAPI ni expone sus conversaciones: guarda estado de desarrollo independiente en `apps/agents/.langgraph_api` (ignorado por Git).
+El launcher supervisa ambos procesos y los detiene con Ctrl+C. Studio muestra los mismos nodos/aristas que compila el worker; no es un dibujo separado. Para visualizar únicamente el grafo sin infraestructura, ejecutar desde `apps/agents` el comando `uv run --frozen langgraph dev --host 127.0.0.1 --port 2024 --no-browser`; esa visualización no necesita credenciales de OpenRouter, PostgreSQL ni conexión MCP. Este servidor no sustituye FastAPI ni expone sus conversaciones: guarda estado de desarrollo independiente en `apps/agents/.langgraph_api` (ignorado por Git).
 
-Para ejecutar manualmente el grafo desde Studio, configura `AGENT_DEV_ACTOR_USER_ID` con un usuario de desarrollo autorizado en `apps/agents/.env`, además de OpenRouter y un `MCP_URL` alcanzable desde el host con su token. El actor no se recibe como input del modelo. El DNS `agent-mcp` del stack privado Docker no es resoluble desde el host; `make dev` no publica MCP ni levanta ese stack. Para el flujo completo web sigue usando `make dev-chat`.
+Para ejecutar manualmente el grafo desde Studio, configura `AGENT_DEV_ACTOR_USER_ID` con un usuario de desarrollo autorizado en `apps/agents/.env`, además de OpenRouter y un `MCP_URL` alcanzable desde el host con su token. El actor no se recibe como input del modelo. El lanzador asigna a Studio `MCP_URL=http://127.0.0.1:8002/mcp`; el worker conserva su URL interna de Docker. El flujo web completo está disponible con `make dev`.
 
 El input manual de Studio usa el estado del grafo:
 

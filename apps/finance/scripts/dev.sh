@@ -22,6 +22,8 @@ foreach (["JPEG", "PNG", "WEBP", "HEIC"] as $format) {
 echo "PHP de desarrollo: ".PHP_BINARY." (Imagick disponible)\n";
 '
 
+export CHAT_AGENT_URL="${CHAT_AGENT_URL:-http://127.0.0.1:8001}"
+
 composer run domain:sync
 
 exec npx --no-install concurrently --kill-others --names=php,vite,queue \

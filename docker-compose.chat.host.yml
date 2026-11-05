@@ -1,0 +1,20 @@
+services:
+    agent-api:
+        ports:
+            - '127.0.0.1:8001:8000'
+        networks:
+            - agent_egress
+    agent-mcp:
+        ports:
+            - '127.0.0.1:8002:8080'
+        networks:
+            - agent_egress
+    mcp-php:
+        environment:
+            DB_HOST: ${DEV_FINANCE_DB_HOST:?Host database required}
+            DB_PORT: ${DEV_FINANCE_DB_PORT:?Host database port required}
+            DB_DATABASE: ${DEV_FINANCE_DB_DATABASE:?Host database name required}
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        networks:
+            - agent_egress

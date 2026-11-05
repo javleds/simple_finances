@@ -52,7 +52,7 @@ make dev-chat
 
 El launcher exige que no exista `apps/finance/public/hot`, para que Laravel use el build. Si quedó un archivo después de detener Vite, comprobar que es obsoleto antes de retirarlo. No se elimina automáticamente. Abrir `http://127.0.0.1:8080`; `CHAT_WEB_PORT` permite cambiarlo. El botón de chat aparece en el navbar autenticado. Con `CHAT_ENABLED=false`, abre un estado no disponible sin llamar al agente; habilitarlo y cumplir los requisitos de sesión permite conversar.
 
-`make dev` mantiene el desarrollo habitual en host; no puede resolver el DNS privado de FastAPI. Para probar chat completo usar Finance dentro del stack Docker. No publicar FastAPI para adaptar ese modo host.
+`make dev` usa Finance en host y publica FastAPI/MCP únicamente en loopback mediante un override de desarrollo. `make dev-chat` conserva la alternativa con Finance dentro de Docker. Producción no utiliza el override de host.
 
 ```bash
 make chat-down
@@ -114,3 +114,7 @@ make migrate-chat
 ```
 
 El comando construye la imagen e inicia PostgreSQL, esperando a que esté disponible. El migrador usa la credencial propietaria; la API sigue usando el rol runtime. Compilar Finance con `npm run build` y reiniciar el stack con `make dev-chat`. En producción usar su archivo base sin el override local. No hace falta migrar MySQL. El esquema acepta threads previos sin título; el rollback funcional mantiene las columnas aditivas.
+
+## Chat con Finance en el host
+
+`make dev` inicia Finance, FastAPI (127.0.0.1:8001), MCP (127.0.0.1:8002), worker, PostgreSQL y Studio (127.0.0.1:2024). Requiere configuración y migraciones previas. El override `docker-compose.chat.host.yml` es exclusivo de desarrollo; producción conserva FastAPI/MCP sin puertos publicados. Consulta [desarrollo local](local-development.md) para la conexión al MySQL existente y el apagado. `CHAT_ENABLED=true` en Finance habilita el panel; OpenRouter y el modelo se configuran en `apps/agents/.env`.

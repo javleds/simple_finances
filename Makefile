@@ -8,7 +8,7 @@ dev-list:
 	@node scripts/dev.mts --list
 
 dev-test:
-	@node --test scripts/dev.test.mjs scripts/finance-dev.test.mjs scripts/migrations.test.mjs
+	@node --test scripts/dev.test.mjs scripts/finance-dev.test.mjs scripts/migrations.test.mjs scripts/agents-dev.test.mjs
 
 .PHONY: chat-config chat-setup dev-chat chat-down
 chat-config:

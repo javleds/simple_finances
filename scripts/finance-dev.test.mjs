@@ -16,14 +16,14 @@ for (const failure of [false, true]) {
             uname: 'echo Linux',
             php: 'exit 0',
             composer: `echo "composer $*" >> "$START_LOG"\nexit ${failure ? 17 : 0}`,
-            npx: 'echo npx >> "$START_LOG"',
+            npx: 'echo "npx $CHAT_AGENT_URL" >> "$START_LOG"',
         })) writeFileSync(join(root, 'bin', name), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
         const run = spawnSync('/bin/bash', [join(root, 'scripts/dev.sh')], {
-            env: { ...process.env, PATH: `${join(root, 'bin')}:/usr/bin:/bin`, START_LOG: join(root, 'startup.log') },
+            env: { ...process.env, PATH: `${join(root, 'bin')}:/usr/bin:/bin`, CHAT_AGENT_URL: '', START_LOG: join(root, 'startup.log') },
             encoding: 'utf8',
         });
         assert.equal(run.status, failure ? 17 : 0, run.stderr);
         assert.equal(readFileSync(join(root, 'startup.log'), 'utf8'),
-            failure ? 'composer run domain:sync\n' : 'composer run domain:sync\nnpx\n');
+            failure ? 'composer run domain:sync\n' : 'composer run domain:sync\nnpx http://127.0.0.1:8001\n');
     });
 }
