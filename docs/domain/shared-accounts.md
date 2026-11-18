@@ -101,6 +101,18 @@ Confianza: Observado.
 - `resources/js/modules/accounts`
 - `resources/js/modules/transactions`
 
+## Custodios virtuales
+
+Las cuentas corrientes compartidas pueden tener custodios virtuales propios. Son identidades financieras con `users.virtual_account_id`, sin membresía en `account_user`, autenticación, invitaciones, notificaciones ni porcentaje de reparto. La administración corresponde al propietario; los miembros pueden consultar la custodia y registrar pagos y reembolsos. La vista Usuarios los presenta junto a los miembros, con eliminación como única acción.
+
+Crear permite añadir saldo mediante un ingreso marcado `virtual_custodian_opening`, excluido del disponible personal, y trasladar custodia existente con pares `internal_transfer`. Las aportaciones ordinarias posteriores conservan las reglas de dinero personal. Los traslados no aumentan el balance y solo disponen de custodia libre de reembolsos comprometidos.
+
+Los movimientos nuevos conservan `uses_virtual_custodian_rules`; editar dentro de la misma cuenta mantiene ese modo histórico. En este flujo, la cobertura de gastos de bolsillo se debe al pagador efectivo, descontando compromisos de custodia anteriores. La parte sin cobertura se reparte entre personas; un pagador virtual puede adelantar más que su custodia. `virtual_custody_reimbursement_due` y `virtual_custody_settlement_transfer` separan estas obligaciones de las deudas entre miembros, también cuando ambas existen en un movimiento.
+
+Eliminar exige distribuir exactamente el 100% entre miembros vigentes y resolver antes todas las obligaciones. `virtual_retired_at` retira la opción sin borrar el historial. Una edición o eliminación histórica que devuelve custodia o deudas a esa identidad la reactiva, dentro de la misma operación, para que la posición permanezca visible.
+
+API: GET/POST `/api/accounts/{account}/custodians`; DELETE `/api/accounts/{account}/custodians/{custodian}`. Los resúmenes incluyen `virtual_custodians` separado de `users`; nunca usar la lista financiera para conceder acceso o calcular porcentajes de personas.
+
 ## Categorías compartidas
 
 La cuenta conserva un catálogo propio desde su primera conversión a compartida, incluso si vuelve a tener un solo miembro. Se copian las categorías usadas en esa cuenta sin modificar los catálogos personales. Todos los miembros pueden crear y seleccionar; solo el propietario renombra o elimina. Eliminar puede reclasificar movimientos de otros miembros y exige decidir su destino si hay uso. Consulta [categorías de transacciones](categories.md) para conflictos de nombres, permisos y contrato API.

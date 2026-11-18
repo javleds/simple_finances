@@ -1,6 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Transaction;
+
+use App\Services\Accounts\BuildAccountCustodySummary;
+
+use function array_sum;
+use function collect;
 
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
@@ -8,24 +15,29 @@ use FinSi\FinanceDomain\Enums\TransactionStatus;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\Transaction;
-use App\Services\Accounts\BuildAccountCustodySummary;
 use Illuminate\Support\Collection;
+
+use function max;
+use function min;
+use function round;
 
 class SyncAccountMemberLedger
 {
-    public function __construct(private readonly BuildAccountCustodySummary $buildAccountCustodySummary)
-    {
+    public function __construct(
+        private readonly BuildAccountCustodySummary $buildAccountCustodySummary,
+        private readonly \App\Services\Accounts\BuildAccountMemberSummary $buildAccountMemberSummary,
+    ) {
     }
 
     public function execute(Transaction $transaction): void
     {
         $transaction->ledgerEntries()->delete();
 
-        if ($transaction->status !== TransactionStatus::Completed || $transaction->legacy_migrated_at !== null) {
+        if (TransactionStatus::Completed !== $transaction->status || null !== $transaction->legacy_migrated_at) {
             return;
         }
 
-        if ($transaction->type === TransactionType::Income) {
+        if (TransactionType::Income === $transaction->type) {
             $this->recordIncomeCustody($transaction);
 
             return;
@@ -37,10 +49,10 @@ class SyncAccountMemberLedger
     private function recordIncomeCustody(Transaction $transaction): void
     {
         $transaction->ledgerEntries()->create([
-            'account_id' => $transaction->account_id,
-            'user_id' => $transaction->custodian_user_id ?? $transaction->user_id,
-            'type' => AccountMemberLedgerEntryType::IncomeCustody,
-            'amount' => $transaction->amount,
+            'account_id'  => $transaction->account_id,
+            'user_id'     => $transaction->custodian_user_id ?? $transaction->user_id,
+            'type'        => AccountMemberLedgerEntryType::IncomeCustody,
+            'amount'      => $transaction->amount,
             'description' => $transaction->concept,
             'occurred_at' => $transaction->scheduled_at,
         ]);
@@ -48,21 +60,28 @@ class SyncAccountMemberLedger
 
     private function recordOutcome(Transaction $transaction): void
     {
-        if ($transaction->uses_shared_account_rules === false) {
+        if (false === $transaction->uses_shared_account_rules) {
             $this->createEntry($transaction, $transaction->paid_by_user_id ?? $transaction->user_id, AccountMemberLedgerEntryType::AccountFundExpense, $transaction->amount * -1);
+
             return;
         }
 
         $source = $transaction->payment_source ?? TransactionPaymentSource::AccountFund;
         $paidByUserId = $transaction->paid_by_user_id ?? $transaction->user_id;
 
-        if ($source === TransactionPaymentSource::AccountFund) {
+        if (TransactionPaymentSource::AccountFund === $source) {
             $this->recordAccountFundOutcome($transaction, $paidByUserId);
 
             return;
         }
 
         $positiveCustodians = $this->positiveCustodians($transaction);
+
+        if ($transaction->uses_virtual_custodian_rules) {
+            $this->recordVirtualAccountOutOfPocketOutcome($transaction, $positiveCustodians, $paidByUserId);
+
+            return;
+        }
 
         if ($positiveCustodians->isNotEmpty()) {
             $this->recordOutOfPocketOutcomeWithCustody($transaction);
@@ -71,10 +90,10 @@ class SyncAccountMemberLedger
         }
 
         $transaction->ledgerEntries()->create([
-            'account_id' => $transaction->account_id,
-            'user_id' => $paidByUserId,
-            'type' => AccountMemberLedgerEntryType::ExpensePaid,
-            'amount' => $transaction->amount,
+            'account_id'  => $transaction->account_id,
+            'user_id'     => $paidByUserId,
+            'type'        => AccountMemberLedgerEntryType::ExpensePaid,
+            'amount'      => $transaction->amount,
             'description' => $transaction->concept,
             'occurred_at' => $transaction->scheduled_at,
         ]);
@@ -85,13 +104,13 @@ class SyncAccountMemberLedger
 
         foreach ($allocations as $allocation) {
             $transaction->ledgerEntries()->create([
-                'account_id' => $transaction->account_id,
-                'user_id' => $allocation->user_id,
+                'account_id'      => $transaction->account_id,
+                'user_id'         => $allocation->user_id,
                 'related_user_id' => $paidByUserId,
-                'type' => AccountMemberLedgerEntryType::ExpenseShare,
-                'amount' => $allocation->amount * -1,
-                'description' => $transaction->concept,
-                'occurred_at' => $transaction->scheduled_at,
+                'type'            => AccountMemberLedgerEntryType::ExpenseShare,
+                'amount'          => $allocation->amount * -1,
+                'description'     => $transaction->concept,
+                'occurred_at'     => $transaction->scheduled_at,
             ]);
         }
     }
@@ -206,20 +225,42 @@ class SyncAccountMemberLedger
         }
     }
 
-    private function createCustodyReimbursementDue(Transaction $transaction, int $fromUserId, int $toUserId, float $amount): void
+    private function recordVirtualAccountOutOfPocketOutcome(Transaction $transaction, Collection $custodians, int $payerId): void
+    {
+        $remaining = round((float) $transaction->amount, 2);
+
+        foreach ($custodians as $custodian) {
+            $covered = round(min($remaining, (float) $custodian['amount']), 2);
+            $this->createCustodyReimbursementDue($transaction, (int) $custodian['user_id'], $payerId, $covered, AccountMemberLedgerEntryType::VirtualCustodyReimbursementDue);
+            $remaining = round($remaining - $covered, 2);
+
+            if ($remaining <= 0.0) {
+                return;
+            }
+        }
+
+        $this->createEntry($transaction, $payerId, AccountMemberLedgerEntryType::ExpensePaid, $remaining);
+        $allocations = $this->responsibilityAllocations($transaction, $transaction->user_id);
+
+        foreach ($this->deficitAmounts($allocations, $remaining) as $userId => $amount) {
+            $this->createEntry($transaction, (int) $userId, AccountMemberLedgerEntryType::ExpenseShare, -$amount, $payerId);
+        }
+    }
+
+    private function createCustodyReimbursementDue(Transaction $transaction, int $fromUserId, int $toUserId, float $amount, AccountMemberLedgerEntryType $type = AccountMemberLedgerEntryType::CustodyReimbursementDue): void
     {
         if ($amount <= 0.0) {
             return;
         }
 
         if ($fromUserId === $toUserId) {
-            $this->createEntry($transaction, $fromUserId, AccountMemberLedgerEntryType::CustodyReimbursementDue, $amount * -1, $toUserId);
+            $this->createEntry($transaction, $fromUserId, $type, $amount * -1, $toUserId);
 
             return;
         }
 
-        $this->createEntry($transaction, $fromUserId, AccountMemberLedgerEntryType::CustodyReimbursementDue, $amount * -1, $toUserId);
-        $this->createEntry($transaction, $toUserId, AccountMemberLedgerEntryType::CustodyReimbursementDue, $amount, $fromUserId);
+        $this->createEntry($transaction, $fromUserId, $type, $amount * -1, $toUserId);
+        $this->createEntry($transaction, $toUserId, $type, $amount, $fromUserId);
     }
 
     private function createEntry(
@@ -230,13 +271,13 @@ class SyncAccountMemberLedger
         ?int $relatedUserId = null,
     ): AccountMemberLedgerEntry {
         return $transaction->ledgerEntries()->create([
-            'account_id' => $transaction->account_id,
-            'user_id' => $userId,
+            'account_id'      => $transaction->account_id,
+            'user_id'         => $userId,
             'related_user_id' => $relatedUserId,
-            'type' => $type,
-            'amount' => round($amount, 2),
-            'description' => $transaction->concept,
-            'occurred_at' => $transaction->scheduled_at,
+            'type'            => $type,
+            'amount'          => round($amount, 2),
+            'description'     => $transaction->concept,
+            'occurred_at'     => $transaction->scheduled_at,
         ]);
     }
 
@@ -264,13 +305,23 @@ class SyncAccountMemberLedger
         $account = $transaction->account()->withoutGlobalScopes()->firstOrFail();
         $custodians = $this->buildAccountCustodySummary->positiveCustodians($account);
 
+        if ($transaction->uses_virtual_custodian_rules) {
+            $pending = collect($this->buildAccountMemberSummary->execute($account)['pending_reimbursements'])
+                ->where('action_type', 'custody_to_user');
+
+            return $custodians->map(fn (array $custodian): array => [
+                'user_id' => $custodian['user_id'],
+                'amount'  => round(max(0.0, $custodian['amount'] - $pending->where('from_user_id', $custodian['user_id'])->sum('amount')), 2),
+            ])->filter(fn (array $custodian): bool => $custodian['amount'] > 0)->values();
+        }
+
         if ($custodians->isNotEmpty() || round((float) $account->balance, 2) <= 0.0) {
             return $custodians;
         }
 
         return collect([[
             'user_id' => (int) $account->user_id,
-            'amount' => round((float) $account->balance, 2),
+            'amount'  => round((float) $account->balance, 2),
         ]]);
     }
 

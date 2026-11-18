@@ -39,6 +39,15 @@ class BuildAccountMemberSummary
             ->values();
 
         return [
+            'virtual_custodians'     => $summary
+                ->filter(fn (array $item): bool => $users->firstWhere('id', $item['user_id'])?->isVirtualCustodian()
+                    && null === $users->firstWhere('id', $item['user_id'])?->virtual_retired_at)
+                ->map(fn (array $item): array => [
+                    'id'                => $item['user_id'],
+                    'name'              => $item['user_name'],
+                    'custody_amount'    => $item['custody_amount'],
+                    'settlement_amount' => $item['settlement_amount'],
+                ])->values()->all(),
             'custody_by_user'        => $summary
                 ->map(fn (array $item): array => [
                     'user_id'   => $item['user_id'],
@@ -92,6 +101,8 @@ class BuildAccountMemberSummary
                 AccountMemberLedgerEntryType::SettlementTransfer,
                 AccountMemberLedgerEntryType::SettlementCorrection,
                 AccountMemberLedgerEntryType::CustodyReimbursementDue,
+                AccountMemberLedgerEntryType::VirtualCustodyReimbursementDue,
+                AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer,
                 AccountMemberLedgerEntryType::AccountDeficitShare,
                 AccountMemberLedgerEntryType::AccountDeficitPayment,
                 AccountMemberLedgerEntryType::LegacySettlement,
@@ -104,7 +115,13 @@ class BuildAccountMemberSummary
         $transactionDebts = $this->transactionDebts($account);
 
         if ([] !== $transactionDebts) {
-            return $transactionDebts;
+            return collect($transactionDebts)
+                ->groupBy(fn (array $item): string => ($item['action_type'] ?? 'user_to_user') . ':' . $item['from_user_id'] . ':' . $item['to_user_id'])
+                ->map(fn (Collection $items): array => [
+                    ...$items->first(),
+                    'amount' => round((float) $items->sum('amount'), 2),
+                    'items'  => $items->flatMap(fn (array $item): array => $item['items'])->values()->all(),
+                ])->values()->all();
         }
 
         return $this->netSettlementDebts($account, $summary);
@@ -160,6 +177,12 @@ class BuildAccountMemberSummary
     {
         $typedDebts = array_merge(
             $this->custodyReimbursementDebts($account),
+            $this->pairedTransactionDebts(
+                $account,
+                [AccountMemberLedgerEntryType::VirtualCustodyReimbursementDue, AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer],
+                'custody_to_user',
+                AccountMemberLedgerEntryType::VirtualCustodyReimbursementDue,
+            ),
             $this->selfCustodyReimbursementDebts($account),
             $this->accountDeficitDebts($account),
         );
@@ -314,6 +337,8 @@ class BuildAccountMemberSummary
             ->whereIn('type', [
                 AccountMemberLedgerEntryType::CustodyReimbursementDue,
                 AccountMemberLedgerEntryType::SettlementTransfer,
+                AccountMemberLedgerEntryType::VirtualCustodyReimbursementDue,
+                AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer,
             ])
             ->groupBy('transaction_id', 'user_id')
             ->havingRaw('open_amount < -0.001')
@@ -355,6 +380,10 @@ class BuildAccountMemberSummary
             ->selectRaw('transaction_id, user_id, round(sum(amount), 2) as open_amount')
             ->whereNotNull('transaction_id')
             ->whereIn('type', $types);
+
+        if (AccountMemberLedgerEntryType::VirtualCustodyReimbursementDue === $requiredType) {
+            $query->whereColumn('user_id', '!=', 'related_user_id');
+        }
 
         if (null !== $requiredType) {
             $query->whereIn('transaction_id', function ($subQuery) use ($requiredType): void {
@@ -563,12 +592,10 @@ class BuildAccountMemberSummary
             ->orderBy('users.id')
             ->get();
 
-        if ($users->isNotEmpty()) {
-            return $users;
+        if ($users->isEmpty()) {
+            $users = User::query()->where('id', $account->user_id)->get();
         }
 
-        return User::query()
-            ->where('id', $account->user_id)
-            ->get();
+        return $users->merge($account->virtualCustodians()->orderBy('id')->get());
     }
 }

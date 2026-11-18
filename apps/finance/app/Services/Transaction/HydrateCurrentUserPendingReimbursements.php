@@ -1,16 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Transaction;
 
-use FinSi\FinanceDomain\Queries\UserOwnedResources;
+use function abs;
+use function collect;
+
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\Transaction;
+use FinSi\FinanceDomain\Queries\UserOwnedResources;
 use Illuminate\Support\Collection;
+
+use function round;
 
 class HydrateCurrentUserPendingReimbursements
 {
-    public function __construct(private readonly UserOwnedResources $userOwnedResources) {}
+    public function __construct(private readonly UserOwnedResources $userOwnedResources)
+    {
+    }
 
     /**
      * @param iterable<int, Transaction> $transactions
@@ -21,7 +30,7 @@ class HydrateCurrentUserPendingReimbursements
         $transactionIds = $transactions
             ->pluck('id')
             ->filter()
-            ->map(fn (int|string $id): int => (int) $id)
+            ->map(fn (int | string $id): int => (int) $id)
             ->values();
 
         if ($transactionIds->isEmpty()) {
@@ -47,6 +56,7 @@ class HydrateCurrentUserPendingReimbursements
 
     /**
      * @param Collection<int, int> $transactionIds
+     *
      * @return Collection<int, float>
      */
     private function openAmounts(Collection $transactionIds, int $userId): Collection
@@ -58,6 +68,8 @@ class HydrateCurrentUserPendingReimbursements
                 AccountMemberLedgerEntryType::ExpensePaid,
                 AccountMemberLedgerEntryType::ExpenseShare,
                 AccountMemberLedgerEntryType::CustodyReimbursementDue,
+                AccountMemberLedgerEntryType::VirtualCustodyReimbursementDue,
+                AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer,
                 AccountMemberLedgerEntryType::AccountDeficitShare,
                 AccountMemberLedgerEntryType::AccountDeficitPayment,
                 AccountMemberLedgerEntryType::SettlementTransfer,

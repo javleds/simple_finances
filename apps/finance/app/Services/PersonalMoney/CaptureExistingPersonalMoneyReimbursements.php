@@ -4,24 +4,29 @@ declare(strict_types=1);
 
 namespace App\Services\PersonalMoney;
 
-use FinSi\FinanceDomain\Queries\UserOwnedResources;
 use function abs;
 
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\PersonalMoneyReimbursement;
+use FinSi\FinanceDomain\Queries\UserOwnedResources;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\Builder;
 
+use function max;
+
 class CaptureExistingPersonalMoneyReimbursements
 {
-    public function __construct(private readonly UserOwnedResources $userOwnedResources) {}
+    public function __construct(private readonly UserOwnedResources $userOwnedResources)
+    {
+    }
 
     public function execute(int $userId, string $startedAt): void
     {
         $this->userOwnedResources->constrain(AccountMemberLedgerEntry::query(), (int) $userId)
             ->where('occurred_at', '>=', $startedAt)->whereIn('type', [
                 AccountMemberLedgerEntryType::SettlementTransfer,
+                AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer,
                 AccountMemberLedgerEntryType::CustodyReimbursementPayment,
             ])->whereNotExists(static function (Builder $query): void {
                 $query->selectRaw('1')->from('personal_money_reimbursements')
@@ -40,6 +45,9 @@ class CaptureExistingPersonalMoneyReimbursements
 
     private function cashEffect(AccountMemberLedgerEntry $entry): float
     {
+        if (AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer === $entry->type) {
+            return max(0.0, -$entry->amount);
+        }
         if (AccountMemberLedgerEntryType::CustodyReimbursementPayment === $entry->type) {
             return $entry->user_id === $entry->related_user_id ? abs($entry->amount) : 0.0;
         }

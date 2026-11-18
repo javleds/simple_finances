@@ -1,18 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
+use function abort_unless;
+
 use App\Http\Requests\Api\AccountMemberTransferRequest;
-use FinSi\FinanceDomain\Models\Account;
-use FinSi\FinanceDomain\Models\NotificationType;
-use FinSi\FinanceDomain\Models\User;
 use App\Services\Accounts\BuildAccountLedgerTimeline;
 use App\Services\Accounts\BuildAccountMemberSummary;
 use App\Services\Accounts\RegisterAccountMemberTransfer;
-use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
 use App\Services\SharedTransactions\RegisterSharedTransactionNotificationAction;
-use Illuminate\Support\Carbon;
+
+use function auth;
+use function config;
+
+use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
+use FinSi\FinanceDomain\Models\Account;
+use FinSi\FinanceDomain\Models\NotificationType;
+use FinSi\FinanceDomain\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
+
+use function now;
 
 class AccountMemberTransferController extends ApiController
 {
@@ -20,7 +30,8 @@ class AccountMemberTransferController extends ApiController
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
         private readonly BuildAccountMemberSummary $buildAccountMemberSummary,
         private readonly BuildAccountLedgerTimeline $buildAccountLedgerTimeline,
-    ) {}
+    ) {
+    }
 
     public function store(
         Account $account,
@@ -59,6 +70,11 @@ class AccountMemberTransferController extends ApiController
     private function ensureAccountUser(Account $account, int $userId): void
     {
         $user = User::withoutGlobalScopes()->findOrFail($userId);
+        if ($user->isVirtualCustodian()) {
+            abort_unless($user->virtual_account_id === $account->id && null === $user->virtual_retired_at, 404);
+
+            return;
+        }
         $this->authorizeAccountAccess->ensureAccountUser($account, $user);
     }
 
@@ -68,7 +84,7 @@ class AccountMemberTransferController extends ApiController
         User $modifier,
         RegisterSharedTransactionNotificationAction $registerSharedTransactionNotificationAction,
     ): void {
-        if (config('notifications.shared_transactions.mode') !== 'grouped') {
+        if ('grouped' !== config('notifications.shared_transactions.mode')) {
             return;
         }
 

@@ -1,12 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
-use FinSi\FinanceDomain\Models\User;
 use App\Services\Auth\JwtTokenService;
 use Closure;
+use FinSi\FinanceDomain\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+
+use function is_string;
+use function response;
+
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -14,18 +20,19 @@ class AuthenticateApiToken
 {
     public function __construct(
         private readonly JwtTokenService $jwtTokenService,
-    ) {}
+    ) {
+    }
 
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param Closure(Request): (Response) $next
      */
     public function handle(Request $request, Closure $next): Response
     {
         $bearerToken = $request->bearerToken();
 
-        if (! is_string($bearerToken) || $bearerToken === '') {
+        if (! is_string($bearerToken) || '' === $bearerToken) {
             return response()->json([
                 'message' => 'Unauthenticated.',
             ], Response::HTTP_UNAUTHORIZED);
@@ -35,7 +42,7 @@ class AuthenticateApiToken
             $payload = $this->jwtTokenService->parse($bearerToken);
             $user = User::withoutGlobalScopes()->find($payload['sub']);
 
-            if (! $user instanceof User) {
+            if (! $user instanceof User || $user->isVirtualCustodian()) {
                 return response()->json([
                     'message' => 'Unauthenticated.',
                 ], Response::HTTP_UNAUTHORIZED);

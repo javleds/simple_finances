@@ -16,6 +16,11 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory;
     use Notifiable;
 
+    public function isVirtualCustodian(): bool
+    {
+        return null !== $this->virtual_account_id;
+    }
+
     public function getIsEmailVerifiedAttribute(): bool
     {
         return $this->hasVerifiedEmail();
@@ -91,8 +96,10 @@ class User extends Authenticatable implements MustVerifyEmail
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
+            'virtual_account_id' => 'integer',
+            'virtual_retired_at' => 'immutable_datetime',
+            'email_verified_at'  => 'datetime',
+            'password'           => 'hashed',
         ];
     }
 }

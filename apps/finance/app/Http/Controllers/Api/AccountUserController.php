@@ -1,25 +1,39 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
-use App\Http\Requests\Api\BulkUpdateAccountUsersRequest;
+use function abort_if;
+use function abort_unless;
+use function abs;
+use function app;
+
 use App\Http\Requests\Api\AccountUserRequest;
-use FinSi\FinanceDomain\Models\Account;
-use FinSi\FinanceDomain\Models\User;
+use App\Http\Requests\Api\BulkUpdateAccountUsersRequest;
 use App\Services\Accounts\BuildAccountMemberSummary;
 use App\Services\Accounts\RemoveAccountUser;
 use App\Services\Accounts\UpdateAccountUserPercentage;
 use App\Services\Accounts\UpdateAccountUsersPercentages;
+
+use function auth;
+use function collect;
+
 use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
+use FinSi\FinanceDomain\Models\Account;
+use FinSi\FinanceDomain\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+
+use function round;
 
 class AccountUserController extends ApiController
 {
     public function __construct(
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
         private readonly BuildAccountMemberSummary $buildAccountMemberSummary,
-    ) {}
+    ) {
+    }
 
     public function index(Account $account, Request $request): JsonResponse
     {
@@ -60,7 +74,7 @@ class AccountUserController extends ApiController
     ): JsonResponse {
         $this->ensureOwner($account);
 
-        $user = User::withoutGlobalScopes()->findOrFail($request->integer('user_id'));
+        $user = User::withoutGlobalScopes()->whereNull('virtual_account_id')->findOrFail($request->integer('user_id'));
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($account, $user, $request, $updateAccountUserPercentage): void {
             Account::withoutGlobalScopes()->whereKey($account->id)->lockForUpdate()->firstOrFail();
@@ -118,7 +132,7 @@ class AccountUserController extends ApiController
         return $this->respond([
             'data' => $users,
             'meta' => [
-                'account_id' => $account->id,
+                'account_id'       => $account->id,
                 'total_percentage' => round(
                     collect($request->normalizedUsers())->sum('percentage'),
                     2,
@@ -172,7 +186,7 @@ class AccountUserController extends ApiController
             return;
         }
 
-        abort_if(round((float) $member->pivot->percentage, 2) !== 0.0, 422, 'You cannot leave an account while you still have an assigned percentage.');
+        abort_if(0.0 !== round((float) $member->pivot->percentage, 2), 422, 'You cannot leave an account while you still have an assigned percentage.');
 
         $summary = $this->buildAccountMemberSummary->execute($account);
         $custodyAmount = $this->summaryAmountForUser($summary['custody_by_user'], $user->id);

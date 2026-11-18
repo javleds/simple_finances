@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use FinSi\FinanceDomain\Models\NotificationType;
@@ -11,25 +13,11 @@ use function Laravel\Prompts\progress;
 class EnableDefaultNotificationTypes extends Command
 {
     /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'app:enable-default-notification-types';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'After the release, this command will iterate over all the users to enable the default notifications.';
-
-    /**
      * Execute the console command.
      */
     public function handle(): int
     {
-        $users = User::withoutGlobalScopes()->get();
+        $users = User::withoutGlobalScopes()->whereNull('virtual_account_id')->get();
         $notificationTypes = NotificationType::whereIn('name', NotificationType::DEFAULT_NOTIFICATIONS)
             ->get()
             ->pluck('id')
@@ -43,4 +31,18 @@ class EnableDefaultNotificationTypes extends Command
 
         return self::SUCCESS;
     }
+
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'app:enable-default-notification-types';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'After the release, this command will iterate over all the users to enable the default notifications.';
 }

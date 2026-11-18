@@ -8,6 +8,7 @@ use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\PersonalMoneyReimbursement;
+use FinSi\FinanceDomain\Models\User;
 
 use function in_array;
 use function round;
@@ -36,8 +37,13 @@ class CapturePersonalMoneyReimbursements
         foreach ($entries as $entry) {
             if (! $entry instanceof AccountMemberLedgerEntry || ! in_array($entry->type, [
                 AccountMemberLedgerEntryType::SettlementTransfer,
+                AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer,
                 AccountMemberLedgerEntryType::CustodyReimbursementPayment,
             ], true)) {
+                continue;
+            }
+
+            if (User::query()->find($entry->user_id)?->isVirtualCustodian()) {
                 continue;
             }
 

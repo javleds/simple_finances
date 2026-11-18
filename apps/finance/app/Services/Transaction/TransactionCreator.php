@@ -7,14 +7,14 @@ namespace App\Services\Transaction;
 use function app;
 
 use App\Dto\TransactionFormDto;
+use App\Services\PersonalMoney\ApplyPersonalMoneyTransactionSource;
+use Carbon\CarbonInterface;
 use FinSi\FinanceDomain\Enums\Action;
 use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
 use FinSi\FinanceDomain\Enums\TransactionStatus;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\Transaction;
-use App\Services\PersonalMoney\ApplyPersonalMoneyTransactionSource;
-use Carbon\CarbonInterface;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +30,7 @@ class TransactionCreator
         private SyncCoveredPayerRecoveryTransaction $syncCoveredPayerRecoveryTransaction,
         private ProcessTransactionSideEffects $processTransactionSideEffects,
         private ApplyPersonalMoneyTransactionSource $applyPersonalMoneyTransactionSource,
+        private \App\Services\Accounts\ReopenVirtualCustodians $reopenVirtualCustodians,
     ) {
     }
 
@@ -50,6 +51,7 @@ class TransactionCreator
             $this->applyPersonalMoneyTransactionSource->execute(
                 $transaction, (int) $this->auth->id(), $dto->cashSource, true,
             );
+            $this->reopenVirtualCustodians->execute($transaction->account);
 
             return $transaction;
         });
@@ -64,9 +66,16 @@ class TransactionCreator
         $account = Account::withoutGlobalScopes()->whereKey($dto->accountId)->lockForUpdate()->firstOrFail();
         $members = $account->users()->withoutGlobalScopes()->pluck('users.id');
         $shared = $members->count() > 1;
+        if ($shared) {
+            app(AuthorizeTransactionParticipants::class)->execute($account, [
+                'paid_by_user_id'   => $dto->paidByUserId,
+                'custodian_user_id' => $dto->custodianUserId,
+            ]);
+        }
         $personalUserId = (int) ($members->first() ?? $account->user_id);
         $transaction = new Transaction();
         $transaction->uses_shared_account_rules = $shared;
+        $transaction->uses_virtual_custodian_rules = $shared && $account->virtualCustodians()->exists();
         $transaction->type = $dto->type;
         $transaction->status = $dto->status;
         $transaction->concept = $dto->concept;

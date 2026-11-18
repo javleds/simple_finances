@@ -1,14 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Auth;
 
+use function app;
+
 use App\Http\Controllers\Api\ApiController;
-use FinSi\FinanceDomain\Models\User;
 use App\Services\Auth\ResolveInvitePostAuthRedirect;
 use App\Support\SpaUrl;
+
+use function event;
+
+use FinSi\FinanceDomain\Models\User;
+
+use function hash_equals;
+
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+
+use function redirect;
+use function sha1;
+
 use Symfony\Component\HttpFoundation\Response;
 
 class EmailVerificationController extends ApiController
@@ -17,10 +31,9 @@ class EmailVerificationController extends ApiController
         Request $request,
         ResolveInvitePostAuthRedirect $resolveInvitePostAuthRedirect,
         int $id,
-        string $hash
-    ): JsonResponse|Response
-    {
-        $user = User::withoutGlobalScopes()->findOrFail($id);
+        string $hash,
+    ): JsonResponse | Response {
+        $user = User::withoutGlobalScopes()->whereNull('virtual_account_id')->findOrFail($id);
 
         if (! hash_equals(sha1($user->getEmailForVerification()), $hash)) {
             if ($request->boolean('redirect_to_spa')) {
@@ -45,7 +58,7 @@ class EmailVerificationController extends ApiController
                 ResolveInvitePostAuthRedirect::ACCOUNT_INVITES_ACTION,
             );
 
-            if ($postAuthRedirect !== null) {
+            if (null !== $postAuthRedirect) {
                 return redirect()->away($postAuthRedirect['url']);
             }
 

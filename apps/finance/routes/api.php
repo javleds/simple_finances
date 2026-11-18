@@ -1,9 +1,12 @@
 <?php
 
-use App\Http\Controllers\Api\AccountController;
+declare(strict_types=1);
+
 use App\Http\Controllers\Api\AccountBalanceSnapshotController;
-use App\Http\Controllers\Api\AccountInviteController;
+use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AccountCustodianController;
 use App\Http\Controllers\Api\AccountFinancialGoalController;
+use App\Http\Controllers\Api\AccountInviteController;
 use App\Http\Controllers\Api\AccountLedgerController;
 use App\Http\Controllers\Api\AccountLedgerDiagnosticController;
 use App\Http\Controllers\Api\AccountLedgerRepairController;
@@ -43,10 +46,10 @@ use App\Http\Controllers\Api\WhatsAppVerificationCodeController;
 use App\Http\Controllers\Api\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('legal-documents', [\App\Http\Controllers\Api\Legal\LegalDocumentsController::class, 'show']);
+Route::get('legal-documents', [App\Http\Controllers\Api\Legal\LegalDocumentsController::class, 'show']);
 Route::middleware('api.auth')->group(function (): void {
-    Route::get('legal-acceptance', [\App\Http\Controllers\Api\Legal\LegalAcceptanceController::class, 'show']);
-    Route::post('legal-acceptance', [\App\Http\Controllers\Api\Legal\LegalAcceptanceController::class, 'store']);
+    Route::get('legal-acceptance', [App\Http\Controllers\Api\Legal\LegalAcceptanceController::class, 'show']);
+    Route::post('legal-acceptance', [App\Http\Controllers\Api\Legal\LegalAcceptanceController::class, 'store']);
     Route::get('profile', [ProfileController::class, 'show']);
 });
 
@@ -74,13 +77,13 @@ Route::prefix('auth')->group(function (): void {
 
 Route::middleware(['api.auth', 'api.legal'])->group(function (): void {
     Route::prefix('chat')->middleware('throttle:60,1')->group(function (): void {
-        Route::match(['get', 'post'], 'threads', [\App\Http\Controllers\Api\ChatController::class, 'threads'])->name('chat.threads');
-        Route::delete('threads/{thread}', [\App\Http\Controllers\Api\ChatController::class, 'delete'])->whereUuid('thread')->name('chat.delete');
-        Route::get('threads/{thread}/messages', [\App\Http\Controllers\Api\ChatController::class, 'messages'])->whereUuid('thread');
-        Route::post('threads/{thread}/runs', [\App\Http\Controllers\Api\ChatController::class, 'runs'])->whereUuid('thread')->name('chat.runs');
-        Route::get('threads/{thread}/runs/{run}', [\App\Http\Controllers\Api\ChatController::class, 'run'])->whereUuid(['thread', 'run']);
-        Route::get('threads/{thread}/runs/{run}/events', [\App\Http\Controllers\Api\ChatController::class, 'events'])->whereUuid(['thread', 'run']);
-        Route::post('threads/{thread}/runs/{run}/cancel', [\App\Http\Controllers\Api\ChatController::class, 'cancel'])->whereUuid(['thread', 'run'])->name('chat.cancel');
+        Route::match(['get', 'post'], 'threads', [App\Http\Controllers\Api\ChatController::class, 'threads'])->name('chat.threads');
+        Route::delete('threads/{thread}', [App\Http\Controllers\Api\ChatController::class, 'delete'])->whereUuid('thread')->name('chat.delete');
+        Route::get('threads/{thread}/messages', [App\Http\Controllers\Api\ChatController::class, 'messages'])->whereUuid('thread');
+        Route::post('threads/{thread}/runs', [App\Http\Controllers\Api\ChatController::class, 'runs'])->whereUuid('thread')->name('chat.runs');
+        Route::get('threads/{thread}/runs/{run}', [App\Http\Controllers\Api\ChatController::class, 'run'])->whereUuid(['thread', 'run']);
+        Route::get('threads/{thread}/runs/{run}/events', [App\Http\Controllers\Api\ChatController::class, 'events'])->whereUuid(['thread', 'run']);
+        Route::post('threads/{thread}/runs/{run}/cancel', [App\Http\Controllers\Api\ChatController::class, 'cancel'])->whereUuid(['thread', 'run'])->name('chat.cancel');
     });
 
     Route::get('whatsapp-connection', [WhatsAppConnectionController::class, 'show']);
@@ -91,9 +94,9 @@ Route::middleware(['api.auth', 'api.legal'])->group(function (): void {
     Route::delete('whatsapp-connection', [WhatsAppConnectionController::class, 'delete']);
     Route::put('profile', [ProfileController::class, 'update']);
 
-    Route::get('personal-money', [\App\Http\Controllers\Api\PersonalMoneyController::class, 'index']);
-    Route::put('personal-money/settings', [\App\Http\Controllers\Api\PersonalMoneyController::class, 'settings']);
-    Route::put('personal-money/links', [\App\Http\Controllers\Api\PersonalMoneyController::class, 'resolve']);
+    Route::get('personal-money', [App\Http\Controllers\Api\PersonalMoneyController::class, 'index']);
+    Route::put('personal-money/settings', [App\Http\Controllers\Api\PersonalMoneyController::class, 'settings']);
+    Route::put('personal-money/links', [App\Http\Controllers\Api\PersonalMoneyController::class, 'resolve']);
 
     Route::get('dashboard/graph', [DashboardGraphController::class, 'index']);
     Route::get('dashboard/accounts', [DashboardAccountController::class, 'index']);
@@ -103,14 +106,14 @@ Route::middleware(['api.auth', 'api.legal'])->group(function (): void {
     Route::get('notification-settings', [NotificationSettingsController::class, 'show']);
     Route::put('notification-settings', [NotificationSettingsController::class, 'update']);
 
-    Route::get('categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
-    Route::post('categories', [\App\Http\Controllers\Api\CategoryController::class, 'store']);
-    Route::put('categories/{category}', [\App\Http\Controllers\Api\CategoryController::class, 'update']);
-    Route::delete('categories/{category}', [\App\Http\Controllers\Api\CategoryController::class, 'delete']);
-    Route::get('accounts/{account}/categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
-    Route::post('accounts/{account}/categories', [\App\Http\Controllers\Api\CategoryController::class, 'store']);
-    Route::put('accounts/{account}/categories/{category}', [\App\Http\Controllers\Api\CategoryController::class, 'updateShared']);
-    Route::delete('accounts/{account}/categories/{category}', [\App\Http\Controllers\Api\CategoryController::class, 'deleteShared']);
+    Route::get('categories', [App\Http\Controllers\Api\CategoryController::class, 'index']);
+    Route::post('categories', [App\Http\Controllers\Api\CategoryController::class, 'store']);
+    Route::put('categories/{category}', [App\Http\Controllers\Api\CategoryController::class, 'update']);
+    Route::delete('categories/{category}', [App\Http\Controllers\Api\CategoryController::class, 'delete']);
+    Route::get('accounts/{account}/categories', [App\Http\Controllers\Api\CategoryController::class, 'index']);
+    Route::post('accounts/{account}/categories', [App\Http\Controllers\Api\CategoryController::class, 'store']);
+    Route::put('accounts/{account}/categories/{category}', [App\Http\Controllers\Api\CategoryController::class, 'updateShared']);
+    Route::delete('accounts/{account}/categories/{category}', [App\Http\Controllers\Api\CategoryController::class, 'deleteShared']);
 
     Route::get('accounts', [AccountController::class, 'index']);
     Route::post('accounts', [AccountController::class, 'store']);
@@ -123,6 +126,9 @@ Route::middleware(['api.auth', 'api.legal'])->group(function (): void {
     Route::put('accounts/{account}/invites/{invite}', [AccountRelationInviteController::class, 'update']);
     Route::delete('accounts/{account}/invites/{invite}', [AccountRelationInviteController::class, 'delete']);
     Route::get('accounts/{account}/users', [AccountUserController::class, 'index']);
+    Route::get('accounts/{account}/custodians', [AccountCustodianController::class, 'index']);
+    Route::post('accounts/{account}/custodians', [AccountCustodianController::class, 'store']);
+    Route::delete('accounts/{account}/custodians/{custodian}', [AccountCustodianController::class, 'delete']);
     Route::post('accounts/{account}/users', [AccountUserController::class, 'store']);
     Route::put('accounts/{account}/users', [AccountUserController::class, 'bulkUpdate']);
     Route::get('accounts/{account}/users/{user}', [AccountUserController::class, 'show']);
@@ -221,12 +227,12 @@ Route::middleware(['api.auth', 'api.legal'])->group(function (): void {
     Route::put('telegram-verification-codes/{telegramVerificationCode}', [TelegramVerificationCodeController::class, 'update']);
     Route::delete('telegram-verification-codes/{telegramVerificationCode}', [TelegramVerificationCodeController::class, 'delete']);
 
-    Route::get('transaction-attachments/config', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'config']);
-    Route::get('transactions/{transaction}/attachments', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'index']);
-    Route::post('transactions/{transaction}/attachments', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'store']);
-    Route::get('transactions/{transaction}/attachments/{attachment}/download', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'download']);
-    Route::post('transactions/{transaction}/attachments/{attachment}/retry', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'retry']);
-    Route::delete('transactions/{transaction}/attachments/{attachment}', [\App\Http\Controllers\Api\TransactionAttachmentController::class, 'delete']);
+    Route::get('transaction-attachments/config', [App\Http\Controllers\Api\TransactionAttachmentController::class, 'config']);
+    Route::get('transactions/{transaction}/attachments', [App\Http\Controllers\Api\TransactionAttachmentController::class, 'index']);
+    Route::post('transactions/{transaction}/attachments', [App\Http\Controllers\Api\TransactionAttachmentController::class, 'store']);
+    Route::get('transactions/{transaction}/attachments/{attachment}/download', [App\Http\Controllers\Api\TransactionAttachmentController::class, 'download']);
+    Route::post('transactions/{transaction}/attachments/{attachment}/retry', [App\Http\Controllers\Api\TransactionAttachmentController::class, 'retry']);
+    Route::delete('transactions/{transaction}/attachments/{attachment}', [App\Http\Controllers\Api\TransactionAttachmentController::class, 'delete']);
 
     Route::get('transactions/filter-options', [TransactionController::class, 'filterOptions']);
     Route::get('transactions', [TransactionController::class, 'index']);

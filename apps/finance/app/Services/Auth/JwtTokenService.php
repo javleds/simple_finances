@@ -1,20 +1,58 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Auth;
 
-use FinSi\FinanceDomain\Models\User;
+use function base64_decode;
+use function base64_encode;
+
 use Carbon\CarbonImmutable;
+
+use function config;
+use function count;
+use function env;
+use function explode;
+
+use FinSi\FinanceDomain\Models\User;
+
+use function hash_equals;
+use function hash_hmac;
+
 use Illuminate\Contracts\Cache\Repository;
+
+use function is_array;
+use function is_string;
+use function json_decode;
+use function json_encode;
+
+use const JSON_THROW_ON_ERROR;
+
+use function max;
+use function rtrim;
+
 use RuntimeException;
+
+use function str;
+use function str_repeat;
+use function str_starts_with;
+use function strlen;
+use function strtr;
+use function substr;
 
 class JwtTokenService
 {
     public function __construct(
         private readonly Repository $cache,
-    ) {}
+    ) {
+    }
 
     public function generate(User $user): array
     {
+        if ($user->isVirtualCustodian()) {
+            throw new RuntimeException('Virtual custodians cannot authenticate.');
+        }
+
         $issuedAt = CarbonImmutable::now();
         $expiresAt = $issuedAt->addMinutes($this->ttlMinutes());
         $payload = [
@@ -25,7 +63,7 @@ class JwtTokenService
         ];
 
         return [
-            'token' => $this->encode($payload),
+            'token'      => $this->encode($payload),
             'expires_at' => $expiresAt->toIso8601String(),
             'token_type' => 'Bearer',
         ];
@@ -35,7 +73,7 @@ class JwtTokenService
     {
         $segments = explode('.', $token);
 
-        if (count($segments) !== 3) {
+        if (3 !== count($segments)) {
             throw new RuntimeException('Invalid token.');
         }
 
@@ -44,7 +82,7 @@ class JwtTokenService
         $signature = $this->base64UrlDecode($encodedSignature);
         $expectedSignature = hash_hmac(
             'sha256',
-            $encodedHeader.'.'.$encodedPayload,
+            $encodedHeader . '.' . $encodedPayload,
             $this->secret(),
             true,
         );
@@ -94,19 +132,19 @@ class JwtTokenService
         $encodedPayload = $this->base64UrlEncode(json_encode($payload, JSON_THROW_ON_ERROR));
         $signature = hash_hmac(
             'sha256',
-            $encodedHeader.'.'.$encodedPayload,
+            $encodedHeader . '.' . $encodedPayload,
             $this->secret(),
             true,
         );
 
-        return $encodedHeader.'.'.$encodedPayload.'.'.$this->base64UrlEncode($signature);
+        return $encodedHeader . '.' . $encodedPayload . '.' . $this->base64UrlEncode($signature);
     }
 
     private function secret(): string
     {
         $key = config('app.key');
 
-        if (! is_string($key) || $key === '') {
+        if (! is_string($key) || '' === $key) {
             throw new RuntimeException('APP_KEY is required.');
         }
 
@@ -124,7 +162,7 @@ class JwtTokenService
 
     private function revocationKey(string $jti): string
     {
-        return 'api_jwt_revoked:'.$jti;
+        return 'api_jwt_revoked:' . $jti;
     }
 
     private function base64UrlEncode(string $value): string
@@ -142,7 +180,7 @@ class JwtTokenService
 
         $decoded = base64_decode(strtr($value, '-_', '+/'), true);
 
-        if ($decoded === false) {
+        if (false === $decoded) {
             throw new RuntimeException('Invalid token encoding.');
         }
 

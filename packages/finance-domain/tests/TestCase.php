@@ -29,6 +29,8 @@ abstract class TestCase extends OrchestraTestCase
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password')->nullable();
+            $table->unsignedBigInteger('virtual_account_id')->nullable();
+            $table->timestamp('virtual_retired_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamps();
         });

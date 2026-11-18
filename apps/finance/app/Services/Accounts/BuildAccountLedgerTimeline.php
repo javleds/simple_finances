@@ -1,6 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Accounts;
+
+use function array_keys;
+use function collect;
 
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Enums\TransactionType;
@@ -10,11 +15,12 @@ use FinSi\FinanceDomain\Models\Transaction;
 use FinSi\FinanceDomain\Models\User;
 use Illuminate\Support\Collection;
 
+use function in_array;
+use function optional;
+use function round;
+
 class BuildAccountLedgerTimeline
 {
-    /** @var array<int, string> */
-    private array $userNames = [];
-
     /**
      * @return Collection<int, array<string, mixed>>
      */
@@ -55,15 +61,15 @@ class BuildAccountLedgerTimeline
             ->toBase()
             ->map(fn (Transaction $transaction): array => [
                 'sort_date' => $transaction->scheduled_at,
-                'sort_id' => $transaction->id,
-                'kind' => 'transaction',
-                'payload' => $transaction,
+                'sort_id'   => $transaction->id,
+                'kind'      => 'transaction',
+                'payload'   => $transaction,
             ])
             ->merge($entries->map(fn (AccountMemberLedgerEntry $entry): array => [
                 'sort_date' => $entry->occurred_at,
-                'sort_id' => $entry->id,
-                'kind' => 'ledger_entry',
-                'payload' => $entry,
+                'sort_id'   => $entry->id,
+                'kind'      => 'ledger_entry',
+                'payload'   => $entry,
             ]))
             ->sortBy([
                 ['sort_date', 'asc'],
@@ -77,7 +83,7 @@ class BuildAccountLedgerTimeline
 
         return $events
             ->map(function (array $event) use (&$balance, &$custodyByUser, &$settlementByUser): array {
-                if ($event['kind'] === 'transaction') {
+                if ('transaction' === $event['kind']) {
                     return $this->transactionRow($event['payload'], $balance, $custodyByUser, $settlementByUser);
                 }
 
@@ -86,6 +92,9 @@ class BuildAccountLedgerTimeline
             ->reverse()
             ->values();
     }
+
+    /** @var array<int, string> */
+    private array $userNames = [];
 
     /**
      * @param array<int, float> $custodyByUser
@@ -97,12 +106,12 @@ class BuildAccountLedgerTimeline
         array &$custodyByUser,
         array &$settlementByUser,
     ): array {
-        $balance = $transaction->type === TransactionType::Income
+        $balance = TransactionType::Income === $transaction->type
             ? round($balance + (float) $transaction->amount, 2)
             : round($balance - (float) $transaction->amount, 2);
 
         foreach ($transaction->subTransactions as $subTransaction) {
-            if ($subTransaction->type === TransactionType::Income) {
+            if (TransactionType::Income === $subTransaction->type) {
                 $balance = round($balance + (float) $subTransaction->amount, 2);
             }
         }
@@ -112,21 +121,21 @@ class BuildAccountLedgerTimeline
         }
 
         return [
-            'id' => 'transaction-'.$transaction->id,
-            'occurred_at' => optional($transaction->scheduled_at)->toDateString(),
-            'source_type' => 'transaction',
-            'transaction_id' => $transaction->id,
-            'label' => $transaction->concept,
-            'description' => $this->transactionDescription($transaction),
-            'amount' => round((float) $transaction->amount, 2),
-            'balance_after' => $balance,
-            'custody_after_by_user' => $this->amountRows($custodyByUser),
+            'id'                       => 'transaction-' . $transaction->id,
+            'occurred_at'              => optional($transaction->scheduled_at)->toDateString(),
+            'source_type'              => 'transaction',
+            'transaction_id'           => $transaction->id,
+            'label'                    => $transaction->concept,
+            'description'              => $this->transactionDescription($transaction),
+            'amount'                   => round((float) $transaction->amount, 2),
+            'balance_after'            => $balance,
+            'custody_after_by_user'    => $this->amountRows($custodyByUser),
             'settlement_after_by_user' => $this->amountRows($settlementByUser),
-            'allocations' => $transaction->allocations
+            'allocations'              => $transaction->allocations
                 ->map(fn ($allocation): array => [
-                    'user_id' => (int) $allocation->user_id,
-                    'user_name' => $allocation->user?->name,
-                    'amount' => round((float) $allocation->amount, 2),
+                    'user_id'    => (int) $allocation->user_id,
+                    'user_name'  => $allocation->user?->name,
+                    'amount'     => round((float) $allocation->amount, 2),
                     'percentage' => round((float) $allocation->percentage, 2),
                 ])
                 ->values()
@@ -147,17 +156,17 @@ class BuildAccountLedgerTimeline
         $this->applyLedgerEntry($entry, $custodyByUser, $settlementByUser);
 
         return [
-            'id' => 'ledger-'.$entry->id,
-            'occurred_at' => optional($entry->occurred_at)->toDateString(),
-            'source_type' => $entry->type->value,
-            'transaction_id' => $entry->transaction_id,
-            'label' => $entry->description,
-            'description' => $this->ledgerEntryDescription($entry),
-            'amount' => round((float) $entry->amount, 2),
-            'balance_after' => $balance,
-            'custody_after_by_user' => $this->amountRows($custodyByUser),
+            'id'                       => 'ledger-' . $entry->id,
+            'occurred_at'              => optional($entry->occurred_at)->toDateString(),
+            'source_type'              => $entry->type->value,
+            'transaction_id'           => $entry->transaction_id,
+            'label'                    => $entry->description,
+            'description'              => $this->ledgerEntryDescription($entry),
+            'amount'                   => round((float) $entry->amount, 2),
+            'balance_after'            => $balance,
+            'custody_after_by_user'    => $this->amountRows($custodyByUser),
             'settlement_after_by_user' => $this->amountRows($settlementByUser),
-            'allocations' => [],
+            'allocations'              => [],
         ];
     }
 
@@ -169,7 +178,7 @@ class BuildAccountLedgerTimeline
     {
         $target = $this->isCustodyEntry($entry) ? 'custody' : 'settlement';
 
-        if ($target === 'custody') {
+        if ('custody' === $target) {
             $custodyByUser[$entry->user_id] = round(($custodyByUser[$entry->user_id] ?? 0.0) + (float) $entry->amount, 2);
 
             return;
@@ -200,11 +209,11 @@ class BuildAccountLedgerTimeline
 
     private function transactionDescription(Transaction $transaction): string
     {
-        if ($transaction->type === TransactionType::Income) {
-            return 'Ingreso custodiado por '.($transaction->custodianUser?->name ?? $transaction->user?->name ?? 'usuario');
+        if (TransactionType::Income === $transaction->type) {
+            return 'Ingreso custodiado por ' . ($transaction->custodianUser?->name ?? $transaction->user?->name ?? 'usuario');
         }
 
-        return 'Egreso pagado por '.($transaction->paidByUser?->name ?? $transaction->user?->name ?? 'usuario');
+        return 'Egreso pagado por ' . ($transaction->paidByUser?->name ?? $transaction->user?->name ?? 'usuario');
     }
 
     private function ledgerEntryDescription(AccountMemberLedgerEntry $entry): string
@@ -213,30 +222,31 @@ class BuildAccountLedgerTimeline
         $relatedName = $entry->relatedUser?->name;
 
         return match ($entry->type) {
-            AccountMemberLedgerEntryType::InternalTransfer => $relatedName
+            AccountMemberLedgerEntryType::InternalTransfer            => $relatedName
                 ? "{$userName} transfirio custodia con {$relatedName}"
                 : "{$userName} ajusto custodia",
-            AccountMemberLedgerEntryType::SettlementTransfer => $relatedName
+            AccountMemberLedgerEntryType::SettlementTransfer, AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer => $relatedName
                 ? "{$userName} liquido con {$relatedName}"
                 : "{$userName} liquido un pendiente",
-            AccountMemberLedgerEntryType::SettlementCorrection => $relatedName
+            AccountMemberLedgerEntryType::SettlementCorrection        => $relatedName
                 ? "{$userName} corrigio reembolso con {$relatedName}"
                 : "{$userName} corrigio un reembolso",
-            AccountMemberLedgerEntryType::CustodyCorrection => "{$userName} ajusto custodia",
-            AccountMemberLedgerEntryType::CustodyReimbursementDue => $relatedName
+            AccountMemberLedgerEntryType::CustodyCorrection           => "{$userName} ajusto custodia",
+            AccountMemberLedgerEntryType::CustodyReimbursementDue, AccountMemberLedgerEntryType::VirtualCustodyReimbursementDue => $relatedName
                 ? "{$userName} tiene pendiente con {$relatedName}"
                 : "{$userName} tiene un pendiente de custodia",
             AccountMemberLedgerEntryType::CustodyReimbursementPayment => $relatedName
                 ? "{$userName} pago custodia a {$relatedName}"
                 : "{$userName} pago un pendiente de custodia",
-            AccountMemberLedgerEntryType::AccountDeficitShare => "{$userName} debe aportar a la cuenta",
-            AccountMemberLedgerEntryType::AccountDeficitPayment => "{$userName} aporto a la cuenta",
-            default => $entry->type->value,
+            AccountMemberLedgerEntryType::AccountDeficitShare         => "{$userName} debe aportar a la cuenta",
+            AccountMemberLedgerEntryType::AccountDeficitPayment       => "{$userName} aporto a la cuenta",
+            default                                                   => $entry->type->value,
         };
     }
 
     /**
      * @param array<int, float> $amounts
+     *
      * @return array<int, array{user_id: int, user_name: string, amount: float}>
      */
     private function amountRows(array $amounts): array
@@ -245,9 +255,9 @@ class BuildAccountLedgerTimeline
 
         return collect($amounts)
             ->map(fn (float $amount, int $userId): array => [
-                'user_id' => $userId,
+                'user_id'   => $userId,
                 'user_name' => $this->userNames[$userId] ?? 'Usuario no disponible',
-                'amount' => round($amount, 2),
+                'amount'    => round($amount, 2),
             ])
             ->values()
             ->all();
@@ -259,7 +269,7 @@ class BuildAccountLedgerTimeline
     private function loadUserNames(array $userIds): void
     {
         $missingUserIds = collect($userIds)
-            ->map(fn (int|string $userId): int => (int) $userId)
+            ->map(fn (int | string $userId): int => (int) $userId)
             ->filter(fn (int $userId): bool => ! isset($this->userNames[$userId]))
             ->values();
 

@@ -7,12 +7,6 @@ namespace App\Services\Transaction;
 use function app;
 
 use App\Dto\TransactionFormDto;
-use FinSi\FinanceDomain\Enums\Action;
-use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
-use FinSi\FinanceDomain\Enums\TransactionStatus;
-use FinSi\FinanceDomain\Enums\TransactionType;
-use FinSi\FinanceDomain\Models\Account;
-use FinSi\FinanceDomain\Models\Transaction;
 use App\Services\Accounts\RecalculateAccountBalance;
 use App\Services\PersonalMoney\ApplyPersonalMoneyTransactionSource;
 use App\Services\PersonalMoney\SyncPersonalMoneyTransactionLinks;
@@ -21,6 +15,12 @@ use function auth;
 
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use FinSi\FinanceDomain\Enums\Action;
+use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
+use FinSi\FinanceDomain\Enums\TransactionStatus;
+use FinSi\FinanceDomain\Enums\TransactionType;
+use FinSi\FinanceDomain\Models\Account;
+use FinSi\FinanceDomain\Models\Transaction;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -37,6 +37,7 @@ class TransactionUpdater
         private ApplyPersonalMoneyTransactionSource $applyPersonalMoneyTransactionSource,
         private SyncPersonalMoneyTransactionLinks $syncPersonalMoneyTransactionLinks,
         private RecalculateAccountBalance $recalculateAccountBalance,
+        private \App\Services\Accounts\ReopenVirtualCustodians $reopenVirtualCustodians,
     ) {
     }
 
@@ -53,6 +54,10 @@ class TransactionUpdater
             $transaction = $persisted;
             $previousAccountId = $persisted->account_id;
             $previousCashTransaction = clone $persisted;
+            app(AuthorizeTransactionParticipants::class)->execute(Account::query()->findOrFail($dto->accountId), [
+                'paid_by_user_id'   => $dto->paidByUserId,
+                'custodian_user_id' => $dto->custodianUserId,
+            ], $persisted);
             $this->syncCoveredPayerRecoveryTransaction->deleteExisting($transaction);
             $transaction->ledgerEntries()->delete();
             $this->applyBaseData($transaction, $dto);
@@ -67,6 +72,9 @@ class TransactionUpdater
             $this->applyPersonalMoneyTransactionSource->execute(
                 $transaction, (int) auth()->id(), $dto->cashSource, false,
             );
+            foreach (Account::query()->whereIn('id', [$previousAccountId, $transaction->account_id])->get() as $affectedAccount) {
+                $this->reopenVirtualCustodians->execute($affectedAccount);
+            }
 
             return $transaction;
         }, 3);
@@ -101,6 +109,7 @@ class TransactionUpdater
         $members = $account->users()->withoutGlobalScopes()->pluck('users.id');
         if (! $sameAccount) {
             $transaction->uses_shared_account_rules = $members->count() > 1;
+            $transaction->uses_virtual_custodian_rules = $members->count() > 1 && $account->virtualCustodians()->exists();
         }
         $personalUserId = (int) ($members->first() ?? $account->user_id);
         $transaction->account_id = $dto->accountId;

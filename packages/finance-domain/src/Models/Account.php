@@ -31,6 +31,11 @@ class Account extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function virtualCustodians(): HasMany
+    {
+        return $this->hasMany(User::class, 'virtual_account_id');
+    }
+
     public function memberLedgerEntries(): HasMany
     {
         return $this->hasMany(AccountMemberLedgerEntry::class);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\AccountInvites;
 
 use FinSi\FinanceDomain\Models\AccountInvite;
@@ -15,7 +17,7 @@ class EnableNotificationForInvitation
 
         $user = User::withoutGlobalScopes()->where('email', $invite->email)->first();
 
-        if (! $user) {
+        if (! $user || $user->isVirtualCustodian()) {
             return;
         }
 

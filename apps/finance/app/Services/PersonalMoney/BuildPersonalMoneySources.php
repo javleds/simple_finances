@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\PersonalMoney;
 
-use FinSi\FinanceDomain\Queries\VisibleAccountsForUser;
-use FinSi\FinanceDomain\Queries\UserOwnedResources;
 use function abs;
 
 use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
 use FinSi\FinanceDomain\Enums\TransactionType;
-use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\PersonalMoneyLink;
 use FinSi\FinanceDomain\Models\PersonalMoneyReimbursement;
 use FinSi\FinanceDomain\Models\PersonalMoneySetting;
 use FinSi\FinanceDomain\Models\Transaction;
+use FinSi\FinanceDomain\Queries\UserOwnedResources;
+use FinSi\FinanceDomain\Queries\VisibleAccountsForUser;
 use FinSi\FinanceDomain\Queries\VisibleTransactionsForUser;
 
 use function hash;
@@ -36,8 +35,7 @@ class BuildPersonalMoneySources
         private readonly VisibleAccountsForUser $visibleAccounts,
         private readonly UserOwnedResources $userOwnedResources,
         private readonly VisibleTransactionsForUser $visibleTransactionsForUser,
-    )
-    {
+    ) {
     }
 
     public function execute(int $userId, PersonalMoneySetting $setting): Collection
@@ -48,6 +46,7 @@ class BuildPersonalMoneySources
         $transactions = $this->visibleTransactionsForUser->query($userId)
             ->completed()->whereNull('legacy_migrated_at')->whereNull('parent_transaction_id')
             ->whereNull('account_balance_snapshot_id')
+            ->where('virtual_custodian_opening', false)
             ->where('scheduled_at', '<=', now())
             ->when(null !== $setting->activated_at,
                 static fn (Builder $query): Builder => $query->where('transactions.id', '>', $setting->transaction_cutoff_id),

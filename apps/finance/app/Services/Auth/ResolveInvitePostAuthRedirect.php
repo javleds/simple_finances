@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Auth;
 
+use App\Support\SpaUrl;
 use FinSi\FinanceDomain\Enums\InviteStatus;
 use FinSi\FinanceDomain\Models\AccountInvite;
 use FinSi\FinanceDomain\Models\User;
-use App\Support\SpaUrl;
 
 readonly class ResolveInvitePostAuthRedirect
 {
@@ -13,11 +15,12 @@ readonly class ResolveInvitePostAuthRedirect
 
     public function __construct(
         private SpaUrl $spaUrl,
-    ) {}
+    ) {
+    }
 
     public function execute(User $user, ?string $action): ?array
     {
-        if ($action !== self::ACCOUNT_INVITES_ACTION) {
+        if ($user->isVirtualCustodian() || self::ACCOUNT_INVITES_ACTION !== $action) {
             return null;
         }
 
@@ -32,7 +35,7 @@ readonly class ResolveInvitePostAuthRedirect
 
         return [
             'action' => self::ACCOUNT_INVITES_ACTION,
-            'url' => $this->spaUrl->to('admin/invitations'),
+            'url'    => $this->spaUrl->to('admin/invitations'),
         ];
     }
 }

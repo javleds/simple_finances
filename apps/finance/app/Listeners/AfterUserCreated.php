@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Listeners;
 
 use FinSi\FinanceDomain\Models\NotificationType;
@@ -13,7 +15,6 @@ class AfterUserCreated
      */
     public function __construct()
     {
-        //
     }
 
     /**
@@ -22,6 +23,11 @@ class AfterUserCreated
     public function handle(Registered $event): void
     {
         $user = User::find($event->user->id);
+
+        if (! $user || $user->isVirtualCustodian()) {
+            return;
+        }
+
         $notificationTypes = NotificationType::whereIn('name', NotificationType::DEFAULT_NOTIFICATIONS)
             ->get()
             ->pluck('id')

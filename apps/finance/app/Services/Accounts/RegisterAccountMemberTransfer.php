@@ -1,6 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Accounts;
+
+use function abs;
+use function app;
+
+use App\Services\PersonalMoney\CapturePersonalMoneyReimbursements;
+use App\Services\Transaction\SyncAccountMemberLedger;
+
+use function array_filter;
+use function array_values;
+use function auth;
+use function collect;
 
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Enums\TransactionStatus;
@@ -8,21 +21,22 @@ use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\Transaction;
-use App\Services\PersonalMoney\CapturePersonalMoneyReimbursements;
-use App\Services\Transaction\SyncAccountMemberLedger;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+use function min;
+use function round;
 
 class RegisterAccountMemberTransfer
 {
-    private const ROUNDING_SETTLEMENT_TOLERANCE = 0.10;
-
     public function __construct(
         private readonly RecalculateAccountBalance $recalculateAccountBalance,
         private readonly SyncAccountMemberLedger $syncAccountMemberLedger,
         private readonly CapturePersonalMoneyReimbursements $capturePersonalMoneyReimbursements,
-    ) {}
+    ) {
+    }
 
     public function execute(Account $account, array $payload): array
     {
@@ -33,9 +47,20 @@ class RegisterAccountMemberTransfer
         $description = $payload['description'] ?? 'Transferencia interna';
 
         return DB::transaction(function () use ($account, $payload, $amount, $occurredAt, $description): array {
+            Account::query()->whereKey($account->id)->lockForUpdate()->firstOrFail();
             $actionType = $payload['action_type'] ?? 'user_to_user';
 
-            if ($actionType === 'user_to_account') {
+            if ($account->virtualCustodians()->exists()) {
+                $this->validateVirtualAccountTransfer($account, $payload, $amount, $actionType);
+                $virtualEntries = $this->virtualCustodySettlementEntries($account, $payload, $amount, $occurredAt, $description);
+                if (null !== $virtualEntries) {
+                    $this->capturePersonalMoneyReimbursements->execute($account, $payload, $virtualEntries);
+
+                    return $virtualEntries;
+                }
+            }
+
+            if ('user_to_account' === $actionType) {
                 return $this->createAccountDeficitPayment(
                     account: $account,
                     fromUserId: (int) $payload['from_user_id'],
@@ -46,7 +71,7 @@ class RegisterAccountMemberTransfer
                 );
             }
 
-            $entries = $actionType === 'custody_to_user' && (int) $payload['from_user_id'] === (int) $payload['to_user_id']
+            $entries = 'custody_to_user' === $actionType && (int) $payload['from_user_id'] === (int) $payload['to_user_id']
                 ? $this->createSelfSettlementEntries(
                     account: $account,
                     userId: (int) $payload['from_user_id'],
@@ -61,23 +86,23 @@ class RegisterAccountMemberTransfer
                     amount: $amount,
                     description: $description,
                     occurredAt: $occurredAt,
-                    types: $actionType === 'custody_to_user'
+                    types: 'custody_to_user' === $actionType
                         ? [AccountMemberLedgerEntryType::CustodyReimbursementDue, AccountMemberLedgerEntryType::SettlementTransfer]
                         : null,
                 );
 
-            if ($actionType === 'custody_to_user') {
+            if ('custody_to_user' === $actionType) {
                 $entries[] = $account->memberLedgerEntries()->create([
-                    'user_id' => (int) $payload['from_user_id'],
+                    'user_id'         => (int) $payload['from_user_id'],
                     'related_user_id' => (int) $payload['to_user_id'],
-                    'type' => AccountMemberLedgerEntryType::CustodyReimbursementPayment,
-                    'amount' => $amount * -1,
-                    'description' => $description,
-                    'occurred_at' => $occurredAt,
+                    'type'            => AccountMemberLedgerEntryType::CustodyReimbursementPayment,
+                    'amount'          => $amount * -1,
+                    'description'     => $description,
+                    'occurred_at'     => $occurredAt,
                 ]);
             }
 
-            if ($actionType === 'user_to_user') {
+            if ('user_to_user' === $actionType) {
                 $this->createNegativeBalanceSettlementIncomes(
                     account: $account,
                     entries: $entries,
@@ -91,6 +116,87 @@ class RegisterAccountMemberTransfer
             return $entries;
         });
     }
+    private const ROUNDING_SETTLEMENT_TOLERANCE = 0.10;
+
+    private function validateVirtualAccountTransfer(Account $account, array $payload, float $amount, string $actionType): void
+    {
+        $pending = app(BuildAccountMemberSummary::class)->execute($account)['pending_reimbursements'];
+        $available = collect($pending)->filter(fn (array $item): bool => (int) $item['from_user_id'] === (int) $payload['from_user_id']
+            && (int) $item['to_user_id'] === (int) $payload['to_user_id']
+            && ($item['action_type'] ?? 'user_to_user') === $actionType)->sum('amount');
+
+        if ((int) round($amount * 100) > (int) round($available * 100)) {
+            throw ValidationException::withMessages(['amount' => 'El importe supera el reembolso pendiente.']);
+        }
+
+        if ('custody_to_user' !== $actionType) {
+            return;
+        }
+
+        $custody = app(BuildAccountCustodySummary::class)->execute($account)->firstWhere('user_id', (int) $payload['from_user_id']);
+        if ((int) round($amount * 100) > (int) round(($custody['amount'] ?? 0) * 100)) {
+            throw ValidationException::withMessages(['amount' => 'La custodia disponible es insuficiente.']);
+        }
+    }
+
+    private function virtualCustodySettlementEntries(Account $account, array $payload, float $amount, Carbon $occurredAt, string $description): ?array
+    {
+        if (($payload['action_type'] ?? '') !== 'custody_to_user') {
+            return null;
+        }
+
+        $fromId = (int) $payload['from_user_id'];
+        $toId = (int) $payload['to_user_id'];
+        $items = $account->memberLedgerEntries()
+            ->selectRaw('transaction_id, round(-sum(amount), 2) as open_amount')
+            ->where('user_id', $fromId)->where('related_user_id', $toId)
+            ->whereIn('type', [AccountMemberLedgerEntryType::VirtualCustodyReimbursementDue, AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer])
+            ->whereNotNull('transaction_id')->groupBy('transaction_id')
+            ->havingRaw('sum(amount) < -0.001')->orderBy('transaction_id')->get();
+
+        if ($items->isEmpty()) {
+            return null;
+        }
+
+        $entries = [];
+        $remaining = $amount;
+        foreach ($items as $item) {
+            $paid = round(min($remaining, (float) $item->open_amount), 2);
+            if ($paid <= 0) {
+                break;
+            }
+            $entries[] = $account->memberLedgerEntries()->create([
+                'user_id' => $fromId, 'related_user_id' => $toId, 'transaction_id' => $item->transaction_id,
+                'type'    => AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer,
+                'amount'  => $paid, 'description' => $description, 'occurred_at' => $occurredAt,
+            ]);
+            if ($fromId !== $toId) {
+                $entries[] = $account->memberLedgerEntries()->create([
+                    'user_id' => $toId, 'related_user_id' => $fromId, 'transaction_id' => $item->transaction_id,
+                    'type'    => AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer,
+                    'amount'  => -$paid, 'description' => $description, 'occurred_at' => $occurredAt,
+                ]);
+            }
+            $remaining = round($remaining - $paid, 2);
+        }
+
+        if ($remaining > 0.0) {
+            $legacyEntries = $fromId === $toId
+                ? $this->createSelfSettlementEntries($account, $fromId, $remaining, $description, $occurredAt)
+                : $this->createSettlementEntries(
+                    $account, $fromId, $toId, $remaining, $description, $occurredAt,
+                    [AccountMemberLedgerEntryType::CustodyReimbursementDue, AccountMemberLedgerEntryType::SettlementTransfer],
+                );
+            $entries = [...$entries, ...$legacyEntries];
+        }
+        $entries[] = $account->memberLedgerEntries()->create([
+            'user_id' => $fromId, 'related_user_id' => $toId,
+            'type'    => AccountMemberLedgerEntryType::CustodyReimbursementPayment,
+            'amount'  => -$amount, 'description' => $description, 'occurred_at' => $occurredAt,
+        ]);
+
+        return $entries;
+    }
 
     /**
      * @return array<int, AccountMemberLedgerEntry>
@@ -103,7 +209,7 @@ class RegisterAccountMemberTransfer
         string $description,
         Carbon $occurredAt,
     ): array {
-        $income = new Transaction;
+        $income = new Transaction();
         $income->type = TransactionType::Income;
         $income->status = TransactionStatus::Completed;
         $income->concept = $description;
@@ -137,13 +243,13 @@ class RegisterAccountMemberTransfer
             }
 
             $entries[] = $account->memberLedgerEntries()->create([
-                'user_id' => $fromUserId,
-                'transaction_id' => (int) $item->transaction_id,
+                'user_id'         => $fromUserId,
+                'transaction_id'  => (int) $item->transaction_id,
                 'related_user_id' => $toUserId,
-                'type' => AccountMemberLedgerEntryType::AccountDeficitPayment,
-                'amount' => $itemAmount,
-                'description' => $description,
-                'occurred_at' => $occurredAt,
+                'type'            => AccountMemberLedgerEntryType::AccountDeficitPayment,
+                'amount'          => $itemAmount,
+                'description'     => $description,
+                'occurred_at'     => $occurredAt,
             ]);
 
             $runningTotal = round($runningTotal + $itemAmount, 2);
@@ -207,7 +313,7 @@ class RegisterAccountMemberTransfer
         Carbon $occurredAt,
         ?array $types = null,
     ): array {
-        $items = $this->openTransactionDebts($account, $fromUserId, $types);
+        $items = $this->openTransactionDebts($account, $fromUserId, $types, $toUserId);
 
         if ($items->isEmpty()) {
             return [
@@ -271,11 +377,12 @@ class RegisterAccountMemberTransfer
     /**
      * @return Collection<int, AccountMemberLedgerEntry>
      */
-    private function openTransactionDebts(Account $account, int $fromUserId, ?array $types = null): Collection
+    private function openTransactionDebts(Account $account, int $fromUserId, ?array $types = null, ?int $toUserId = null): Collection
     {
         return $account->memberLedgerEntries()
             ->selectRaw('transaction_id, round(abs(sum(amount)), 2) as open_amount')
             ->where('user_id', $fromUserId)
+            ->when(null !== $toUserId && $account->virtualCustodians()->exists(), fn ($query) => $query->where('related_user_id', $toUserId))
             ->whereNotNull('transaction_id')
             ->whereIn('type', $types ?? [
                 AccountMemberLedgerEntryType::ExpensePaid,
@@ -309,13 +416,13 @@ class RegisterAccountMemberTransfer
         ?int $transactionId = null,
     ): AccountMemberLedgerEntry {
         return $account->memberLedgerEntries()->create([
-            'user_id' => $userId,
-            'transaction_id' => $transactionId,
+            'user_id'         => $userId,
+            'transaction_id'  => $transactionId,
             'related_user_id' => $relatedUserId,
-            'type' => AccountMemberLedgerEntryType::SettlementTransfer,
-            'amount' => $amount,
-            'description' => $description,
-            'occurred_at' => $occurredAt,
+            'type'            => AccountMemberLedgerEntryType::SettlementTransfer,
+            'amount'          => $amount,
+            'description'     => $description,
+            'occurred_at'     => $occurredAt,
         ]);
     }
 
@@ -341,9 +448,9 @@ class RegisterAccountMemberTransfer
                 break;
             }
 
-            if ($entry->type !== AccountMemberLedgerEntryType::SettlementTransfer
+            if (AccountMemberLedgerEntryType::SettlementTransfer !== $entry->type
                 || (float) $entry->amount <= 0.0
-                || $entry->transaction_id === null
+                || null === $entry->transaction_id
             ) {
                 continue;
             }
@@ -360,11 +467,11 @@ class RegisterAccountMemberTransfer
                 continue;
             }
 
-            $income = new Transaction;
+            $income = new Transaction();
             $income->parent_transaction_id = $parentTransaction->id;
             $income->type = TransactionType::Income;
             $income->status = TransactionStatus::Completed;
-            $income->concept = $description.': '.$parentTransaction->concept;
+            $income->concept = $description . ': ' . $parentTransaction->concept;
             $income->amount = $incomeAmount;
             $income->percentage = 100.0;
             $income->account_id = $account->id;
@@ -387,5 +494,4 @@ class RegisterAccountMemberTransfer
                 ->increment('balance', $createdTotal);
         }
     }
-
 }

@@ -24,6 +24,7 @@ use FinSi\FinanceDomain\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -33,6 +34,8 @@ class FinanceModelServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        Event::listen(NotificationSending::class, static fn (NotificationSending $event): ?bool => $event->notifiable instanceof User && $event->notifiable->isVirtualCustodian() ? false : null);
+
         Factory::guessFactoryNamesUsing(static fn (string $model): string => 'Database\\Factories\\' . class_basename($model) . 'Factory');
         Factory::guessModelNamesUsing(static fn (Factory $factory): string => 'FinSi\\FinanceDomain\\Models\\' . substr(class_basename($factory), 0, -7));
 

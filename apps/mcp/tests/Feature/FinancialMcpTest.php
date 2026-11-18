@@ -79,6 +79,8 @@ class FinancialMcpTest extends TestCase
             $table->id();
             $table->string('name');
             $table->string('email');
+            $table->unsignedBigInteger('virtual_account_id')->nullable();
+            $table->timestamp('virtual_retired_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
         });
         Schema::create('accounts', function (Blueprint $table): void {

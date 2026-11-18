@@ -19,6 +19,8 @@ enum AccountMemberLedgerEntryType: string
     case SettlementCorrection = 'settlement_correction';
     case CustodyCorrection = 'custody_correction';
     case CustodyReimbursementDue = 'custody_reimbursement_due';
+    case VirtualCustodyReimbursementDue = 'virtual_custody_reimbursement_due';
+    case VirtualCustodySettlementTransfer = 'virtual_custody_settlement_transfer';
     case CustodyReimbursementPayment = 'custody_reimbursement_payment';
     case AccountDeficitShare = 'account_deficit_share';
     case AccountDeficitPayment = 'account_deficit_payment';

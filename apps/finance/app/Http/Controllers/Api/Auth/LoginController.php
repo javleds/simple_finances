@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Requests\Api\Auth\LoginRequest;
-use FinSi\FinanceDomain\Models\User;
 use App\Services\Auth\JwtTokenService;
 use App\Services\Auth\ResolveInvitePostAuthRedirect;
+use FinSi\FinanceDomain\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 
@@ -16,10 +18,10 @@ class LoginController extends ApiController
         LoginRequest $request,
         JwtTokenService $jwtTokenService,
         ResolveInvitePostAuthRedirect $resolveInvitePostAuthRedirect,
-    ): JsonResponse
-    {
+    ): JsonResponse {
         $user = User::withoutGlobalScopes()
             ->where('email', $request->string('email')->toString())
+            ->whereNull('virtual_account_id')
             ->first();
 
         if (! $user instanceof User || ! Hash::check($request->string('password')->toString(), $user->password)) {
@@ -36,14 +38,14 @@ class LoginController extends ApiController
             $request->string('post_auth_action')->toString() ?: null,
         );
 
-        if ($postAuthRedirect !== null) {
+        if (null !== $postAuthRedirect) {
             $meta['post_auth_redirect'] = $postAuthRedirect;
         }
 
         return $this->respond([
             'message' => 'Authenticated.',
-            'data' => $user,
-            'meta' => $meta,
+            'data'    => $user,
+            'meta'    => $meta,
         ]);
     }
 }
