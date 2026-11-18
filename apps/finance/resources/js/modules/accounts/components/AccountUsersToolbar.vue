@@ -4,7 +4,6 @@ import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline';
 import { AppButton, AppInput, AppSectionBar } from '@/modules/shared/components';
 
 const props = defineProps<{
-    canManage?: boolean;
     canCreateCustodian?: boolean;
     isPreparingCustodian?: boolean;
 }>();
@@ -12,7 +11,6 @@ const props = defineProps<{
 const searchTerm = defineModel<string>('searchTerm', { required: true });
 
 const emit = defineEmits<{
-    create: [];
     createCustodian: [];
 }>();
 </script>
@@ -25,21 +23,13 @@ const emit = defineEmits<{
         >
             <template #actions>
                 <AppButton
-                    v-if="props.canManage !== false && props.canCreateCustodian"
+                    v-if="props.canCreateCustodian"
                     variant="outline"
                     :disabled="props.isPreparingCustodian"
                     @click="emit('createCustodian')"
                 >
                     <PlusIcon class="h-4 w-4" />
                     Custodio virtual
-                </AppButton>
-                <AppButton
-                    v-if="props.canManage !== false"
-                    variant="primary"
-                    aria-label="Agregar usuario"
-                    @click="emit('create')"
-                >
-                    <PlusIcon class="h-4 w-4" />
                 </AppButton>
             </template>
         </AppSectionBar>

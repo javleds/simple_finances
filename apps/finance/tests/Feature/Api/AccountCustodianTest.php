@@ -111,13 +111,25 @@ it('rejects excess custody and participants from other accounts atomically', fun
     $this->assertDatabaseCount('account_member_ledger_entries', 1);
 });
 
-it('limits custody changes to the owner while allowing member reads', function () {
+it('allows members to manage custodians while rejecting outsiders', function () {
     [$account, $owner, $member] = custodianAccount();
-    $id = $this->withHeaders(custodianHeaders($owner))->postJson("/api/accounts/{$account->id}/custodians", ['name' => 'Nu'])->json('data.id');
-    $this->withHeaders(custodianHeaders($member))->getJson("/api/accounts/{$account->id}/custodians")->assertOk()->assertJsonCount(1, 'data');
-    $this->withHeaders(custodianHeaders($member))->postJson("/api/accounts/{$account->id}/custodians", ['name' => 'Nu'])->assertForbidden();
-    $this->withHeaders(custodianHeaders($member))->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", ['distributions' => []])->assertForbidden();
-    $this->withHeaders(custodianHeaders(User::factory()->create()))->getJson("/api/accounts/{$account->id}/custodians")->assertForbidden();
+    $headers = custodianHeaders($member);
+    $id = $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", [
+        'name' => 'Nu', 'transfers' => [['user_id' => $owner->id, 'amount' => 100]],
+    ])->assertCreated()->json('data.id');
+    $this->withHeaders($headers)->getJson("/api/accounts/{$account->id}/custodians")->assertOk()->assertJsonCount(1, 'data');
+
+    $outsiderHeaders = custodianHeaders(User::factory()->create());
+    $this->withHeaders($outsiderHeaders)->getJson("/api/accounts/{$account->id}/custodians")->assertForbidden();
+    $this->withHeaders($outsiderHeaders)->postJson("/api/accounts/{$account->id}/custodians", ['name' => 'Other'])->assertForbidden();
+    $this->withHeaders($outsiderHeaders)->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", ['distributions' => []])->assertForbidden();
+
+    $this->withHeaders($headers)->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", [
+        'distributions' => [['user_id' => $member->id, 'amount' => 100]],
+    ])->assertOk();
+    expect((float) $account->fresh()->balance)->toBe(10000.0);
+    $summary = app(BuildAccountMemberSummary::class)->execute($account->fresh());
+    expect(collect($summary['custody_by_user'])->firstWhere('user_id', $member->id)['amount'])->toBe(100.0);
 });
 
 it('rejects foreign custodian retirement and nonmember distribution destinations', function () {

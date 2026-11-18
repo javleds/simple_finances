@@ -5,7 +5,6 @@ import { useRoute } from 'vue-router';
 
 import AccountCustodianModal from '@/modules/accounts/components/AccountCustodianModal.vue';
 import { useAccountCustodians } from '@/modules/accounts/composables/useAccountCustodians';
-import AccountUserCreateModal from '@/modules/accounts/components/AccountUserCreateModal.vue';
 import AccountUserDeleteModal from '@/modules/accounts/components/AccountUserDeleteModal.vue';
 import AccountUserEditModal from '@/modules/accounts/components/AccountUserEditModal.vue';
 import AccountUsersList from '@/modules/accounts/components/AccountUsersList.vue';
@@ -25,6 +24,10 @@ import { AppListState, AppLoadMoreFooter } from '@/modules/shared/components';
 const props = defineProps<{ account: Account | null }>();
 const canManage = computed(() =>
     Boolean(props.account && props.account.ownerId === getStoredAuthSession()?.user.id),
+);
+
+const canManageCustodians = computed(() =>
+    Boolean(props.account?.users.some((user) => user.id === getStoredAuthSession()?.user.id)),
 );
 
 const route = useRoute();
@@ -77,14 +80,11 @@ const {
 } = useAccountUsersCrud(activeFilters);
 
 const {
-    closeCreateUser,
     closeDeleteUser,
     closeEditUser,
     editPercentage,
-    isCreateUserOpen,
     isDeleteUserOpen,
     isEditUserOpen,
-    openCreateUser,
     openDeleteUser,
     openEditUser,
     selectedUser,
@@ -138,7 +138,7 @@ const {
     usersPerPage,
 });
 
-const { createUserActions, deleteUserActions, editUserActions } = useAccountUserModalActions({
+const { deleteUserActions, editUserActions } = useAccountUserModalActions({
     canSubmitPercentage,
     isDeleting,
     isSaving,
@@ -182,10 +182,10 @@ function reloadUsers(): void {
 <template>
     <section class="space-y-4">
         <AccountUsersToolbar
-            :can-manage="canManage"
             v-model:search-term="searchTerm"
             :can-create-custodian="
                 Boolean(
+                    canManageCustodians &&
                     props.account &&
                     props.account.users.length > 1 &&
                     !props.account.isCredit &&
@@ -193,7 +193,6 @@ function reloadUsers(): void {
                 )
             "
             :is-preparing-custodian="custodianFlow.isPreparing.value"
-            @create="openCreateUser"
             @create-custodian="custodianFlow.open()"
         />
 
@@ -225,6 +224,7 @@ function reloadUsers(): void {
         >
             <AccountUsersList
                 :can-manage="canManage"
+                :can-manage-custodians="canManageCustodians"
                 :users="users"
                 :custodians="visibleCustodians"
                 @delete-custodian="custodianFlow.open($event)"
@@ -251,12 +251,6 @@ function reloadUsers(): void {
             :error="custodianFlow.error.value"
             @close="custodianFlow.close"
             @save="custodianFlow.save"
-        />
-
-        <AccountUserCreateModal
-            :open="isCreateUserOpen"
-            :actions="createUserActions"
-            @close="closeCreateUser"
         />
 
         <AccountUserEditModal

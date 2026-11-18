@@ -37,7 +37,7 @@ GET/POST `/api/accounts/{account}/custodians`; DELETE `/api/accounts/{account}/c
 Importes finitos, no negativos y con dos decimales; origen con custodia suficiente; destino miembro vigente; ámbito de cuenta obligatorio; suma exacta al retirar; bloqueo de retiradas con obligaciones pendientes. Los custodios retirados no son seleccionables en nuevas operaciones.
 
 ## Permisos y seguridad
-Miembros pueden leer. Solo propietario crea y retira. La identidad virtual no autentica ni concede acceso a una cuenta y no es invitada ni notificada.
+Todos los miembros vigentes pueden leer, crear y retirar custodios virtuales. La identidad virtual no autentica ni concede acceso a una cuenta y no es invitada ni notificada.
 
 ## Casos límite
 Custodia cero, cantidades de un centavo, saldo adicional y transferencia combinados, deuda pendiente, pagador distinto al autor, operaciones concurrentes, retiro e historial, ediciones y borrados posteriores.

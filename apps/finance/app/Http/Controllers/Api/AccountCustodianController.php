@@ -37,7 +37,7 @@ class AccountCustodianController extends ApiController
 
     public function store(Account $account, CreateAccountCustodianRequest $request, CreateAccountCustodian $createAccountCustodian): JsonResponse
     {
-        $this->authorizeAccountAccess->ensureOwner($account, (int) $request->user()->id);
+        $this->authorizeAccountAccess->ensureMember($account, (int) $request->user()->id);
         $custodian = $createAccountCustodian->execute($account, CreateAccountCustodianDto::fromArray($request->validated()), (int) $request->user()->id);
 
         return $this->respond(['data' => collect($this->custodians($account))->firstWhere('id', $custodian->id)], 201);
@@ -45,7 +45,7 @@ class AccountCustodianController extends ApiController
 
     public function delete(Account $account, User $custodian, RetireAccountCustodianRequest $request, RetireAccountCustodian $retireAccountCustodian): JsonResponse
     {
-        $this->authorizeAccountAccess->ensureOwner($account, (int) $request->user()->id);
+        $this->authorizeAccountAccess->ensureMember($account, (int) $request->user()->id);
         $retireAccountCustodian->execute($account, $custodian, RetireAccountCustodianDto::fromArray($request->validated()));
 
         return $this->respondDeleted('Custodio eliminado y custodia redistribuida.');

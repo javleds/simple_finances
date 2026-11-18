@@ -5,6 +5,7 @@ import { AppEmptyState, AppText } from '@/modules/shared/components';
 
 const props = defineProps<{
   canManage?: boolean;
+  canManageCustodians?: boolean;
   users: AccountMember[];
   custodians?: AccountVirtualCustodian[];
 }>();
@@ -46,7 +47,7 @@ const emit = defineEmits<{
       <AccountUserListItem
         v-for="custodian in props.custodians ?? []"
         :key="`custodian-${custodian.id}`"
-        :can-manage="props.canManage"
+        :can-manage="props.canManageCustodians === true"
         virtual-custodian
         access-label="Sin acceso"
         :allocation-percentage="0"
