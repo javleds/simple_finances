@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch, useId } from 'vue';
 
 import Button from 'primevue/button';
 
@@ -22,6 +22,15 @@ const props = withDefaults(
         users: ReadonlyArray<SplitUser>;
         modelValue: Record<string, number>;
         step?: number;
+        monetary?: {
+            total: number;
+            amount: number;
+            maximum: number;
+            source: string;
+            recipient: string;
+            sourceRemaining?: number;
+        };
+        disabled?: boolean;
     }>(),
     {
         step: DEFAULT_STEP_PERCENTAGE,
@@ -30,7 +39,43 @@ const props = withDefaults(
 
 const emit = defineEmits<{
     'update:modelValue': [value: Record<string, number>];
+    'update:amount': [value: number];
 }>();
+
+const amountInputId = useId();
+const amountDraft = ref('0.00');
+const monetaryPercentage = computed(() =>
+    props.monetary?.total ? (props.monetary.amount / props.monetary.total) * 100 : 0,
+);
+watch(
+    () => props.monetary?.amount,
+    (amount) => {
+        amountDraft.value = (amount ?? 0).toFixed(2);
+    },
+    { immediate: true },
+);
+
+function updateAmount(value: number): void {
+    if (!props.monetary || props.disabled) return;
+    const cents = Math.max(
+        0,
+        Math.min(Math.round(props.monetary.maximum * 100), Math.round(value * 100)),
+    );
+    emit('update:amount', (Number.isFinite(cents) ? cents : 0) / 100);
+    amountDraft.value = ((Number.isFinite(cents) ? cents : 0) / 100).toFixed(2);
+}
+
+function handleAmountKey(event: KeyboardEvent): void {
+    if (!props.monetary || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    if (event.key === 'Home') return updateAmount(0);
+    if (event.key === 'End') return updateAmount(props.monetary.maximum);
+    updateAmount(props.monetary.amount + (event.key === 'ArrowRight' ? 0.01 : -0.01));
+}
+
+function formatMoney(amount: number): string {
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
+}
 
 const trackRef = ref<HTMLElement | null>(null);
 const draggingHandleIndex = ref<number | null>(null);
@@ -62,7 +107,7 @@ const cumulativeBoundaries = computed(() => {
 watch(
     normalizedPercentages,
     (nextValue) => {
-        if (arePercentagesEqual(nextValue, props.modelValue)) {
+        if (props.monetary || arePercentagesEqual(nextValue, props.modelValue)) {
             return;
         }
 
@@ -332,6 +377,7 @@ function updateUserPercentage(userId: string, nextValue: string): void {
 }
 
 function startHandleDrag(handleIndex: number, event: PointerEvent): void {
+    if (props.disabled) return;
     const currentTarget = event.currentTarget;
 
     if (!(currentTarget instanceof HTMLElement)) {
@@ -362,6 +408,14 @@ function handlePointerMove(event: PointerEvent): void {
     const trackWidth = trackBounds.width;
 
     if (trackWidth <= 0) {
+        return;
+    }
+
+    if (props.monetary) {
+        updateAmount(
+            clampNumber((event.clientX - trackBounds.left) / trackWidth, 0, 1) *
+                props.monetary.total,
+        );
         return;
     }
 
@@ -432,7 +486,68 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <section class="space-y-4">
+    <section v-if="props.monetary" class="space-y-3">
+        <div class="grid grid-cols-[minmax(0,1fr)_7rem] items-center gap-3">
+            <div
+                ref="trackRef"
+                class="relative mx-[1.375rem] h-4 touch-none rounded-(--app-radius-control) bg-(--app-color-surface-muted) select-none"
+            >
+                <div
+                    class="absolute inset-y-0 left-0 rounded-(--app-radius-control) bg-(--app-color-primary)"
+                    :style="{ width: `${monetaryPercentage}%` }"
+                />
+                <Button
+                    type="button"
+                    outlined
+                    severity="secondary"
+                    :disabled="props.disabled || props.monetary.total <= 0"
+                    role="slider"
+                    :aria-label="`Importe para ${props.monetary.recipient}`"
+                    :aria-valuemin="0"
+                    :aria-valuemax="props.monetary.maximum"
+                    :aria-valuenow="props.monetary.amount"
+                    :aria-valuetext="`${formatMoney(props.monetary.amount)} (${monetaryPercentage.toFixed(2)}%)`"
+                    class="absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 touch-none items-center justify-center rounded-(--app-radius-control) border bg-(--app-color-surface)"
+                    :style="{ left: `calc(${monetaryPercentage}% - ${HANDLE_WIDTH_PX / 2}px)` }"
+                    @pointerdown.prevent="startHandleDrag(0, $event)"
+                    @keydown="handleAmountKey"
+                >
+                    <span
+                        class="h-2.5 w-0.5 rounded-(--app-radius-control) bg-(--app-color-text-subtle)"
+                    />
+                </Button>
+            </div>
+            <AppInput
+                :id="amountInputId"
+                v-model="amountDraft"
+                :aria-label="`Monto para ${props.monetary.recipient}`"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                :max="props.monetary.maximum"
+                step="0.01"
+                :disabled="props.disabled"
+                @blur="updateAmount(Number(amountDraft))"
+                @keydown.enter.prevent="updateAmount(Number(amountDraft))"
+            />
+        </div>
+        <div class="flex flex-wrap justify-between gap-2">
+            <AppText size="sm"
+                >{{ props.monetary.source }}:
+                {{
+                    formatMoney(
+                        props.monetary.sourceRemaining ??
+                            props.monetary.total - props.monetary.amount,
+                    )
+                }}</AppText
+            >
+            <AppText size="sm"
+                >{{ props.monetary.recipient }}: {{ formatMoney(props.monetary.amount) }} ·
+                {{ monetaryPercentage.toFixed(2) }}%</AppText
+            >
+        </div>
+    </section>
+    <section v-else class="space-y-4">
         <div class="space-y-1">
             <div class="flex items-center justify-between gap-3">
                 <p class="text-sm font-semibold text-(--app-color-text)">
@@ -477,7 +592,9 @@ onBeforeUnmount(() => {
                     :aria-label="`Ajustar límite entre ${user.name} y ${userItems[index + 1]?.name ?? ''}`"
                     @pointerdown.prevent="startHandleDrag(index, $event)"
                 >
-                    <span class="h-2.5 w-0.5 rounded-(--app-radius-control) bg-(--app-color-text-subtle)" />
+                    <span
+                        class="h-2.5 w-0.5 rounded-(--app-radius-control) bg-(--app-color-text-subtle)"
+                    />
                 </Button>
             </div>
 

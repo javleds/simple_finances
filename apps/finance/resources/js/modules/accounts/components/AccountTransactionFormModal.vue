@@ -22,6 +22,7 @@ const props = withDefaults(
     defineProps<{
         accountId: string;
         accountUsers: AccountMember[];
+        virtualCustodians?: ReadonlyArray<{ id: string; name: string }>;
         accountBalance?: number | null;
         currentUserId?: string | null;
         actions: ReadonlyArray<AppModalAction>;
@@ -84,6 +85,7 @@ const emit = defineEmits<{
             :form-id="props.formId"
             :saving="props.actions.some((action) => action.loading)"
             :account-users="props.accountUsers"
+            :virtual-custodians="props.virtualCustodians"
             :account-balance="props.accountBalance"
             :current-user-id="props.currentUserId"
             :enable-create-and-add-another="props.enableCreateAndAddAnother"

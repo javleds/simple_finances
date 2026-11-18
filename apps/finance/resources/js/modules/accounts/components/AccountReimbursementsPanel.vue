@@ -86,7 +86,7 @@ function formatCurrency(value: number): string {
 }
 
 function transferKey(accountId: string, reimbursement: AccountPendingReimbursement): string {
-    return `${accountId}:${reimbursement.fromUserId}:${reimbursement.toUserId}:${reimbursement.amount}`;
+    return `${accountId}:${reimbursement.actionType}:${reimbursement.fromUserId}:${reimbursement.toUserId}:${reimbursement.amount}`;
 }
 
 function currentUserDebts(
@@ -201,8 +201,16 @@ function reimbursementActionLabel(reimbursement: AccountPendingReimbursement): s
     return null;
 }
 
-function canSettle(reimbursement: AccountPendingReimbursement): boolean {
-    return reimbursementRole(reimbursement) !== 'other';
+function canSettle(account: Account, reimbursement: AccountPendingReimbursement): boolean {
+    if (reimbursementRole(reimbursement) !== 'other') return true;
+    if (
+        !props.currentUserId ||
+        (account.ownerId !== props.currentUserId &&
+            !account.users.some((user) => user.id === props.currentUserId))
+    )
+        return false;
+    const virtualIds = new Set((account.virtualCustodians ?? []).map((custodian) => custodian.id));
+    return virtualIds.has(reimbursement.fromUserId) && virtualIds.has(reimbursement.toUserId);
 }
 
 function detailsLabel(reimbursement: AccountPendingReimbursement): string {
@@ -226,6 +234,7 @@ function closeDetails(): void {
 }
 
 function confirmOrSettleRow(account: Account, reimbursement: AccountPendingReimbursement): void {
+    if (props.isTransferring || !canSettle(account, reimbursement)) return;
     if (reimbursement.items.length <= 1) {
         emit('settle', account.id, reimbursement);
         return;
@@ -241,7 +250,7 @@ function closeRowConfirmation(): void {
 function confirmRowAction(): void {
     const action = pendingRowAction.value;
 
-    if (!action) {
+    if (!action || props.isTransferring || !canSettle(action.account, action.reimbursement)) {
         return;
     }
 
@@ -400,9 +409,10 @@ function itemDateLabel(date: string | null): string {
                                 </AppIconButton>
 
                                 <AppIconButton
-                                    v-if="canSettle(item)"
+                                    v-if="canSettle(account, item)"
                                     :ariaLabel="
-                                        reimbursementActionLabel(item) ?? 'Liquidar reembolso'
+                                        reimbursementActionLabel(item) ??
+                                        'Registrar pago entre custodios'
                                     "
                                     :disabled="props.isTransferring"
                                     :loading="

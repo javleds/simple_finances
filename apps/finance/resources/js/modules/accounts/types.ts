@@ -148,7 +148,23 @@ export type AccountMember = {
   settlementAmount: number;
 };
 
+export type AccountVirtualCustodian = {
+  id: string;
+  name: string;
+  custodyAmount: number;
+  settlementAmount: number;
+};
+
+export type AccountCustodyTransfer = { userId: string; amount: number };
+
+export type AccountCustodianPayload = {
+  name: string;
+  openingBalance: number;
+  transfers: AccountCustodyTransfer[];
+};
+
 export type Account = {
+  virtualCustodians?: AccountVirtualCustodian[];
   id: string;
   usesSharedCategories?: boolean;
   ownerId: string;

@@ -161,14 +161,13 @@ const {
 } = useAccountMemberTransfers();
 
 watch(
-    () => account.value?.balance,
-    (nextBalance) => {
-        if (typeof nextBalance === 'number') {
-            accountBalance.value = nextBalance;
-            custodyByUser.value = account.value?.custodyByUser ?? [];
-            settlementsByUser.value = account.value?.settlementsByUser ?? [];
-            pendingReimbursements.value = account.value?.pendingReimbursements ?? [];
-        }
+    account,
+    (nextAccount) => {
+        if (!nextAccount) return;
+        accountBalance.value = nextAccount.balance;
+        custodyByUser.value = nextAccount.custodyByUser;
+        settlementsByUser.value = nextAccount.settlementsByUser;
+        pendingReimbursements.value = nextAccount.pendingReimbursements;
     },
     { immediate: true },
 );
@@ -339,6 +338,7 @@ const filterChips = computed(() => [
         <AccountTransactionsModals
             :account-id="accountId"
             :account-users="accountUsers"
+            :virtual-custodians="account?.virtualCustodians ?? []"
             :account-balance="accountBalance"
             :create-initial-values="createInitialValues"
             :current-user-id="currentUserId"

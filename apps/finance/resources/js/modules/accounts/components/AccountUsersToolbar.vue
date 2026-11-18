@@ -3,12 +3,17 @@ import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
 import { AppButton, AppInput, AppSectionBar } from '@/modules/shared/components';
 
-const props = defineProps<{ canManage?: boolean }>();
+const props = defineProps<{
+    canManage?: boolean;
+    canCreateCustodian?: boolean;
+    isPreparingCustodian?: boolean;
+}>();
 
 const searchTerm = defineModel<string>('searchTerm', { required: true });
 
 const emit = defineEmits<{
     create: [];
+    createCustodian: [];
 }>();
 </script>
 
@@ -16,9 +21,18 @@ const emit = defineEmits<{
     <div class="space-y-4">
         <AppSectionBar
             title="Usuarios"
-            description="Miembros reales compartidos en la cuenta y su porcentaje asignado."
+            description="Miembros de la cuenta, porcentajes y custodia."
         >
             <template #actions>
+                <AppButton
+                    v-if="props.canManage !== false && props.canCreateCustodian"
+                    variant="outline"
+                    :disabled="props.isPreparingCustodian"
+                    @click="emit('createCustodian')"
+                >
+                    <PlusIcon class="h-4 w-4" />
+                    Custodio virtual
+                </AppButton>
                 <AppButton
                     v-if="props.canManage !== false"
                     variant="primary"
@@ -40,7 +54,7 @@ const emit = defineEmits<{
                 id="user-search"
                 v-model="searchTerm"
                 type="search"
-                placeholder="Buscar usuario por nombre o correo"
+                placeholder="Buscar usuario o custodio"
                 class="pl-11"
             />
         </div>

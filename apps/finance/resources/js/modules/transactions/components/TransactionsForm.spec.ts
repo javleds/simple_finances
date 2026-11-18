@@ -49,8 +49,14 @@ function render(props: Partial<InstanceType<typeof TransactionsForm>['$props']> 
             accountUsers: members,
             currentUserId: '2',
             accountBalance: 100,
-            initialValues: { concept: 'Compra', amount: 20, date: '2026-10-10' },
             ...props,
+            initialValues:
+                props.initialValues === null
+                    ? null
+                    : {
+                          date: '2026-10-10',
+                          ...(props.initialValues ?? { concept: 'Compra', amount: 20 }),
+                      },
         },
     });
 }
@@ -509,4 +515,58 @@ describe('activation-based private money', () => {
         wrapper.unmount();
         personalMoney.value = undefined;
     });
+});
+
+it('offers virtual custodians as payers without adding them to the expense split', async () => {
+    const wrapper = render({
+        virtualCustodians: [{ id: '9', name: 'Mercadopago' }],
+        accountBalance: 0,
+        initialValues: {
+            concept: 'Compra',
+            amount: 2000,
+            paidByUserId: '9',
+            paymentSource: 'member_out_of_pocket',
+            userPayments: { '1': 50, '2': 50 },
+        },
+    });
+    await flushPromises();
+    const payer = wrapper.getComponent({ name: 'AppSearchSelect' });
+    expect(payer.props('options').map((option: { value: string }) => option.value)).toContain('9');
+    const editor = wrapper.getComponent({ name: 'AppPercentageSplitEditor' });
+    expect(editor.props('users')).toEqual([
+        { id: '1', name: 'Ana' },
+        { id: '2', name: 'Luis' },
+    ]);
+    expect(await submit(wrapper)).toMatchObject({
+        paidByUserId: '9',
+        paymentSource: 'member_out_of_pocket',
+        userPayments: { '1': 50, '2': 50 },
+    });
+    wrapper.unmount();
+});
+
+it('offers virtual custodians for shared income without converting individual accounts to shared', async () => {
+    const wrapper = render({
+        virtualCustodians: [{ id: '9', name: 'Mercadopago' }],
+        initialValues: { type: 'income', concept: 'Ingreso', amount: 20, custodianUserId: '9' },
+    });
+    expect(
+        wrapper
+            .getComponent({ name: 'AppSearchSelect' })
+            .props('options')
+            .map((option: { value: string }) => option.value),
+    ).toContain('9');
+    expect(await submit(wrapper)).toMatchObject({ custodianUserId: '9' });
+    wrapper.unmount();
+    const individual = render({
+        accountUsers: members.slice(0, 1),
+        virtualCustodians: [{ id: '9', name: 'Mercadopago' }],
+    });
+    expect(individual.find('#transaction-paid-by').exists()).toBe(false);
+    expect(await submit(individual)).toMatchObject({
+        paidByUserId: '1',
+        paymentSource: 'account_fund',
+        splitBetweenUsers: false,
+    });
+    individual.unmount();
 });

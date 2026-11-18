@@ -140,7 +140,22 @@ export const accountFormSchema = z
     }
   });
 
+export const accountVirtualCustodianApiSchema = z
+  .object({
+    id: z.union([z.string(), z.number()]).transform(String),
+    name: z.string(),
+    custody_amount: z.coerce.number().finite(),
+    settlement_amount: z.coerce.number().finite(),
+  })
+  .transform((value) => ({
+    id: value.id,
+    name: value.name,
+    custodyAmount: value.custody_amount,
+    settlementAmount: value.settlement_amount,
+  }));
+
 export const accountApiSchema = z.object({
+  virtual_custodians: z.array(accountVirtualCustodianApiSchema).optional().default([]),
   uses_shared_categories: z.boolean().optional().default(false),
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
@@ -392,6 +407,7 @@ export function createDefaultAccountFormValues(
 export function mapAccountApiToDomain(payload: z.infer<typeof accountApiSchema>): Account {
   return {
     id: payload.id,
+    virtualCustodians: payload.virtual_custodians,
     usesSharedCategories: payload.uses_shared_categories,
     ownerId: payload.user_id,
     name: payload.name,

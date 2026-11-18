@@ -39,6 +39,7 @@ const props = withDefaults(
         formId?: string;
         saving?: boolean;
         accountUsers?: ReadonlyArray<AccountMember>;
+        virtualCustodians?: ReadonlyArray<{ id: string; name: string }>;
         accountBalance?: number | null;
         financialGoals?: ReadonlyArray<{
             id: string;
@@ -56,6 +57,7 @@ const props = withDefaults(
         formId: 'transaction-form',
         saving: false,
         accountUsers: () => [],
+        virtualCustodians: () => [],
         accountBalance: null,
         financialGoals: () => [],
         enableCreateAndAddAnother: false,
@@ -125,6 +127,13 @@ function participantOptions(
         label: user.name,
         description: user.email,
     }));
+    options.push(
+        ...props.virtualCustodians.map((custodian) => ({
+            value: custodian.id,
+            label: custodian.name,
+            description: 'Custodio virtual',
+        })),
+    );
     if (!isEditingOriginalAccount.value) return options;
     const id =
         role === 'payer' ? props.initialValues?.paidByUserId : props.initialValues?.custodianUserId;

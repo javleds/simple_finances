@@ -10,12 +10,16 @@ import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import {
   accountApiSchema,
+  accountVirtualCustodianApiSchema,
   accountUserApiSchema,
   mapAccountApiToDomain,
   mapAccountUserApiToDomain,
 } from '../schemas/accountSchemas';
 import type {
   Account,
+  AccountVirtualCustodian,
+  AccountCustodianPayload,
+  AccountCustodyTransfer,
   AccountLedgerDiagnosticsResult,
   AccountLedgerRepair,
   AccountLedgerRepairPayload,
@@ -432,6 +436,34 @@ export function mapAccountStatusesToDeletedAtFilter(
 
 export function createAccountsRepository() {
   return {
+    async listCustodians(accountId: string): Promise<AccountVirtualCustodian[]> {
+      const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}/custodians`);
+      return z.object({ data: z.array(accountVirtualCustodianApiSchema) }).parse(response).data;
+    },
+    async createCustodian(accountId: string, payload: AccountCustodianPayload): Promise<void> {
+      await apiClient.post(`${accountsPath}/${accountId}/custodians`, {
+        name: payload.name,
+        opening_balance: payload.openingBalance,
+        transfers: payload.transfers.map((item) => ({
+          user_id: item.userId,
+          amount: item.amount,
+        })),
+      });
+    },
+    async removeCustodian(
+      accountId: string,
+      custodianId: string,
+      distributions: AccountCustodyTransfer[],
+    ): Promise<void> {
+      await apiClient.delete(`${accountsPath}/${accountId}/custodians/${custodianId}`, {
+        body: {
+          distributions: distributions.map((item) => ({
+            user_id: item.userId,
+            amount: item.amount,
+          })),
+        },
+      });
+    },
     async list(options?: {
       page?: number;
       perPage?: number;
@@ -539,13 +571,17 @@ export function createAccountsRepository() {
       });
       const query = searchParams.toString();
       const response = await apiClient.get<unknown>(
-        query ? `${accountsPath}/${accountId}/ledger?${query}` : `${accountsPath}/${accountId}/ledger`,
+        query
+          ? `${accountsPath}/${accountId}/ledger?${query}`
+          : `${accountsPath}/${accountId}/ledger`,
       );
 
       return accountLedgerCollectionSchema.parse(response);
     },
     async listLedgerDiagnostics(accountId: string): Promise<AccountLedgerDiagnosticsResult> {
-      const response = await apiClient.get<unknown>(`${accountsPath}/${accountId}/ledger/diagnostics`);
+      const response = await apiClient.get<unknown>(
+        `${accountsPath}/${accountId}/ledger/diagnostics`,
+      );
 
       return accountLedgerDiagnosticsResponseSchema.parse(response);
     },
@@ -553,7 +589,9 @@ export function createAccountsRepository() {
       accountId: string,
       payload: AccountLedgerRepairPayload,
     ): Promise<AccountLedgerRepair> {
-      const response = await apiClient.post<unknown>(`${accountsPath}/${accountId}/ledger/repairs`, {
+      const response = await apiClient.post<unknown>(
+        `${accountsPath}/${accountId}/ledger/repairs`,
+        {
         diagnostic_id: payload.diagnosticId,
         issue_code: payload.issueCode,
         repair_type: payload.repairType,
@@ -565,7 +603,8 @@ export function createAccountsRepository() {
         description: payload.description,
         evidence: payload.evidence,
         preview: mapRepairPreviewToApi(payload.preview),
-      });
+        },
+      );
 
       return accountLedgerRepairResponseSchema.parse(response);
     },

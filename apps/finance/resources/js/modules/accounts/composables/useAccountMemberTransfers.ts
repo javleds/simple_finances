@@ -36,7 +36,7 @@ export function useAccountMemberTransfers() {
   const isTransferring = computed(() => transferMutation.isPending.value);
 
   function transferKey(accountId: string, reimbursement: AccountPendingReimbursement): string {
-    return `${accountId}:${reimbursement.fromUserId}:${reimbursement.toUserId}:${reimbursement.amount}`;
+    return `${accountId}:${reimbursement.actionType}:${reimbursement.fromUserId}:${reimbursement.toUserId}:${reimbursement.amount}`;
   }
 
   async function settleReimbursement(

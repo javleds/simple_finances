@@ -3,6 +3,8 @@ import Message from 'primevue/message';
 import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
+import AccountCustodianModal from '@/modules/accounts/components/AccountCustodianModal.vue';
+import { useAccountCustodians } from '@/modules/accounts/composables/useAccountCustodians';
 import AccountUserCreateModal from '@/modules/accounts/components/AccountUserCreateModal.vue';
 import AccountUserDeleteModal from '@/modules/accounts/components/AccountUserDeleteModal.vue';
 import AccountUserEditModal from '@/modules/accounts/components/AccountUserEditModal.vue';
@@ -162,6 +164,16 @@ watch(
     { immediate: true },
 );
 
+const custodianFlow = useAccountCustodians(
+    computed(() => props.account),
+    loadUsers,
+);
+const visibleCustodians = computed(() =>
+    custodianFlow.custodians.value.filter((custodian) =>
+        custodian.name.toLocaleLowerCase().includes(searchTerm.value.trim().toLocaleLowerCase()),
+    ),
+);
+
 function reloadUsers(): void {
     void loadUsers();
 }
@@ -172,8 +184,22 @@ function reloadUsers(): void {
         <AccountUsersToolbar
             :can-manage="canManage"
             v-model:search-term="searchTerm"
+            :can-create-custodian="
+                Boolean(
+                    props.account &&
+                    props.account.users.length > 1 &&
+                    !props.account.isCredit &&
+                    !props.account.isVirtual,
+                )
+            "
+            :is-preparing-custodian="custodianFlow.isPreparing.value"
             @create="openCreateUser"
+            @create-custodian="custodianFlow.open()"
         />
+
+        <Message v-if="custodianFlow.error.value && !custodianFlow.isOpen.value" severity="error">{{
+            custodianFlow.error.value
+        }}</Message>
 
         <AccountUsersSplitEditor
             v-if="canManage"
@@ -192,7 +218,7 @@ function reloadUsers(): void {
 
         <AppListState
             :error="loadError"
-            :has-items="hasUsers"
+            :has-items="hasUsers || visibleCustodians.length > 0"
             :is-loading="isLoading"
             loading-label="Cargando usuarios..."
             @retry="reloadUsers"
@@ -200,6 +226,8 @@ function reloadUsers(): void {
             <AccountUsersList
                 :can-manage="canManage"
                 :users="users"
+                :custodians="visibleCustodians"
+                @delete-custodian="custodianFlow.open($event)"
                 @delete="openDeleteUser"
                 @edit="openEditUser"
             >
@@ -214,6 +242,16 @@ function reloadUsers(): void {
                 </template>
             </AccountUsersList>
         </AppListState>
+
+        <AccountCustodianModal
+            :open="custodianFlow.isOpen.value"
+            :account="custodianFlow.modalAccount.value"
+            :custodian="custodianFlow.selectedCustodian.value"
+            :is-saving="custodianFlow.isSaving.value"
+            :error="custodianFlow.error.value"
+            @close="custodianFlow.close"
+            @save="custodianFlow.save"
+        />
 
         <AccountUserCreateModal
             :open="isCreateUserOpen"

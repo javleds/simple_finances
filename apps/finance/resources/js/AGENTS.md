@@ -39,6 +39,7 @@ Current shared components:
 - `AppPasswordInput`: password input with show/hide action.
   Path: `resources/js/modules/shared/components/AppPasswordInput.vue`
 - `AppPercentageSplitEditor`: interactive horizontal percentage splitter with drag handles and exact numeric adjustment that keeps the total at 100%.
+  La opción `monetary` conserva la barra y permite introducir importes exactos en centavos, con límite y saldos resultantes; no altera el modo porcentual.
   Path: `resources/js/modules/shared/components/AppPercentageSplitEditor.vue`
 - `AppMultiSearchSelect`: selector múltiple de PrimeVue MultiSelect con búsqueda, limpieza y resumen compacto de selecciones.
   Path: `resources/js/modules/shared/components/AppMultiSearchSelect.vue`

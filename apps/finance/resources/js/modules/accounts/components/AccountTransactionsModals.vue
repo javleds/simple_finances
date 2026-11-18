@@ -20,6 +20,7 @@ const props = withDefaults(
   defineProps<{
     accountId: string;
     accountUsers: AccountMember[];
+    virtualCustodians?: ReadonlyArray<{ id: string; name: string }>;
     accountBalance?: number | null;
     currentUserId?: string | null;
     createTransactionActions: ReadonlyArray<AppModalAction>;
@@ -61,6 +62,7 @@ const emit = defineEmits<{
     :open="props.isCreateTransactionModalOpen"
     :account-id="props.accountId"
     :account-users="props.accountUsers"
+    :virtual-custodians="props.virtualCustodians"
     :account-balance="props.accountBalance"
     :current-user-id="props.currentUserId"
     :actions="props.createTransactionActions"
@@ -80,6 +82,7 @@ const emit = defineEmits<{
     :open="props.isEditTransactionModalOpen"
     :account-id="props.accountId"
     :account-users="props.accountUsers"
+    :virtual-custodians="props.virtualCustodians"
     :account-balance="props.accountBalance"
     :current-user-id="props.currentUserId"
     :actions="props.editTransactionActions"

@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { TrashIcon } from '@heroicons/vue/24/outline';
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type UserAccessStatus = 'active' | 'invited';
 
 const props = defineProps<{
     canManage?: boolean;
+    virtualCustodian?: boolean;
     itemId: string;
     name: string;
     email: string;
@@ -93,7 +95,7 @@ function settlementLabel(value: number): string {
                         {{ props.name }}
                     </p>
                     <p class="text-sm leading-5 break-words text-(--app-color-text-muted)">
-                        {{ props.email }}
+                        {{ props.virtualCustodian ? 'Custodio virtual' : props.email }}
                     </p>
                 </div>
 
@@ -101,7 +103,7 @@ function settlementLabel(value: number): string {
                     <p
                         class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums"
                     >
-                        {{ props.allocationPercentage }}%
+                        {{ props.virtualCustodian ? '—' : `${props.allocationPercentage}%` }}
                     </p>
                     <p
                         class="text-[11px] font-medium tracking-[0.04em] text-(--app-color-text-subtle) uppercase"
@@ -113,6 +115,18 @@ function settlementLabel(value: number): string {
                 <AppActionMenu
                     v-if="props.canManage !== false"
                     class="shrink-0"
+                    :actions="
+                        props.virtualCustodian
+                            ? [
+                                  {
+                                      key: 'delete',
+                                      label: 'Eliminar custodio',
+                                      icon: TrashIcon,
+                                      tone: 'danger',
+                                  },
+                              ]
+                            : undefined
+                    "
                     @delete="handleDelete"
                     @edit="handleEdit"
                 />
