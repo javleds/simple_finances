@@ -30,11 +30,11 @@ Conserva el identificador Traefik existente si es diferente, `APP_KEY`, secretos
 
 ## Secuencia
 
-El script valida configuración y Git limpio, registra el commit anterior, activa mantenimiento y detiene los consumidores de adjuntos antes de `git pull --ff-only`, construye PHP, instala Composer sin dependencias de desarrollo y ejecuta el constructor Node bajo demanda. El código está montado: actualizar Git antes del mantenimiento expondría versiones mezcladas.
+El script valida configuración y Git limpio, registra el commit anterior, activa mantenimiento y detiene los consumidores de adjuntos/chat y HTTP antes de `git pull --ff-only`, construye PHP, instala Composer sin dependencias de desarrollo y ejecuta el constructor Node bajo demanda. Si el pull cambia el propio `deploy.sh`, aborta con los servicios detenidos: reejecutar `bash deploy.sh --no-pull` utiliza el entrypoint nuevo. El código está montado: actualizar Git antes del mantenimiento expondría versiones mezcladas.
 
 `npm ci` y el build compilan a `storage/app/deploy-assets/build`. El publicador valida la entrada Vue y archivos del manifest, copia assets, conserva los anteriores, guarda `manifest.previous.json` y cambia el manifest mediante rename. Retira `public/hot`.
 
-Después inicia PHP/MySQL/Nginx. MySQL dispone de un healthcheck TCP con `mysqladmin ping`; PHP espera a que MySQL esté saludable y `compose up --wait` espera esta comprobación antes de ejecutar `app:post-deploy --migrate`. El healthcheck comprueba disponibilidad del servidor; las credenciales se validan al conectar Laravel. Después de migrar y cachear, recrea los consumidores de adjuntos y ejecuta `attachments:diagnose --timeout=120`, que comprueba procesamiento real mediante la cola. El script desactiva mantenimiento solo si todo termina correctamente. Un fallo detiene ambos consumidores de adjuntos, preservando los jobs pendientes. Un error posterior al mantenimiento deja la aplicación cerrada; consulta el log, corrige el fallo y repite el script. No limpies assets retenidos hasta cerrar la ventana de rollback.
+Después inicia PHP/MySQL/Nginx. MySQL dispone de un healthcheck TCP con `mysqladmin ping`; PHP espera a que MySQL esté saludable y `compose up --wait` espera esta comprobación antes de ejecutar `app:post-deploy --migrate`. El healthcheck comprueba disponibilidad del servidor; las credenciales se validan al conectar Laravel. Después de migrar y cachear, recrea los consumidores de adjuntos y ejecuta `attachments:diagnose --timeout=120`, que comprueba procesamiento real mediante la cola. El script desactiva mantenimiento solo si todo termina correctamente. Un fallo posterior al inicio del despliegue detiene consumidores de adjuntos y del chat, preservando los datos y jobs pendientes. Un fallo de preflight no detiene servicios. Un error posterior al mantenimiento deja la aplicación cerrada; consulta el log, corrige el fallo y repite el script. No limpies assets retenidos hasta cerrar la ventana de rollback.
 
 ## Primera transición al monorepo
 
@@ -90,3 +90,26 @@ Configura límites mediante `TRANSACTION_ATTACHMENTS_*` en `apps/finance/.env`; 
 Respaldar conjuntamente la base de datos y `storage/app/private/transaction-attachments` durante una ventana consistente, con consumidores detenidos. La base conserva estados, permisos y reservas; los archivos solos no permiten recuperar el catálogo. Restaurar ambos antes de reiniciar consumidores y ejecutar el diagnóstico. No incluir comprobantes en Git ni respaldos públicos.
 
 ImageMagick, Imagick y libheif tienen licencias abiertas; los paquetes del sistema incluyen sus avisos. La disponibilidad de un códec no constituye una garantía universal sobre patentes. Las imágenes se convierten a WebP y se descarta el original: conservar un respaldo del comprobante original fuera de la aplicación si es necesario.
+
+
+## Despliegue conjunto de Finance, MCP y agente
+
+Es un monorepo: las aplicaciones y el paquete compartido se despliegan desde la misma revisión Git. `bash deploy.sh` siempre despliega Finance/SPA. Si `CHAT_ENABLED=true` en `apps/finance/.env`, incorpora `docker-compose.chat.yml` al archivo de producción; nunca utiliza los overrides local/host ni publica puertos del agente, MCP o PostgreSQL. Solo Nginx Finance conserva los routers Traefik.
+
+El preflight ejecuta Node 24 en el contenedor `assets`, sin requerir Node en el host. Exige `APP_ENV=production` y `APP_DEBUG=false` en Finance y MCP. Con chat habilitado valida los cuatro archivos separados: `.env`, `apps/finance/.env`, `apps/mcp/.env` y `apps/agents/.env`. La raíz aporta credenciales PostgreSQL; Finance conserva su configuración propia. Los nombres de proyecto deben coincidir con el de producción existente. No copiar `COMPOSE_PROJECT_NAME=fin-si-chat` de desarrollo sobre una instalación existente ni cambiar el nombre para resolver conflictos: eso puede seleccionar otros volúmenes. Registrar y respaldar tanto MySQL como PostgreSQL antes de adoptar este flujo; un stack de chat previo en otro proyecto requiere reconciliación explícita, no migración automática de volúmenes.
+
+Los tokens entre aplicaciones deben coincidir por pareja y ser distintos entre fronteras. FastAPI usa `agent_runtime` y la contraseña de infraestructura correspondiente; el migrador usa `agent_owner`. La contraseña owner debe contener caracteres seguros para URL (`A-Z`, `a-z`, dígitos, `.`, `_`, `~`, `-`), pues Compose la inserta en su DSN. El lector MCP debe estar aprovisionado con solo SELECT, separado del escritor de Finance. Se requieren modelo/clave configurados, pero el despliegue no consulta al modelo. Usar valores literales en los env, con comillas simples para secretos que contienen `$`; no depender de expansiones `${VAR}` entre archivos. El script evita overrides del shell para las variables que interpolan infraestructura/routers.
+
+Con chat activo, la secuencia adicional es:
+
+1. Detener API, worker, mantenimiento y MCP anteriores antes de cambiar código. No detener ni borrar volúmenes.
+2. Construir imágenes de agente y MCP desde la revisión actual; MCP instala una copia nueva del paquete compartido. Las imágenes excluyen caches PHP locales para no incorporar configuración/secretos de desarrollo.
+3. Migrar y cachear Finance; iniciar PostgreSQL y ejecutar `agent-migrate` para Alembic y checkpoints con el rol owner.
+4. Recrear MCP y API, esperar salud de MCP/HTTP y comprobar SELECT-only en MySQL, coincidencia de hashes legales con `GetLegalDocuments` de Finance, esquema del agente y conectividad interna. Un HEAD a un UUID inexistente comprueba autenticación Finance→API sin crear conversaciones ni consultar datos financieros.
+5. Recrear worker/mantenimiento del agente, diagnosticar adjuntos y retirar mantenimiento al finalizar todas las comprobaciones.
+
+Si el chat está deshabilitado, el script no exige sus env ni lo inicia; sí detiene consumidores del chat que existan en ese mismo proyecto. PostgreSQL y sus datos permanecen. Schedulers o workers supervisados fuera de Compose siguen requiriendo parada y reinicio manual; el script no puede administrarlos.
+
+Para la primera adopción desde un `deploy.sh` antiguo, no confiar en que ese script cambie de comportamiento tras su propio pull. Durante una ventana de mantenimiento, detener HTTP y consumidores con la configuración vigente, actualizar la revisión por el procedimiento operativo y ejecutar el nuevo `bash deploy.sh --no-pull`. Mantener respaldos y la identidad de los volúmenes. Esta tarea no realiza ese procedimiento en el servidor.
+
+Los checks no sustituyen un E2E con usuario verificado y aceptación legal vigente, ni prueban disponibilidad de OpenRouter. Si se modifica un documento legal, actualizar explícitamente los hashes MCP antes de reintentar. Ante un fallo, mantener mantenimiento y consumidores detenidos, corregir y reejecutar; no hacer rollback automático de migraciones ni usar `down -v`. Al revertir código, revisar compatibilidad de MySQL y PostgreSQL y reconstruir todas las aplicaciones de la misma revisión.
