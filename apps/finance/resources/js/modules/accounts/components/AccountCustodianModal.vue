@@ -20,6 +20,7 @@ import type {
 
 const props = defineProps<{
     open: boolean;
+    renaming?: boolean;
     account: Account | null;
     custodian: AccountVirtualCustodian | null;
     isSaving: boolean;
@@ -27,9 +28,9 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
     close: [];
-    save: [payload: AccountCustodianPayload | AccountCustodyTransfer[]];
+    save: [payload: AccountCustodianPayload | AccountCustodyTransfer[] | string];
 }>();
-const removing = computed(() => props.custodian !== null);
+const removing = computed(() => props.custodian !== null && !props.renaming);
 const draft = ref<Record<string, number>>({});
 const { values, errors, setFieldValue, resetForm, handleSubmit } = usePrimeForm({
     initialValues: { name: '', openingBalance: '0.00' },
@@ -106,17 +107,26 @@ const actions = computed<AppModalAction[]>(() => [
     { key: 'close', label: 'Cancelar', tone: 'neutral', disabled: props.isSaving },
     {
         key: 'save',
-        label: removing.value ? 'Distribuir y eliminar' : 'Crear custodio',
+        label: props.renaming
+            ? 'Guardar nombre'
+            : removing.value
+              ? 'Distribuir y eliminar'
+              : 'Crear custodio',
         tone: removing.value ? 'danger' : 'primary',
         loading: props.isSaving,
         disabled: !canSubmit.value,
     },
 ]);
 watch(
-    () => [props.open, props.account?.id, props.custodian?.id],
+    () => [props.open, props.account?.id, props.custodian?.id, props.renaming],
     () => {
         draft.value = {};
-        resetForm({ values: { name: '', openingBalance: '0.00' } });
+        resetForm({
+            values: {
+                name: props.renaming ? (props.custodian?.name ?? '') : '',
+                openingBalance: '0.00',
+            },
+        });
     },
     { immediate: true },
 );
@@ -141,6 +151,10 @@ function formatMoney(amount: number): string {
 }
 const submit = handleSubmit((submitted) => {
     if (!canSubmit.value) return;
+    if (props.renaming) {
+        emit('save', submitted.name.trim());
+        return;
+    }
     const transfers = sources.value
         .map((source) => ({ userId: source.id, amount: draft.value[source.id] ?? 0 }))
         .filter((item) => item.amount > 0);
@@ -164,7 +178,13 @@ function action(key: string): void {
     <AppModal
         presentation="sheet"
         :open="props.open"
-        :title="removing ? `Eliminar ${props.custodian?.name}` : 'Agregar custodio virtual'"
+        :title="
+            props.renaming
+                ? 'Renombrar custodio'
+                : removing
+                  ? `Eliminar ${props.custodian?.name}`
+                  : 'Agregar custodio virtual'
+        "
         :variant="removing ? 'danger' : 'default'"
         :actions="actions"
         @action="action"
@@ -182,6 +202,7 @@ function action(key: string): void {
                     @update:model-value="setFieldValue('name', $event)"
                 />
                 <AppInput
+                    v-if="!props.renaming"
                     id="custodian-opening-balance"
                     label="Saldo adicional"
                     type="number"
@@ -193,64 +214,68 @@ function action(key: string): void {
                     :disabled="props.isSaving"
                     @update:model-value="setFieldValue('openingBalance', $event)"
                 />
-                <AppText size="sm"
+                <AppText v-if="!props.renaming" size="sm"
                     >Opcional. Solo este importe se suma al balance de la cuenta.</AppText
                 >
             </template>
-            <div class="space-y-2">
-                <AppTitle as="h3" size="sm">{{
-                    removing ? 'Distribuir toda la custodia' : 'Mover fondos a este custodio'
-                }}</AppTitle>
-                <AppText size="sm">{{
-                    removing
-                        ? 'Reparte el 100% entre los usuarios. Todo el dinero permanece en la cuenta.'
-                        : 'El dinero transferido cambia de custodio sin aumentar el balance.'
-                }}</AppText>
-            </div>
-            <Message v-if="hasPending" severity="warn"
-                >Resuelve los reembolsos pendientes de este custodio antes de eliminarlo.</Message
-            >
-            <div v-for="source in sources" :key="source.id" class="space-y-3">
-                <AppText>{{ removing ? 'Para' : 'Desde' }} {{ source.name }}</AppText>
-                <AppText v-if="!removing && source.available < source.amount" size="sm"
-                    >Disponible para mover: {{ formatMoney(source.available) }}. El resto está
-                    reservado para reembolsos.</AppText
+            <template v-if="!props.renaming">
+                <div class="space-y-2">
+                    <AppTitle as="h3" size="sm">{{
+                        removing ? 'Distribuir toda la custodia' : 'Mover fondos a este custodio'
+                    }}</AppTitle>
+                    <AppText size="sm">{{
+                        removing
+                            ? 'Reparte el 100% entre los usuarios. Todo el dinero permanece en la cuenta.'
+                            : 'El dinero transferido cambia de custodio sin aumentar el balance.'
+                    }}</AppText>
+                </div>
+                <Message v-if="hasPending" severity="warn"
+                    >Resuelve los reembolsos pendientes de este custodio antes de
+                    eliminarlo.</Message
                 >
-                <AppPercentageSplitEditor
-                    :users="[]"
-                    :model-value="{}"
-                    :disabled="props.isSaving"
-                    :monetary="{
-                        total: removing ? totalCents / 100 : source.amount,
-                        amount: draft[source.id] ?? 0,
-                        maximum: maximum(source.id, source.available),
-                        source: removing ? 'Por repartir' : source.name,
-                        sourceRemaining: removing ? remainingCents / 100 : undefined,
-                        recipient: removing ? source.name : values.name || 'Nuevo custodio',
-                    }"
-                    @update:amount="updateAmount(source.id, $event, source.available)"
-                />
-            </div>
-            <div class="space-y-2 border-t border-(--app-color-border) pt-4" aria-live="polite">
-                <AppText v-if="removing"
-                    >Por repartir: <strong>{{ formatMoney(remainingCents / 100) }}</strong></AppText
-                >
-                <AppText v-else
-                    >Custodia inicial:
-                    <strong>{{
-                        formatMoney(allocatedCents / 100 + (Number(values.openingBalance) || 0))
-                    }}</strong></AppText
-                >
-                <AppText size="sm"
-                    >Balance: {{ formatMoney(props.account?.balance ?? 0) }} →
-                    {{
-                        formatMoney(
-                            (props.account?.balance ?? 0) +
-                                (removing ? 0 : Number(values.openingBalance) || 0),
-                        )
-                    }}</AppText
-                >
-            </div>
+                <div v-for="source in sources" :key="source.id" class="space-y-3">
+                    <AppText>{{ removing ? 'Para' : 'Desde' }} {{ source.name }}</AppText>
+                    <AppText v-if="!removing && source.available < source.amount" size="sm"
+                        >Disponible para mover: {{ formatMoney(source.available) }}. El resto está
+                        reservado para reembolsos.</AppText
+                    >
+                    <AppPercentageSplitEditor
+                        :users="[]"
+                        :model-value="{}"
+                        :disabled="props.isSaving"
+                        :monetary="{
+                            total: removing ? totalCents / 100 : source.amount,
+                            amount: draft[source.id] ?? 0,
+                            maximum: maximum(source.id, source.available),
+                            source: removing ? 'Por repartir' : source.name,
+                            sourceRemaining: removing ? remainingCents / 100 : undefined,
+                            recipient: removing ? source.name : values.name || 'Nuevo custodio',
+                        }"
+                        @update:amount="updateAmount(source.id, $event, source.available)"
+                    />
+                </div>
+                <div class="space-y-2 border-t border-(--app-color-border) pt-4" aria-live="polite">
+                    <AppText v-if="removing"
+                        >Por repartir:
+                        <strong>{{ formatMoney(remainingCents / 100) }}</strong></AppText
+                    >
+                    <AppText v-else
+                        >Custodia inicial:
+                        <strong>{{
+                            formatMoney(allocatedCents / 100 + (Number(values.openingBalance) || 0))
+                        }}</strong></AppText
+                    >
+                    <AppText size="sm"
+                        >Balance: {{ formatMoney(props.account?.balance ?? 0) }} →
+                        {{
+                            formatMoney(
+                                (props.account?.balance ?? 0) +
+                                    (removing ? 0 : Number(values.openingBalance) || 0),
+                            )
+                        }}</AppText
+                    >
+                </div>
+            </template>
             <Message v-if="props.error" severity="error">{{ props.error }}</Message>
         </form>
     </AppModal>

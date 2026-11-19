@@ -128,6 +128,7 @@ Route::middleware(['api.auth', 'api.legal'])->group(function (): void {
     Route::get('accounts/{account}/users', [AccountUserController::class, 'index']);
     Route::get('accounts/{account}/custodians', [AccountCustodianController::class, 'index']);
     Route::post('accounts/{account}/custodians', [AccountCustodianController::class, 'store']);
+    Route::put('accounts/{account}/custodians/{custodian}', [AccountCustodianController::class, 'update']);
     Route::delete('accounts/{account}/custodians/{custodian}', [AccountCustodianController::class, 'delete']);
     Route::post('accounts/{account}/users', [AccountUserController::class, 'store']);
     Route::put('accounts/{account}/users', [AccountUserController::class, 'bulkUpdate']);

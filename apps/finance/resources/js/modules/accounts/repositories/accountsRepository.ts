@@ -450,6 +450,9 @@ export function createAccountsRepository() {
         })),
       });
     },
+    async renameCustodian(accountId: string, custodianId: string, name: string): Promise<void> {
+      await apiClient.put(`${accountsPath}/${accountId}/custodians/${custodianId}`, { name });
+    },
     async removeCustodian(
       accountId: string,
       custodianId: string,

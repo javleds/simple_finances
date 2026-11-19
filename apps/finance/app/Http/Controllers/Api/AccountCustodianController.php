@@ -7,9 +7,11 @@ namespace App\Http\Controllers\Api;
 use App\Dto\CreateAccountCustodianDto;
 use App\Dto\RetireAccountCustodianDto;
 use App\Http\Requests\Api\CreateAccountCustodianRequest;
+use App\Http\Requests\Api\RenameAccountCustodianRequest;
 use App\Http\Requests\Api\RetireAccountCustodianRequest;
 use App\Services\Accounts\BuildAccountMemberSummary;
 use App\Services\Accounts\CreateAccountCustodian;
+use App\Services\Accounts\RenameAccountCustodian;
 use App\Services\Accounts\RetireAccountCustodian;
 
 use function collect;
@@ -41,6 +43,14 @@ class AccountCustodianController extends ApiController
         $custodian = $createAccountCustodian->execute($account, CreateAccountCustodianDto::fromArray($request->validated()), (int) $request->user()->id);
 
         return $this->respond(['data' => collect($this->custodians($account))->firstWhere('id', $custodian->id)], 201);
+    }
+
+    public function update(Account $account, User $custodian, RenameAccountCustodianRequest $request, RenameAccountCustodian $renameAccountCustodian): JsonResponse
+    {
+        $this->authorizeAccountAccess->ensureMember($account, (int) $request->user()->id);
+        $renameAccountCustodian->execute($account, $custodian, $request->validated('name'));
+
+        return $this->respond(['data' => collect($this->custodians($account))->firstWhere('id', $custodian->id)]);
     }
 
     public function delete(Account $account, User $custodian, RetireAccountCustodianRequest $request, RetireAccountCustodian $retireAccountCustodian): JsonResponse

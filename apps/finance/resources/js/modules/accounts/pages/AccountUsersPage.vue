@@ -228,6 +228,7 @@ function reloadUsers(): void {
                 :users="users"
                 :custodians="visibleCustodians"
                 @delete-custodian="custodianFlow.open($event)"
+                @rename-custodian="custodianFlow.open($event, true)"
                 @delete="openDeleteUser"
                 @edit="openEditUser"
             >
@@ -245,6 +246,7 @@ function reloadUsers(): void {
 
         <AccountCustodianModal
             :open="custodianFlow.isOpen.value"
+            :renaming="custodianFlow.isRenaming.value"
             :account="custodianFlow.modalAccount.value"
             :custodian="custodianFlow.selectedCustodian.value"
             :is-saving="custodianFlow.isSaving.value"

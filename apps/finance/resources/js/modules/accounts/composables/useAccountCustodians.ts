@@ -20,6 +20,7 @@ export function useAccountCustodians(account: Ref<Account | null>, onChanged: ()
     const modalAccount = ref<Account | null>(null);
     const selectedCustodian = ref<AccountVirtualCustodian | null>(null);
     const isOpen = ref(false);
+    const isRenaming = ref(false);
     const isSaving = ref(false);
     const isPreparing = ref(false);
     const error = ref<string | null>(null);
@@ -33,7 +34,7 @@ export function useAccountCustodians(account: Ref<Account | null>, onChanged: ()
         },
     );
 
-    async function open(custodianId?: string): Promise<void> {
+    async function open(custodianId?: string, renaming = false): Promise<void> {
         if (!account.value || isPreparing.value || isSaving.value) return;
         const accountId = account.value.id;
         error.value = null;
@@ -45,6 +46,7 @@ export function useAccountCustodians(account: Ref<Account | null>, onChanged: ()
                 latest.virtualCustodians?.find((item) => item.id === custodianId) ?? null;
             if (custodianId && !selectedCustodian.value)
                 throw new Error('El custodio ya no está disponible.');
+            isRenaming.value = renaming;
             modalAccount.value = latest;
             queryClient.setQueryData(accountQueryKeys.detail(accountId), latest);
             isOpen.value = true;
@@ -65,14 +67,17 @@ export function useAccountCustodians(account: Ref<Account | null>, onChanged: ()
     }
 
     async function save(
-        payload: AccountCustodianPayload | AccountCustodyTransfer[],
+        payload: AccountCustodianPayload | AccountCustodyTransfer[] | string,
     ): Promise<void> {
         if (!modalAccount.value || isSaving.value || !isOpen.value) return;
         const accountId = modalAccount.value.id;
         isSaving.value = true;
         error.value = null;
         try {
-            if (Array.isArray(payload)) {
+            if (typeof payload === 'string') {
+                if (!isRenaming.value || !selectedCustodian.value) return;
+                await repository.renameCustodian(accountId, selectedCustodian.value.id, payload);
+            } else if (Array.isArray(payload)) {
                 if (!selectedCustodian.value) return;
                 await repository.removeCustodian(accountId, selectedCustodian.value.id, payload);
             } else {
@@ -98,6 +103,7 @@ export function useAccountCustodians(account: Ref<Account | null>, onChanged: ()
         modalAccount,
         selectedCustodian,
         isOpen,
+        isRenaming,
         isSaving,
         isPreparing,
         error,

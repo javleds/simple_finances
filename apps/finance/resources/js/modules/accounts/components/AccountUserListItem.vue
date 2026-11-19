@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TrashIcon } from '@heroicons/vue/24/outline';
+import { PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type UserAccessStatus = 'active' | 'invited';
@@ -118,6 +118,11 @@ function settlementLabel(value: number): string {
                     :actions="
                         props.virtualCustodian
                             ? [
+                                  {
+                                      key: 'edit',
+                                      label: 'Renombrar custodio',
+                                      icon: PencilSquareIcon,
+                                  },
                                   {
                                       key: 'delete',
                                       label: 'Eliminar custodio',

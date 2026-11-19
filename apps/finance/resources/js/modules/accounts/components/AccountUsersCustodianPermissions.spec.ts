@@ -43,5 +43,7 @@ describe('account custodian permissions', () => {
         expect(rows[1]!.props('canManage')).toBe(true);
         rows[1]!.vm.$emit('delete', '2');
         expect(wrapper.emitted('deleteCustodian')).toEqual([['2']]);
+        rows[1]!.vm.$emit('edit', '2');
+        expect(wrapper.emitted('renameCustodian')).toEqual([['2']]);
     });
 });

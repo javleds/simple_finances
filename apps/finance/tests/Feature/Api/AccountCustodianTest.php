@@ -230,3 +230,42 @@ it('reserves outgoing custody reimbursements even when net settlements cancel', 
         'name' => 'Nu', 'transfers' => [['user_id' => $owner->id, 'amount' => 9000]],
     ])->assertCreated()->assertJsonPath('data.custody_amount', 9000.0);
 });
+
+it('allows a member to rename custody without changing financial data or identity', function () {
+    [$account, $owner, $member] = custodianAccount();
+    $headers = custodianHeaders($member);
+    $id = $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", [
+        'name' => 'Nu', 'transfers' => [['user_id' => $owner->id, 'amount' => 100]],
+    ])->json('data.id');
+    $identity = User::findOrFail($id);
+    $ledger = $account->memberLedgerEntries()->get()->toArray();
+    $this->withHeaders($headers)->putJson("/api/accounts/{$account->id}/custodians/{$id}", [
+        'name' => '  Mercado Pago  ', 'virtual_account_id' => null, 'balance' => 0,
+    ])->assertOk()->assertJsonPath('data.name', 'Mercado Pago')->assertJsonPath('data.id', $id);
+    expect(User::findOrFail($id)->name)->toBe('Mercado Pago')
+        ->and(User::findOrFail($id)->virtual_account_id)->toBe($account->id)
+        ->and(User::findOrFail($id)->email)->toBe($identity->email)
+        ->and((float) $account->fresh()->balance)->toBe(10000.0)
+        ->and($account->memberLedgerEntries()->get()->toArray())->toBe($ledger);
+});
+
+it('rejects renaming custodians outside the active account scope', function () {
+    [$account, $owner, $member] = custodianAccount();
+    $headers = custodianHeaders($member);
+    $id = $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", ['name' => 'Nu'])->json('data.id');
+    $this->withHeaders(custodianHeaders(User::factory()->create()))->putJson("/api/accounts/{$account->id}/custodians/{$id}", ['name' => 'Other'])->assertForbidden();
+    [$other, $otherOwner] = custodianAccount();
+    $this->withHeaders(custodianHeaders($otherOwner))->putJson("/api/accounts/{$other->id}/custodians/{$id}", ['name' => 'Other'])->assertNotFound();
+    $this->withHeaders($headers)->putJson("/api/accounts/{$account->id}/custodians/{$owner->id}", ['name' => 'Other'])->assertNotFound();
+    $this->withHeaders($headers)->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", ['distributions' => []])->assertOk();
+    $this->withHeaders($headers)->putJson("/api/accounts/{$account->id}/custodians/{$id}", ['name' => 'Other'])->assertNotFound();
+    expect(User::findOrFail($id)->name)->toBe('Nu');
+});
+
+it('validates custodian rename names', function (mixed $name) {
+    [$account, $owner] = custodianAccount();
+    $headers = custodianHeaders($owner);
+    $id = $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", ['name' => 'Nu'])->json('data.id');
+    $this->withHeaders($headers)->putJson("/api/accounts/{$account->id}/custodians/{$id}", ['name' => $name])->assertUnprocessable()->assertJsonValidationErrors('name');
+    expect(User::findOrFail($id)->name)->toBe('Nu');
+})->with(['empty' => '', 'spaces' => '   ', 'long' => str_repeat('x', 101), 'null' => null, 'numeric' => 12]);

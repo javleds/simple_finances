@@ -172,3 +172,46 @@ describe('virtual custodian form', () => {
         expect(wrapper.text()).toContain('Por repartir: $100.00');
     });
 });
+
+it('renames with the current name and no financial inputs', async () => {
+    const wrapper = render(true);
+    await wrapper.setProps({ renaming: true });
+    expect((wrapper.get('#custodian-name input').element as HTMLInputElement).value).toBe(
+        'Mercadopago',
+    );
+    expect(wrapper.find('.split').exists()).toBe(false);
+    expect(wrapper.find('#custodian-opening-balance').exists()).toBe(false);
+    await wrapper.get('#custodian-name input').setValue('  Mercado Pago  ');
+    await wrapper.get('[data-submit]').trigger('click');
+    await flushPromises();
+    expect(wrapper.emitted('save')).toEqual([['Mercado Pago']]);
+});
+
+it('validates renamed names and blocks saving while in flight', async () => {
+    const wrapper = render(true);
+    await wrapper.setProps({ renaming: true });
+    await wrapper.get('#custodian-name input').setValue('   ');
+    await wrapper.get('[data-submit]').trigger('click');
+    await flushPromises();
+    expect(wrapper.emitted('save')).toBeUndefined();
+    await wrapper.get('#custodian-name input').setValue('Nu');
+    await wrapper.setProps({ isSaving: true, error: 'No fue posible guardar.' });
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.emitted('save')).toBeUndefined();
+    expect(wrapper.text()).toContain('No fue posible guardar.');
+});
+
+it('cancels renaming without saving and resets the name on reopening', async () => {
+    const wrapper = render(true);
+    await wrapper.setProps({ renaming: true });
+    await wrapper.get('#custodian-name input').setValue('Draft');
+    wrapper.findComponent(modal).vm.$emit('action', 'close');
+    expect(wrapper.emitted('close')).toHaveLength(1);
+    expect(wrapper.emitted('save')).toBeUndefined();
+    await wrapper.setProps({ open: false });
+    await wrapper.setProps({ open: true });
+    expect((wrapper.get('#custodian-name input').element as HTMLInputElement).value).toBe(
+        'Mercadopago',
+    );
+});

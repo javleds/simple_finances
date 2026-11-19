@@ -103,7 +103,7 @@ Confianza: Observado.
 
 ## Custodios virtuales
 
-Las cuentas corrientes compartidas pueden tener custodios virtuales propios. Son identidades financieras con `users.virtual_account_id`, sin membresía en `account_user`, autenticación, invitaciones, notificaciones ni porcentaje de reparto. Todos los miembros vigentes pueden crear y eliminar custodios virtuales, consultar la custodia y registrar pagos y reembolsos. La vista Usuarios los presenta junto a los miembros, con eliminación como única acción.
+Las cuentas corrientes compartidas pueden tener custodios virtuales propios. Son identidades financieras con `users.virtual_account_id`, sin membresía en `account_user`, autenticación, invitaciones, notificaciones ni porcentaje de reparto. Todos los miembros vigentes pueden crear, renombrar y eliminar custodios virtuales, consultar la custodia y registrar pagos y reembolsos. La vista Usuarios los presenta junto a los miembros, con acciones para renombrarlos o eliminarlos. Renombrar solo actualiza el nombre del custodio activo, sin modificar saldos, ledger ni descripciones históricas.
 
 Crear permite añadir saldo mediante un ingreso marcado `virtual_custodian_opening`, excluido del disponible personal, y trasladar custodia existente con pares `internal_transfer`. Las aportaciones ordinarias posteriores conservan las reglas de dinero personal. Los traslados no aumentan el balance y solo disponen de custodia libre de reembolsos comprometidos.
 

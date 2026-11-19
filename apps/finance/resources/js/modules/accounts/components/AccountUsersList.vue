@@ -13,6 +13,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   delete: [userId: string];
   edit: [userId: string];
+  renameCustodian: [custodianId: string];
   deleteCustodian: [custodianId: string];
 }>();
 </script>
@@ -59,6 +60,7 @@ const emit = defineEmits<{
         role-label="Custodio virtual"
         status="active"
         @delete="emit('deleteCustodian', $event)"
+        @edit="emit('renameCustodian', $event)"
       />
 
       <AppEmptyState
