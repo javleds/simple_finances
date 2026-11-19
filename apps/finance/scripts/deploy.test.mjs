@@ -78,21 +78,24 @@ test('first layout transition preserves storage and configuration before startin
         await mkdir(join(repository, 'public/build'), { recursive: true });
         await writeFile(join(repository, 'storage/app/private/receipt'), 'retained receipt');
         await writeFile(join(repository, 'public/build/manifest.json'), '{"old":true}');
-        await writeFile(join(repository, '.env'), 'APP_KEY=retained-key\n');
+        await writeFile(join(repository, '.env'), 'APP_KEY=retained-key\nAPP_ENV=production\nDB_CONNECTION=mysql\nDB_HOST=mysql\nDB_DATABASE=finance\nDB_PASSWORD=fake-password\nTRAEFIK_APP_NAME=retained\nAPP_DOMAIN=fin-si.com\nAPI_DOMAIN=api.finsi.com\nAPP_URL=https://fin-si.com\nSPA_URL=https://fin-si.com\nFRONTEND_URL=https://fin-si.com\n');
         await writeFile(join(repository, 'artisan'), '');
         await writeFile(join(repository, 'docker-compose.prod.yml'), 'services: {}');
         const executable = async (name, script) => writeFile(join(directory, 'bin', name), `#!/usr/bin/env bash\n${script}`, { mode: 0o755 });
         await executable('flock', 'exit 0');
         await executable('docker', `printf 'docker %s\\n' "$*" >> "$TRACE"
 if [[ "$1" == inspect ]]; then
-  if [[ "$3" == *Mounts* ]]; then echo retained_simplefinancesdb; else echo retained; fi
+  if [[ "$3" == *Mounts* ]]; then echo retained_simplefinancesdb; elif [[ "$3" == *Config.Env* ]]; then echo MYSQL_DATABASE=finance; else echo retained; fi
 fi
 if [[ "$*" == *'config --services'* ]]; then printf 'php\\nnginx\\nattachments-worker\\nattachments-maintenance\\n'; fi
+if [[ "$*" == *mysqldump* ]]; then echo 'mock SQL dump'; fi
 `);
         await executable('git', `printf 'git %s\\n' "$*" >> "$TRACE"
-if [[ "$1" == rev-parse ]]; then echo abc123; fi
+if [[ "$1" == rev-parse ]]; then if [[ "$2" == --show-toplevel ]]; then pwd; else echo abc123; fi; fi
 if [[ "$1" == checkout ]]; then
-  mkdir -p apps/finance/storage apps/finance/public
+  mkdir -p apps/finance/storage apps/finance/public apps/mcp apps/agents
+  printf 'APP_ENV=local' > apps/mcp/.env.example
+  printf 'OPENROUTER_API_KEY=' > apps/agents/.env.example
   printf '#!/usr/bin/env bash\\nprintf "new-deploy %%s\\\\n" "$*" >> "$TRACE"\\n' > deploy.sh
 fi
 `);
@@ -106,7 +109,7 @@ fi
         assert.equal((await stat(backup)).mode & 0o777, 0o700);
         assert.equal(await readFile(join(repository, 'apps/finance/storage/app/private/receipt'), 'utf8'), 'retained receipt');
         assert.equal(await readFile(join(backup, 'storage/app/private/receipt'), 'utf8'), 'retained receipt');
-        assert.match(await readFile(join(repository, 'apps/finance/.env'), 'utf8'), /APP_KEY=retained-key\n\nCOMPOSE_PROJECT_NAME=retained/);
+        assert.match(await readFile(join(repository, 'apps/finance/.env'), 'utf8'), /APP_KEY=retained-key[\s\S]*COMPOSE_PROJECT_NAME=retained/);
         assert.equal(await readFile(join(repository, 'apps/finance/public/build/manifest.json'), 'utf8'), '{"old":true}');
         const commands = await readFile(trace, 'utf8');
         assert.ok(commands.indexOf('php artisan down') < commands.indexOf('git checkout'));
