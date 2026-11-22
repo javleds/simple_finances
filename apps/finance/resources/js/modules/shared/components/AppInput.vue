@@ -155,9 +155,9 @@ function normalizeAmountValue(
         return '';
     }
 
-    const rawValue = String(value)
-        .replace(',', '.')
-        .replace(/[^0-9.]/g, '');
+    const rawValue = String(value).trim().replace(',', '.');
+
+    if (!/^-?\d*(?:\.\d*)?$/.test(rawValue)) return rawValue;
 
     if (rawValue === '') {
         return '';
@@ -165,9 +165,9 @@ function normalizeAmountValue(
 
     const hasTrailingDecimal = rawValue.endsWith('.');
     const [integerPart = '', ...decimalParts] = rawValue.split('.');
-    const normalizedInteger = normalizeIntegerPart(integerPart);
+    const normalizedInteger = `${rawValue.startsWith('-') ? '-' : ''}${normalizeIntegerPart(integerPart)}`;
     const joinedDecimals = decimalParts.join('');
-    const normalizedDecimals = joinedDecimals.slice(0, 2);
+    const normalizedDecimals = joinedDecimals;
 
     if (rawValue.includes('.')) {
         if (normalizedDecimals === '' && hasTrailingDecimal && options.preserveTrailingDecimal) {
@@ -212,8 +212,10 @@ function formatAmountDisplay(value: string | number | null | undefined): string 
         return '';
     }
 
+    if (!/^-?\d+(?:\.\d*)?$/.test(normalizedValue)) return normalizedValue;
+
     const [integerPart, decimalPart = ''] = normalizedValue.split('.');
-    const formattedInteger = Number(integerPart).toLocaleString('en-US');
+    const formattedInteger = (integerPart ?? '0').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
     return `$ ${formattedInteger}.${decimalPart.padEnd(2, '0')}`;
 }
@@ -226,6 +228,8 @@ function toFixedAmount(value: string): string {
     if (normalizedValue === '') {
         return '';
     }
+
+    if (!/^-?\d+(?:\.\d*)?$/.test(normalizedValue)) return normalizedValue;
 
     const [integerPart, decimalPart = ''] = normalizedValue.split('.');
 

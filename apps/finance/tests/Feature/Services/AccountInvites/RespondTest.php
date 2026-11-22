@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Services\AccountInvites\EnableNotificationForInvitation;
+use App\Services\AccountInvites\NotifyOnInteract;
+use App\Services\AccountInvites\Respond;
 use FinSi\FinanceDomain\Enums\InviteStatus;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountInvite;
 use FinSi\FinanceDomain\Models\User;
-use App\Services\AccountInvites\EnableNotificationForInvitation;
-use App\Services\AccountInvites\NotifyOnInteract;
-use App\Services\AccountInvites\Respond;
 use Illuminate\Support\Facades\DB;
 
 it('does not duplicate an account user when accepting an invite for an attached user', function () {
@@ -39,7 +39,7 @@ it('does not duplicate an account user when accepting an invite for an attached 
         ->where('user_id', $invitee->id);
 
     expect($pivot->count())->toBe(1)
-        ->and((float) $pivot->first()->percentage)->toBe(25.0);
+        ->and($pivot->first()->percentage)->toBe('25.00');
 });
 
 it('does not attach members or convert categories when an invitation is declined', function () {

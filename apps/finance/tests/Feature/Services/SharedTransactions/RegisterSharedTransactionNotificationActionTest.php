@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Dto\SharedTransactionNotificationDto;
+use App\Services\SharedTransactions\RegisterSharedTransactionNotificationAction;
 use FinSi\FinanceDomain\Enums\Action;
-use FinSi\FinanceDomain\Enums\SharedTransactionNotificationBatchStatus;
 use FinSi\FinanceDomain\Enums\SharedTransactionNotificationAction;
+use FinSi\FinanceDomain\Enums\SharedTransactionNotificationBatchStatus;
 use FinSi\FinanceDomain\Enums\TransactionStatus;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\Account;
@@ -11,7 +14,6 @@ use FinSi\FinanceDomain\Models\SharedTransactionNotificationBatch;
 use FinSi\FinanceDomain\Models\SharedTransactionNotificationItem;
 use FinSi\FinanceDomain\Models\Transaction;
 use FinSi\FinanceDomain\Models\User;
-use App\Services\SharedTransactions\RegisterSharedTransactionNotificationAction;
 
 it('creates a notification batch and item for shared transactions', function () {
     $recipient = User::factory()->create();
@@ -19,12 +21,12 @@ it('creates a notification batch and item for shared transactions', function () 
     $account = Account::factory()->create(['user_id' => $modifier->id]);
 
     $transaction = Transaction::factory()->create([
-        'user_id' => $modifier->id,
-        'account_id' => $account->id,
-        'type' => TransactionType::Outcome,
-        'status' => TransactionStatus::Completed,
-        'concept' => 'Groceries',
-        'amount' => 120.5,
+        'user_id'      => $modifier->id,
+        'account_id'   => $account->id,
+        'type'         => TransactionType::Outcome,
+        'status'       => TransactionStatus::Completed,
+        'concept'      => 'Groceries',
+        'amount'       => '120.50',
         'scheduled_at' => now(),
     ]);
 
@@ -58,12 +60,12 @@ it('reuses a pending recipient batch across shared accounts and updates last act
     $otherAccount = Account::factory()->create(['user_id' => $modifier->id]);
 
     $firstTransaction = Transaction::factory()->create([
-        'user_id' => $modifier->id,
-        'account_id' => $account->id,
-        'type' => TransactionType::Outcome,
-        'status' => TransactionStatus::Completed,
-        'concept' => 'Coffee',
-        'amount' => 20.0,
+        'user_id'      => $modifier->id,
+        'account_id'   => $account->id,
+        'type'         => TransactionType::Outcome,
+        'status'       => TransactionStatus::Completed,
+        'concept'      => 'Coffee',
+        'amount'       => '20.00',
         'scheduled_at' => now(),
     ]);
 
@@ -78,12 +80,12 @@ it('reuses a pending recipient batch across shared accounts and updates last act
     $firstLastActivity = $batch->last_activity_at;
 
     $secondTransaction = Transaction::factory()->create([
-        'user_id' => $modifier->id,
-        'account_id' => $otherAccount->id,
-        'type' => TransactionType::Outcome,
-        'status' => TransactionStatus::Completed,
-        'concept' => 'Lunch',
-        'amount' => 50.0,
+        'user_id'      => $modifier->id,
+        'account_id'   => $otherAccount->id,
+        'type'         => TransactionType::Outcome,
+        'status'       => TransactionStatus::Completed,
+        'concept'      => 'Lunch',
+        'amount'       => '50.00',
         'scheduled_at' => now(),
     ]);
 

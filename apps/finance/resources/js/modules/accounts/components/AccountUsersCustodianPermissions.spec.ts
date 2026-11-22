@@ -30,12 +30,14 @@ describe('account custodian permissions', () => {
                         name: 'Member',
                         email: '',
                         allocationPercentage: 100,
-                        pendingExpenses: 0,
-                        custodyAmount: 0,
-                        settlementAmount: 0,
+                        pendingExpenses: '0.00',
+                        custodyAmount: '0.00',
+                        settlementAmount: '0.00',
                     },
                 ],
-                custodians: [{ id: '2', name: 'Nu', custodyAmount: 100, settlementAmount: 0 }],
+                custodians: [
+                    { id: '2', name: 'Nu', custodyAmount: '100.00', settlementAmount: '0.00' },
+                ],
             },
         });
         const rows = wrapper.findAllComponents(AccountUserListItem);

@@ -7,7 +7,7 @@ describe('transaction filters transport', () => {
     it('serializes explicit false as zero in account and global lists', async () => {
         mocks.get.mockResolvedValue({
             data: [],
-            meta: { summary: { income_total: 0, outcome_total: 0, balance: 0 } },
+            meta: { summary: { income_total: '0.00', outcome_total: '0.00', balance: '0.00' } },
         });
         const repository = createTransactionsRepository();
         await repository.list('7', {

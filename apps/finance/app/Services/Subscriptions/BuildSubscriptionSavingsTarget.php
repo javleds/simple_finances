@@ -1,11 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Subscriptions;
 
 use App\Dto\SubscriptionSavingsTargetDto;
+use Carbon\CarbonImmutable;
 use FinSi\FinanceDomain\Enums\Frequency;
 use FinSi\FinanceDomain\Models\Subscription;
-use Carbon\CarbonImmutable;
+use FinSi\FinanceDomain\Money\Decimal;
+
+use function max;
+use function min;
 
 class BuildSubscriptionSavingsTarget
 {
@@ -17,44 +23,45 @@ class BuildSubscriptionSavingsTarget
 
         $nextPaymentDate = $this->nextPaymentDate($subscription, $today);
         $cycleStartDate = $this->cycleStartDate($subscription, $nextPaymentDate);
-        $targetToday = $subscription->amount * $this->cycleProgress($cycleStartDate, $nextPaymentDate, $today);
+        $targetToday = $this->targetAmount($subscription->amount, $cycleStartDate, $nextPaymentDate, $today);
 
         return new SubscriptionSavingsTargetDto(
             subscriptionId: $subscription->id,
             name: $subscription->name,
-            amount: round((float) $subscription->amount, 2),
+            amount: Decimal::normalize($subscription->amount),
             nextPaymentDate: $nextPaymentDate->toDateString(),
             cycleStartDate: $cycleStartDate->toDateString(),
-            targetToday: round($targetToday, 2),
+            targetToday: $targetToday,
         );
     }
 
     private function isActiveForSavingsTarget(Subscription $subscription, CarbonImmutable $today): bool
     {
-        if ($subscription->amount <= 0 || $subscription->frequency_unit <= 0) {
+        if (Decimal::compare($subscription->amount, '0.00') <= 0 || $subscription->frequency_unit <= 0) {
             return false;
         }
 
         return $this->nextPaymentDate($subscription, $today)->greaterThanOrEqualTo($today);
     }
 
-    private function cycleProgress(
+    private function targetAmount(
+        string $amount,
         CarbonImmutable $cycleStartDate,
         CarbonImmutable $nextPaymentDate,
         CarbonImmutable $today,
-    ): float {
+    ): string {
         if ($today->lessThanOrEqualTo($cycleStartDate)) {
-            return 0.0;
+            return '0.00';
         }
 
         if ($today->greaterThanOrEqualTo($nextPaymentDate)) {
-            return 1.0;
+            return Decimal::normalize($amount);
         }
 
-        $totalDays = max(1, $cycleStartDate->diffInDays($nextPaymentDate));
-        $elapsedDays = $cycleStartDate->diffInDays($today);
+        $totalDays = max(1, (int) $cycleStartDate->diffInDays($nextPaymentDate));
+        $elapsedDays = (int) $cycleStartDate->diffInDays($today);
 
-        return min(1.0, max(0.0, $elapsedDays / $totalDays));
+        return Decimal::ratio($amount, min($totalDays, max(0, $elapsedDays)), $totalDays);
     }
 
     private function nextPaymentDate(Subscription $subscription, CarbonImmutable $today): CarbonImmutable
@@ -73,18 +80,18 @@ class BuildSubscriptionSavingsTarget
     private function cycleStartDate(Subscription $subscription, CarbonImmutable $nextPaymentDate): CarbonImmutable
     {
         return match ($subscription->frequency_type) {
-            Frequency::Day => $nextPaymentDate->subDays($subscription->frequency_unit),
+            Frequency::Day   => $nextPaymentDate->subDays($subscription->frequency_unit),
             Frequency::Month => $nextPaymentDate->subMonthsNoOverflow($subscription->frequency_unit),
-            Frequency::Year => $nextPaymentDate->subYearsNoOverflow($subscription->frequency_unit),
+            Frequency::Year  => $nextPaymentDate->subYearsNoOverflow($subscription->frequency_unit),
         };
     }
 
     private function addFrequency(CarbonImmutable $date, Subscription $subscription): CarbonImmutable
     {
         return match ($subscription->frequency_type) {
-            Frequency::Day => $date->addDays($subscription->frequency_unit),
+            Frequency::Day   => $date->addDays($subscription->frequency_unit),
             Frequency::Month => $date->addMonthsNoOverflow($subscription->frequency_unit),
-            Frequency::Year => $date->addYearsNoOverflow($subscription->frequency_unit),
+            Frequency::Year  => $date->addYearsNoOverflow($subscription->frequency_unit),
         };
     }
 }

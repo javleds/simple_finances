@@ -12,8 +12,8 @@ describe('account schemas', () => {
       color: null,
       virtual: true,
       credit_card: false,
-      balance: 10000,
-      spent: 0,
+      balance: '10000.00',
+      spent: '0.00',
       available_credit: null,
       credit_line: null,
       cutoff_day: null,
@@ -30,7 +30,7 @@ describe('account schemas', () => {
         {
           user_id: 8,
           user_name: 'Notradame',
-          amount: '9,500.00',
+          amount: '9500.00',
         },
       ],
       pending_reimbursements: [
@@ -60,14 +60,14 @@ describe('account schemas', () => {
         {
           userId: '7',
           userName: 'Eliot',
-          amount: 250,
+          amount: '250.00',
         },
       ],
       settlementsByUser: [
         {
           userId: '8',
           userName: 'Notradame',
-          amount: 9500,
+          amount: '9500.00',
         },
       ],
       pendingReimbursements: [
@@ -76,12 +76,12 @@ describe('account schemas', () => {
           fromUserName: 'Eliot',
           toUserId: '8',
           toUserName: 'Notradame',
-          amount: 125.5,
+          amount: '125.50',
           items: [
             {
               transactionId: '99',
               concept: 'Consulta',
-              amount: 125.5,
+              amount: '125.50',
               occurredAt: '2026-07-02',
             },
           ],

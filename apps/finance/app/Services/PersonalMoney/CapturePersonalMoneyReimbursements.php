@@ -9,9 +9,9 @@ use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\PersonalMoneyReimbursement;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 
 use function in_array;
-use function round;
 
 class CapturePersonalMoneyReimbursements
 {
@@ -24,10 +24,10 @@ class CapturePersonalMoneyReimbursements
 
         $fromUserId = (int) $payload['from_user_id'];
         $toUserId = (int) $payload['to_user_id'];
-        $amount = round((float) $payload['amount'], 2);
+        $amount = Decimal::normalize($payload['amount']);
         $remaining = [];
         if ('user_to_user' === $action && $fromUserId !== $toUserId) {
-            $remaining[$fromUserId] = -$amount;
+            $remaining[$fromUserId] = Decimal::negate($amount);
             $remaining[$toUserId] = $amount;
         }
         if ('custody_to_user' === $action) {
@@ -47,7 +47,7 @@ class CapturePersonalMoneyReimbursements
                 continue;
             }
 
-            $effect = $remaining[$entry->user_id] ?? 0.0;
+            $effect = $remaining[$entry->user_id] ?? '0.00';
             PersonalMoneyReimbursement::query()->firstOrCreate(['ledger_entry_key' => $entry->id], [
                 'user_id'      => $entry->user_id, 'account_id' => $account->id, 'cash_effect' => $effect,
                 'account_name' => $account->name,

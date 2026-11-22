@@ -17,11 +17,11 @@ const emptyDashboardData: DashboardData = {
     virtualAccounts: 0,
   },
   subscriptionsSummary: {
-    annualTotal: 0,
+    annualTotal: '0.00',
     nearestPayment: null,
-    savingsTargetToday: 0,
+    savingsTargetToday: '0.00',
     subscriptionsCount: 0,
-    upcomingCommitment: 0,
+    upcomingCommitment: '0.00',
   },
 };
 

@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+    absMoney,
+    compareMoney,
+    formatMoney as formatExactMoney,
+} from '@/modules/shared/lib/money';
+
 import { PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
@@ -13,8 +19,8 @@ const props = defineProps<{
     roleLabel: string;
     accessLabel: string;
     allocationPercentage: number;
-    custodyAmount: number;
-    settlementAmount: number;
+    custodyAmount: string;
+    settlementAmount: string;
     status: UserAccessStatus;
 }>();
 
@@ -55,22 +61,17 @@ function handleDelete(): void {
     emit('delete', props.itemId);
 }
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value);
+function formatCurrency(value: string): string {
+    return formatExactMoney(value);
 }
 
-function settlementLabel(value: number): string {
-    if (value > 0) {
+function settlementLabel(value: string): string {
+    if (compareMoney(value, '0') > 0) {
         return `Por recibir ${formatCurrency(value)}`;
     }
 
-    if (value < 0) {
-        return `Por pagar ${formatCurrency(Math.abs(value))}`;
+    if (compareMoney(value, '0') < 0) {
+        return `Por pagar ${formatCurrency(absMoney(value))}`;
     }
 
     return 'Sin deuda';

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { divideMoney } from '@/modules/shared/lib/money';
+
 import Message from 'primevue/message';
 import PersonalMoneyPanel from '@/modules/personal-money/components/PersonalMoneyPanel.vue';
 import { computed, ref } from 'vue';
@@ -47,7 +49,7 @@ const annualSubscriptionsSpend = computed(() => dashboard.value.subscriptionsSum
 
 const recommendedSavings = computed(() => {
     const divisor = savingsCadence.value === 'monthly' ? 12 : 24;
-    return annualSubscriptionsSpend.value / divisor;
+    return divideMoney(annualSubscriptionsSpend.value, String(divisor));
 });
 
 const filteredGraphAccounts = computed(() =>

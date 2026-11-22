@@ -6,7 +6,6 @@ namespace App\Services\Transaction;
 
 use App\Services\Accounts\BuildAccountCustodySummary;
 
-use function array_sum;
 use function collect;
 
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
@@ -15,11 +14,9 @@ use FinSi\FinanceDomain\Enums\TransactionStatus;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\Transaction;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Support\Collection;
-
-use function max;
-use function min;
-use function round;
+use Illuminate\Validation\ValidationException;
 
 class SyncAccountMemberLedger
 {
@@ -61,7 +58,7 @@ class SyncAccountMemberLedger
     private function recordOutcome(Transaction $transaction): void
     {
         if (false === $transaction->uses_shared_account_rules) {
-            $this->createEntry($transaction, $transaction->paid_by_user_id ?? $transaction->user_id, AccountMemberLedgerEntryType::AccountFundExpense, $transaction->amount * -1);
+            $this->createEntry($transaction, $transaction->paid_by_user_id ?? $transaction->user_id, AccountMemberLedgerEntryType::AccountFundExpense, Decimal::multiply($transaction->amount, -1));
 
             return;
         }
@@ -108,7 +105,7 @@ class SyncAccountMemberLedger
                 'user_id'         => $allocation->user_id,
                 'related_user_id' => $paidByUserId,
                 'type'            => AccountMemberLedgerEntryType::ExpenseShare,
-                'amount'          => $allocation->amount * -1,
+                'amount'          => Decimal::multiply($allocation->amount, -1),
                 'description'     => $transaction->concept,
                 'occurred_at'     => $transaction->scheduled_at,
             ]);
@@ -120,54 +117,54 @@ class SyncAccountMemberLedger
         $hasExplicitAllocations = $transaction->allocations->isNotEmpty();
         $allocations = $this->responsibilityAllocations($transaction, $paidByUserId);
         $custodies = $this->positiveCustodians($transaction)
-            ->mapWithKeys(fn (array $custodian): array => [(int) $custodian['user_id'] => round((float) $custodian['amount'], 2)])
+            ->mapWithKeys(fn (array $custodian): array => [(int) $custodian['user_id'] => Decimal::normalize($custodian['amount'])])
             ->all();
-        $positiveCustodyTotal = round(array_sum($custodies), 2);
-        $deficit = round(max(0.0, (float) $transaction->amount - $positiveCustodyTotal), 2);
-        $coveredAmount = round((float) $transaction->amount - $deficit, 2);
+        $positiveCustodyTotal = Decimal::sum($custodies);
+        $deficit = Decimal::max('0.00', Decimal::subtract(Decimal::normalize($transaction->amount), $positiveCustodyTotal));
+        $coveredAmount = Decimal::subtract(Decimal::normalize($transaction->amount), $deficit);
         $coveredByOthers = [];
 
         foreach ($allocations as $allocation) {
-            if ($coveredAmount <= 0.0) {
+            if (Decimal::compare($coveredAmount, '0.00') <= 0) {
                 break;
             }
 
-            $remaining = round(min((float) $allocation->amount, $coveredAmount), 2);
+            $remaining = Decimal::min(Decimal::normalize($allocation->amount), $coveredAmount);
             $ownUsed = $this->consumeCustody($custodies, (int) $allocation->user_id, $remaining);
 
-            if ($ownUsed > 0.0) {
-                $this->createEntry($transaction, (int) $allocation->user_id, AccountMemberLedgerEntryType::AccountFundExpense, $ownUsed * -1);
-                $remaining = round($remaining - $ownUsed, 2);
-                $coveredAmount = round($coveredAmount - $ownUsed, 2);
+            if (Decimal::compare($ownUsed, '0.00') > 0) {
+                $this->createEntry($transaction, (int) $allocation->user_id, AccountMemberLedgerEntryType::AccountFundExpense, Decimal::multiply($ownUsed, -1));
+                $remaining = Decimal::subtract($remaining, $ownUsed);
+                $coveredAmount = Decimal::subtract($coveredAmount, $ownUsed);
             }
 
             foreach ($custodies as $custodianUserId => $available) {
-                if ($remaining <= 0.0 || $coveredAmount <= 0.0) {
+                if (Decimal::compare($remaining, '0.00') <= 0 || Decimal::compare($coveredAmount, '0.00') <= 0) {
                     break;
                 }
 
-                if ((int) $custodianUserId === (int) $allocation->user_id || $available <= 0.0) {
+                if ((int) $custodianUserId === (int) $allocation->user_id || Decimal::compare($available, '0.00') <= 0) {
                     continue;
                 }
 
-                $used = $this->consumeCustody($custodies, (int) $custodianUserId, min($remaining, $coveredAmount));
+                $used = $this->consumeCustody($custodies, (int) $custodianUserId, Decimal::min($remaining, $coveredAmount));
 
-                if ($used <= 0.0) {
+                if (Decimal::compare($used, '0.00') <= 0) {
                     continue;
                 }
 
-                $this->createEntry($transaction, (int) $custodianUserId, AccountMemberLedgerEntryType::AccountFundExpense, $used * -1);
+                $this->createEntry($transaction, (int) $custodianUserId, AccountMemberLedgerEntryType::AccountFundExpense, Decimal::multiply($used, -1));
 
-                if ($deficit <= 0.0 && ! $hasExplicitAllocations) {
-                    $coveredByOthers[(int) $custodianUserId] = round(($coveredByOthers[(int) $custodianUserId] ?? 0.0) + $used, 2);
+                if (Decimal::compare($deficit, '0.00') <= 0 && ! $hasExplicitAllocations) {
+                    $coveredByOthers[(int) $custodianUserId] = Decimal::add($coveredByOthers[(int) $custodianUserId] ?? '0.00', $used);
                 }
 
-                $remaining = round($remaining - $used, 2);
-                $coveredAmount = round($coveredAmount - $used, 2);
+                $remaining = Decimal::subtract($remaining, $used);
+                $coveredAmount = Decimal::subtract($coveredAmount, $used);
             }
         }
 
-        if ($deficit > 0.0) {
+        if (Decimal::compare($deficit, '0.00') > 0) {
             $receiverUserId = $this->primaryCustodianUserId($transaction, $paidByUserId);
 
             foreach ($this->deficitAmounts($allocations, $deficit) as $userId => $amount) {
@@ -175,7 +172,7 @@ class SyncAccountMemberLedger
                     transaction: $transaction,
                     userId: (int) $userId,
                     type: AccountMemberLedgerEntryType::AccountDeficitShare,
-                    amount: $amount * -1,
+                    amount: Decimal::multiply($amount, -1),
                     relatedUserId: $receiverUserId,
                 );
             }
@@ -192,49 +189,49 @@ class SyncAccountMemberLedger
     {
         $allocations = $this->responsibilityAllocations($transaction, $transaction->user_id);
         $custodies = $this->positiveCustodians($transaction)
-            ->mapWithKeys(fn (array $custodian): array => [(int) $custodian['user_id'] => round((float) $custodian['amount'], 2)])
+            ->mapWithKeys(fn (array $custodian): array => [(int) $custodian['user_id'] => Decimal::normalize($custodian['amount'])])
             ->all();
 
         foreach ($allocations as $allocation) {
-            $remaining = (float) $allocation->amount;
+            $remaining = Decimal::normalize($allocation->amount);
             $ownAmount = $this->consumeCustody($custodies, (int) $allocation->user_id, $remaining);
 
-            if ($ownAmount > 0.0) {
+            if (Decimal::compare($ownAmount, '0.00') > 0) {
                 $this->createCustodyReimbursementDue($transaction, (int) $allocation->user_id, (int) $allocation->user_id, $ownAmount);
-                $remaining = round($remaining - $ownAmount, 2);
+                $remaining = Decimal::subtract($remaining, $ownAmount);
             }
 
             foreach ($custodies as $custodianUserId => $available) {
-                if ($remaining <= 0.0) {
+                if (Decimal::compare($remaining, '0.00') <= 0) {
                     break;
                 }
 
-                if ($available <= 0.0) {
+                if (Decimal::compare($available, '0.00') <= 0) {
                     continue;
                 }
 
                 $used = $this->consumeCustody($custodies, (int) $custodianUserId, $remaining);
 
-                if ($used <= 0.0) {
+                if (Decimal::compare($used, '0.00') <= 0) {
                     continue;
                 }
 
                 $this->createCustodyReimbursementDue($transaction, (int) $custodianUserId, (int) $allocation->user_id, $used);
-                $remaining = round($remaining - $used, 2);
+                $remaining = Decimal::subtract($remaining, $used);
             }
         }
     }
 
     private function recordVirtualAccountOutOfPocketOutcome(Transaction $transaction, Collection $custodians, int $payerId): void
     {
-        $remaining = round((float) $transaction->amount, 2);
+        $remaining = Decimal::normalize($transaction->amount);
 
         foreach ($custodians as $custodian) {
-            $covered = round(min($remaining, (float) $custodian['amount']), 2);
+            $covered = Decimal::min($remaining, Decimal::normalize($custodian['amount']));
             $this->createCustodyReimbursementDue($transaction, (int) $custodian['user_id'], $payerId, $covered, AccountMemberLedgerEntryType::VirtualCustodyReimbursementDue);
-            $remaining = round($remaining - $covered, 2);
+            $remaining = Decimal::subtract($remaining, $covered);
 
-            if ($remaining <= 0.0) {
+            if (Decimal::compare($remaining, '0.00') <= 0) {
                 return;
             }
         }
@@ -243,23 +240,23 @@ class SyncAccountMemberLedger
         $allocations = $this->responsibilityAllocations($transaction, $transaction->user_id);
 
         foreach ($this->deficitAmounts($allocations, $remaining) as $userId => $amount) {
-            $this->createEntry($transaction, (int) $userId, AccountMemberLedgerEntryType::ExpenseShare, -$amount, $payerId);
+            $this->createEntry($transaction, (int) $userId, AccountMemberLedgerEntryType::ExpenseShare, Decimal::negate($amount), $payerId);
         }
     }
 
-    private function createCustodyReimbursementDue(Transaction $transaction, int $fromUserId, int $toUserId, float $amount, AccountMemberLedgerEntryType $type = AccountMemberLedgerEntryType::CustodyReimbursementDue): void
+    private function createCustodyReimbursementDue(Transaction $transaction, int $fromUserId, int $toUserId, string $amount, AccountMemberLedgerEntryType $type = AccountMemberLedgerEntryType::CustodyReimbursementDue): void
     {
-        if ($amount <= 0.0) {
+        if (Decimal::compare($amount, '0.00') <= 0) {
             return;
         }
 
         if ($fromUserId === $toUserId) {
-            $this->createEntry($transaction, $fromUserId, $type, $amount * -1, $toUserId);
+            $this->createEntry($transaction, $fromUserId, $type, Decimal::multiply($amount, -1), $toUserId);
 
             return;
         }
 
-        $this->createEntry($transaction, $fromUserId, $type, $amount * -1, $toUserId);
+        $this->createEntry($transaction, $fromUserId, $type, Decimal::multiply($amount, -1), $toUserId);
         $this->createEntry($transaction, $toUserId, $type, $amount, $fromUserId);
     }
 
@@ -267,7 +264,7 @@ class SyncAccountMemberLedger
         Transaction $transaction,
         int $userId,
         AccountMemberLedgerEntryType $type,
-        float $amount,
+        string $amount,
         ?int $relatedUserId = null,
     ): AccountMemberLedgerEntry {
         return $transaction->ledgerEntries()->create([
@@ -275,22 +272,22 @@ class SyncAccountMemberLedger
             'user_id'         => $userId,
             'related_user_id' => $relatedUserId,
             'type'            => $type,
-            'amount'          => round($amount, 2),
+            'amount'          => Decimal::round($amount, 2),
             'description'     => $transaction->concept,
             'occurred_at'     => $transaction->scheduled_at,
         ]);
     }
 
-    private function consumeCustody(array &$custodies, int $userId, float $amount): float
+    private function consumeCustody(array &$custodies, int $userId, string $amount): string
     {
-        $available = round((float) ($custodies[$userId] ?? 0.0), 2);
-        $used = round(min($available, $amount), 2);
+        $available = Decimal::normalize($custodies[$userId] ?? '0.00');
+        $used = Decimal::min($available, $amount);
 
-        if ($used <= 0.0) {
-            return 0.0;
+        if (Decimal::compare($used, '0.00') <= 0) {
+            return '0.00';
         }
 
-        $custodies[$userId] = round($available - $used, 2);
+        $custodies[$userId] = Decimal::subtract($available, $used);
 
         return $used;
     }
@@ -311,17 +308,17 @@ class SyncAccountMemberLedger
 
             return $custodians->map(fn (array $custodian): array => [
                 'user_id' => $custodian['user_id'],
-                'amount'  => round(max(0.0, $custodian['amount'] - $pending->where('from_user_id', $custodian['user_id'])->sum('amount')), 2),
-            ])->filter(fn (array $custodian): bool => $custodian['amount'] > 0)->values();
+                'amount'  => Decimal::max('0.00', Decimal::subtract($custodian['amount'], Decimal::sum($pending->where('from_user_id', $custodian['user_id']), 'amount'))),
+            ])->filter(fn (array $custodian): bool => Decimal::compare($custodian['amount'], 0) > 0)->values();
         }
 
-        if ($custodians->isNotEmpty() || round((float) $account->balance, 2) <= 0.0) {
+        if ($custodians->isNotEmpty() || Decimal::compare(Decimal::normalize($account->balance), '0.00') <= 0) {
             return $custodians;
         }
 
         return collect([[
             'user_id' => (int) $account->user_id,
-            'amount'  => round((float) $account->balance, 2),
+            'amount'  => Decimal::normalize($account->balance),
         ]]);
     }
 
@@ -329,28 +326,31 @@ class SyncAccountMemberLedger
     {
         return $transaction->allocations->isNotEmpty()
             ? $transaction->allocations
-            : collect([(object) ['user_id' => $fallbackUserId, 'amount' => $transaction->amount, 'percentage' => 100.0]]);
+            : collect([(object) ['user_id' => $fallbackUserId, 'amount' => $transaction->amount, 'percentage' => '100.00']]);
     }
 
-    private function deficitAmounts(Collection $allocations, float $deficit): array
+    private function deficitAmounts(Collection $allocations, string $deficit): array
     {
-        $total = round((float) $allocations->sum('amount'), 2);
+        $total = Decimal::sum($allocations, 'amount');
 
-        if ($total <= 0.0) {
+        if (Decimal::compare($total, '0.00') <= 0) {
             return [];
         }
 
-        $allocated = 0.0;
+        $allocated = '0.00';
         $lastIndex = $allocations->count() - 1;
         $amounts = [];
 
         foreach ($allocations->values() as $index => $allocation) {
             $amount = $index === $lastIndex
-                ? round($deficit - $allocated, 2)
-                : round($deficit * ((float) $allocation->amount / $total), 2);
+                ? Decimal::subtract($deficit, $allocated)
+                : Decimal::ratio($deficit, Decimal::normalize($allocation->amount), $total);
 
-            $allocated = round($allocated + $amount, 2);
-            $amounts[(int) $allocation->user_id] = round(($amounts[(int) $allocation->user_id] ?? 0.0) + $amount, 2);
+            if (Decimal::compare($amount, 0) < 0) {
+                throw ValidationException::withMessages(['user_payments' => 'The uncovered amount cannot be allocated without a negative remainder.']);
+            }
+            $allocated = Decimal::add($allocated, $amount);
+            $amounts[(int) $allocation->user_id] = Decimal::add($amounts[(int) $allocation->user_id] ?? '0.00', $amount);
         }
 
         return $amounts;

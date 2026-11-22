@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Dto;
 
 use FinSi\FinanceDomain\Models\Subscription;
+
+use function sprintf;
 
 class SubscriptionProjection
 {
@@ -10,11 +14,11 @@ class SubscriptionProjection
 
     public string $frequency;
 
-    public float $amount;
+    public string $amount;
 
-    public float $projectionAmount;
+    public string $projectionAmount;
 
-    public function __construct(string $name, string $frequency, float $amount, float $projectionAmount)
+    public function __construct(string $name, string $frequency, string $amount, string $projectionAmount)
     {
         $this->name = $name;
         $this->frequency = $frequency;
@@ -22,7 +26,7 @@ class SubscriptionProjection
         $this->projectionAmount = $projectionAmount;
     }
 
-    public static function fromSubscriptionProjection(Subscription $subscription, float $computedAmount): self
+    public static function fromSubscriptionProjection(Subscription $subscription, string $computedAmount): self
     {
         return new static(
             $subscription->name,
@@ -35,9 +39,9 @@ class SubscriptionProjection
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
-            'frequency' => $this->frequency,
-            'amount' => $this->amount,
+            'name'             => $this->name,
+            'frequency'        => $this->frequency,
+            'amount'           => $this->amount,
             'projectionAmount' => $this->projectionAmount,
         ];
     }

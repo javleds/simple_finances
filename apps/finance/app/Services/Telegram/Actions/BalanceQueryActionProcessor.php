@@ -1,19 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Telegram\Actions;
 
 use App\Contracts\MessageActionProcessorInterface;
 use App\Enums\MessageAction;
-use FinSi\FinanceDomain\Models\User;
 use App\Services\Account\AccountBalanceService;
 use App\Services\Telegram\Helpers\MessageActionHelper;
+
+use function as_money;
+
+use Exception;
+use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Support\Facades\Log;
 
 class BalanceQueryActionProcessor implements MessageActionProcessorInterface
 {
     public function __construct(
-        private readonly AccountBalanceService $accountBalanceService
-    ) {}
+        private readonly AccountBalanceService $accountBalanceService,
+    ) {
+    }
 
     public static function getActionType(): MessageAction
     {
@@ -22,7 +30,7 @@ class BalanceQueryActionProcessor implements MessageActionProcessorInterface
 
     public function canHandle(MessageAction $action, array $context = []): bool
     {
-        return $action === MessageAction::QueryBalance;
+        return MessageAction::QueryBalance === $action;
     }
 
     public function process(array $context, User $user): string
@@ -36,12 +44,11 @@ class BalanceQueryActionProcessor implements MessageActionProcessorInterface
             }
 
             return $this->processSingleAccountBalance($accountName, $user);
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('BalanceQueryActionProcessor: Error processing balance query', [
                 'user_id' => $user->id,
                 'context' => $context,
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ]);
 
             return MessageActionHelper::formatErrorResponse('consultar el balance');
@@ -69,13 +76,13 @@ class BalanceQueryActionProcessor implements MessageActionProcessorInterface
         $accountsBalance = $this->accountBalanceService->getAllAccountsBalance($user);
 
         if ($accountsBalance->isEmpty()) {
-            return "❌ No tienes cuentas registradas aún.\n\n".
+            return "❌ No tienes cuentas registradas aún.\n\n" .
                    '💡 Tip: Crea tu primera cuenta para comenzar a gestionar tus finanzas.';
         }
 
         $message = "💰 **Balance de todas tus cuentas**\n\n";
 
-        $totalBalance = 0;
+        $totalBalance = '0.00';
 
         $accountsBalance->each(function (array $data) use (&$message, &$totalBalance) {
             $account = $data['account'];
@@ -86,12 +93,12 @@ class BalanceQueryActionProcessor implements MessageActionProcessorInterface
                 $message .= "   Crédito disponible: {$data['formatted_available_credit']}\n\n";
             } else {
                 $message .= "🏦 {$account->name}: {$balance}\n\n";
-                $totalBalance += $data['balance'];
+                $totalBalance = Decimal::add($totalBalance, $data['balance']);
             }
         });
 
-        if ($totalBalance > 0) {
-            $message .= '💰 **Total en cuentas regulares**: '.as_money($totalBalance);
+        if (Decimal::compare($totalBalance, '0.00') > 0) {
+            $message .= '💰 **Total en cuentas regulares**: ' . as_money($totalBalance);
         }
 
         return $message;

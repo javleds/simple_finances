@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Api;
 
 use function abort_if;
 use function abort_unless;
-use function abs;
 use function app;
 
 use App\Http\Requests\Api\AccountUserRequest;
@@ -16,16 +15,16 @@ use App\Services\Accounts\RemoveAccountUser;
 use App\Services\Accounts\UpdateAccountUserPercentage;
 use App\Services\Accounts\UpdateAccountUsersPercentages;
 
+use function array_column;
 use function auth;
 use function collect;
 
 use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-
-use function round;
 
 class AccountUserController extends ApiController
 {
@@ -42,7 +41,8 @@ class AccountUserController extends ApiController
         $relation = $account->users()->withPivot('percentage')->orderBy('users.name');
 
         if ($request->filled('percentage')) {
-            $relation->wherePivot('percentage', (float) $request->query('percentage'));
+            $request->validate(['percentage' => ['bail', 'required', new \App\Rules\DecimalAmount(maximum: '100.00')]]);
+            $relation->wherePivot('percentage', Decimal::normalize($request->query('percentage')));
         }
 
         $response = $this->respondPaginated($relation, $request, searchColumns: ['users.name', 'users.email']);
@@ -56,8 +56,8 @@ class AccountUserController extends ApiController
         $payload['data'] = collect($payload['data'])
             ->map(function (array $user) use ($summaryByUserId, $custodyByUserId): array {
                 $userId = (string) $user['id'];
-                $user['settlement_amount'] = $summaryByUserId->get($userId)['amount'] ?? 0.0;
-                $user['custody_amount'] = $custodyByUserId->get($userId)['amount'] ?? 0.0;
+                $user['settlement_amount'] = $summaryByUserId->get($userId)['amount'] ?? '0.00';
+                $user['custody_amount'] = $custodyByUserId->get($userId)['amount'] ?? '0.00';
 
                 return $user;
             })
@@ -81,8 +81,8 @@ class AccountUserController extends ApiController
             if ($user->id !== $account->user_id) {
                 app(\App\Services\Categories\ConvertAccountCategoryCatalog::class)->execute($account);
             }
-            $account->users()->syncWithoutDetaching([$user->id => ['percentage' => 0.0]]);
-            $updateAccountUserPercentage->execute($account, $user->id, $request->float('percentage'));
+            $account->users()->syncWithoutDetaching([$user->id => ['percentage' => '0.00']]);
+            $updateAccountUserPercentage->execute($account, $user->id, Decimal::normalize($request->validated('percentage') ?? '0.00'));
         });
 
         return $this->respondModel(
@@ -110,7 +110,7 @@ class AccountUserController extends ApiController
         $this->ensureOwner($account);
         $this->ensureAttached($account, $user);
 
-        $updateAccountUserPercentage->execute($account, $user->id, $request->float('percentage'));
+        $updateAccountUserPercentage->execute($account, $user->id, Decimal::normalize($request->validated('percentage') ?? '0.00'));
 
         return $this->respondModel(
             $account->users()->withPivot('percentage')->findOrFail($user->id)
@@ -133,10 +133,7 @@ class AccountUserController extends ApiController
             'data' => $users,
             'meta' => [
                 'account_id'       => $account->id,
-                'total_percentage' => round(
-                    collect($request->normalizedUsers())->sum('percentage'),
-                    2,
-                ),
+                'total_percentage' => Decimal::sum(array_column($request->normalizedUsers(), 'percentage')),
             ],
         ]);
     }
@@ -186,27 +183,27 @@ class AccountUserController extends ApiController
             return;
         }
 
-        abort_if(0.0 !== round((float) $member->pivot->percentage, 2), 422, 'You cannot leave an account while you still have an assigned percentage.');
+        abort_if(0 !== Decimal::compare($member->pivot->percentage, '0.00'), 422, 'You cannot leave an account while you still have an assigned percentage.');
 
         $summary = $this->buildAccountMemberSummary->execute($account);
         $custodyAmount = $this->summaryAmountForUser($summary['custody_by_user'], $user->id);
         $settlementAmount = $this->summaryAmountForUser($summary['settlements_by_user'], $user->id);
 
-        abort_if(abs($custodyAmount) > 0.001, 422, 'You cannot leave an account while you still have custody.');
-        abort_if(abs($settlementAmount) > 0.001, 422, 'You cannot leave an account while you still have pending reimbursements.');
+        abort_if(0 !== Decimal::compare($custodyAmount, '0.00'), 422, 'You cannot leave an account while you still have custody.');
+        abort_if(0 !== Decimal::compare($settlementAmount, '0.00'), 422, 'You cannot leave an account while you still have pending reimbursements.');
     }
 
     /**
-     * @param array<int, array{user_id: int|string, amount: float|int|string}> $items
+     * @param array<int, array{user_id: int|string, amount: string}> $items
      */
-    private function summaryAmountForUser(array $items, int $userId): float
+    private function summaryAmountForUser(array $items, int $userId): string
     {
         foreach ($items as $item) {
             if ((int) $item['user_id'] === $userId) {
-                return round((float) $item['amount'], 2);
+                return Decimal::normalize($item['amount']);
             }
         }
 
-        return 0.0;
+        return '0.00';
     }
 }

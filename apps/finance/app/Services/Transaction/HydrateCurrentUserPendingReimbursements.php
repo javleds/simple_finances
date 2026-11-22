@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\Transaction;
 
-use function abs;
 use function collect;
 
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\Transaction;
+use FinSi\FinanceDomain\Money\Decimal;
 use FinSi\FinanceDomain\Queries\UserOwnedResources;
 use Illuminate\Support\Collection;
-
-use function round;
 
 class HydrateCurrentUserPendingReimbursements
 {
@@ -40,16 +38,16 @@ class HydrateCurrentUserPendingReimbursements
         $openAmountsByTransactionId = $this->openAmounts($transactionIds, $userId);
 
         $transactions->each(function (Transaction $transaction) use ($openAmountsByTransactionId): void {
-            $openAmount = round((float) $openAmountsByTransactionId->get($transaction->id, 0.0), 2);
+            $openAmount = Decimal::normalize($openAmountsByTransactionId->get($transaction->id, '0.00'));
 
             $transaction->setAttribute(
                 'current_user_pending_reimbursement_amount',
-                $openAmount < 0 ? abs($openAmount) : 0.0,
+                Decimal::compare($openAmount, 0) < 0 ? Decimal::abs($openAmount) : '0.00',
             );
 
             $transaction->setAttribute(
                 'current_user_receivable_reimbursement_amount',
-                $openAmount > 0 ? $openAmount : 0.0,
+                Decimal::compare($openAmount, 0) > 0 ? $openAmount : '0.00',
             );
         });
     }
@@ -57,7 +55,7 @@ class HydrateCurrentUserPendingReimbursements
     /**
      * @param Collection<int, int> $transactionIds
      *
-     * @return Collection<int, float>
+     * @return Collection<int, string>
      */
     private function openAmounts(Collection $transactionIds, int $userId): Collection
     {
@@ -76,10 +74,10 @@ class HydrateCurrentUserPendingReimbursements
                 AccountMemberLedgerEntryType::SettlementCorrection,
             ])
             ->groupBy('transaction_id')
-            ->havingRaw('abs(open_amount) > 0.001')
+            ->havingRaw('abs(open_amount) > 0')
             ->get()
             ->mapWithKeys(fn (AccountMemberLedgerEntry $entry): array => [
-                (int) $entry->transaction_id => round((float) $entry->open_amount, 2),
+                (int) $entry->transaction_id => Decimal::normalize($entry->open_amount),
             ]);
     }
 }

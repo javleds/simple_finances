@@ -1,8 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Api;
 
+use App\Rules\DecimalAmount;
+
+use function array_column;
+use function collect;
+
 use FinSi\FinanceDomain\Models\Account;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BulkUpdateAccountUsersRequest extends FormRequest
@@ -15,15 +23,19 @@ class BulkUpdateAccountUsersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'users' => ['required', 'array', 'min:1'],
-            'users.*.user_id' => ['required', 'integer', 'distinct', 'exists:users,id'],
-            'users.*.percentage' => ['required', 'numeric', 'min:0', 'max:100'],
+            'users'              => ['required', 'array', 'min:1'],
+            'users.*.user_id'    => ['required', 'integer', 'distinct', 'exists:users,id'],
+            'users.*.percentage' => ['bail', 'required', new DecimalAmount(minimum: '0', maximum: '100')],
         ];
     }
 
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
             /** @var Account $account */
             $account = $this->route('account');
 
@@ -41,12 +53,9 @@ class BulkUpdateAccountUsersRequest extends FormRequest
                 $validator->errors()->add('users', 'The request must include exactly the users attached to the account.');
             }
 
-            $totalPercentage = round(
-                collect($normalizedUsers)->sum('percentage'),
-                2,
-            );
+            $totalPercentage = Decimal::sum(array_column($normalizedUsers, 'percentage'));
 
-            if ($totalPercentage !== 100.0) {
+            if (0 !== Decimal::compare($totalPercentage, '100.00')) {
                 $validator->errors()->add('users', 'The user percentages must add up to 100.00.');
             }
         });
@@ -56,8 +65,8 @@ class BulkUpdateAccountUsersRequest extends FormRequest
     {
         return collect($this->input('users', []))
             ->map(fn (array $user): array => [
-                'user_id' => (int) $user['user_id'],
-                'percentage' => round((float) $user['percentage'], 2),
+                'user_id'    => (int) $user['user_id'],
+                'percentage' => Decimal::normalize($user['percentage']),
             ])
             ->all();
     }

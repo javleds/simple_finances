@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type DistributionRelationType = 'transfer' | 'savings';
 
 const props = defineProps<{
   concept: string;
-  amount: number;
+  amount: string;
   type: DistributionRelationType;
 }>();
 
@@ -14,14 +15,9 @@ const emit = defineEmits<{
   delete: [];
 }>();
 
-const currencyFormatter = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+const currencyFormatter = { format: formatExactMoney };
 
-function formattedAmount(amount: number): string {
+function formattedAmount(amount: string): string {
   return currencyFormatter.format(amount);
 }
 

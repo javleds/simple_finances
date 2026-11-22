@@ -64,7 +64,7 @@ it('stores the exact snapshot once and preserves the original acceptance time on
     $retry = app(RecordLegalAcceptance::class)->execute($user, $data);
     expect($retry->id)->toBe($record->id)
         ->and($retry->accepted_at->equalTo($time))->toBeTrue()
-        ->and($retry->snapshot)->toBe(app(GetLegalDocuments::class)->execute())
+        ->and($retry->snapshot)->toEqual(app(GetLegalDocuments::class)->execute())
         ->and($retry->financial_data_consent)->toBeTrue()
         ->and($retry->is_adult)->toBeTrue();
     $this->assertDatabaseCount('legal_acceptances', 1);

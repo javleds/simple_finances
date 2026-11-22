@@ -1,8 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Accounts;
 
+use function array_search;
+use function collect;
+
 use FinSi\FinanceDomain\Models\Account;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -26,14 +32,14 @@ class UpdateAccountUsersPercentages
                 ->sortBy(fn ($user): int => array_search($user->id, $usersById->keys()->all(), true))
                 ->values()
                 ->map(function ($user) use ($usersById): array {
-                    $percentage = (float) $usersById->get($user->id)['percentage'];
+                    $percentage = Decimal::normalize($usersById->get($user->id)['percentage']);
 
                     return [
-                        'id' => $user->id,
-                        'user_id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'percentage' => number_format($percentage, 2, '.', ''),
+                        'id'         => $user->id,
+                        'user_id'    => $user->id,
+                        'name'       => $user->name,
+                        'email'      => $user->email,
+                        'percentage' => $percentage,
                     ];
                 });
         });

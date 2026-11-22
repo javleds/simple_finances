@@ -10,7 +10,7 @@ use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_slice;
-use function array_sum;
+use FinSi\FinanceDomain\Money\Decimal;
 use function array_unique;
 use function array_values;
 use function count;
@@ -27,7 +27,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 use function now;
-use function number_format;
 use function round;
 
 class FinancialReadTools
@@ -133,18 +132,18 @@ class FinancialReadTools
             $query->whereKey($args['account_id']);
         }
         $rows = [];
-        $total = 0;
+        $total = '0.00';
         $references = [];
         foreach ($query->orderBy('id')->cursor() as $account) {
             $references[] = ['account_id' => (string) $account->id];
-            $amount = array_sum(array_column($this->debts($account, $actorId), 'amount'));
-            $total += (int) round($amount * 100);
-            if ($amount > 0) {
+            $amount = Decimal::sum($this->debts($account, $actorId), 'amount');
+            $total = Decimal::add($total, $amount);
+            if (Decimal::compare($amount, 0) > 0) {
                 $rows[] = ['account_id' => (string) $account->id, 'name' => $account->name, 'amount' => $this->money($amount)];
             }
         }
 
-        return ['data' => ['accounts' => $rows, 'total' => $this->money($total / 100)], 'references' => $references];
+        return ['data' => ['accounts' => $rows, 'total' => $this->money($total)], 'references' => $references];
     }
 
     private function breakdown(int $actorId, array $args): array
@@ -153,17 +152,17 @@ class FinancialReadTools
         $debts = $this->debts($account, $actorId);
         $rows = [];
         foreach ($debts as $debt) {
-            $attributed = 0;
+            $attributed = '0.00';
             foreach ($debt['items'] as $item) {
                 if (($item['attribution'] ?? null) === 'estimated') {
                     continue;
                 }
-                $attributed += (int) round($item['amount'] * 100);
+                $attributed = Decimal::add($attributed, $item['amount']);
                 $rows[] = ['account_id' => (string) $account->id, 'transaction_id' => $item['transaction_id'], 'description' => $item['concept'], 'date' => $item['occurred_at'], 'amount' => $this->money($item['amount']), 'kind' => 'transaction', 'action_type' => $debt['action_type'] ?? 'user_to_user'];
             }
-            $adjustment = (int) round($debt['amount'] * 100) - $attributed;
-            if (0 !== $adjustment) {
-                $rows[] = ['account_id' => (string) $account->id, 'transaction_id' => null, 'description' => 'Saldo pendiente sin atribución exacta a una transacción', 'date' => null, 'amount' => $this->money($adjustment / 100), 'kind' => 'adjustment', 'action_type' => $debt['action_type'] ?? 'user_to_user'];
+            $adjustment = Decimal::subtract($debt['amount'], $attributed);
+            if (Decimal::compare($adjustment, 0) !== 0) {
+                $rows[] = ['account_id' => (string) $account->id, 'transaction_id' => null, 'description' => 'Saldo pendiente sin atribución exacta a una transacción', 'date' => null, 'amount' => $this->money($adjustment), 'kind' => 'adjustment', 'action_type' => $debt['action_type'] ?? 'user_to_user'];
             }
         }
         $offset = (int) ($args['cursor'] ?? 0);
@@ -171,7 +170,7 @@ class FinancialReadTools
         $page = array_slice($rows, $offset, $limit);
         $more = count($rows) > $offset + $limit;
 
-        return ['data' => ['account_id' => (string) $account->id, 'total' => $this->money(array_sum(array_column($debts, 'amount'))), 'items' => $page], 'complete' => ! $more, 'next_cursor' => $more ? (string) ($offset + $limit) : null, 'references' => [['account_id' => (string) $account->id], ...array_map(fn (array $row): array => array_filter(['account_id' => $row['account_id'], 'transaction_id' => $row['transaction_id']]), $page)]];
+        return ['data' => ['account_id' => (string) $account->id, 'total' => $this->money(Decimal::sum($debts, 'amount')), 'items' => $page], 'complete' => ! $more, 'next_cursor' => $more ? (string) ($offset + $limit) : null, 'references' => [['account_id' => (string) $account->id], ...array_map(fn (array $row): array => array_filter(['account_id' => $row['account_id'], 'transaction_id' => $row['transaction_id']]), $page)]];
     }
 
     private function findCategories(int $actorId, array $args): array
@@ -238,7 +237,7 @@ class FinancialReadTools
     private function listExpenses(int $actorId, array $args): array
     {
         $query = $this->expenses($actorId, $args);
-        $total = (clone $query)->sum('amount');
+        $total = (string) (clone $query)->sum('amount');
         $limit = (int) ($args['limit'] ?? 100);
         $offset = (int) ($args['cursor'] ?? 0);
         $rows = $query->with('category')->orderBy('id')->offset($offset)->limit($limit + 1)->get();
@@ -257,7 +256,7 @@ class FinancialReadTools
             : "DATE_FORMAT(scheduled_at, '%Y-%m')";
         $expressions = ['account' => 'account_id', 'category' => 'category_id', 'month' => $month, 'concept' => 'concept'];
         $expression = $expressions[$groupBy];
-        $total = (clone $query)->sum('amount');
+        $total = (string) (clone $query)->sum('amount');
         $limit = (int) ($args['limit'] ?? 100);
         $offset = (int) ($args['cursor'] ?? 0);
         $rows = (clone $query)->selectRaw($expression . ' as group_key, SUM(amount) as total_amount, COUNT(*) as total_count')
@@ -275,7 +274,7 @@ class FinancialReadTools
         $data = $rows->take($limit)->map(fn ($row): array => [
             'key'    => (string) ($row->group_key ?? 'uncategorized'),
             'label'  => $labels[$row->group_key] ?? (string) ($row->group_key ?? 'Sin categoría'),
-            'amount' => $this->money($row->total_amount),
+            'amount' => $this->money((string) $row->total_amount),
             'count'  => (int) $row->total_count,
         ])->all();
 
@@ -295,18 +294,18 @@ class FinancialReadTools
         }
         $data = [];
         foreach ($args['groups'] as $group) {
-            $minor = 0;
+            $amount = '0.00';
             foreach ($group['transaction_ids'] as $id) {
-                $minor += (int) round($rows[$id]->amount * 100);
+                $amount = Decimal::add($amount, $rows[$id]->amount);
             }
-            $data[] = ['label' => $group['label'], 'classification' => 'inferred', 'amount' => $this->money($minor / 100), 'transaction_ids' => array_map('strval', $group['transaction_ids'])];
+            $data[] = ['label' => $group['label'], 'classification' => 'inferred', 'amount' => $this->money($amount), 'transaction_ids' => array_map('strval', $group['transaction_ids'])];
         }
 
         return ['data' => $data, 'references' => $rows->map(fn (Transaction $t): array => ['account_id' => (string) $t->account_id, 'transaction_id' => (string) $t->id])->values()->all()];
     }
 
-    private function money(float | int | string | null $amount): string
+    private function money(int | string | null $amount): string
     {
-        return number_format((float) $amount, 2, '.', '');
+        return Decimal::normalize($amount ?? '0.00');
     }
 }

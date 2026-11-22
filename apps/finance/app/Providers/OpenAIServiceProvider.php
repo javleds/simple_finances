@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Contracts\OpenAIServiceInterface;
 use App\Services\OpenAI\DummyOpenAIService;
 use App\Services\OpenAI\OpenAIService;
+
+use function config;
+
 use Illuminate\Support\ServiceProvider;
 
 class OpenAIServiceProvider extends ServiceProvider
@@ -15,15 +20,14 @@ class OpenAIServiceProvider extends ServiceProvider
             $apiToken = config('services.openai.api_token');
 
             if (empty($apiToken)) {
-                return new DummyOpenAIService;
+                return new DummyOpenAIService();
             }
 
-            return new OpenAIService;
+            return $this->app->make(OpenAIService::class);
         });
     }
 
     public function boot(): void
     {
-        //
     }
 }

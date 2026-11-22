@@ -23,7 +23,7 @@ const props = withDefaults(
         accountId: string;
         accountUsers: AccountMember[];
         virtualCustodians?: ReadonlyArray<{ id: string; name: string }>;
-        accountBalance?: number | null;
+        accountBalance?: string | null;
         currentUserId?: string | null;
         actions: ReadonlyArray<AppModalAction>;
         financialGoals: AccountGoal[];

@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\PersonalMoney;
 
-use function abs;
-
 use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\PersonalMoneyLink;
 use FinSi\FinanceDomain\Models\PersonalMoneyReimbursement;
 use FinSi\FinanceDomain\Models\PersonalMoneySetting;
 use FinSi\FinanceDomain\Models\Transaction;
+use FinSi\FinanceDomain\Money\Decimal;
 use FinSi\FinanceDomain\Queries\UserOwnedResources;
 use FinSi\FinanceDomain\Queries\VisibleAccountsForUser;
 use FinSi\FinanceDomain\Queries\VisibleTransactionsForUser;
@@ -24,7 +23,6 @@ use Illuminate\Support\Collection;
 use function implode;
 use function in_array;
 use function now;
-use function round;
 use function str_pad;
 
 use const STR_PAD_LEFT;
@@ -80,7 +78,7 @@ class BuildPersonalMoneySources
                 type: 'transaction', id: $transaction->id, accountId: $transaction->account_id, accountName: $transaction->account->name,
                 concept: $transaction->concept, occurredAt: $transaction->scheduled_at->toIso8601String(),
                 amount: $transaction->amount, kind: $kind, signature: $signature,
-                rawEffect: $personal && $income ? $transaction->amount : -$transaction->amount,
+                rawEffect: $personal && $income ? $transaction->amount : Decimal::negate($transaction->amount),
                 automatic: $personal && ! (null !== $setting->activated_at && $transaction->scheduled_at->lt($setting->started_at)), link: $links->get('transaction:' . $transaction->id),
             );
         });
@@ -97,7 +95,7 @@ class BuildPersonalMoneySources
             $sources->push($this->source(
                 type: 'reimbursement', id: $reimbursement->id, accountId: $reimbursement->account_id, accountName: $reimbursement->account_name,
                 concept: $reimbursement->description, occurredAt: $reimbursement->occurred_at->toIso8601String(),
-                amount: abs($reimbursement->cash_effect), kind: 'reimbursement', signature: $signature,
+                amount: Decimal::abs($reimbursement->cash_effect), kind: 'reimbursement', signature: $signature,
                 rawEffect: $reimbursement->cash_effect, automatic: false, link: $links->get('reimbursement:' . $reimbursement->id),
             ));
         }
@@ -112,7 +110,7 @@ class BuildPersonalMoneySources
             $sources->push($this->source(
                 type: 'transaction', id: $link->transaction_id, accountId: $link->source_account_id, accountName: $link->account_name,
                 concept: $link->concept, occurredAt: $link->occurred_at->toIso8601String(),
-                amount: abs($link->cash_effect), kind: $link->kind, signature: $link->source_signature,
+                amount: Decimal::abs($link->cash_effect), kind: $link->kind, signature: $link->source_signature,
                 rawEffect: $link->cash_effect, automatic: false, link: $link,
             ));
         }
@@ -122,7 +120,7 @@ class BuildPersonalMoneySources
 
     private function source(
         string $type, int $id, int $accountId, string $accountName, string $concept, string $occurredAt,
-        float $amount, string $kind, string $signature, float $rawEffect, bool $automatic,
+        string $amount, string $kind, string $signature, string $rawEffect, bool $automatic,
         ?PersonalMoneyLink $link,
     ): array {
         $resolution = $automatic ? 'automatic' : 'pending';
@@ -133,10 +131,10 @@ class BuildPersonalMoneySources
         return [
             'source_account_id' => $accountId,
             'source_type'       => $type, 'source_id' => $id, 'account_name' => $accountName,
-            'concept'           => $concept, 'occurred_at' => $occurredAt, 'amount' => round($amount, 2),
+            'concept'           => $concept, 'occurred_at' => $occurredAt, 'amount' => Decimal::normalize($amount),
             'kind'              => $kind, 'resolution' => $resolution,
-            'raw_effect'        => round($rawEffect, 2),
-            'effect'            => in_array($resolution, ['personal', 'automatic'], true) ? round($rawEffect, 2) : 0.0,
+            'raw_effect'        => Decimal::normalize($rawEffect),
+            'effect'            => in_array($resolution, ['personal', 'automatic'], true) ? Decimal::normalize($rawEffect) : '0.00',
             'source_signature'  => $signature,
         ];
     }

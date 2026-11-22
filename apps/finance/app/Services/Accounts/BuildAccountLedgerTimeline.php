@@ -13,11 +13,11 @@ use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\Transaction;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Support\Collection;
 
 use function in_array;
 use function optional;
-use function round;
 
 class BuildAccountLedgerTimeline
 {
@@ -77,7 +77,7 @@ class BuildAccountLedgerTimeline
             ])
             ->values();
 
-        $balance = 0.0;
+        $balance = '0.00';
         $custodyByUser = [];
         $settlementByUser = [];
 
@@ -97,22 +97,22 @@ class BuildAccountLedgerTimeline
     private array $userNames = [];
 
     /**
-     * @param array<int, float> $custodyByUser
-     * @param array<int, float> $settlementByUser
+     * @param array<int, string> $custodyByUser
+     * @param array<int, string> $settlementByUser
      */
     private function transactionRow(
         Transaction $transaction,
-        float &$balance,
+        string &$balance,
         array &$custodyByUser,
         array &$settlementByUser,
     ): array {
         $balance = TransactionType::Income === $transaction->type
-            ? round($balance + (float) $transaction->amount, 2)
-            : round($balance - (float) $transaction->amount, 2);
+            ? Decimal::add($balance, Decimal::normalize($transaction->amount))
+            : Decimal::subtract($balance, Decimal::normalize($transaction->amount));
 
         foreach ($transaction->subTransactions as $subTransaction) {
             if (TransactionType::Income === $subTransaction->type) {
-                $balance = round($balance + (float) $subTransaction->amount, 2);
+                $balance = Decimal::add($balance, Decimal::normalize($subTransaction->amount));
             }
         }
 
@@ -127,7 +127,7 @@ class BuildAccountLedgerTimeline
             'transaction_id'           => $transaction->id,
             'label'                    => $transaction->concept,
             'description'              => $this->transactionDescription($transaction),
-            'amount'                   => round((float) $transaction->amount, 2),
+            'amount'                   => Decimal::normalize($transaction->amount),
             'balance_after'            => $balance,
             'custody_after_by_user'    => $this->amountRows($custodyByUser),
             'settlement_after_by_user' => $this->amountRows($settlementByUser),
@@ -135,8 +135,8 @@ class BuildAccountLedgerTimeline
                 ->map(fn ($allocation): array => [
                     'user_id'    => (int) $allocation->user_id,
                     'user_name'  => $allocation->user?->name,
-                    'amount'     => round((float) $allocation->amount, 2),
-                    'percentage' => round((float) $allocation->percentage, 2),
+                    'amount'     => Decimal::normalize($allocation->amount),
+                    'percentage' => Decimal::normalize($allocation->percentage),
                 ])
                 ->values()
                 ->all(),
@@ -144,12 +144,12 @@ class BuildAccountLedgerTimeline
     }
 
     /**
-     * @param array<int, float> $custodyByUser
-     * @param array<int, float> $settlementByUser
+     * @param array<int, string> $custodyByUser
+     * @param array<int, string> $settlementByUser
      */
     private function ledgerEntryRow(
         AccountMemberLedgerEntry $entry,
-        float $balance,
+        string $balance,
         array &$custodyByUser,
         array &$settlementByUser,
     ): array {
@@ -162,7 +162,7 @@ class BuildAccountLedgerTimeline
             'transaction_id'           => $entry->transaction_id,
             'label'                    => $entry->description,
             'description'              => $this->ledgerEntryDescription($entry),
-            'amount'                   => round((float) $entry->amount, 2),
+            'amount'                   => Decimal::normalize($entry->amount),
             'balance_after'            => $balance,
             'custody_after_by_user'    => $this->amountRows($custodyByUser),
             'settlement_after_by_user' => $this->amountRows($settlementByUser),
@@ -171,20 +171,20 @@ class BuildAccountLedgerTimeline
     }
 
     /**
-     * @param array<int, float> $custodyByUser
-     * @param array<int, float> $settlementByUser
+     * @param array<int, string> $custodyByUser
+     * @param array<int, string> $settlementByUser
      */
     private function applyLedgerEntry(AccountMemberLedgerEntry $entry, array &$custodyByUser, array &$settlementByUser): void
     {
         $target = $this->isCustodyEntry($entry) ? 'custody' : 'settlement';
 
         if ('custody' === $target) {
-            $custodyByUser[$entry->user_id] = round(($custodyByUser[$entry->user_id] ?? 0.0) + (float) $entry->amount, 2);
+            $custodyByUser[$entry->user_id] = Decimal::add($custodyByUser[$entry->user_id] ?? '0.00', Decimal::normalize($entry->amount));
 
             return;
         }
 
-        $settlementByUser[$entry->user_id] = round(($settlementByUser[$entry->user_id] ?? 0.0) + (float) $entry->amount, 2);
+        $settlementByUser[$entry->user_id] = Decimal::add($settlementByUser[$entry->user_id] ?? '0.00', Decimal::normalize($entry->amount));
     }
 
     private function isCustodyEntry(AccountMemberLedgerEntry $entry): bool
@@ -245,19 +245,19 @@ class BuildAccountLedgerTimeline
     }
 
     /**
-     * @param array<int, float> $amounts
+     * @param array<int, string> $amounts
      *
-     * @return array<int, array{user_id: int, user_name: string, amount: float}>
+     * @return array<int, array{user_id: int, user_name: string, amount: string}>
      */
     private function amountRows(array $amounts): array
     {
         $this->loadUserNames(array_keys($amounts));
 
         return collect($amounts)
-            ->map(fn (float $amount, int $userId): array => [
+            ->map(fn (string $amount, int $userId): array => [
                 'user_id'   => $userId,
                 'user_name' => $this->userNames[$userId] ?? 'Usuario no disponible',
-                'amount'    => round($amount, 2),
+                'amount'    => Decimal::round($amount, 2),
             ])
             ->values()
             ->all();

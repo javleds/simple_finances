@@ -73,6 +73,7 @@ function buildPostDeployCommand(): PostDeploy&MockInterface
 
 function expectPostDeployCacheSteps(PostDeploy&MockInterface $command): void
 {
+    expectPostDeployStep($command, 'money:storage', ['--check' => true]);
     expectPostDeployStep($command, 'view:clear');
     expectPostDeployStep($command, 'config:cache');
     expectPostDeployStep($command, 'route:cache');
@@ -106,6 +107,7 @@ it('stops deployment when cache generation fails', function (): void {
     $command = buildPostDeployCommand();
     $command->shouldReceive('option')->with('migrate')->andReturn(true);
     $command->shouldReceive('call')->once()->with('migrate', ['--force' => true])->andReturn(0);
+    $command->shouldReceive('call')->once()->with('money:storage', ['--check' => true])->andReturn(0);
     $command->shouldReceive('call')->once()->with('view:clear')->andReturn(0);
     $command->shouldReceive('call')->once()->with('config:cache')->andReturn(2);
 
@@ -116,7 +118,17 @@ it('stops deployment when compiled views cannot be cleared', function (): void {
     $command = buildPostDeployCommand();
     $command->shouldReceive('option')->with('migrate')->andReturn(true);
     $command->shouldReceive('call')->once()->with('migrate', ['--force' => true])->andReturn(0);
+    $command->shouldReceive('call')->once()->with('money:storage', ['--check' => true])->andReturn(0);
     $command->shouldReceive('call')->once()->with('view:clear')->andReturn(1);
+
+    expect($command->handle())->toBe(PostDeploy::FAILURE);
+});
+
+it('keeps deployment closed while monetary storage is pending', function (): void {
+    $command = buildPostDeployCommand();
+    $command->shouldReceive('option')->with('migrate')->andReturn(true);
+    $command->shouldReceive('call')->once()->with('migrate', ['--force' => true])->andReturn(0);
+    $command->shouldReceive('call')->once()->with('money:storage', ['--check' => true])->andReturn(1);
 
     expect($command->handle())->toBe(PostDeploy::FAILURE);
 });

@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\PersonalMoney;
 
-use function abs;
-
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\PersonalMoneyReimbursement;
+use FinSi\FinanceDomain\Money\Decimal;
 use FinSi\FinanceDomain\Queries\UserOwnedResources;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\Builder;
-
-use function max;
 
 class CaptureExistingPersonalMoneyReimbursements
 {
@@ -43,18 +40,18 @@ class CaptureExistingPersonalMoneyReimbursements
             });
     }
 
-    private function cashEffect(AccountMemberLedgerEntry $entry): float
+    private function cashEffect(AccountMemberLedgerEntry $entry): string
     {
         if (AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer === $entry->type) {
-            return max(0.0, -$entry->amount);
+            return Decimal::max('0.00', Decimal::negate($entry->amount));
         }
         if (AccountMemberLedgerEntryType::CustodyReimbursementPayment === $entry->type) {
-            return $entry->user_id === $entry->related_user_id ? abs($entry->amount) : 0.0;
+            return $entry->user_id === $entry->related_user_id ? Decimal::abs($entry->amount) : '0.00';
         }
         if (null === $entry->related_user_id || $entry->user_id === $entry->related_user_id) {
-            return 0.0;
+            return '0.00';
         }
 
-        return -$entry->amount;
+        return Decimal::negate($entry->amount);
     }
 }

@@ -14,12 +14,12 @@ const repository = createVirtualAccountsRepository();
 
 const emptyDashboard: VirtualAccountsDashboard = {
   summary: {
-    currentBalance: 0,
-    initialBalance: 0,
-    manualContributions: 0,
-    manualWithdrawals: 0,
-    netCapital: 0,
-    observedYield: 0,
+    currentBalance: '0.00',
+    initialBalance: '0.00',
+    manualContributions: '0.00',
+    manualWithdrawals: '0.00',
+    netCapital: '0.00',
+    observedYield: '0.00',
     accountsCount: 0,
   },
   accounts: [],

@@ -24,6 +24,7 @@ use FinSi\FinanceDomain\Models\Transaction;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class TransactionUpdater
 {
@@ -48,10 +49,16 @@ class TransactionUpdater
             throw new InvalidArgumentException('Transactions must have status Completed.');
         }
 
-        $previousAccountId = $transaction->account_id;
-        $transaction = DB::transaction(function () use ($transaction, $dto, &$previousAccountId) {
-            Account::withoutGlobalScopes()->whereIn('id', [$transaction->account_id, $dto->accountId])->orderBy('id')->lockForUpdate()->get();
+        $sourceAccountId = Transaction::withoutGlobalScopes()->whereKey($transaction->id)->firstOrFail(['id', 'account_id'])->account_id;
+        if ($sourceAccountId !== $transaction->account_id) {
+            throw new ConflictHttpException('The transaction moved to another account. Refresh it before retrying.');
+        }
+        $transaction = DB::transaction(function () use ($transaction, $dto, $sourceAccountId) {
+            Account::withoutGlobalScopes()->whereIn('id', [$sourceAccountId, $dto->accountId])->orderBy('id')->lockForUpdate()->get();
             $persisted = Transaction::withoutGlobalScopes()->whereKey($transaction->id)->lockForUpdate()->firstOrFail();
+            if ($persisted->account_id !== $sourceAccountId) {
+                throw new ConflictHttpException('The transaction moved to another account. Refresh it before retrying.');
+            }
             $transaction = $persisted;
             $previousAccountId = $persisted->account_id;
             $previousCashTransaction = clone $persisted;
@@ -78,16 +85,16 @@ class TransactionUpdater
                 $this->reopenVirtualCustodians->execute($affectedAccount);
             }
 
+            if ($previousAccountId !== $transaction->account_id) {
+                $previousAccount = Account::withoutGlobalScopes()->find($previousAccountId);
+                if (null !== $previousAccount) {
+                    $this->recalculateAccountBalance->execute($previousAccount);
+                }
+            }
+            $this->processTransactionSideEffects->execute($transaction, Action::Updated);
+
             return $transaction;
         }, 3);
-
-        if ($previousAccountId !== $transaction->account_id) {
-            $previousAccount = Account::withoutGlobalScopes()->find($previousAccountId);
-            if (null !== $previousAccount) {
-                $this->recalculateAccountBalance->execute($previousAccount);
-            }
-        }
-        $this->processTransactionSideEffects->execute($transaction, Action::Updated);
 
         return $transaction;
     }
@@ -98,7 +105,7 @@ class TransactionUpdater
         $transaction->status = $dto->status;
         $transaction->concept = $dto->concept;
         $transaction->amount = $dto->amount;
-        $transaction->percentage = 100.0;
+        $transaction->percentage = '100.00';
         $categoryId = $dto->categoryProvided ? $dto->categoryId : $transaction->category_id;
         if (! $dto->categoryProvided && $transaction->account_id !== $dto->accountId) {
             $categoryId = null;

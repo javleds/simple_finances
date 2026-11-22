@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 use App\Dto\PersonalMoneySettingsDto;
 use App\Dto\TransactionFormDto;
-use FinSi\FinanceDomain\Models\Account;
-use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
-use FinSi\FinanceDomain\Models\PersonalMoneyLink;
-use FinSi\FinanceDomain\Models\PersonalMoneySetting;
-use FinSi\FinanceDomain\Models\Transaction;
-use FinSi\FinanceDomain\Models\User;
 use App\Services\PersonalMoney\BuildPersonalMoneySummary;
 use App\Services\PersonalMoney\CaptureExistingPersonalMoneyReimbursements;
 use App\Services\PersonalMoney\ResolvePersonalMoneySource;
 use App\Services\PersonalMoney\UpdatePersonalMoneySettings;
 use App\Services\Transaction\TransactionCreator;
 use App\Services\Transaction\TransactionUpdater;
+use FinSi\FinanceDomain\Models\Account;
+use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
+use FinSi\FinanceDomain\Models\PersonalMoneyLink;
+use FinSi\FinanceDomain\Models\PersonalMoneySetting;
+use FinSi\FinanceDomain\Models\Transaction;
+use FinSi\FinanceDomain\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -30,10 +30,10 @@ beforeEach(function (): void {
     $this->actingAs($this->user);
 });
 
-function activatePersonalMoneyNow(Account $account, User $user, float $balance = 10000, ?string $key = null): PersonalMoneySetting
+function activatePersonalMoneyNow(Account $account, User $user, string | int $balance = '10000.00', ?string $key = null): PersonalMoneySetting
 {
     return app(UpdatePersonalMoneySettings::class)->execute($user->id,
-        new PersonalMoneySettingsDto($account->id, null, $balance, true, 'now', $key ?? (string) Str::uuid()));
+        new PersonalMoneySettingsDto($account->id, null, (string) $balance, true, 'now', $key ?? (string) Str::uuid()));
 }
 
 function createActivationMovement(Account $account, User $payer, array $overrides = []): Transaction
@@ -50,10 +50,10 @@ it('starts with the exact opening amount and separates movements created in the 
     createActivationMovement($this->shared, $this->user);
     $setting = activatePersonalMoneyNow($this->personal, $this->user);
     $summary = app(BuildPersonalMoneySummary::class)->execute($this->user->id);
-    expect($summary['available_balance'])->toBe(10000.0)->and($summary['history'])->toBe([])->and($summary['pending_count'])->toBe(0);
+    expect($summary['available_balance'])->toBe('10000.00')->and($summary['history'])->toBe([])->and($summary['pending_count'])->toBe(0);
     createActivationMovement($this->personal, $this->user);
     createActivationMovement($this->shared, $this->user);
-    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe(9800.0);
+    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe('9800.00');
     expect($setting->activated_at->toDateTimeString())->toBe('2026-10-11 15:00:00');
 });
 
@@ -75,7 +75,7 @@ it('defaults own new shared payments to personal money while respecting explicit
     expect(PersonalMoneyLink::query()->where('transaction_id', $automatic->id)->sole()->resolution)->toBe('personal');
     expect(PersonalMoneyLink::query()->where('transaction_id', $external->id)->sole()->resolution)->toBe('external');
     expect(PersonalMoneyLink::query()->where('transaction_id', $pending->id)->sole()->resolution)->toBe('pending');
-    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe(9900.0);
+    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe('9900.00');
 });
 
 it('reviews payments recorded by others only for the actual payer', function (): void {
@@ -84,7 +84,7 @@ it('reviews payments recorded by others only for the actual payer', function ():
     createActivationMovement($this->shared, $this->user);
     createActivationMovement($this->shared, $this->partner);
     $summary = app(BuildPersonalMoneySummary::class)->execute($this->user->id);
-    expect($summary['history'])->toHaveCount(1)->and($summary['pending_count'])->toBe(1)->and($summary['available_balance'])->toBe(10000.0);
+    expect($summary['history'])->toHaveCount(1)->and($summary['pending_count'])->toBe(1)->and($summary['available_balance'])->toBe('10000.00');
 });
 
 it('requires an explicit historical effect and preserves the sign of edited personal income', function (): void {
@@ -92,14 +92,14 @@ it('requires an explicit historical effect and preserves the sign of edited pers
     $income = createActivationMovement($this->personal, $this->user, ['type' => 'income', 'scheduled_at' => '2026-10-01']);
     $expense = createActivationMovement($this->personal, $this->user, ['scheduled_at' => '2026-10-01', 'cash_source' => 'external']);
     $summary = app(BuildPersonalMoneySummary::class)->execute($this->user->id);
-    expect($summary['available_balance'])->toBe(10000.0)->and($summary['pending_count'])->toBe(1);
+    expect($summary['available_balance'])->toBe('10000.00')->and($summary['pending_count'])->toBe(1);
     app(ResolvePersonalMoneySource::class)->execute($this->user->id, 'transaction', $income->id, 'personal');
     app(TransactionUpdater::class)->execute($income, TransactionFormDto::fromFormArray([
         'account_id' => $this->personal->id, 'type' => 'income', 'status' => 'completed',
         'concept'    => 'Corrected income', 'amount' => 250, 'scheduled_at' => '2026-10-01',
     ]));
-    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe(10250.0);
-    expect(PersonalMoneyLink::query()->where('transaction_id', $income->id)->sole()->cash_effect)->toBe(250.0);
+    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe('10250.00');
+    expect(PersonalMoneyLink::query()->where('transaction_id', $income->id)->sole()->cash_effect)->toBe('250.00');
     expect(PersonalMoneyLink::query()->where('transaction_id', $expense->id)->sole()->resolution)->toBe('external');
 });
 
@@ -113,7 +113,7 @@ it('does not automatically link historical shared payments or rewrite a choice o
         'concept'         => 'Changed amount', 'amount' => 250, 'scheduled_at' => '2026-10-01',
         'paid_by_user_id' => $this->user->id, 'payment_source' => 'member_out_of_pocket',
     ]));
-    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe(10000.0);
+    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe('10000.00');
 });
 
 it('keeps activation retries idempotent including after another baseline operation', function (): void {
@@ -123,10 +123,10 @@ it('keeps activation retries idempotent including after another baseline operati
     $this->travel(1)->hours();
     $retry = activatePersonalMoneyNow($this->personal, $this->user, 10000, $firstKey);
     expect($retry->activated_at->eq($setting->activated_at))->toBeTrue();
-    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe(9900.0);
+    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe('9900.00');
     activatePersonalMoneyNow($this->personal, $this->user, 9000);
     activatePersonalMoneyNow($this->personal, $this->user, 10000, $firstKey);
-    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe(9000.0);
+    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe('9000.00');
     expect(fn () => activatePersonalMoneyNow($this->personal, $this->user, 1, $firstKey))->toThrow(ValidationException::class);
 });
 
@@ -135,10 +135,10 @@ it('preserves the cut on editing disabling and reactivation', function (): void 
     createActivationMovement($this->personal, $this->user);
     foreach ([false, true] as $enabled) {
         $updated = app(UpdatePersonalMoneySettings::class)->execute($this->user->id,
-            new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', 10000, $enabled));
+            new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', '10000.00', $enabled));
         expect($updated->transaction_cutoff_id)->toBe($setting->transaction_cutoff_id)->and($updated->started_at->toDateString())->toBe('2026-10-11');
     }
-    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe(9900.0);
+    expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['available_balance'])->toBe('9900.00');
 });
 
 it('excludes existing reimbursement snapshots even after their original ledger entry is deleted', function (): void {
@@ -150,4 +150,41 @@ it('excludes existing reimbursement snapshots even after their original ledger e
     $entry->delete();
     activatePersonalMoneyNow($this->personal, $this->user);
     expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['history'])->toBe([]);
+});
+
+it('replays legacy numeric hashes without replacing a newer baseline', function (): void {
+    $key = (string) Str::uuid();
+    activatePersonalMoneyNow($this->personal, $this->user, '100.10', $key);
+    $legacyHash = hash('sha256', json_encode([$this->personal->id, 100.1, true, 'now', null], \JSON_THROW_ON_ERROR));
+    Illuminate\Support\Facades\DB::table('personal_money_baseline_operations')->where('operation_key', $key)
+        ->update(['payload_hash' => $legacyHash, 'payload_hash_version' => 1]);
+
+    $latest = activatePersonalMoneyNow($this->personal, $this->user, '200.20');
+    $replayed = activatePersonalMoneyNow($this->personal, $this->user, '100.10', $key);
+
+    expect($replayed->opening_balance)->toBe('200.20')
+        ->and($replayed->activated_at->equalTo($latest->activated_at))->toBeTrue();
+    expect(fn () => activatePersonalMoneyNow($this->personal, $this->user, '100.11', $key))->toThrow(ValidationException::class);
+    expect(Illuminate\Support\Facades\DB::table('personal_money_baseline_operations')->where('operation_key', $key)->value('payload_hash'))->toBe($legacyHash);
+});
+
+it('accepts a legacy negative zero hash as monetary zero', function (): void {
+    $key = (string) Str::uuid();
+    $setting = activatePersonalMoneyNow($this->personal, $this->user, '0.00', $key);
+    $legacyHash = hash('sha256', json_encode([$this->personal->id, -0.0, true, 'now', null], \JSON_THROW_ON_ERROR));
+    Illuminate\Support\Facades\DB::table('personal_money_baseline_operations')->where('operation_key', $key)
+        ->update(['payload_hash' => $legacyHash, 'payload_hash_version' => 1]);
+
+    $this->travel(1)->hours();
+    $replayed = activatePersonalMoneyNow($this->personal, $this->user, '0.00', $key);
+    expect($replayed->opening_balance)->toBe('0.00')
+        ->and($replayed->activated_at->equalTo($setting->activated_at))->toBeTrue();
+});
+
+it('canonicalizes new operation hashes without losing a cent', function (): void {
+    $key = (string) Str::uuid();
+    activatePersonalMoneyNow($this->personal, $this->user, '100', $key);
+    expect(Illuminate\Support\Facades\DB::table('personal_money_baseline_operations')->where('operation_key', $key)->value('payload_hash_version'))->toBe(2);
+    expect(activatePersonalMoneyNow($this->personal, $this->user, '100.00', $key)->opening_balance)->toBe('100.00');
+    expect(fn () => activatePersonalMoneyNow($this->personal, $this->user, '100.01', $key))->toThrow(ValidationException::class);
 });

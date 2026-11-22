@@ -1,6 +1,6 @@
+import { moneySchema, parseMoney, compareMoney, money } from '@/modules/shared/lib/money';
 import { z } from 'zod';
 
-import { parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 import type {
   DistributionFrequency,
   DistributionRelation,
@@ -32,8 +32,8 @@ export const distributionRelationFormSchema = z.object({
     .trim()
     .min(1, 'La cantidad es obligatoria.')
     .refine((value) => {
-      const amount = parseNullableNumber(value);
-      return amount !== null && amount >= 0;
+      const amount = parseMoney(value);
+      return amount !== null && compareMoney(amount, '0') >= 0;
     }, 'La cantidad debe ser mayor o igual a 0.'),
   type: z.union([z.literal('savings'), z.literal('transfer')]),
 });
@@ -48,7 +48,7 @@ export const fixedOutcomeApiSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   fixed_income_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   name: z.string(),
-  amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  amount: moneySchema,
   type: z.unknown().transform(parseRelationType),
 });
 
@@ -60,7 +60,7 @@ export function mapFixedIncomeApiToDomain(
     name: payload.name,
     frequency: payload.frequency,
     outcomesCount: 0,
-    totalAmount: 0,
+    totalAmount: '0.00',
   };
 }
 
@@ -112,7 +112,7 @@ export function mapDistributionRelationFormToWritePayload(
   return {
     fixedIncomeId,
     name: values.name.trim(),
-    amount: parseNullableNumber(values.amount) ?? 0,
+    amount: money(values.amount),
     type: values.type,
   };
 }

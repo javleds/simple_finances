@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\PersonalMoney;
 
-use FinSi\FinanceDomain\Queries\EligiblePersonalMoneyAccounts;
-use FinSi\FinanceDomain\Queries\UserOwnedResources;
-use FinSi\FinanceDomain\Models\PersonalMoneySetting;
-
 use function ceil;
 
+use FinSi\FinanceDomain\Models\PersonalMoneySetting;
+use FinSi\FinanceDomain\Money\Decimal;
+use FinSi\FinanceDomain\Queries\EligiblePersonalMoneyAccounts;
+use FinSi\FinanceDomain\Queries\UserOwnedResources;
 use Illuminate\Support\Collection;
 
 use function max;
 use function min;
-use function round;
 
 class BuildPersonalMoneySummary
 {
@@ -32,7 +31,7 @@ class BuildPersonalMoneySummary
         $accountAvailable = null !== $setting && $accounts->contains('id', $setting->account_id);
         $sources = $setting?->enabled && $accountAvailable ? $this->buildSources->execute($userId, $setting) : new Collection();
         $pendingCount = $sources->where('resolution', 'pending')->count();
-        $available = $setting?->enabled && $accountAvailable ? round($setting->opening_balance + $sources->sum('effect'), 2) : null;
+        $available = $setting?->enabled && $accountAvailable ? Decimal::add($setting->opening_balance, Decimal::sum($sources, 'effect')) : null;
         $history = 'pending' === $resolution ? $sources->where('resolution', 'pending')->values() : $sources;
         $total = $history->count();
         $perPage = min(100, max(1, $perPage));

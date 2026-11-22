@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type SubscriptionStatus = 'active' | 'cancelled';
@@ -8,7 +9,7 @@ const props = defineProps<{
   plan: string;
   cycle: string;
   nextCharge: string;
-  amount: number;
+  amount: string;
   status: SubscriptionStatus;
 }>();
 
@@ -17,12 +18,7 @@ const emit = defineEmits<{
   delete: [itemId: string];
 }>();
 
-const currencyFormatter = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+const currencyFormatter = { format: formatExactMoney };
 
 function statusLabel(status: SubscriptionStatus): string {
   if (status === 'cancelled') {
@@ -40,7 +36,7 @@ function statusClasses(status: SubscriptionStatus): string {
   return 'bg-[color-mix(in_srgb,var(--app-color-success)_10%,transparent)] text-(--app-color-success)';
 }
 
-function formattedAmount(amount: number): string {
+function formattedAmount(amount: string): string {
   return currencyFormatter.format(amount);
 }
 
@@ -73,9 +69,7 @@ function handleDelete(): void {
         <div
           class="col-start-1 row-start-2 space-y-1 sm:col-start-auto sm:row-start-auto sm:text-right"
         >
-          <p
-            class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums"
-          >
+          <p class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums">
             {{ formattedAmount(props.amount) }}
           </p>
           <p

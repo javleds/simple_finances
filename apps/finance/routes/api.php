@@ -75,7 +75,7 @@ Route::prefix('auth')->group(function (): void {
     });
 });
 
-Route::middleware(['api.auth', 'api.legal'])->group(function (): void {
+Route::middleware(['api.auth', 'api.legal', 'money.contract'])->group(function (): void {
     Route::prefix('chat')->middleware('throttle:60,1')->group(function (): void {
         Route::match(['get', 'post'], 'threads', [App\Http\Controllers\Api\ChatController::class, 'threads'])->name('chat.threads');
         Route::delete('threads/{thread}', [App\Http\Controllers\Api\ChatController::class, 'delete'])->whereUuid('thread')->name('chat.delete');

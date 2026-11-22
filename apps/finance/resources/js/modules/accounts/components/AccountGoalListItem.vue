@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
 import { AppActionMenu, AppCard } from '@/modules/shared/components';
 
 type GoalStatus = 'on-track' | 'at-risk' | 'completed';
@@ -7,8 +8,8 @@ const props = defineProps<{
     itemId: string;
     title: string;
     ownerLabel: string;
-    achievedAmount: number;
-    targetAmount: number;
+    achievedAmount: string;
+    targetAmount: string;
     progress: number;
     status: GoalStatus;
     deadlineLabel: string;
@@ -19,12 +20,7 @@ const emit = defineEmits<{
     delete: [itemId: string];
 }>();
 
-const currencyFormatter = new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-});
+const currencyFormatter = { format: formatExactMoney };
 
 function accentStyle(status: GoalStatus): string {
     if (status === 'completed') {
@@ -50,7 +46,7 @@ function progressBarStyle(status: GoalStatus): string {
     return 'var(--app-color-primary)';
 }
 
-function formattedAmount(amount: number): string {
+function formattedAmount(amount: string): string {
     return currencyFormatter.format(amount);
 }
 
@@ -115,7 +111,9 @@ function handleDelete(): void {
                 </p>
             </div>
 
-            <div class="relative h-7 overflow-hidden rounded-(--app-radius-control) bg-(--app-color-surface-muted)">
+            <div
+                class="relative h-7 overflow-hidden rounded-(--app-radius-control) bg-(--app-color-surface-muted)"
+            >
                 <div
                     class="h-full rounded-(--app-radius-control)"
                     :style="{

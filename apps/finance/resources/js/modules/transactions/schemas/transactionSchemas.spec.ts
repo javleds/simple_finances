@@ -45,7 +45,7 @@ describe('transaction schemas', () => {
       categoryId: null,
       categoryName: null,
       concept: 'Compra mensual',
-      amount: 1200.5,
+      amount: '1200.50',
       type: 'expense',
       status: null,
       date: '2026-06-09',
@@ -59,8 +59,8 @@ describe('transaction schemas', () => {
       custodianUserId: null,
       custodianUserName: null,
       paymentSource: null,
-      currentUserPendingReimbursementAmount: 0,
-      currentUserReceivableReimbursementAmount: 0,
+      currentUserPendingReimbursementAmount: '0.00',
+      currentUserReceivableReimbursementAmount: '0.00',
       userPayments: {},
     });
   });
@@ -83,8 +83,8 @@ describe('transaction schemas', () => {
     });
 
     expect(mapTransactionApiToDomain(parsedTransaction)).toMatchObject({
-      currentUserPendingReimbursementAmount: 0,
-      currentUserReceivableReimbursementAmount: 400,
+      currentUserPendingReimbursementAmount: '0.00',
+      currentUserReceivableReimbursementAmount: '400.00',
     });
   });
 
@@ -101,7 +101,7 @@ describe('transaction schemas', () => {
           user: {
             id: '8',
           },
-          percentage: 40,
+          percentage: '40.00',
         },
       ],
     });
@@ -121,7 +121,7 @@ describe('transaction schemas', () => {
         type: 'income',
         status: 'completed',
         concept: 'Depósito',
-        amount: '500',
+        amount: '500.00',
         accountId: '20',
         paidByUserId: null,
         custodianUserId: '9',
@@ -138,7 +138,7 @@ describe('transaction schemas', () => {
         type: 'expense',
         status: 'completed',
         concept: 'Ahorro para viaje',
-        amount: '500',
+        amount: '500.00',
         accountId: '20',
         paidByUserId: '9',
         custodianUserId: null,
@@ -152,7 +152,13 @@ describe('transaction schemas', () => {
   });
 });
 
-it.each([true, false, null, undefined])('maps the read-only financial snapshot %s without inferring it', (snapshot) => {
-  const parsed = transactionApiSchema.parse({ ...baseTransactionPayload, uses_shared_account_rules: snapshot });
-  expect(mapTransactionApiToDomain(parsed).usesSharedAccountRules).toBe(snapshot ?? null);
-});
+it.each([true, false, null, undefined])(
+  'maps the read-only financial snapshot %s without inferring it',
+  (snapshot) => {
+    const parsed = transactionApiSchema.parse({
+      ...baseTransactionPayload,
+      uses_shared_account_rules: snapshot,
+    });
+    expect(mapTransactionApiToDomain(parsed).usesSharedAccountRules).toBe(snapshot ?? null);
+  },
+);

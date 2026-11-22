@@ -22,9 +22,9 @@ export type TransactionFacilityFilters = TransactionAttachmentFilters & {
 };
 
 export type TransactionFacilitySummary = {
-  incomeTotal: number;
-  outcomeTotal: number;
-  balance: number;
+  incomeTotal: string;
+  outcomeTotal: string;
+  balance: string;
 };
 
 export type TransactionFacilityListResult = PaginatedCollection<Transaction> & {
@@ -44,7 +44,7 @@ export type Transaction = {
   categoryName?: string | null;
   categoryId?: string | null;
   concept: string;
-  amount: number;
+  amount: string;
   type: TransactionType;
   status: TransactionStatus | null;
   date: string;
@@ -59,8 +59,8 @@ export type Transaction = {
   financialGoalId: string | null;
   financialGoalName: string | null;
   userPayments: Record<string, number>;
-  currentUserPendingReimbursementAmount: number;
-  currentUserReceivableReimbursementAmount: number;
+  currentUserPendingReimbursementAmount: string;
+  currentUserReceivableReimbursementAmount: string;
 };
 
 export type TransactionFormValues = {
@@ -86,7 +86,7 @@ export type TransactionWritePayload = {
   status: 'completed';
   categoryId?: string | null;
   concept: string;
-  amount: number;
+  amount: string;
   accountId: string;
   paidByUserId: string | null;
   custodianUserId: string | null;
@@ -102,8 +102,8 @@ export type TransactionSubmitOptions = {
 };
 
 export type TransactionMutationMeta = {
-  accountBalance: number | null;
-  previousAccountBalance: number | null;
+  accountBalance: string | null;
+  previousAccountBalance: string | null;
   custodyByUser: TransactionMemberAmount[] | null;
   settlementsByUser: TransactionMemberAmount[] | null;
   pendingReimbursements: TransactionPendingReimbursement[] | null;
@@ -114,7 +114,7 @@ export type TransactionMutationMeta = {
 export type TransactionMemberAmount = {
   userId: string;
   userName: string;
-  amount: number;
+  amount: string;
 };
 
 export type TransactionPendingReimbursement = {
@@ -122,7 +122,7 @@ export type TransactionPendingReimbursement = {
   fromUserName: string;
   toUserId: string;
   toUserName: string;
-  amount: number;
+  amount: string;
   actionType: 'user_to_user' | 'custody_to_user' | 'user_to_account';
   items: TransactionPendingReimbursementItem[];
 };
@@ -130,7 +130,7 @@ export type TransactionPendingReimbursement = {
 export type TransactionPendingReimbursementItem = {
   transactionId: string;
   concept: string;
-  amount: number;
+  amount: string;
   occurredAt: string | null;
 };
 
@@ -145,26 +145,26 @@ export type DeletedTransactionResult = {
 };
 
 export type AttachmentDraft = {
-    files: Array<{ file: File; uploadId: string; uploaded: boolean }>;
-    transactionId: string | null;
+  files: Array<{ file: File; uploadId: string; uploaded: boolean }>;
+  transactionId: string | null;
 };
 
 export type TransactionAttachment = {
-    id: string;
-    original_name: string;
-    mime_type: string;
-    size_bytes: number;
-    status: 'pending' | 'processing' | 'ready' | 'failed';
-    error_message: string | null;
-    can_manage: boolean;
-    can_retry: boolean;
-    created_at: string;
+  id: string;
+  original_name: string;
+  mime_type: string;
+  size_bytes: number;
+  status: 'pending' | 'processing' | 'ready' | 'failed';
+  error_message: string | null;
+  can_manage: boolean;
+  can_retry: boolean;
+  created_at: string;
 };
 
 export type AttachmentConfig = {
-    max_files: number;
-    max_file_bytes: Record<'image' | 'pdf' | 'xml' | 'zip', number>;
-    max_transaction_bytes: number;
-    accepted_extensions: string[];
-    poll_interval_ms: number;
+  max_files: number;
+  max_file_bytes: Record<'image' | 'pdf' | 'xml' | 'zip', number>;
+  max_transaction_bytes: number;
+  accepted_extensions: string[];
+  poll_interval_ms: number;
 };

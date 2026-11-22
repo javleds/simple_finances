@@ -22,7 +22,7 @@ function virtualIdentityAccount(): Account
 {
     $owner = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $owner->id]);
-    $account->users()->attach($owner->id, ['percentage' => 100]);
+    $account->users()->attach($owner->id, ['percentage' => '100.00']);
 
     return $account;
 }
@@ -74,16 +74,16 @@ it('rejects attaching or inviting a virtual identity into any account', function
 
     $this->postJson("/api/accounts/{$account->id}/users", [
         'user_id'    => $custodian->id,
-        'percentage' => 0,
+        'percentage' => '0.00',
     ])->assertNotFound();
     $this->postJson("/api/accounts/{$account->id}/invites", [
         'email'      => $custodian->email,
-        'percentage' => 0,
+        'percentage' => '0.00',
     ])->assertUnprocessable()->assertJsonValidationErrors('email');
     $this->postJson('/api/account-invites', [
         'account_id' => $account->id,
         'email'      => $custodian->email,
-        'percentage' => 0,
+        'percentage' => '0.00',
     ])->assertUnprocessable()->assertJsonValidationErrors('email');
 
     $invite = AccountInvite::factory()->createQuietly([
@@ -101,7 +101,7 @@ it('rejects attaching or inviting a virtual identity into any account', function
         account: $account,
         owner: $owner,
         email: $custodian->email,
-        percentage: 0,
+        percentage: '0.00',
     )))->toThrow(ValidationException::class);
 
     expect($custodian->accounts()->exists())->toBeFalse();

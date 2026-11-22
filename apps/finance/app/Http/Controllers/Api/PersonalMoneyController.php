@@ -10,6 +10,7 @@ use App\Http\Requests\Api\PersonalMoneySourceRequest;
 use App\Services\PersonalMoney\BuildPersonalMoneySummary;
 use App\Services\PersonalMoney\ResolvePersonalMoneySource;
 use App\Services\PersonalMoney\UpdatePersonalMoneySettings;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -37,7 +38,7 @@ class PersonalMoneyController extends ApiController
         $data = $request->validated();
         $updateSettings->execute($request->user()->id, new PersonalMoneySettingsDto(
             accountId: (int) $data['account_id'], startedAt: $data['started_at'] ?? null,
-            openingBalance: (float) $data['opening_balance'], enabled: (bool) $data['enabled'],
+            openingBalance: Decimal::normalize($data['opening_balance']), enabled: (bool) $data['enabled'],
             startMode: $data['start_mode'] ?? null, operationKey: $data['operation_key'] ?? null,
         ));
 

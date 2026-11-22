@@ -1,6 +1,6 @@
 # Aritmética monetaria exacta con Brick Money
 
-Estado: plan de implementación; no implementado. Fecha: 2026-11-22.
+Estado: implementación local completada; activación de datos existentes pendiente de auditoría de cada instalación. Fecha: 2026-11-22.
 
 ## Contexto
 
@@ -13,7 +13,7 @@ Decisiones confirmadas por el usuario:
 - No añadir multimoneda ni recalcular deudas históricas.
 - MySQL para operación financiera. SQLite queda para pruebas que no dependan de almacenamiento o aritmética monetaria SQL.
 
-El estudio se realizó sobre código, migraciones, documentación y configuración local. No se inspeccionaron datos ni esquema efectivos de producción, ni se ejecutaron pruebas de implementación. Los tamaños de tablas, valores máximos reales y posibles divergencias del esquema deben medirse en una copia local antes de migrar.
+El estudio inicial se realizó sobre código, migraciones, documentación y configuración local. No se inspeccionaron datos ni esquema efectivos de producción. La implementación y sus pruebas locales se registran al final del documento. Los tamaños de tablas, valores máximos reales y posibles divergencias del esquema deben medirse en una copia local antes de migrar.
 
 Referencias funcionales: `docs/architecture/boundaries.md`, `docs/shared-account-model.md`, `docs/domain/shared-accounts.md`, `docs/domain/personal-money.md` y `docs/operations/deployment.md`.
 
@@ -232,7 +232,7 @@ Comparar por cuenta y usuario: balance, custodia, settlements, reembolsos y sus 
 
 ## Estrategia de validación
 
-Los comandos siguientes corresponden a la implementación futura; no se ejecutaron para este documento.
+Los comandos siguientes describen la estrategia de verificación; las configuraciones efectivas y los resultados locales se registran en la guía operativa y al final de este documento.
 
 | Directorio | Comprobación |
 | --- | --- |
@@ -305,7 +305,7 @@ No quedan abiertas las decisiones de moneda, escala o motor operativo: el usuari
 
 Pendientes verificables antes de activar el cambio:
 
-- Versión estable de Brick y resolución compatible de locks; versión/tipos de big.js.
+- Dependencias resueltas en la implementación: Brick Money 0.10.3, Brick Math 0.14.8 y big.js 7.0.1 con sus tipos.
 - Esquema efectivo, volumen y valores legacy: se obtienen de copia local, no se infieren del repositorio.
 - Existencia de consumidores externos del contrato numérico y jobs antiguos que deban drenarse.
 - Resultado de casos de sobreasignación y discrepancias históricas. Si exigen cambiar reglas de negocio, presentar casos concretos antes de corregirlos.
@@ -344,3 +344,26 @@ Antes de reabrir escrituras, la reversión puede restaurar esquema/código/datos
 ### Criterio de finalización
 
 Se termina cuando entradas y respuestas monetarias son cadenas canónicas, cálculos/persistencia son exactos, consumidores están alineados, reglas y privacidad se conservan, reintentos históricos siguen siendo seguros, migración y reversión están ensayadas y las pruebas MySQL/frontend/MCP pertinentes pasan. Una búsqueda sin resultados de la palabra float no sustituye esta evidencia.
+
+
+## Registro de implementación local
+
+Se implementaron las etapas de código y pruebas con Brick Money 0.10.3, Brick Math 0.14.8 y big.js. Los atributos Eloquent, DTOs de transporte y contratos conservan cadenas; el adaptador `Decimal` usa Money para operaciones monetarias y BigDecimal/BigRational para proporciones. No se introdujo una clase numérica propia ni multimoneda.
+
+La activación se realiza mediante `money:storage`: auditoría por lotes, aprobación del checksum, carga/verificación de sombras y corte conservando columnas legacy. `--check` bloquea PostDeploy mientras quede almacenamiento aproximado. Se ensayó con datos sintéticos MySQL, incluyendo la pérdida de precisión de CAST(FLOAT AS CHAR), valores fuera de rango, cambios posteriores a aprobación y reanudación. No se inspeccionaron ni migraron datos reales.
+
+La revisión MySQL requirió ampliar el campo ledger.type de 32 a 64 para admitir valores del enum ya existentes. También se protegieron los bloqueos/refresco de snapshots y movimientos con objetos desactualizados; el conflicto devuelve 409 sin escribir. Los recálculos contables son atómicos y la entrega de notificaciones queda después del commit.
+
+El plan anterior se conserva como especificación de decisiones y criterios. La guía operativa vigente contiene los comandos efectivos y la limitación del rollback después de nuevas escrituras. La conciliación de una copia real y la revisión de consumidores externos siguen siendo requisitos de activación, no una tarea ejecutada desde este checkout.
+
+### Validación ejecutada
+
+- Finance sobre MySQL 8.4: 512 pruebas aprobadas, 2,643 aserciones y una omisión condicionada por Imagick.
+- Paquete compartido sobre MySQL: 36 pruebas y 280 aserciones; perfil SQLite unitario: 14 pruebas y 189 aserciones.
+- MCP sobre MySQL, incluyendo credencial de solo lectura: 15 pruebas y 70 aserciones.
+- SPA: 77 archivos y 342 pruebas aprobadas; type-check, build y ESLint de archivos modificados aprobados.
+- Transporte/contexto del agente: 20 pruebas aprobadas; Ruff y mypy aprobados.
+- Perfil SQLite unitario de Finance: 54 pruebas y 133 aserciones. Excluye expresamente la prueba de notificación posterior al commit, que requiere MySQL.
+- Oxlint global conserva 96 errores preexistentes, comparados con HEAD; se corrigieron los tres errores introducidos por este cambio. No se deshabilitaron reglas.
+
+Estas verificaciones usan datos sintéticos y no sustituyen la conciliación ni la medición con el volumen real antes de activar producción.

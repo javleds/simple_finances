@@ -1,6 +1,5 @@
+import { percentageSchema } from '@/modules/shared/lib/money';
 import { z } from 'zod';
-
-import { parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 
 export type AccountInviteStatus = 'pending' | 'accepted' | 'declined';
 export type AccountInviteListFilters = {
@@ -47,8 +46,7 @@ export const accountInviteFormSchema = z.object({
     .string()
     .trim()
     .refine((value) => {
-      const percentage = parseNullableNumber(value);
-      return percentage === null || (percentage >= 0 && percentage <= 100);
+      return value === '' || percentageSchema.safeParse(value).success;
     }, 'El porcentaje debe estar entre 0 y 100.'),
   status: z.union([z.literal('pending'), z.literal('accepted'), z.literal('declined')]),
 });
@@ -60,7 +58,7 @@ export const accountInviteApiSchema = z.object({
     .union([z.string(), z.number(), z.null(), z.undefined()])
     .transform((value) => (value === null || value === undefined ? null : String(value))),
   email: z.string(),
-  percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  percentage: percentageSchema.default(0),
   status: z.unknown().transform(parseInviteStatus),
   created_at: z
     .string()
@@ -119,7 +117,7 @@ export function mapAccountInviteFormToWritePayload(
   return {
     accountId,
     email: values.email.trim(),
-    percentage: parseNullableNumber(values.percentage) ?? 0,
+    percentage: percentageSchema.parse(values.percentage || '0.00'),
     status: values.status,
   };
 }

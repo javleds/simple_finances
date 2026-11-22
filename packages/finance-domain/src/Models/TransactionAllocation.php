@@ -34,8 +34,8 @@ class TransactionAllocation extends Model
         return [
             'transaction_id' => 'integer',
             'user_id'        => 'integer',
-            'percentage'     => 'float',
-            'amount'         => 'float',
+            'percentage'     => 'decimal:2',
+            'amount'         => 'decimal:2',
         ];
     }
 }

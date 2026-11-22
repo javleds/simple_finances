@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Accounts;
 
-use function abs;
 use function app;
 
 use App\Services\PersonalMoney\CapturePersonalMoneyReimbursements;
@@ -21,13 +20,11 @@ use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\Transaction;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-
-use function min;
-use function round;
 
 class RegisterAccountMemberTransfer
 {
@@ -40,7 +37,7 @@ class RegisterAccountMemberTransfer
 
     public function execute(Account $account, array $payload): array
     {
-        $amount = round((float) $payload['amount'], 2);
+        $amount = Decimal::normalize($payload['amount']);
         $occurredAt = isset($payload['occurred_at'])
             ? Carbon::parse($payload['occurred_at'])
             : Carbon::now();
@@ -96,7 +93,7 @@ class RegisterAccountMemberTransfer
                     'user_id'         => (int) $payload['from_user_id'],
                     'related_user_id' => (int) $payload['to_user_id'],
                     'type'            => AccountMemberLedgerEntryType::CustodyReimbursementPayment,
-                    'amount'          => $amount * -1,
+                    'amount'          => Decimal::multiply($amount, -1),
                     'description'     => $description,
                     'occurred_at'     => $occurredAt,
                 ]);
@@ -116,16 +113,16 @@ class RegisterAccountMemberTransfer
             return $entries;
         });
     }
-    private const ROUNDING_SETTLEMENT_TOLERANCE = 0.10;
+    private const ROUNDING_SETTLEMENT_TOLERANCE = '0.1';
 
-    private function validateVirtualAccountTransfer(Account $account, array $payload, float $amount, string $actionType): void
+    private function validateVirtualAccountTransfer(Account $account, array $payload, string $amount, string $actionType): void
     {
         $pending = app(BuildAccountMemberSummary::class)->execute($account)['pending_reimbursements'];
-        $available = collect($pending)->filter(fn (array $item): bool => (int) $item['from_user_id'] === (int) $payload['from_user_id']
+        $available = Decimal::sum(collect($pending)->filter(fn (array $item): bool => (int) $item['from_user_id'] === (int) $payload['from_user_id']
             && (int) $item['to_user_id'] === (int) $payload['to_user_id']
-            && ($item['action_type'] ?? 'user_to_user') === $actionType)->sum('amount');
+            && ($item['action_type'] ?? 'user_to_user') === $actionType), 'amount');
 
-        if ((int) round($amount * 100) > (int) round($available * 100)) {
+        if (Decimal::compare($amount, $available) > 0) {
             throw ValidationException::withMessages(['amount' => 'El importe supera el reembolso pendiente.']);
         }
 
@@ -134,12 +131,12 @@ class RegisterAccountMemberTransfer
         }
 
         $custody = app(BuildAccountCustodySummary::class)->execute($account)->firstWhere('user_id', (int) $payload['from_user_id']);
-        if ((int) round($amount * 100) > (int) round(($custody['amount'] ?? 0) * 100)) {
+        if (Decimal::compare($amount, $custody['amount'] ?? '0.00') > 0) {
             throw ValidationException::withMessages(['amount' => 'La custodia disponible es insuficiente.']);
         }
     }
 
-    private function virtualCustodySettlementEntries(Account $account, array $payload, float $amount, Carbon $occurredAt, string $description): ?array
+    private function virtualCustodySettlementEntries(Account $account, array $payload, string $amount, Carbon $occurredAt, string $description): ?array
     {
         if (($payload['action_type'] ?? '') !== 'custody_to_user') {
             return null;
@@ -152,7 +149,7 @@ class RegisterAccountMemberTransfer
             ->where('user_id', $fromId)->where('related_user_id', $toId)
             ->whereIn('type', [AccountMemberLedgerEntryType::VirtualCustodyReimbursementDue, AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer])
             ->whereNotNull('transaction_id')->groupBy('transaction_id')
-            ->havingRaw('sum(amount) < -0.001')->orderBy('transaction_id')->get();
+            ->havingRaw('sum(amount) < 0')->orderBy('transaction_id')->get();
 
         if ($items->isEmpty()) {
             return null;
@@ -161,8 +158,8 @@ class RegisterAccountMemberTransfer
         $entries = [];
         $remaining = $amount;
         foreach ($items as $item) {
-            $paid = round(min($remaining, (float) $item->open_amount), 2);
-            if ($paid <= 0) {
+            $paid = Decimal::min($remaining, Decimal::normalize($item->open_amount));
+            if (Decimal::compare($paid, 0) <= 0) {
                 break;
             }
             $entries[] = $account->memberLedgerEntries()->create([
@@ -174,13 +171,13 @@ class RegisterAccountMemberTransfer
                 $entries[] = $account->memberLedgerEntries()->create([
                     'user_id' => $toId, 'related_user_id' => $fromId, 'transaction_id' => $item->transaction_id,
                     'type'    => AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer,
-                    'amount'  => -$paid, 'description' => $description, 'occurred_at' => $occurredAt,
+                    'amount'  => Decimal::negate($paid), 'description' => $description, 'occurred_at' => $occurredAt,
                 ]);
             }
-            $remaining = round($remaining - $paid, 2);
+            $remaining = Decimal::subtract($remaining, $paid);
         }
 
-        if ($remaining > 0.0) {
+        if (Decimal::compare($remaining, '0.00') > 0) {
             $legacyEntries = $fromId === $toId
                 ? $this->createSelfSettlementEntries($account, $fromId, $remaining, $description, $occurredAt)
                 : $this->createSettlementEntries(
@@ -192,7 +189,7 @@ class RegisterAccountMemberTransfer
         $entries[] = $account->memberLedgerEntries()->create([
             'user_id' => $fromId, 'related_user_id' => $toId,
             'type'    => AccountMemberLedgerEntryType::CustodyReimbursementPayment,
-            'amount'  => -$amount, 'description' => $description, 'occurred_at' => $occurredAt,
+            'amount'  => Decimal::negate($amount), 'description' => $description, 'occurred_at' => $occurredAt,
         ]);
 
         return $entries;
@@ -205,7 +202,7 @@ class RegisterAccountMemberTransfer
         Account $account,
         int $fromUserId,
         int $toUserId,
-        float $amount,
+        string $amount,
         string $description,
         Carbon $occurredAt,
     ): array {
@@ -214,7 +211,7 @@ class RegisterAccountMemberTransfer
         $income->status = TransactionStatus::Completed;
         $income->concept = $description;
         $income->amount = $amount;
-        $income->percentage = 100.0;
+        $income->percentage = '100.00';
         $income->account_id = $account->id;
         $income->custodian_user_id = $toUserId;
         $income->scheduled_at = $occurredAt;
@@ -229,16 +226,16 @@ class RegisterAccountMemberTransfer
             AccountMemberLedgerEntryType::AccountDeficitShare,
             AccountMemberLedgerEntryType::AccountDeficitPayment,
         ]);
-        $runningTotal = 0.0;
+        $runningTotal = '0.00';
 
         foreach ($items as $item) {
-            if ($runningTotal >= $amount) {
+            if (Decimal::compare($runningTotal, $amount) >= 0) {
                 break;
             }
 
-            $itemAmount = round(min((float) $item->open_amount, $amount - $runningTotal), 2);
+            $itemAmount = Decimal::min(Decimal::normalize($item->open_amount), Decimal::subtract($amount, $runningTotal));
 
-            if ($itemAmount <= 0.0) {
+            if (Decimal::compare($itemAmount, '0.00') <= 0) {
                 continue;
             }
 
@@ -252,7 +249,7 @@ class RegisterAccountMemberTransfer
                 'occurred_at'     => $occurredAt,
             ]);
 
-            $runningTotal = round($runningTotal + $itemAmount, 2);
+            $runningTotal = Decimal::add($runningTotal, $itemAmount);
         }
 
         return array_values(array_filter($entries));
@@ -264,7 +261,7 @@ class RegisterAccountMemberTransfer
     private function createSelfSettlementEntries(
         Account $account,
         int $userId,
-        float $amount,
+        string $amount,
         string $description,
         Carbon $occurredAt,
     ): array {
@@ -273,16 +270,16 @@ class RegisterAccountMemberTransfer
             AccountMemberLedgerEntryType::SettlementTransfer,
         ]);
         $entries = [];
-        $runningTotal = 0.0;
+        $runningTotal = '0.00';
 
         foreach ($items as $item) {
-            if ($runningTotal >= $amount) {
+            if (Decimal::compare($runningTotal, $amount) >= 0) {
                 break;
             }
 
-            $itemAmount = round(min((float) $item->open_amount, $amount - $runningTotal), 2);
+            $itemAmount = Decimal::min(Decimal::normalize($item->open_amount), Decimal::subtract($amount, $runningTotal));
 
-            if ($itemAmount <= 0.0) {
+            if (Decimal::compare($itemAmount, '0.00') <= 0) {
                 continue;
             }
 
@@ -295,7 +292,7 @@ class RegisterAccountMemberTransfer
                 $occurredAt,
                 (int) $item->transaction_id,
             );
-            $runningTotal = round($runningTotal + $itemAmount, 2);
+            $runningTotal = Decimal::add($runningTotal, $itemAmount);
         }
 
         return $entries;
@@ -308,7 +305,7 @@ class RegisterAccountMemberTransfer
         Account $account,
         int $fromUserId,
         int $toUserId,
-        float $amount,
+        string $amount,
         string $description,
         Carbon $occurredAt,
         ?array $types = null,
@@ -318,27 +315,27 @@ class RegisterAccountMemberTransfer
         if ($items->isEmpty()) {
             return [
                 $this->createSettlementEntry($account, $fromUserId, $toUserId, $amount, $description, $occurredAt),
-                $this->createSettlementEntry($account, $toUserId, $fromUserId, $amount * -1, $description, $occurredAt),
+                $this->createSettlementEntry($account, $toUserId, $fromUserId, Decimal::multiply($amount, -1), $description, $occurredAt),
             ];
         }
 
         $entries = [];
-        $runningTotal = 0.0;
-        $transactionDebtTotal = round((float) $items->sum('open_amount'), 2);
+        $runningTotal = '0.00';
+        $transactionDebtTotal = Decimal::sum($items, 'open_amount');
         $amountToAllocate = $this->shouldCloseAllTransactionDebts($amount, $transactionDebtTotal)
             ? $transactionDebtTotal
             : $amount;
 
         foreach ($items as $item) {
-            $remaining = round($amountToAllocate - $runningTotal, 2);
+            $remaining = Decimal::subtract($amountToAllocate, $runningTotal);
 
-            if ($remaining <= 0.0) {
+            if (Decimal::compare($remaining, '0.00') <= 0) {
                 break;
             }
 
-            $itemAmount = round(min((float) $item->open_amount, $remaining), 2);
+            $itemAmount = Decimal::min(Decimal::normalize($item->open_amount), $remaining);
 
-            if ($itemAmount <= 0.0) {
+            if (Decimal::compare($itemAmount, '0.00') <= 0) {
                 continue;
             }
 
@@ -355,20 +352,20 @@ class RegisterAccountMemberTransfer
                 $account,
                 $toUserId,
                 $fromUserId,
-                $itemAmount * -1,
+                Decimal::multiply($itemAmount, -1),
                 $description,
                 $occurredAt,
                 (int) $item->transaction_id,
             );
 
-            $runningTotal = round($runningTotal + $itemAmount, 2);
+            $runningTotal = Decimal::add($runningTotal, $itemAmount);
         }
 
-        $unallocatedAmount = round($amount - $runningTotal, 2);
+        $unallocatedAmount = Decimal::subtract($amount, $runningTotal);
 
-        if (abs($unallocatedAmount) > 0.001) {
+        if (Decimal::compare(Decimal::abs($unallocatedAmount), '0.00') > 0) {
             $entries[] = $this->createSettlementEntry($account, $fromUserId, $toUserId, $unallocatedAmount, $description, $occurredAt);
-            $entries[] = $this->createSettlementEntry($account, $toUserId, $fromUserId, $unallocatedAmount * -1, $description, $occurredAt);
+            $entries[] = $this->createSettlementEntry($account, $toUserId, $fromUserId, Decimal::multiply($unallocatedAmount, -1), $description, $occurredAt);
         }
 
         return $entries;
@@ -392,25 +389,25 @@ class RegisterAccountMemberTransfer
                 AccountMemberLedgerEntryType::SettlementCorrection,
             ])
             ->groupBy('transaction_id')
-            ->havingRaw('sum(amount) < -0.001')
+            ->havingRaw('sum(amount) < 0')
             ->orderByDesc('transaction_id')
             ->get();
     }
 
-    private function shouldCloseAllTransactionDebts(float $amount, float $transactionDebtTotal): bool
+    private function shouldCloseAllTransactionDebts(string $amount, string $transactionDebtTotal): bool
     {
-        if ($transactionDebtTotal <= 0.0) {
+        if (Decimal::compare($transactionDebtTotal, '0.00') <= 0) {
             return false;
         }
 
-        return abs(round($transactionDebtTotal - $amount, 2)) <= self::ROUNDING_SETTLEMENT_TOLERANCE;
+        return Decimal::compare(Decimal::abs(Decimal::subtract($transactionDebtTotal, $amount)), self::ROUNDING_SETTLEMENT_TOLERANCE) <= 0;
     }
 
     private function createSettlementEntry(
         Account $account,
         int $userId,
         int $relatedUserId,
-        float $amount,
+        string $amount,
         string $description,
         Carbon $occurredAt,
         ?int $transactionId = null,
@@ -435,29 +432,29 @@ class RegisterAccountMemberTransfer
         string $description,
         Carbon $occurredAt,
     ): void {
-        $remainingDeficit = round(abs(min((float) $account->fresh()->balance, 0.0)), 2);
+        $remainingDeficit = Decimal::abs(Decimal::min(Decimal::normalize($account->fresh()->balance), '0.00'));
 
-        if ($remainingDeficit <= 0.0) {
+        if (Decimal::compare($remainingDeficit, '0.00') <= 0) {
             return;
         }
 
-        $createdTotal = 0.0;
+        $createdTotal = '0.00';
 
         foreach ($entries as $entry) {
-            if ($remainingDeficit <= 0.0) {
+            if (Decimal::compare($remainingDeficit, '0.00') <= 0) {
                 break;
             }
 
             if (AccountMemberLedgerEntryType::SettlementTransfer !== $entry->type
-                || (float) $entry->amount <= 0.0
+                || Decimal::compare(Decimal::normalize($entry->amount), '0.00') <= 0
                 || null === $entry->transaction_id
             ) {
                 continue;
             }
 
-            $incomeAmount = round(min((float) $entry->amount, $remainingDeficit), 2);
+            $incomeAmount = Decimal::min(Decimal::normalize($entry->amount), $remainingDeficit);
 
-            if ($incomeAmount <= 0.0) {
+            if (Decimal::compare($incomeAmount, '0.00') <= 0) {
                 continue;
             }
 
@@ -473,7 +470,7 @@ class RegisterAccountMemberTransfer
             $income->status = TransactionStatus::Completed;
             $income->concept = $description . ': ' . $parentTransaction->concept;
             $income->amount = $incomeAmount;
-            $income->percentage = 100.0;
+            $income->percentage = '100.00';
             $income->account_id = $account->id;
             $income->user_id = $entry->user_id;
             $income->paid_by_user_id = null;
@@ -484,11 +481,11 @@ class RegisterAccountMemberTransfer
             $income->legacy_migrated_at = Carbon::now();
             $income->save();
 
-            $createdTotal = round($createdTotal + $incomeAmount, 2);
-            $remainingDeficit = round($remainingDeficit - $incomeAmount, 2);
+            $createdTotal = Decimal::add($createdTotal, $incomeAmount);
+            $remainingDeficit = Decimal::subtract($remainingDeficit, $incomeAmount);
         }
 
-        if ($createdTotal > 0.0) {
+        if (Decimal::compare($createdTotal, '0.00') > 0) {
             $account->newQuery()
                 ->whereKey($account->id)
                 ->increment('balance', $createdTotal);

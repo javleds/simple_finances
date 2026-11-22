@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
 import Message from 'primevue/message';
 import { ArrowPathIcon } from '@heroicons/vue/24/outline';
 import { computed } from 'vue';
@@ -29,14 +30,9 @@ const emit = defineEmits<{
     resetPeriod: [];
 }>();
 
-const currencyFormatter = new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-});
+const currencyFormatter = { format: formatExactMoney };
 
-function formatCurrency(value: number): string {
+function formatCurrency(value: string): string {
     return currencyFormatter.format(value);
 }
 
@@ -105,7 +101,7 @@ const transactionsRoute = computed(() => ({
                     <p
                         class="text-[2rem] leading-[1.2] font-semibold wrap-anywhere text-(--app-color-text) tabular-nums"
                     >
-                        {{ formatCurrency(props.summary?.balance ?? 0) }}
+                        {{ formatCurrency(props.summary?.balance ?? '0.00') }}
                     </p>
                 </div>
                 <dl class="space-y-3">
@@ -114,7 +110,7 @@ const transactionsRoute = computed(() => ({
                         <dd
                             class="text-xl font-semibold wrap-anywhere text-(--app-color-success) tabular-nums"
                         >
-                            {{ formatCurrency(props.summary?.incomeTotal ?? 0) }}
+                            {{ formatCurrency(props.summary?.incomeTotal ?? '0.00') }}
                         </dd>
                     </div>
                     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -122,7 +118,7 @@ const transactionsRoute = computed(() => ({
                         <dd
                             class="text-xl font-semibold wrap-anywhere text-(--app-color-danger) tabular-nums"
                         >
-                            {{ formatCurrency(props.summary?.outcomeTotal ?? 0) }}
+                            {{ formatCurrency(props.summary?.outcomeTotal ?? '0.00') }}
                         </dd>
                     </div>
                 </dl>

@@ -71,9 +71,25 @@ class FinancialMcpTest extends TestCase
         }
     }
 
+    public function testMoneyStringsSurviveTheMcpTransport(): void
+    {
+        if (DB::getDriverName() !== 'mysql') {
+            self::markTestSkipped('Exact persisted decimal transport requires MySQL.');
+        }
+        DB::table('accounts')->where('id', 1)->update(['balance' => '90071992547409.91']);
+        $this->tool('get_account_balance', ['account_id' => 1])
+            ->assertOk()->assertJsonPath('result.structuredContent.data.balance', '90071992547409.91');
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
+        if (DB::getDriverName() === 'mysql') {
+            if (! str_ends_with(DB::getDatabaseName(), '_test')) {
+                throw new \RuntimeException('MCP fixtures require a disposable *_test database.');
+            }
+            Schema::dropAllTables();
+        }
         config(['mcp_service.token' => str_repeat('s', 32), 'mcp_service.terms_hash' => 'terms', 'mcp_service.privacy_hash' => 'privacy']);
         Schema::create('users', function (Blueprint $table): void {
             $table->id();
@@ -86,7 +102,7 @@ class FinancialMcpTest extends TestCase
         Schema::create('accounts', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
-            $table->decimal('balance');
+            $table->decimal('balance', 19, 2);
             $table->boolean('virtual')->default(false);
             $table->boolean('credit_card')->default(false);
             $table->softDeletes();

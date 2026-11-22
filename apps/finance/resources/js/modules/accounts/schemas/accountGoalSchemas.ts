@@ -1,3 +1,4 @@
+import { moneySchema, parseMoney, compareMoney, money } from '@/modules/shared/lib/money';
 import { z } from 'zod';
 
 import { parseEntityId, parseNullableNumber } from '@/modules/shared/lib/apiParsing';
@@ -6,8 +7,8 @@ export type AccountGoal = {
   id: string;
   accountId: string;
   name: string;
-  amount: number;
-  achievedAmount: number;
+  amount: string;
+  achievedAmount: string;
   progress: number;
   deadline: string | null;
   status: 'in progress' | 'completed';
@@ -28,7 +29,7 @@ export type AccountGoalFormValues = {
 export type AccountGoalWritePayload = {
   accountId: string;
   name: string;
-  amount: number;
+  amount: string;
   deadline: string | null;
   status: 'in progress' | 'completed';
 };
@@ -40,8 +41,8 @@ export const accountGoalFormSchema = z.object({
     .trim()
     .min(1, 'La cantidad objetivo es obligatoria.')
     .refine((value) => {
-      const amount = parseNullableNumber(value);
-      return amount !== null && amount >= 0;
+      const amount = parseMoney(value);
+      return amount !== null && compareMoney(amount, '0') >= 0;
     }, 'La cantidad objetivo debe ser mayor o igual a 0.'),
   deadline: z.string().trim(),
   status: z.union([z.literal('in progress'), z.literal('completed')]),
@@ -63,11 +64,8 @@ export const accountGoalApiSchema = z.object({
     .optional()
     .nullable(),
   name: z.string(),
-  amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-  achieved_amount: z
-    .unknown()
-    .optional()
-    .transform((value) => parseNullableNumber(value) ?? 0),
+  amount: moneySchema,
+  achieved_amount: moneySchema.default('0.00'),
   progress: z
     .unknown()
     .optional()
@@ -113,7 +111,7 @@ export function mapAccountGoalFormToWritePayload(
   return {
     accountId,
     name: values.name.trim(),
-    amount: parseNullableNumber(values.amount) ?? 0,
+    amount: money(values.amount),
     deadline: values.deadline.trim() || null,
     status: values.status,
   };

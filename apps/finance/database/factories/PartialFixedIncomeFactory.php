@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use FinSi\FinanceDomain\Models\FixedIncome;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,9 +23,9 @@ class PartialFixedIncomeFactory extends Factory
     {
         return [
             'fixed_income_id' => FixedIncome::factory(),
-            'name' => $this->faker->words(3, true),
-            'amount' => $this->faker->randomFloat(2, 1, 1000),
-            'user_id' => User::factory(),
+            'name'            => $this->faker->words(3, true),
+            'amount'          => Decimal::fromMinor($this->faker->numberBetween(100, 100000)),
+            'user_id'         => User::factory(),
         ];
     }
 }

@@ -44,7 +44,7 @@ describe('transactions repository schemas', () => {
                         {
                             user_id: 8,
                             user_name: 'Notradame',
-                            amount: '9,500.00',
+                            amount: '9500.00',
                         },
                     ],
                     pending_reimbursements: [
@@ -75,14 +75,14 @@ describe('transactions repository schemas', () => {
                 {
                     userId: '7',
                     userName: 'Eliot',
-                    amount: 250,
+                    amount: '250.00',
                 },
             ],
             settlementsByUser: [
                 {
                     userId: '8',
                     userName: 'Notradame',
-                    amount: 9500,
+                    amount: '9500.00',
                 },
             ],
             pendingReimbursements: [
@@ -92,12 +92,12 @@ describe('transactions repository schemas', () => {
                     fromUserName: 'Eliot',
                     toUserId: '8',
                     toUserName: 'Notradame',
-                    amount: 125.5,
+                    amount: '125.50',
                     items: [
                         {
                             transactionId: '99',
                             concept: 'Consulta',
-                            amount: 125.5,
+                            amount: '125.50',
                             occurredAt: '2026-07-02',
                         },
                     ],
@@ -112,12 +112,12 @@ describe('transactions repository schemas', () => {
                 data: [],
                 meta: {
                     account: {
-                        balance: '10,000.00',
+                        balance: '10000.00',
                     },
                 },
             }),
         ).toEqual({
-            accountBalance: 10000,
+            accountBalance: '10000.00',
             ledgerRows: null,
             previousAccountBalance: null,
             subtransactionIds: [],
@@ -155,7 +155,7 @@ describe('transactions repository schemas', () => {
             ],
             meta: {
                 account: {
-                    balance: '$2,400.00',
+                    balance: '2400.00',
                 },
             },
         });
@@ -170,7 +170,7 @@ describe('transactions repository schemas', () => {
                 categoryId: null,
                 categoryName: null,
                 concept: 'Compra mensual',
-                amount: 1200.5,
+                amount: '1200.50',
                 type: 'expense',
                 status: null,
                 date: '2026-06-09',
@@ -184,8 +184,8 @@ describe('transactions repository schemas', () => {
                 custodianUserId: null,
                 custodianUserName: null,
                 paymentSource: null,
-                currentUserPendingReimbursementAmount: 0,
-                currentUserReceivableReimbursementAmount: 0,
+                currentUserPendingReimbursementAmount: '0.00',
+                currentUserReceivableReimbursementAmount: '0.00',
                 userPayments: { '7': 60, '8': 40 },
             },
             transactions: [
@@ -198,7 +198,7 @@ describe('transactions repository schemas', () => {
                     categoryId: null,
                     categoryName: null,
                     concept: 'Compra mensual',
-                    amount: 720.3,
+                    amount: '720.30',
                     type: 'income',
                     status: 'completed',
                     date: '2026-06-09',
@@ -212,8 +212,8 @@ describe('transactions repository schemas', () => {
                     custodianUserId: null,
                     custodianUserName: null,
                     paymentSource: null,
-                    currentUserPendingReimbursementAmount: 0,
-                    currentUserReceivableReimbursementAmount: 0,
+                    currentUserPendingReimbursementAmount: '0.00',
+                    currentUserReceivableReimbursementAmount: '0.00',
                     userPayments: {},
                 },
                 {
@@ -225,7 +225,7 @@ describe('transactions repository schemas', () => {
                     categoryId: null,
                     categoryName: null,
                     concept: 'Compra mensual',
-                    amount: 1200.5,
+                    amount: '1200.50',
                     type: 'expense',
                     status: null,
                     date: '2026-06-09',
@@ -239,8 +239,8 @@ describe('transactions repository schemas', () => {
                     custodianUserId: null,
                     custodianUserName: null,
                     paymentSource: null,
-                    currentUserPendingReimbursementAmount: 0,
-                    currentUserReceivableReimbursementAmount: 0,
+                    currentUserPendingReimbursementAmount: '0.00',
+                    currentUserReceivableReimbursementAmount: '0.00',
                     userPayments: {
                         '7': 60,
                         '8': 40,
@@ -248,7 +248,7 @@ describe('transactions repository schemas', () => {
                 },
             ],
             meta: {
-                accountBalance: 2400,
+                accountBalance: '2400.00',
                 ledgerRows: null,
                 previousAccountBalance: null,
                 subtransactionIds: [],

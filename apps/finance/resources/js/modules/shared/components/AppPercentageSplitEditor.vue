@@ -1,4 +1,17 @@
 <script setup lang="ts">
+import {
+    percentageSchema,
+    percentageToBasisPoints,
+    decimal,
+    parseMoney,
+    addMoney,
+    subtractMoney,
+    minMoney,
+    maxMoney,
+    compareMoney,
+    moneyToChartNumber,
+    formatMoney as formatExactMoney,
+} from '@/modules/shared/lib/money';
 import { computed, onBeforeUnmount, ref, watch, useId } from 'vue';
 
 import Button from 'primevue/button';
@@ -23,12 +36,12 @@ const props = withDefaults(
         modelValue: Record<string, number>;
         step?: number;
         monetary?: {
-            total: number;
-            amount: number;
-            maximum: number;
+            total: string;
+            amount: string;
+            maximum: string;
             source: string;
             recipient: string;
-            sourceRemaining?: number;
+            sourceRemaining?: string;
         };
         disabled?: boolean;
     }>(),
@@ -39,42 +52,49 @@ const props = withDefaults(
 
 const emit = defineEmits<{
     'update:modelValue': [value: Record<string, number>];
-    'update:amount': [value: number];
+    'update:amount': [value: string];
 }>();
 
 const amountInputId = useId();
 const amountDraft = ref('0.00');
-const monetaryPercentage = computed(() =>
-    props.monetary?.total ? (props.monetary.amount / props.monetary.total) * 100 : 0,
+const amountInputError = computed(() =>
+    parseMoney(amountDraft.value) === null
+        ? 'Introduce un importe con hasta dos decimales.'
+        : undefined,
 );
+const monetaryPercentage = computed(() => {
+    if (!props.monetary || compareMoney(props.monetary.total, '0') <= 0) return 0;
+    return moneyToChartNumber(
+        decimal(props.monetary.amount).div(props.monetary.total).times('100').toFixed(2),
+    );
+});
 watch(
     () => props.monetary?.amount,
     (amount) => {
-        amountDraft.value = (amount ?? 0).toFixed(2);
+        amountDraft.value = amount ?? '0.00';
     },
     { immediate: true },
 );
 
-function updateAmount(value: number): void {
+function updateAmount(value: string): void {
     if (!props.monetary || props.disabled) return;
-    const cents = Math.max(
-        0,
-        Math.min(Math.round(props.monetary.maximum * 100), Math.round(value * 100)),
-    );
-    emit('update:amount', (Number.isFinite(cents) ? cents : 0) / 100);
-    amountDraft.value = ((Number.isFinite(cents) ? cents : 0) / 100).toFixed(2);
+    const parsed = parseMoney(value);
+    if (parsed === null) return;
+    const amount = maxMoney('0.00', minMoney(props.monetary.maximum, parsed));
+    emit('update:amount', amount);
+    amountDraft.value = amount;
 }
 
 function handleAmountKey(event: KeyboardEvent): void {
     if (!props.monetary || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
-    if (event.key === 'Home') return updateAmount(0);
+    if (event.key === 'Home') return updateAmount('0.00');
     if (event.key === 'End') return updateAmount(props.monetary.maximum);
-    updateAmount(props.monetary.amount + (event.key === 'ArrowRight' ? 0.01 : -0.01));
+    updateAmount(addMoney(props.monetary.amount, event.key === 'ArrowRight' ? '0.01' : '-0.01'));
 }
 
-function formatMoney(amount: number): string {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
+function formatMoney(amount: string): string {
+    return formatExactMoney(amount);
 }
 
 const trackRef = ref<HTMLElement | null>(null);
@@ -268,7 +288,7 @@ function toBasisPoints(value: number): number {
         return 0;
     }
 
-    return clampBasisPoints(Math.round(value * 100));
+    return clampBasisPoints(percentageToBasisPoints(String(value)));
 }
 
 function fromBasisPoints(value: number): number {
@@ -282,7 +302,10 @@ function clampBasisPoints(value: number): number {
 function normalizeStepBasisPoints(step: number): number {
     const sanitizedStep = Number.isFinite(step) && step > 0 ? step : DEFAULT_STEP_PERCENTAGE;
 
-    return Math.min(TOTAL_BASIS_POINTS, Math.max(1, Math.round(sanitizedStep * 100)));
+    return Math.min(
+        TOTAL_BASIS_POINTS,
+        Math.max(1, percentageToBasisPoints(String(sanitizedStep))),
+    );
 }
 
 function snapBasisPoints(value: number): number {
@@ -337,10 +360,9 @@ function updateUserPercentage(userId: string, nextValue: string): void {
         return;
     }
 
-    const requestedValue = Number.parseFloat(nextValue);
-    const nextBasisPoints = clampBasisPoints(
-        Number.isFinite(requestedValue) ? toBasisPoints(requestedValue) : 0,
-    );
+    const parsed = percentageSchema.safeParse(nextValue);
+    if (!parsed.success) return;
+    const nextBasisPoints = toBasisPoints(parsed.data);
     const remainingBasisPoints = TOTAL_BASIS_POINTS - nextBasisPoints;
     const otherUsers = userItems.value.filter((user) => user.id !== userId);
 
@@ -413,8 +435,9 @@ function handlePointerMove(event: PointerEvent): void {
 
     if (props.monetary) {
         updateAmount(
-            clampNumber((event.clientX - trackBounds.left) / trackWidth, 0, 1) *
-                props.monetary.total,
+            decimal(props.monetary.total)
+                .times(String(clampNumber((event.clientX - trackBounds.left) / trackWidth, 0, 1)))
+                .toFixed(2),
         );
         return;
     }
@@ -500,12 +523,12 @@ onBeforeUnmount(() => {
                     type="button"
                     outlined
                     severity="secondary"
-                    :disabled="props.disabled || props.monetary.total <= 0"
+                    :disabled="props.disabled || compareMoney(props.monetary.total, '0') <= 0"
                     role="slider"
                     :aria-label="`Importe para ${props.monetary.recipient}`"
                     :aria-valuemin="0"
-                    :aria-valuemax="props.monetary.maximum"
-                    :aria-valuenow="props.monetary.amount"
+                    :aria-valuemax="moneyToChartNumber(props.monetary.maximum)"
+                    :aria-valuenow="moneyToChartNumber(props.monetary.amount)"
                     :aria-valuetext="`${formatMoney(props.monetary.amount)} (${monetaryPercentage.toFixed(2)}%)`"
                     class="absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 touch-none items-center justify-center rounded-(--app-radius-control) border bg-(--app-color-surface)"
                     :style="{ left: `calc(${monetaryPercentage}% - ${HANDLE_WIDTH_PX / 2}px)` }"
@@ -520,6 +543,7 @@ onBeforeUnmount(() => {
             <AppInput
                 :id="amountInputId"
                 v-model="amountDraft"
+                :error="amountInputError"
                 :aria-label="`Monto para ${props.monetary.recipient}`"
                 type="number"
                 inputmode="decimal"
@@ -527,8 +551,8 @@ onBeforeUnmount(() => {
                 :max="props.monetary.maximum"
                 step="0.01"
                 :disabled="props.disabled"
-                @blur="updateAmount(Number(amountDraft))"
-                @keydown.enter.prevent="updateAmount(Number(amountDraft))"
+                @blur="updateAmount(amountDraft)"
+                @keydown.enter.prevent="updateAmount(amountDraft)"
             />
         </div>
         <div class="flex flex-wrap justify-between gap-2">
@@ -537,7 +561,7 @@ onBeforeUnmount(() => {
                 {{
                     formatMoney(
                         props.monetary.sourceRemaining ??
-                            props.monetary.total - props.monetary.amount,
+                            subtractMoney(props.monetary.total, props.monetary.amount),
                     )
                 }}</AppText
             >

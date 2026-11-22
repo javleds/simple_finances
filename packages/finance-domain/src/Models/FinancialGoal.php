@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FinSi\FinanceDomain\Models;
 
 use FinSi\FinanceDomain\Enums\FinancialGoalStatus;
+use FinSi\FinanceDomain\Money\Decimal;
 use FinSi\FinanceDomain\Traits\UnscopedBelongsToUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,14 +26,14 @@ class FinancialGoal extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function getAchievedAmount(): float
+    public function getAchievedAmount(): string
     {
         return $this->achieved_amount;
     }
 
-    public function getRemainingAmount(): float
+    public function getRemainingAmount(): string
     {
-        return $this->amount - $this->getAchievedAmount();
+        return Decimal::subtract($this->amount, $this->getAchievedAmount());
     }
 
     protected function casts(): array
@@ -40,8 +41,8 @@ class FinancialGoal extends Model
         return [
             'user_id'           => 'int',
             'account_id'        => 'int',
-            'amount'            => 'float',
-            'achieved_amount'   => 'float',
+            'amount'            => 'decimal:2',
+            'achieved_amount'   => 'decimal:2',
             'progress'          => 'float',
             'must_completed_at' => 'date',
             'status'            => FinancialGoalStatus::class,

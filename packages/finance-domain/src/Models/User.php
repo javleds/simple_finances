@@ -28,7 +28,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function accounts(): BelongsToMany
     {
-        return $this->belongsToMany(Account::class)->withPivot(['percentage']);
+        return $this->belongsToMany(Account::class)->using(AccountMember::class)->withPivot(['percentage']);
     }
 
     public function notificationTypes(): BelongsToMany

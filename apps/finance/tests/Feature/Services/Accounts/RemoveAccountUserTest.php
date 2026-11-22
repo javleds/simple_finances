@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Services\Accounts\RemoveAccountUser;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\User;
-use App\Services\Accounts\RemoveAccountUser;
+use FinSi\FinanceDomain\Money\Decimal;
 
 it('adds the deleted user percentage to the oldest remaining account user', function () {
     $owner = User::factory()->create();
@@ -18,9 +21,9 @@ it('adds the deleted user percentage to the oldest remaining account user', func
     $users = $account->fresh()->users()->withPivot('percentage')->get();
 
     expect($users->pluck('id')->all())->not->toContain($owner->id)
-        ->and((float) $users->firstWhere('id', $member->id)->pivot->percentage)->toBe(50.0)
-        ->and((float) $users->firstWhere('id', $thirdUser->id)->pivot->percentage)->toBe(50.0)
-        ->and(round($users->sum(fn (User $user): float => (float) $user->pivot->percentage), 2))->toBe(100.0);
+        ->and(Decimal::normalize($users->firstWhere('id', $member->id)->pivot->percentage))->toBe('50.00')
+        ->and(Decimal::normalize($users->firstWhere('id', $thirdUser->id)->pivot->percentage))->toBe('50.00')
+        ->and(Decimal::sum($users->map(fn (User $user): string => Decimal::normalize($user->pivot->percentage))))->toBe('100.00');
 });
 
 it('keeps the total percentage at one hundred when one user remains', function () {
@@ -36,5 +39,5 @@ it('keeps the total percentage at one hundred when one user remains', function (
 
     expect($users)->toHaveCount(1)
         ->and($users->first()->id)->toBe($owner->id)
-        ->and((float) $users->first()->pivot->percentage)->toBe(100.0);
+        ->and(Decimal::normalize($users->first()->pivot->percentage))->toBe('100.00');
 });

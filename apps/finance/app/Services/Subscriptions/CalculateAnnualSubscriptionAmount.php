@@ -1,22 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Subscriptions;
 
 use FinSi\FinanceDomain\Enums\Frequency;
 use FinSi\FinanceDomain\Models\Subscription;
+use FinSi\FinanceDomain\Money\Decimal;
 
 class CalculateAnnualSubscriptionAmount
 {
-    public function execute(Subscription $subscription): float
+    public function execute(Subscription $subscription): string
     {
-        if ($subscription->frequency_type === Frequency::Month) {
-            return ($subscription->amount / $subscription->frequency_unit) * 12;
+        if (Frequency::Month === $subscription->frequency_type) {
+            return Decimal::ratio($subscription->amount, 12, $subscription->frequency_unit);
         }
 
-        if ($subscription->frequency_type === Frequency::Year) {
-            return $subscription->amount / $subscription->frequency_unit;
+        if (Frequency::Year === $subscription->frequency_type) {
+            return Decimal::divide($subscription->amount, $subscription->frequency_unit);
         }
 
-        return ($subscription->amount / $subscription->frequency_unit) * 365;
+        return Decimal::ratio($subscription->amount, 365, $subscription->frequency_unit);
     }
 }

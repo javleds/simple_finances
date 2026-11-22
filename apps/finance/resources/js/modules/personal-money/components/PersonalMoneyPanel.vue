@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
 import { computed } from 'vue';
 import { ArrowUpRightIcon, LockClosedIcon } from '@heroicons/vue/24/outline';
 import { AppButton, AppCard, AppLink, AppText, AppTitle } from '@/modules/shared/components';
@@ -11,8 +12,7 @@ const accountName = computed(
         state.value?.accounts.find((account) => account.id === state.value?.settings?.account_id)
             ?.name,
 );
-const money = (value: number): string =>
-    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
+const money = (value: string): string => formatExactMoney(value);
 </script>
 
 <template>

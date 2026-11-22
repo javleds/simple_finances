@@ -9,7 +9,7 @@ export type SubscriptionListFilters = {
 export type Subscription = {
   id: string;
   name: string;
-  amount: number;
+  amount: string;
   startDate: string;
   frequencyUnit: number;
   frequencyType: SubscriptionFrequencyType;
@@ -32,7 +32,7 @@ export type SubscriptionFormValues = {
 
 export type SubscriptionWritePayload = {
   name: string;
-  amount: number;
+  amount: string;
   startDate: string;
   frequencyUnit: number;
   frequencyType: SubscriptionFrequencyType;

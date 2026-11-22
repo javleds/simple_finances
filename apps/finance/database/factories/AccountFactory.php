@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use FinSi\FinanceDomain\Models\User;
 use Carbon\Carbon;
+use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,30 +23,30 @@ class AccountFactory extends Factory
     {
         $user = User::factory();
         $creditCard = $this->faker->boolean(20);
-        $creditLine = $creditCard ? $this->faker->randomFloat(2, 1000, 15000) : null;
-        $spent = $creditCard && $creditLine !== null ? $this->faker->randomFloat(2, 0, $creditLine) : null;
-        $availableCredit = $creditCard && $creditLine !== null && $spent !== null
-            ? round($creditLine - $spent, 2)
+        $creditLine = $creditCard ? Decimal::fromMinor($this->faker->numberBetween(100000, 1500000)) : null;
+        $spent = $creditCard && null !== $creditLine ? Decimal::fromMinor($this->faker->numberBetween(0, Decimal::minor($creditLine))) : null;
+        $availableCredit = $creditCard && null !== $creditLine && null !== $spent
+            ? Decimal::subtract($creditLine, $spent)
             : null;
         $balance = $creditCard
-            ? round(($spent ?? 0) * -1, 2)
-            : $this->faker->randomFloat(2, -2500, 25000);
+            ? Decimal::negate($spent ?? '0.00')
+            : Decimal::fromMinor($this->faker->numberBetween(-250000, 2500000));
         $cutoffDay = $creditCard ? $this->faker->numberBetween(1, 28) : null;
         $nextCutoffDate = $creditCard ? Carbon::now()->addDays($this->faker->numberBetween(1, 28)) : null;
 
         return [
-            'name' => $this->faker->words(3, true),
-            'description' => $this->faker->randomElement([null, $this->faker->text()]),
-            'color' => $this->faker->hexColor(),
-            'balance' => $balance,
-            'user_id' => $user,
-            'credit_card' => $creditCard,
-            'credit_line' => $creditLine,
-            'cutoff_day' => $cutoffDay,
+            'name'             => $this->faker->words(3, true),
+            'description'      => $this->faker->randomElement([null, $this->faker->text()]),
+            'color'            => $this->faker->hexColor(),
+            'balance'          => $balance,
+            'user_id'          => $user,
+            'credit_card'      => $creditCard,
+            'credit_line'      => $creditLine,
+            'cutoff_day'       => $cutoffDay,
             'next_cutoff_date' => $nextCutoffDate,
             'available_credit' => $availableCredit,
-            'spent' => $spent,
-            'virtual' => $this->faker->boolean(15),
+            'spent'            => $spent,
+            'virtual'          => $this->faker->boolean(15),
         ];
     }
 }

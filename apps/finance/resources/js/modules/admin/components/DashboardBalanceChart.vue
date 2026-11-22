@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { compareMoney, formatMoney, moneyToChartNumber } from '@/modules/shared/lib/money';
 import '@primeui/chart-style/style.css';
 import '@primeui/chart-style/themes/primeone.css';
 import { computed, h, type VNode } from 'vue';
@@ -36,17 +37,33 @@ const virtualRows = computed(() =>
     buildVirtualBalanceChart(props.accounts, props.virtualAccounts ?? []),
 );
 const chartAccounts = computed(() => (props.virtualAccounts ? virtualRows.value : props.accounts));
+const numericAccounts = computed(() =>
+    props.accounts.map((account) => ({ ...account, balance: moneyToChartNumber(account.balance) })),
+);
+const numericVirtualRows = computed(() =>
+    virtualRows.value.map((account) => ({
+        ...account,
+        savings: moneyToChartNumber(account.savings),
+        gains: moneyToChartNumber(account.gains),
+        unclassified: moneyToChartNumber(account.unclassified),
+    })),
+);
 const gainColors = computed(() =>
     virtualRows.value.map((account) =>
-        account.gains < 0 ? 'var(--app-color-danger)' : 'var(--app-color-success)',
+        compareMoney(account.gains, '0') < 0
+            ? 'var(--app-color-danger)'
+            : 'var(--app-color-success)',
     ),
 );
 const hasUnclassified = computed(() =>
-    virtualRows.value.some((account) => account.unclassified !== 0),
+    virtualRows.value.some((account) => compareMoney(account.unclassified, '0') !== 0),
 );
 const hasNegativeSegments = computed(() =>
     virtualRows.value.some(
-        (account) => account.savings < 0 || account.gains < 0 || account.unclassified < 0,
+        (account) =>
+            compareMoney(account.savings, '0') < 0 ||
+            compareMoney(account.gains, '0') < 0 ||
+            compareMoney(account.unclassified, '0') < 0,
     ),
 );
 const chartKey = computed(
@@ -78,18 +95,18 @@ function renderTooltip(context: TooltipRenderContext): VNode {
     if (breakdown) {
         return h('div', { class: 'space-y-1' }, [
             h('p', { class: 'font-semibold' }, breakdown.accountName),
-            h('p', `Total: ${currencyFormatter.format(breakdown.balance)}`),
-            h('p', `Ahorro: ${currencyFormatter.format(breakdown.savings)}`),
-            h('p', `Rendimiento: ${currencyFormatter.format(breakdown.gains)}`),
-            ...(breakdown.unclassified !== 0
-                ? [h('p', `Sin desglose: ${currencyFormatter.format(breakdown.unclassified)}`)]
+            h('p', `Total: ${formatMoney(breakdown.balance)}`),
+            h('p', `Ahorro: ${formatMoney(breakdown.savings)}`),
+            h('p', `Rendimiento: ${formatMoney(breakdown.gains)}`),
+            ...(compareMoney(breakdown.unclassified, '0') !== 0
+                ? [h('p', `Sin desglose: ${formatMoney(breakdown.unclassified)}`)]
                 : []),
         ]);
     }
 
     return h('div', { class: 'space-y-1' }, [
         h('p', { class: 'font-semibold' }, account?.accountName ?? context.label),
-        h('p', `Balance: ${currencyFormatter.format(context.value)}`),
+        h('p', `Balance: ${formatMoney(account?.balance ?? '0.00')}`),
     ]);
 }
 </script>
@@ -105,7 +122,7 @@ function renderTooltip(context: TooltipRenderContext): VNode {
         >
             <ChartStacked v-if="props.virtualAccounts" mode="normal" :gap="0">
                 <ChartBar
-                    :data="virtualRows"
+                    :data="numericVirtualRows"
                     category-y-field="accountId"
                     value-x-field="savings"
                     key-field="accountId"
@@ -114,7 +131,7 @@ function renderTooltip(context: TooltipRenderContext): VNode {
                     :max-bar-thickness="16"
                 />
                 <ChartBar
-                    :data="virtualRows"
+                    :data="numericVirtualRows"
                     category-y-field="accountId"
                     value-x-field="gains"
                     key-field="accountId"
@@ -124,7 +141,7 @@ function renderTooltip(context: TooltipRenderContext): VNode {
                 />
                 <ChartBar
                     v-if="hasUnclassified"
-                    :data="virtualRows"
+                    :data="numericVirtualRows"
                     category-y-field="accountId"
                     value-x-field="unclassified"
                     key-field="accountId"
@@ -135,7 +152,7 @@ function renderTooltip(context: TooltipRenderContext): VNode {
             </ChartStacked>
             <ChartBar
                 v-else
-                :data="props.accounts"
+                :data="numericAccounts"
                 category-y-field="accountId"
                 value-x-field="balance"
                 key-field="accountId"
@@ -192,9 +209,7 @@ function renderTooltip(context: TooltipRenderContext): VNode {
                     />
                     <span class="wrap-anywhere">{{ account.accountName }}</span>
                 </span>
-                <span class="font-semibold tabular-nums">{{
-                    currencyFormatter.format(account.balance)
-                }}</span>
+                <span class="font-semibold tabular-nums">{{ formatMoney(account.balance) }}</span>
                 <VirtualBalanceBreakdown
                     v-if="props.virtualAccounts && virtualRows[index]"
                     class="mt-2 w-full"

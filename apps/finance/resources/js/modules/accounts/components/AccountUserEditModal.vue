@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { percentageSchema } from '@/modules/shared/lib/money';
 import { ref } from 'vue';
 import { Form, FormField, type FormSubmitEvent } from '@primevue/forms';
 import { zodResolver } from '@primevue/forms/resolvers/zod';
@@ -34,8 +35,7 @@ const resolver = zodResolver(
             .string()
             .min(1, 'Ingresa un porcentaje.')
             .refine(
-                (value) =>
-                    Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100,
+                (value) => percentageSchema.safeParse(value).success,
                 'El porcentaje debe estar entre 0 y 100.',
             ),
     }),

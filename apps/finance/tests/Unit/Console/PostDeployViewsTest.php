@@ -31,6 +31,7 @@ it('removes obsolete Livewire compiled views before rendering invitation emails'
         $command = Mockery::mock(PostDeploy::class)->makePartial();
         $command->shouldReceive('option')->with('migrate')->andReturn(false);
         $command->shouldReceive('confirm')->andReturn(false);
+        $command->shouldReceive('call')->with('money:storage', ['--check' => true])->once()->andReturn(0);
         $command->shouldReceive('call')->with('view:clear')->once()
             ->andReturnUsing(fn (): int => Artisan::call('view:clear'));
         foreach (['config:cache', 'route:cache', 'event:cache'] as $step) {

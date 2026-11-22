@@ -113,6 +113,6 @@ it('renders legacy transaction mail with the locally calculated balance', functi
         FinSi\FinanceDomain\Enums\Action::Created,
     ))->toMail($user);
 
-    expect($mail->viewData['balance'])->toBe(123.0);
+    expect($mail->viewData['balance'])->toBe('123.00');
     expect((string) $mail->render())->toContain('Balance después del movimiento');
 });

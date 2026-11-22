@@ -16,7 +16,7 @@ return [
     'allowed_origins' => $allowedOrigins,
     'allowed_origins_patterns' => $allowedOriginPatterns,
     'allowed_headers' => ['*'],
-    'exposed_headers' => [],
+    'exposed_headers' => ['X-Finance-Contract'],
     'max_age' => 0,
     'supports_credentials' => false,
 ];

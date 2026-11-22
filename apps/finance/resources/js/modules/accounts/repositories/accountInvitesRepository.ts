@@ -1,3 +1,4 @@
+import { percentageToString } from '@/modules/shared/lib/money';
 import { z } from 'zod';
 
 import { createApiClient } from '@/lib/api/apiClient';
@@ -35,7 +36,7 @@ const singleInviteSchema = z
 function buildWritePayload(payload: AccountInviteWritePayload) {
   return {
     email: payload.email,
-    percentage: payload.percentage,
+    percentage: percentageToString(payload.percentage),
     status: payload.status,
   };
 }
@@ -44,7 +45,7 @@ function buildGlobalWritePayload(payload: AccountInviteWritePayload) {
   return {
     account_id: Number(payload.accountId),
     email: payload.email,
-    percentage: payload.percentage,
+    percentage: percentageToString(payload.percentage),
     status: payload.status,
   };
 }

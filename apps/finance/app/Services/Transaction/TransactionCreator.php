@@ -54,10 +54,10 @@ class TransactionCreator
             );
             $this->reopenVirtualCustodians->execute($transaction->account);
 
+            $this->processTransactionSideEffects->execute($transaction, Action::Created);
+
             return $transaction;
         });
-
-        $this->processTransactionSideEffects->execute($transaction, Action::Created);
 
         return $transaction;
     }
@@ -81,7 +81,7 @@ class TransactionCreator
         $transaction->status = $dto->status;
         $transaction->concept = $dto->concept;
         $transaction->amount = $dto->amount;
-        $transaction->percentage = 100.0;
+        $transaction->percentage = '100.00';
         $transaction->account_id = $dto->accountId;
         $transaction->paid_by_user_id = TransactionType::Outcome === $dto->type && ! $shared ? $personalUserId : $this->paidByUserId($dto);
         $transaction->custodian_user_id = TransactionType::Income === $dto->type && ! $shared ? $personalUserId : $this->custodianUserId($dto);

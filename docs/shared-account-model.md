@@ -257,3 +257,10 @@ This is used for balance recalculation, account transaction lists, and transacti
 ## Categorías de movimientos
 
 Las categorías compartidas pertenecen a la cuenta y permanecen separadas de los catálogos personales. Todos los miembros pueden crearlas y usarlas; el propietario administra nombres y eliminación, incluida la reclasificación de movimientos de otros miembros. Cambiar la clasificación no altera importes, balance, custodia, asignaciones ni reembolsos. Las reglas completas están en [Categorías de transacciones](domain/categories.md).
+
+
+## Exactitud monetaria y contratos
+
+Los importes y porcentajes financieros JSON son cadenas decimales canónicas a dos posiciones. Los cálculos de reparto, custodia, liquidación y reembolsos emplean aritmética exacta; no se regeneran datos históricos por cambiar representación. Se mantiene el orden y la política del remanente al último participante, así como las tolerancias de negocio existentes; únicamente las tolerancias subcentavo de representación pasan a comparación exacta con cero.
+
+Los repartos nuevos que producirían una asignación negativa se rechazan con validación. Editar/eliminar sigue regenerando los efectos relacionados dentro de la operación contable. Las notificaciones se envían después del commit, de modo que un fallo externo no revierte dinero ya confirmado. Consultar la especificación 027 y el procedimiento de activación en `docs/operations/deployment.md`.

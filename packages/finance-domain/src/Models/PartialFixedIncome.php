@@ -24,7 +24,7 @@ class PartialFixedIncome extends Model
         return [
             'fixed_income_id' => 'integer',
             'user_id'         => 'integer',
-            'amount'          => 'float',
+            'amount'          => 'decimal:2',
             'user_id'         => 'integer',
         ];
     }

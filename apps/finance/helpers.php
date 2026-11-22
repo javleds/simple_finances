@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
+use FinSi\FinanceDomain\Money\Decimal;
+
 if (! function_exists('as_money')) {
-    function as_money(mixed $value): string
+    function as_money(string | int | null $value): string
     {
-        return sprintf(
-            '%s$ %s',
-            $value >= 0 ? '' : '-',
-            number_format(abs($value), 2)
-        );
+        $amount = Decimal::normalize($value ?? '0.00');
+
+        return (Decimal::compare($amount, '0.00') < 0 ? '-' : '') . '$ ' . Decimal::format(Decimal::abs($amount));
     }
 }

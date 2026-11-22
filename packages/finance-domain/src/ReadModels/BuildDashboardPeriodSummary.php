@@ -8,7 +8,7 @@ use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Queries\VisibleTransactionsForUser;
 use Illuminate\Support\Carbon;
 
-use function round;
+use FinSi\FinanceDomain\Money\Decimal;
 
 class BuildDashboardPeriodSummary
 {
@@ -32,11 +32,11 @@ class BuildDashboardPeriodSummary
             ],
             'income_total'  => $incomeTotal,
             'outcome_total' => $outcomeTotal,
-            'balance'       => round($incomeTotal - $outcomeTotal, 2),
+            'balance'       => Decimal::subtract($incomeTotal, $outcomeTotal),
         ];
     }
 
-    private function sumByType(int $userId, TransactionType $type, Carbon $start, Carbon $end): float
+    private function sumByType(int $userId, TransactionType $type, Carbon $start, Carbon $end): string
     {
         $total = $this->visibleTransactionsForUser
             ->query($userId)
@@ -46,6 +46,6 @@ class BuildDashboardPeriodSummary
             ->whereBetween('scheduled_at', [$start, $end])
             ->sum('amount');
 
-        return round((float) $total, 2);
+        return Decimal::normalize((string) $total);
     }
 }

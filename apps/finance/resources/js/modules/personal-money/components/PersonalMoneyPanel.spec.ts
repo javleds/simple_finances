@@ -31,9 +31,14 @@ const global = {
 beforeEach(() => {
     vi.clearAllMocks();
     state.value = {
-        settings: { account_id: 1, started_at: '2026-10-11', opening_balance: 100, enabled: true },
+        settings: {
+            account_id: 1,
+            started_at: '2026-10-11',
+            opening_balance: '100.00',
+            enabled: true,
+        },
         accounts: [{ id: 1, name: 'Mis gastos' }],
-        available_balance: 100,
+        available_balance: '100.00',
         pending_count: 1,
         history: [
             {
@@ -42,8 +47,8 @@ beforeEach(() => {
                 account_name: 'Casa',
                 concept: 'Mercado',
                 occurred_at: '2026-10-11',
-                amount: 50,
-                effect: 0,
+                amount: '50.00',
+                effect: '0.00',
                 kind: 'out_of_pocket',
                 resolution: 'pending',
             },

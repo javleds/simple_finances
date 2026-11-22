@@ -19,6 +19,7 @@ use function collect;
 use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -70,8 +71,8 @@ class AccountCustodianController extends ApiController
         return $account->virtualCustodians()->whereNull('virtual_retired_at')->orderBy('name')->get()->map(static fn (User $user): array => [
             'id'                => $user->id,
             'name'              => $user->name,
-            'custody_amount'    => (float) ($custody->get($user->id)['amount'] ?? 0),
-            'settlement_amount' => (float) ($settlements->get($user->id)['amount'] ?? 0),
+            'custody_amount'    => Decimal::normalize($custody->get($user->id)['amount'] ?? '0.00'),
+            'settlement_amount' => Decimal::normalize($settlements->get($user->id)['amount'] ?? '0.00'),
         ])->all();
     }
 }

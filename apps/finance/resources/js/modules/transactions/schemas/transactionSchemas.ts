@@ -1,6 +1,16 @@
+import {
+  percentageSchema,
+  decimal,
+  percentageToString,
+  sumMoney,
+  moneySchema,
+  parseMoney,
+  compareMoney,
+  money,
+} from '@/modules/shared/lib/money';
 import { z } from 'zod';
 
-import { parseEntityId, parseNullableNumber } from '@/modules/shared/lib/apiParsing';
+import { parseEntityId } from '@/modules/shared/lib/apiParsing';
 import type {
   Transaction,
   TransactionFormValues,
@@ -42,7 +52,7 @@ function normalizeUserPayments(userPayments: Record<string, number>): Record<str
   return Object.entries(userPayments).reduce<Record<string, number>>(
     (accumulator, [userId, value]) => {
       if (Number.isFinite(value)) {
-        accumulator[userId] = Number(value.toFixed(2));
+        accumulator[userId] = Number(percentageToString(value));
       }
 
       return accumulator;
@@ -62,9 +72,9 @@ export const transactionFormSchema = z
       .trim()
       .min(1, 'La cantidad es obligatoria.')
       .refine((value) => {
-        const amount = parseNullableNumber(value);
-        return amount !== null && amount >= 0;
-      }, 'La cantidad debe ser mayor o igual a 0.'),
+        const amount = parseMoney(value);
+        return amount !== null && compareMoney(amount, '0') > 0;
+      }, 'La cantidad debe ser mayor a 0.'),
     accountId: z.string().nullable(),
     paidByUserId: z.string().nullable(),
     custodianUserId: z.string().nullable(),
@@ -72,7 +82,14 @@ export const transactionFormSchema = z
     splitBetweenUsers: z.boolean(),
     date: z.string().trim().min(1, 'La fecha es obligatoria.'),
     financialGoalId: z.string().nullable(),
-    userPayments: z.record(z.string(), z.number()),
+    userPayments: z.record(
+      z.string(),
+      z
+        .number()
+        .min(0)
+        .max(100)
+        .refine((value) => parseMoney(String(value)) !== null),
+    ),
   })
   .superRefine((values, context) => {
     if (!values.accountId) {
@@ -108,9 +125,9 @@ export const transactionFormSchema = z
     }
 
     if (values.type === 'expense' && values.splitBetweenUsers) {
-      const total = Object.values(values.userPayments).reduce((sum, value) => sum + value, 0);
+      const total = sumMoney(Object.values(values.userPayments).map(percentageToString));
 
-      if (Math.abs(total - 100) > 0.01) {
+      if (decimal(total).cmp('100') !== 0) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['userPayments'],
@@ -224,12 +241,16 @@ export const transactionApiSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => value ?? null),
-  uses_shared_account_rules: z.boolean().nullable().optional().transform((value) => value ?? null),
+  uses_shared_account_rules: z
+    .boolean()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   attachments_count: z.number().optional().default(0),
   category_id: z.union([z.string(), z.number()]).nullable().optional().transform(parseEntityId),
   category: z.object({ name: z.string() }).nullable().optional(),
   concept: z.string(),
-  amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  amount: moneySchema,
   type: z.unknown().transform(parseType),
   status: z.unknown().transform(parseStatus),
   payment_source: z.unknown().optional().transform(parsePaymentSource),
@@ -266,7 +287,7 @@ export const transactionApiSchema = z.object({
             })
             .optional()
             .nullable(),
-          percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+          percentage: percentageSchema.default(0),
         })
         .transform((value) => ({
           user_id: value.user_id ?? value.user?.id ?? '',
@@ -292,7 +313,7 @@ export const transactionApiSchema = z.object({
             })
             .optional()
             .nullable(),
-          percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+          percentage: percentageSchema.default(0),
         })
         .transform((value) => ({
           user_id: value.user_id ?? value.user?.id ?? '',
@@ -301,14 +322,8 @@ export const transactionApiSchema = z.object({
     )
     .optional()
     .transform((value) => value ?? []),
-  current_user_pending_reimbursement_amount: z
-    .unknown()
-    .optional()
-    .transform((value) => parseNullableNumber(value) ?? 0),
-  current_user_receivable_reimbursement_amount: z
-    .unknown()
-    .optional()
-    .transform((value) => parseNullableNumber(value) ?? 0),
+  current_user_pending_reimbursement_amount: moneySchema.default('0.00'),
+  current_user_receivable_reimbursement_amount: moneySchema.default('0.00'),
 });
 
 export function createDefaultTransactionFormValues(
@@ -386,7 +401,7 @@ export function mapTransactionFormToWritePayload(
     status: 'completed',
     categoryId: values.categoryId ?? null,
     concept: values.concept.trim(),
-    amount: parseNullableNumber(values.amount) ?? 0,
+    amount: money(values.amount),
     accountId: values.accountId ?? '',
     paidByUserId: values.type === 'expense' ? values.paidByUserId : null,
     custodianUserId: values.type === 'income' ? values.custodianUserId : null,

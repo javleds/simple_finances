@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
 use FinSi\FinanceDomain\Enums\TransactionStatus;
@@ -8,6 +10,7 @@ use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\Transaction;
 use FinSi\FinanceDomain\Models\TransactionAllocation;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 
 function runCompleteActivePendingTransactionsMigration(): void
 {
@@ -25,9 +28,9 @@ it('converts pending income transactions into completed custody entries', functi
     $account->users()->attach($user->id);
 
     $transaction = Transaction::factory()->income()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $user->id,
-        'amount' => 500.0,
+        'account_id'        => $account->id,
+        'user_id'           => $user->id,
+        'amount'            => '500.00',
         'custodian_user_id' => null,
     ]);
 
@@ -40,8 +43,8 @@ it('converts pending income transactions into completed custody entries', functi
     expect($transaction->fresh()->status)->toBe(TransactionStatus::Completed)
         ->and($transaction->fresh()->custodian_user_id)->toBe($user->id)
         ->and($ledgerEntry->type)->toBe(AccountMemberLedgerEntryType::IncomeCustody)
-        ->and((float) $ledgerEntry->amount)->toBe(500.0)
-        ->and((float) $account->fresh()->balance)->toBe(500.0);
+        ->and($ledgerEntry->amount)->toBe('500.00')
+        ->and($account->fresh()->balance)->toBe('500.00');
 });
 
 it('converts pending out of pocket outcomes into completed settlement entries', function () {
@@ -52,28 +55,28 @@ it('converts pending out of pocket outcomes into completed settlement entries', 
         'user_id' => $owner->id,
     ]);
     $account->users()->sync([
-        $owner->id => ['percentage' => 50],
+        $owner->id   => ['percentage' => 50],
         $partner->id => ['percentage' => 50],
     ]);
 
     $transaction = Transaction::factory()->outcome()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $partner->id,
+        'account_id'      => $account->id,
+        'user_id'         => $partner->id,
         'paid_by_user_id' => $partner->id,
-        'payment_source' => TransactionPaymentSource::MemberOutOfPocket,
-        'amount' => 1000.0,
+        'payment_source'  => TransactionPaymentSource::MemberOutOfPocket,
+        'amount'          => '1000.00',
     ]);
     TransactionAllocation::query()->create([
         'transaction_id' => $transaction->id,
-        'user_id' => $owner->id,
-        'percentage' => 50,
-        'amount' => 500,
+        'user_id'        => $owner->id,
+        'percentage'     => 50,
+        'amount'         => 500,
     ]);
     TransactionAllocation::query()->create([
         'transaction_id' => $transaction->id,
-        'user_id' => $partner->id,
-        'percentage' => 50,
-        'amount' => 500,
+        'user_id'        => $partner->id,
+        'percentage'     => 50,
+        'amount'         => 500,
     ]);
 
     runCompleteActivePendingTransactionsMigration();
@@ -89,8 +92,8 @@ it('converts pending out of pocket outcomes into completed settlement entries', 
             AccountMemberLedgerEntryType::ExpenseShare,
             AccountMemberLedgerEntryType::ExpenseShare,
         ])
-        ->and($ledgerEntries->pluck('amount')->all())->toBe([1000.0, -500.0, -500.0])
-        ->and((float) $account->fresh()->balance)->toBe(-1000.0);
+        ->and($ledgerEntries->pluck('amount')->all())->toBe(['1000.00', '-500.00', '-500.00'])
+        ->and($account->fresh()->balance)->toBe('-1000.00');
 });
 
 it('converts pending legacy split outcomes without turning child pending incomes into account income', function () {
@@ -101,30 +104,30 @@ it('converts pending legacy split outcomes without turning child pending incomes
         'user_id' => $owner->id,
     ]);
     $account->users()->sync([
-        $owner->id => ['percentage' => 50],
+        $owner->id   => ['percentage' => 50],
         $partner->id => ['percentage' => 50],
     ]);
 
     $parentTransaction = Transaction::factory()->outcome()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $owner->id,
-        'amount' => 1000.0,
+        'account_id'      => $account->id,
+        'user_id'         => $owner->id,
+        'amount'          => '1000.00',
         'paid_by_user_id' => null,
-        'payment_source' => null,
+        'payment_source'  => null,
     ]);
     $ownerShare = Transaction::factory()->income()->completed()->create([
-        'account_id' => $account->id,
-        'user_id' => $owner->id,
+        'account_id'            => $account->id,
+        'user_id'               => $owner->id,
         'parent_transaction_id' => $parentTransaction->id,
-        'amount' => 500.0,
-        'percentage' => 50,
+        'amount'                => '500.00',
+        'percentage'            => 50,
     ]);
     $partnerShare = Transaction::factory()->income()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $partner->id,
+        'account_id'            => $account->id,
+        'user_id'               => $partner->id,
         'parent_transaction_id' => $parentTransaction->id,
-        'amount' => 500.0,
-        'percentage' => 50,
+        'amount'                => '500.00',
+        'percentage'            => 50,
     ]);
 
     runCompleteActivePendingTransactionsMigration();
@@ -143,7 +146,7 @@ it('converts pending legacy split outcomes without turning child pending incomes
         ->and($ownerShare->fresh()->legacy_migrated_at)->not->toBeNull()
         ->and($partnerShare->fresh()->legacy_migrated_at)->not->toBeNull()
         ->and($partnerShare->fresh()->status)->toBe(TransactionStatus::Pending)
-        ->and($allocations->pluck('amount')->all())->toBe([500.0, 500.0])
+        ->and($allocations->pluck('amount')->all())->toBe(['500.00', '500.00'])
         ->and($ledgerEntries->pluck('type')->all())->toBe([
             AccountMemberLedgerEntryType::ExpensePaid,
             AccountMemberLedgerEntryType::ExpenseShare,
@@ -151,7 +154,7 @@ it('converts pending legacy split outcomes without turning child pending incomes
             AccountMemberLedgerEntryType::SettlementTransfer,
             AccountMemberLedgerEntryType::ExpenseShare,
         ])
-        ->and((float) $account->fresh()->balance)->toBe(-500.0);
+        ->and($account->fresh()->balance)->toBe('-500.00');
 });
 
 it('normalizes pending legacy split allocations when child amounts do not match the parent outcome amount', function () {
@@ -163,18 +166,18 @@ it('normalizes pending legacy split allocations when child amounts do not match 
     $account->users()->attach($owner->id);
 
     $parentTransaction = Transaction::factory()->outcome()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $owner->id,
-        'amount' => 350.0,
+        'account_id'      => $account->id,
+        'user_id'         => $owner->id,
+        'amount'          => '350.00',
         'paid_by_user_id' => null,
-        'payment_source' => null,
+        'payment_source'  => null,
     ]);
     $childTransaction = Transaction::factory()->income()->completed()->create([
-        'account_id' => $account->id,
-        'user_id' => $owner->id,
+        'account_id'            => $account->id,
+        'user_id'               => $owner->id,
         'parent_transaction_id' => $parentTransaction->id,
-        'amount' => 0.0,
-        'percentage' => 100.0,
+        'amount'                => '0.00',
+        'percentage'            => '100.00',
     ]);
 
     runCompleteActivePendingTransactionsMigration();
@@ -185,48 +188,48 @@ it('normalizes pending legacy split allocations when child amounts do not match 
 
     expect($parentTransaction->fresh()->status)->toBe(TransactionStatus::Completed)
         ->and($childTransaction->fresh()->legacy_migrated_at)->not->toBeNull()
-        ->and((float) $allocation->amount)->toBe(350.0)
-        ->and((float) $allocation->percentage)->toBe(100.0)
-        ->and(round(TransactionAllocation::query()->where('transaction_id', $parentTransaction->id)->sum('amount'), 2))->toBe(350.0)
-        ->and((float) $account->fresh()->balance)->toBe(-350.0);
+        ->and($allocation->amount)->toBe('350.00')
+        ->and($allocation->percentage)->toBe('100.00')
+        ->and(Decimal::normalize(TransactionAllocation::query()->where('transaction_id', $parentTransaction->id)->sum('amount')))->toBe('350.00')
+        ->and($account->fresh()->balance)->toBe('-350.00');
 });
 
 it('recalculates credit card account fields after completing pending transactions', function () {
     $user = User::factory()->create();
     $account = Account::factory()->create([
-        'balance' => 0,
-        'credit_card' => true,
-        'credit_line' => 10000,
+        'balance'          => 0,
+        'credit_card'      => true,
+        'credit_line'      => 10000,
         'available_credit' => 10000,
-        'spent' => 0,
+        'spent'            => 0,
         'next_cutoff_date' => now()->addDays(5),
-        'user_id' => $user->id,
+        'user_id'          => $user->id,
     ]);
     $account->users()->attach($user->id);
 
     Transaction::factory()->outcome()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $user->id,
+        'account_id'      => $account->id,
+        'user_id'         => $user->id,
         'paid_by_user_id' => $user->id,
-        'payment_source' => TransactionPaymentSource::AccountFund,
-        'amount' => 1500.0,
-        'scheduled_at' => now()->addDay(),
+        'payment_source'  => TransactionPaymentSource::AccountFund,
+        'amount'          => '1500.00',
+        'scheduled_at'    => now()->addDay(),
     ]);
 
     Transaction::factory()->outcome()->completed()->create([
-        'account_id' => $account->id,
-        'user_id' => $user->id,
+        'account_id'      => $account->id,
+        'user_id'         => $user->id,
         'paid_by_user_id' => $user->id,
-        'payment_source' => TransactionPaymentSource::AccountFund,
-        'amount' => 500.0,
-        'scheduled_at' => now()->addDays(10),
+        'payment_source'  => TransactionPaymentSource::AccountFund,
+        'amount'          => '500.00',
+        'scheduled_at'    => now()->addDays(10),
     ]);
 
     runCompleteActivePendingTransactionsMigration();
 
     $account->refresh();
 
-    expect((float) $account->balance)->toBe(-1500.0)
-        ->and((float) $account->spent)->toBe(-2000.0)
-        ->and((float) $account->available_credit)->toBe(8000.0);
+    expect($account->balance)->toBe('-1500.00')
+        ->and($account->spent)->toBe('-2000.00')
+        ->and($account->available_credit)->toBe('8000.00');
 });

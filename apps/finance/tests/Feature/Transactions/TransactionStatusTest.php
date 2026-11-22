@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use FinSi\FinanceDomain\Enums\TransactionStatus;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\Account;
@@ -17,23 +19,23 @@ it('excludes pending transactions from balance calculations', function () {
     $account = Account::factory()->create(['user_id' => $user->id]);
 
     Transaction::factory()->for($user)->for($account)->create([
-        'type' => TransactionType::Income,
-        'amount' => 150.0,
+        'type'   => TransactionType::Income,
+        'amount' => '150.00',
         'status' => TransactionStatus::Completed,
     ]);
 
     Transaction::factory()->for($user)->for($account)->create([
-        'type' => TransactionType::Outcome,
-        'amount' => 40.0,
+        'type'   => TransactionType::Outcome,
+        'amount' => '40.00',
         'status' => TransactionStatus::Completed,
     ]);
 
     Transaction::factory()->for($user)->for($account)->pending()->create([
-        'type' => TransactionType::Outcome,
-        'amount' => 25.0,
+        'type'   => TransactionType::Outcome,
+        'amount' => '25.00',
     ]);
 
-    $balance = app(\App\Services\Accounts\RecalculateAccountBalance::class)->execute($account)->balance;
+    $balance = app(App\Services\Accounts\RecalculateAccountBalance::class)->execute($account)->balance;
 
-    expect($balance)->toBe(110.0);
+    expect($balance)->toBe('110.00');
 });

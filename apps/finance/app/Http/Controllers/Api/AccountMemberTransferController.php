@@ -19,6 +19,7 @@ use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\NotificationType;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 
@@ -54,7 +55,7 @@ class AccountMemberTransferController extends ApiController
         $freshAccount = $account->fresh();
         $meta = $this->buildAccountMemberSummary->execute($freshAccount);
         $meta['account'] = [
-            'balance' => (float) $freshAccount->balance,
+            'balance' => $freshAccount->balance,
         ];
         $meta['ledger_rows'] = $this->buildAccountLedgerTimeline->execute($freshAccount)
             ->take(20)
@@ -109,7 +110,7 @@ class AccountMemberTransferController extends ApiController
                 recipient: $user,
                 modifier: $modifier,
                 account: $account,
-                amount: (float) $payload['amount'],
+                amount: Decimal::normalize($payload['amount']),
                 description: $description,
                 occurredAt: $occurredAt,
             );

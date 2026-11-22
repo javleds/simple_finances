@@ -33,7 +33,7 @@ describe('goal submissions', () => {
         const payload: AccountGoalWritePayload = {
             accountId: 'account',
             name: 'Emergency fund',
-            amount: 1000,
+            amount: '1000.00',
             deadline: null,
             status: 'in progress',
         };

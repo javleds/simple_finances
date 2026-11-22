@@ -34,7 +34,7 @@ class SubscriptionPayment extends Model
     {
         return [
             'subscription_id' => 'integer',
-            'amount'          => 'float',
+            'amount'          => 'decimal:2',
             'status'          => PaymentStatus::class,
             'scheduled_at'    => 'date',
             'user_id'         => 'integer',

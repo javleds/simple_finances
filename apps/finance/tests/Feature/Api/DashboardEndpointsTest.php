@@ -28,7 +28,7 @@ it('serves the dashboard endpoints without transaction pending actions', functio
     $user = User::factory()->create();
     $account = Account::factory()->create([
         'name' => 'Nomina',
-        'balance' => 100,
+        'balance' => '100.00',
         'color' => '#6a4d4d',
         'user_id' => $user->id,
         'virtual' => false,
@@ -43,14 +43,14 @@ it('serves the dashboard endpoints without transaction pending actions', functio
 
     Transaction::factory()->income()->pending()->create([
         'concept' => 'Pending reimbursement',
-        'amount' => 450.5,
+        'amount' => '450.50',
         'account_id' => $account->id,
         'user_id' => $user->id,
         'scheduled_at' => '2026-06-06',
     ]);
 
     Subscription::factory()->create([
-        'amount' => 100,
+        'amount' => '100.00',
         'frequency_type' => Frequency::Month,
         'frequency_unit' => 1,
         'finished_at' => null,
@@ -64,7 +64,7 @@ it('serves the dashboard endpoints without transaction pending actions', functio
         ->assertOk()
         ->assertJsonPath('data.0.account_id', $account->id)
         ->assertJsonPath('data.0.account_name', 'Nomina')
-        ->assertJsonPath('data.0.balance', 100.0)
+        ->assertJsonPath('data.0.balance', '100.00')
         ->assertJsonPath('data.0.color', '#6a4d4d');
 
     $this->withHeaders($headers)
@@ -73,13 +73,13 @@ it('serves the dashboard endpoints without transaction pending actions', functio
         ->assertJsonPath('data.summary.active_accounts', 1)
         ->assertJsonPath('data.summary.virtual_accounts', 1)
         ->assertJsonPath('data.summary.shared_accounts', 0)
-        ->assertJsonPath('data.summary.pending_total', 0.0)
+        ->assertJsonPath('data.summary.pending_total', '0.00')
         ->assertJsonPath('data.pending_actions', []);
 
     $this->withHeaders($headers)
         ->getJson('/api/dashboard/subscriptions')
         ->assertOk()
-        ->assertJsonPath('data.annual_total', 1200.0)
+        ->assertJsonPath('data.annual_total', '1200.00')
         ->assertJsonPath('data.subscriptions_count', 1);
 
     $this->withHeaders($headers)
@@ -118,7 +118,7 @@ it('queues shared account movement notifications from api endpoints until the gr
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => 'Groceries',
-            'amount' => 250,
+            'amount' => '250.00',
             'split_between_users' => false,
             'scheduled_at' => '2026-06-06',
         ])
@@ -134,7 +134,7 @@ it('queues shared account movement notifications from api endpoints until the gr
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => 'Groceries updated',
-            'amount' => 300,
+            'amount' => '300.00',
             'split_between_users' => false,
             'scheduled_at' => '2026-06-06',
         ])
@@ -145,7 +145,7 @@ it('queues shared account movement notifications from api endpoints until the gr
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => 'Shared pharmacy',
-            'amount' => 120,
+            'amount' => '120.00',
             'split_between_users' => false,
             'scheduled_at' => '2026-06-07',
         ])

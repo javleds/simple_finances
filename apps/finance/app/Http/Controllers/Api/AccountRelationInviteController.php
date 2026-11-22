@@ -1,16 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Dto\AccountInviteDto;
-use FinSi\FinanceDomain\Enums\InviteStatus;
 use App\Http\Requests\Api\AccountRelationInviteRequest;
+use App\Services\AccountInvites\CreateAccountInvite;
+use App\Services\AccountInvites\SendApiInvitationNotification;
+
+use function auth;
+
+use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
+use FinSi\FinanceDomain\Enums\InviteStatus;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountInvite;
 use FinSi\FinanceDomain\Models\User;
-use App\Services\AccountInvites\CreateAccountInvite;
-use App\Services\AccountInvites\SendApiInvitationNotification;
-use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,7 +24,8 @@ class AccountRelationInviteController extends ApiController
 {
     public function __construct(
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
-    ) {}
+    ) {
+    }
 
     public function index(Account $account, Request $request): JsonResponse
     {
@@ -45,7 +52,7 @@ class AccountRelationInviteController extends ApiController
             account: $account,
             owner: $request->user(),
             email: $request->string('email')->toString(),
-            percentage: $request->float('percentage'),
+            percentage: Decimal::normalize($request->validated('percentage') ?? '0.00'),
         ));
 
         return $this->respondModel($invite, ['account', 'user'], 201);
@@ -74,7 +81,7 @@ class AccountRelationInviteController extends ApiController
         ]));
         $invite->save();
 
-        if ($invite->status === InviteStatus::Pending) {
+        if (InviteStatus::Pending === $invite->status) {
             $sendApiInvitationNotification->execute($invite);
         }
 

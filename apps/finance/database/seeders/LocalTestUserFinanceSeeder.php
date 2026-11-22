@@ -1,20 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
+
+use function app;
 
 use FinSi\FinanceDomain\Enums\TransactionStatus;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\Transaction;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 
+use function min;
+use function now;
+
 class LocalTestUserFinanceSeeder extends Seeder
 {
-    private const USER_EMAIL = 'test@example.com';
-
     public function run(): void
     {
         $user = $this->seedUser();
@@ -23,6 +29,7 @@ class LocalTestUserFinanceSeeder extends Seeder
         $this->seedTransactions($user, $accounts);
         $this->updateBalances($accounts);
     }
+    private const USER_EMAIL = 'test@example.com';
 
     private function seedUser(): User
     {
@@ -49,19 +56,19 @@ class LocalTestUserFinanceSeeder extends Seeder
             $account = Account::withoutGlobalScopes()->firstOrCreate(
                 [
                     'user_id' => $user->id,
-                    'name' => $definition['name'],
+                    'name'    => $definition['name'],
                 ],
                 [
-                    'description' => 'Cuenta individual de prueba local',
-                    'color' => $definition['color'],
-                    'balance' => 0,
-                    'credit_card' => false,
-                    'credit_line' => null,
-                    'cutoff_day' => null,
+                    'description'      => 'Cuenta individual de prueba local',
+                    'color'            => $definition['color'],
+                    'balance'          => 0,
+                    'credit_card'      => false,
+                    'credit_line'      => null,
+                    'cutoff_day'       => null,
                     'next_cutoff_date' => null,
                     'available_credit' => null,
-                    'spent' => null,
-                    'virtual' => false,
+                    'spent'            => null,
+                    'virtual'          => false,
                 ],
             );
 
@@ -77,7 +84,7 @@ class LocalTestUserFinanceSeeder extends Seeder
 
     private function seedTransactions(User $user, array $accounts): void
     {
-        for ($monthOffset = 11; $monthOffset >= 0; $monthOffset--) {
+        for ($monthOffset = 11; $monthOffset >= 0; --$monthOffset) {
             $month = now()->startOfMonth()->subMonths($monthOffset);
 
             $this->seedMonthlyIncome($user, $accounts, $month, $monthOffset);
@@ -88,34 +95,34 @@ class LocalTestUserFinanceSeeder extends Seeder
     private function seedMonthlyIncome(User $user, array $accounts, Carbon $month, int $monthOffset): void
     {
         $this->seedTransaction($user, $accounts['Nomina BBVA'], [
-            'concept' => 'Sueldo mensual',
-            'amount' => 45000,
-            'type' => TransactionType::Income,
+            'concept'      => 'Sueldo mensual',
+            'amount'       => 45000,
+            'type'         => TransactionType::Income,
             'scheduled_at' => $month->copy()->day(5),
         ]);
 
         $this->seedTransaction($user, $accounts['Ahorro mensual'], [
-            'concept' => 'Ahorro programado',
-            'amount' => 6000,
-            'type' => TransactionType::Income,
+            'concept'      => 'Ahorro programado',
+            'amount'       => 6000,
+            'type'         => TransactionType::Income,
             'scheduled_at' => $month->copy()->day(7),
         ]);
 
         $this->seedTransaction($user, $accounts['Efectivo'], [
-            'concept' => 'Retiro para efectivo',
-            'amount' => 3000,
-            'type' => TransactionType::Income,
+            'concept'      => 'Retiro para efectivo',
+            'amount'       => 3000,
+            'type'         => TransactionType::Income,
             'scheduled_at' => $month->copy()->day(9),
         ]);
 
-        if ($monthOffset % 3 !== 0) {
+        if (0 !== $monthOffset % 3) {
             return;
         }
 
         $this->seedTransaction($user, $accounts['Nomina BBVA'], [
-            'concept' => 'Bono trimestral',
-            'amount' => 8000,
-            'type' => TransactionType::Income,
+            'concept'      => 'Bono trimestral',
+            'amount'       => 8000,
+            'type'         => TransactionType::Income,
             'scheduled_at' => $month->copy()->day(15),
         ]);
     }
@@ -123,25 +130,25 @@ class LocalTestUserFinanceSeeder extends Seeder
     private function seedMonthlyExpenses(User $user, array $accounts, Carbon $month, int $monthOffset): void
     {
         foreach ($this->monthlyExpenseDefinitions() as $definition) {
-            $variation = 1 + ((($monthOffset % 5) - 2) * 0.035);
-            $amount = round($definition['amount'] * $variation, 2);
+            $variation = 1000 + ((($monthOffset % 5) - 2) * 35);
+            $amount = Decimal::ratio($definition['amount'], $variation, 1000);
 
             $this->seedTransaction($user, $accounts[$definition['account']], [
-                'concept' => $definition['concept'],
-                'amount' => $amount,
-                'type' => TransactionType::Outcome,
+                'concept'      => $definition['concept'],
+                'amount'       => $amount,
+                'type'         => TransactionType::Outcome,
                 'scheduled_at' => $month->copy()->day(min($definition['day'], $month->daysInMonth)),
             ]);
         }
 
-        if ($monthOffset % 4 !== 0) {
+        if (0 !== $monthOffset % 4) {
             return;
         }
 
         $this->seedTransaction($user, $accounts['Gastos diarios'], [
-            'concept' => 'Mantenimiento auto',
-            'amount' => 4200,
-            'type' => TransactionType::Outcome,
+            'concept'      => 'Mantenimiento auto',
+            'amount'       => 4200,
+            'type'         => TransactionType::Outcome,
             'scheduled_at' => $month->copy()->day(20),
         ]);
     }
@@ -152,17 +159,17 @@ class LocalTestUserFinanceSeeder extends Seeder
 
         Transaction::updateOrCreate(
             [
-                'user_id' => $user->id,
-                'account_id' => $account->id,
-                'concept' => $data['concept'],
+                'user_id'      => $user->id,
+                'account_id'   => $account->id,
+                'concept'      => $data['concept'],
                 'scheduled_at' => $scheduledAt->toDateString(),
             ],
             [
-                'amount' => $data['amount'],
-                'type' => $data['type'],
-                'status' => TransactionStatus::Completed,
-                'percentage' => 100,
-                'financial_goal_id' => null,
+                'amount'                => $data['amount'],
+                'type'                  => $data['type'],
+                'status'                => TransactionStatus::Completed,
+                'percentage'            => 100,
+                'financial_goal_id'     => null,
                 'parent_transaction_id' => null,
             ],
         );

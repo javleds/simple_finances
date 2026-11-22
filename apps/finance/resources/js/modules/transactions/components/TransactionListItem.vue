@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { compareMoney, formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
+
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { PencilSquareIcon, TrashIcon, PaperClipIcon } from '@heroicons/vue/24/outline';
 
@@ -12,15 +14,15 @@ const props = defineProps<{
     attachmentsCount?: number;
     concept: string;
     categoryName?: string | null;
-    amount: number;
+    amount: string;
     type: TransactionItemType;
     dateLabel: string;
     creatorName: string | null;
     accountName?: string | null;
     metaLabel?: string | null;
     showActions?: boolean;
-    pendingReimbursementAmount?: number;
-    receivableReimbursementAmount?: number;
+    pendingReimbursementAmount?: string;
+    receivableReimbursementAmount?: string;
 }>();
 
 const emit = defineEmits<{
@@ -46,12 +48,7 @@ onMounted(() =>
 onBeforeUnmount(() =>
     window.removeEventListener('transaction-attachments-count-updated', updateAttachmentCount),
 );
-const currencyFormatter = new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-});
+const currencyFormatter = { format: formatExactMoney };
 
 const actionMenuItems = computed(() => {
     return [
@@ -70,7 +67,7 @@ const actionMenuItems = computed(() => {
     ];
 });
 
-function formattedAmount(amount: number): string {
+function formattedAmount(amount: string): string {
     return currencyFormatter.format(amount);
 }
 
@@ -111,11 +108,17 @@ function secondaryLabel(): string {
 }
 
 function hasPendingReimbursement(): boolean {
-    return Boolean(props.pendingReimbursementAmount && props.pendingReimbursementAmount > 0);
+    return Boolean(
+        props.pendingReimbursementAmount &&
+        compareMoney(props.pendingReimbursementAmount ?? '0.00', '0') > 0,
+    );
 }
 
 function hasReceivableReimbursement(): boolean {
-    return Boolean(props.receivableReimbursementAmount && props.receivableReimbursementAmount > 0);
+    return Boolean(
+        props.receivableReimbursementAmount &&
+        compareMoney(props.receivableReimbursementAmount ?? '0.00', '0') > 0,
+    );
 }
 
 function handleEdit(): void {
@@ -185,14 +188,15 @@ function handleDelete(): void {
                         v-if="hasPendingReimbursement()"
                         class="inline-flex rounded-(--app-radius-control) bg-[color-mix(in_srgb,var(--app-color-warning)_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold break-words text-(--app-color-warning)"
                     >
-                        Por pagar {{ formattedAmount(props.pendingReimbursementAmount ?? 0) }}
+                        Por pagar {{ formattedAmount(props.pendingReimbursementAmount ?? '0.00') }}
                     </p>
 
                     <p
                         v-if="hasReceivableReimbursement()"
                         class="inline-flex rounded-(--app-radius-control) bg-[color-mix(in_srgb,var(--app-color-success)_14%,transparent)] px-2 py-0.5 text-[11px] leading-4 font-semibold break-words text-(--app-color-success)"
                     >
-                        Por recibir {{ formattedAmount(props.receivableReimbursementAmount ?? 0) }}
+                        Por recibir
+                        {{ formattedAmount(props.receivableReimbursementAmount ?? '0.00') }}
                     </p>
                 </div>
             </div>

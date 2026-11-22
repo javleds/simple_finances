@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\FinancialGoals;
 
 use FinSi\FinanceDomain\Enums\TransactionStatus;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\FinancialGoal;
 use FinSi\FinanceDomain\Models\Transaction;
+use FinSi\FinanceDomain\Money\Decimal;
 
 class RecalculateFinancialGoalProgress
 {
@@ -17,7 +20,7 @@ class RecalculateFinancialGoalProgress
             ->where('status', TransactionStatus::Completed)
             ->sum('amount');
 
-        $financialGoal->achieved_amount = (float) $achievedAmount;
+        $financialGoal->achieved_amount = Decimal::normalize((string) $achievedAmount);
         $financialGoal->progress = $this->calculateProgress(
             amount: $financialGoal->amount,
             achievedAmount: $financialGoal->achieved_amount,
@@ -27,12 +30,14 @@ class RecalculateFinancialGoalProgress
         return $financialGoal;
     }
 
-    private function calculateProgress(float $amount, float $achievedAmount): float
+    private function calculateProgress(string $amount, string $achievedAmount): float
     {
-        if ($amount <= 0.0) {
+        if (Decimal::compare($amount, '0.00') <= 0) {
             return 0.0;
         }
 
-        return min(($achievedAmount * 100) / $amount, 100.0);
+        $progress = Decimal::ratio($achievedAmount, 100, $amount, 8);
+
+        return Decimal::compare($progress, '100.00') > 0 ? 100.0 : (float) $progress;
     }
 }

@@ -9,14 +9,14 @@ beforeEach(function (): void {
     $this->member = User::factory()->create(['name' => 'Shared Member']);
     $this->account = Account::factory()->create(['user_id' => $this->owner->id]);
     $this->account->users()->sync([
-        $this->owner->id => ['percentage' => 65],
-        $this->member->id => ['percentage' => 35],
+        $this->owner->id => ['percentage' => '65.00'],
+        $this->member->id => ['percentage' => '35.00'],
     ]);
     $this->invite = AccountInvite::withoutEvents(fn (): AccountInvite => AccountInvite::factory()->accepted()->create([
         'account_id' => $this->account->id,
         'user_id' => $this->owner->id,
         'email' => $this->member->email,
-        'percentage' => 35,
+        'percentage' => '35.00',
     ]));
     $token = \Tests\Support\AcceptedUserToken::generate($this->member)['token'];
     $this->withHeaders(['Authorization' => 'Bearer '.$token]);
@@ -27,13 +27,13 @@ it('lets members read participants with correct identities and allocation percen
         ->assertOk()
         ->assertJsonPath('meta.total', 2)
         ->assertJsonPath('data.0.id', $this->owner->id)
-        ->assertJsonPath('data.0.pivot.percentage', 65);
+        ->assertJsonPath('data.0.pivot.percentage', '65.00');
 
     $this->getJson("/api/accounts/{$this->account->id}/users?search=Shared")
         ->assertOk()
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.id', $this->member->id)
-        ->assertJsonPath('data.0.pivot.percentage', 35);
+        ->assertJsonPath('data.0.pivot.percentage', '35.00');
 
     $this->getJson("/api/accounts/{$this->account->id}/users/{$this->owner->id}")
         ->assertOk()->assertJsonPath('data.id', $this->owner->id);
@@ -49,9 +49,9 @@ it('lets members read account invitations and received invitation history', func
 });
 
 it('keeps participant and invitation administration restricted to the owner', function (): void {
-    $this->putJson("/api/accounts/{$this->account->id}/users/{$this->owner->id}", ['percentage' => 50])->assertForbidden();
+    $this->putJson("/api/accounts/{$this->account->id}/users/{$this->owner->id}", ['percentage' => '50.00'])->assertForbidden();
     $this->deleteJson("/api/accounts/{$this->account->id}/users/{$this->owner->id}")->assertForbidden();
-    $this->putJson("/api/accounts/{$this->account->id}/invites/{$this->invite->id}", ['email' => $this->member->email, 'percentage' => 35])->assertForbidden();
+    $this->putJson("/api/accounts/{$this->account->id}/invites/{$this->invite->id}", ['email' => $this->member->email, 'percentage' => '35.00'])->assertForbidden();
     $this->deleteJson("/api/accounts/{$this->account->id}/invites/{$this->invite->id}")->assertForbidden();
 });
 

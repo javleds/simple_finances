@@ -15,8 +15,8 @@ describe('account participant permissions', () => {
         roleLabel: 'Miembro',
         accessLabel: 'Cuenta compartida',
         allocationPercentage: 35,
-        custodyAmount: 0,
-        settlementAmount: 0,
+        custodyAmount: '0.00',
+        settlementAmount: '0.00',
         status: 'active',
       },
       global: { renderStubDefaultSlot: true },
@@ -26,20 +26,23 @@ describe('account participant permissions', () => {
     expect(wrapper.findComponent({ name: 'AppActionMenu' }).exists()).toBe(canManage);
   });
 
-  it.each([true, false])('shows invitation administration only when canManage is %s', (canManage) => {
-    const wrapper = shallowMount(AccountInvitationListItem, {
-      props: {
-        canManage,
-        itemId: '1',
-        email: 'member@example.com',
-        percentageLabel: '35%',
-        metaLabel: 'Hoy',
-        status: 'pending',
-      },
-      global: { renderStubDefaultSlot: true },
-    });
+  it.each([true, false])(
+    'shows invitation administration only when canManage is %s',
+    (canManage) => {
+      const wrapper = shallowMount(AccountInvitationListItem, {
+        props: {
+          canManage,
+          itemId: '1',
+          email: 'member@example.com',
+          percentageLabel: '35%',
+          metaLabel: 'Hoy',
+          status: 'pending',
+        },
+        global: { renderStubDefaultSlot: true },
+      });
 
-    expect(wrapper.text()).toContain('member@example.com');
-    expect(wrapper.findComponent({ name: 'AppActionMenu' }).exists()).toBe(canManage);
-  });
+      expect(wrapper.text()).toContain('member@example.com');
+      expect(wrapper.findComponent({ name: 'AppActionMenu' }).exists()).toBe(canManage);
+    },
+  );
 });

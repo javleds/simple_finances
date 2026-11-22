@@ -4,28 +4,34 @@ declare(strict_types=1);
 
 namespace App\Services\PersonalMoney;
 
-use FinSi\FinanceDomain\Queries\EligiblePersonalMoneyAccounts;
-use FinSi\FinanceDomain\Queries\UserOwnedResources;
 use App\Dto\PersonalMoneySettingsDto;
+
+use function array_replace;
+
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\PersonalMoneyReimbursement;
 use FinSi\FinanceDomain\Models\PersonalMoneySetting;
 use FinSi\FinanceDomain\Models\Transaction;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
+use FinSi\FinanceDomain\Queries\EligiblePersonalMoneyAccounts;
+use FinSi\FinanceDomain\Queries\UserOwnedResources;
 
-use function array_replace;
 use function hash;
+use function hash_equals;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
+use function is_finite;
 use function json_encode;
 
 use const JSON_THROW_ON_ERROR;
 
 use function max;
 use function now;
+use function sprintf;
 
 class UpdatePersonalMoneySettings
 {
@@ -42,7 +48,7 @@ class UpdatePersonalMoneySettings
             User::withoutGlobalScopes()->whereKey($userId)->lockForUpdate()->firstOrFail();
             Account::withoutGlobalScopes()->whereKey($dto->accountId)->lockForUpdate()->firstOrFail();
             $setting = $this->userOwnedResources->constrain(PersonalMoneySetting::query(), (int) $userId)->lockForUpdate()->first();
-            $payloadHash = hash('sha256', json_encode([$dto->accountId, $dto->openingBalance, $dto->enabled, $dto->startMode, $dto->startedAt], JSON_THROW_ON_ERROR));
+            $payloadHash = $this->payloadHash($dto, Decimal::normalize($dto->openingBalance));
             if ('now' === $dto->startMode) {
                 if (! $dto->enabled || null === $dto->operationKey) {
                     throw ValidationException::withMessages(['start_mode' => 'Starting from now requires an enabled calculation and an operation key.']);
@@ -50,7 +56,7 @@ class UpdatePersonalMoneySettings
                 $operation = DB::table('personal_money_baseline_operations')->where('user_id', $userId)
                     ->where('operation_key', $dto->operationKey)->first();
                 if (null !== $operation) {
-                    if ($operation->payload_hash !== $payloadHash) {
+                    if (! $this->matchesOperation($dto, $operation->payload_hash, (int) $operation->payload_hash_version, $payloadHash)) {
                         throw ValidationException::withMessages(['operation_key' => 'This operation key was already used with different settings.']);
                     }
 
@@ -78,7 +84,7 @@ class UpdatePersonalMoneySettings
                     'ledger_cutoff_id'      => max((int) AccountMemberLedgerEntry::withoutGlobalScopes()->max('id'), (int) PersonalMoneyReimbursement::query()->max('ledger_entry_key')),
                 ]);
                 DB::table('personal_money_baseline_operations')->insert([
-                    'user_id' => $userId, 'operation_key' => $dto->operationKey, 'payload_hash' => $payloadHash,
+                    'user_id' => $userId, 'operation_key' => $dto->operationKey, 'payload_hash' => $payloadHash, 'payload_hash_version' => 2,
                 ]);
             }
             if (null === $values['started_at']) {
@@ -90,5 +96,31 @@ class UpdatePersonalMoneySettings
 
             return PersonalMoneySetting::query()->updateOrCreate(['user_id' => $userId], $values);
         }, 3);
+    }
+
+    private function payloadHash(PersonalMoneySettingsDto $dto, string | float $amount): string
+    {
+        return hash('sha256', json_encode([$dto->accountId, $amount, $dto->enabled, $dto->startMode, $dto->startedAt], JSON_THROW_ON_ERROR));
+    }
+
+    private function matchesOperation(PersonalMoneySettingsDto $dto, string $storedHash, int $version, string $canonicalHash): bool
+    {
+        if (2 === $version) {
+            return hash_equals($storedHash, $canonicalHash);
+        }
+        if (1 !== $version) {
+            return false;
+        }
+
+        $canonical = Decimal::normalize($dto->openingBalance);
+        $legacy = (float) $canonical;
+        if (! is_finite($legacy) || sprintf('%.2F', $legacy) !== $canonical) {
+            return false;
+        }
+        if (hash_equals($storedHash, $this->payloadHash($dto, $legacy))) {
+            return true;
+        }
+
+        return '0.00' === $canonical && hash_equals($storedHash, $this->payloadHash($dto, -0.0));
     }
 }

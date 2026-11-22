@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FinSi\FinanceDomain\ReadModels;
 
-use function abs;
+use FinSi\FinanceDomain\Money\Decimal;
 use function array_filter;
 use function array_merge;
 use function array_reverse;
@@ -20,9 +20,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 use function in_array;
-use function min;
 use function optional;
-use function round;
 
 class BuildAccountMemberSummary
 {
@@ -73,29 +71,30 @@ class BuildAccountMemberSummary
         return [
             'user_id'           => $user->id,
             'user_name'         => $user->name,
-            'custody_amount'    => round($this->custodyAmount($userEntries), 2),
-            'settlement_amount' => round($this->settlementAmount($userEntries), 2),
+            'custody_amount'    => $this->custodyAmount($userEntries),
+            'settlement_amount' => $this->settlementAmount($userEntries),
         ];
     }
 
-    private function custodyAmount(Collection $entries): float
+    private function custodyAmount(Collection $entries): string
     {
-        return (float) $entries
-            ->filter(fn (AccountMemberLedgerEntry $entry): bool => in_array($entry->type, [
+        return Decimal::sum(
+            $entries->filter(fn (AccountMemberLedgerEntry $entry): bool => in_array($entry->type, [
                 AccountMemberLedgerEntryType::IncomeCustody,
                 AccountMemberLedgerEntryType::AccountFundExpense,
                 AccountMemberLedgerEntryType::InternalTransfer,
                 AccountMemberLedgerEntryType::ManualAdjustment,
                 AccountMemberLedgerEntryType::CustodyCorrection,
                 AccountMemberLedgerEntryType::CustodyReimbursementPayment,
-            ], true))
-            ->sum('amount');
+            ], true)),
+            'amount',
+        );
     }
 
-    private function settlementAmount(Collection $entries): float
+    private function settlementAmount(Collection $entries): string
     {
-        return (float) $entries
-            ->filter(fn (AccountMemberLedgerEntry $entry): bool => in_array($entry->type, [
+        return Decimal::sum(
+            $entries->filter(fn (AccountMemberLedgerEntry $entry): bool => in_array($entry->type, [
                 AccountMemberLedgerEntryType::ExpensePaid,
                 AccountMemberLedgerEntryType::ExpenseShare,
                 AccountMemberLedgerEntryType::SettlementTransfer,
@@ -106,8 +105,9 @@ class BuildAccountMemberSummary
                 AccountMemberLedgerEntryType::AccountDeficitShare,
                 AccountMemberLedgerEntryType::AccountDeficitPayment,
                 AccountMemberLedgerEntryType::LegacySettlement,
-            ], true))
-            ->sum('amount');
+            ], true)),
+            'amount',
+        );
     }
 
     private function pendingReimbursements(Account $account, Collection $summary): array
@@ -119,7 +119,7 @@ class BuildAccountMemberSummary
                 ->groupBy(fn (array $item): string => ($item['action_type'] ?? 'user_to_user') . ':' . $item['from_user_id'] . ':' . $item['to_user_id'])
                 ->map(fn (Collection $items): array => [
                     ...$items->first(),
-                    'amount' => round((float) $items->sum('amount'), 2),
+                    'amount' => Decimal::sum($items, 'amount'),
                     'items'  => $items->flatMap(fn (array $item): array => $item['items'])->values()->all(),
                 ])->values()->all();
         }
@@ -130,24 +130,24 @@ class BuildAccountMemberSummary
     private function netSettlementDebts(Account $account, Collection $summary): array
     {
         $debtors = $summary
-            ->filter(fn (array $item): bool => $item['settlement_amount'] < 0)
-            ->map(fn (array $item): array => [...$item, 'open_amount' => abs($item['settlement_amount'])])
+            ->filter(fn (array $item): bool => Decimal::compare($item['settlement_amount'], 0) < 0)
+            ->map(fn (array $item): array => [...$item, 'open_amount' => Decimal::abs($item['settlement_amount'])])
             ->values();
         $creditors = $summary
-            ->filter(fn (array $item): bool => $item['settlement_amount'] > 0)
+            ->filter(fn (array $item): bool => Decimal::compare($item['settlement_amount'], 0) > 0)
             ->map(fn (array $item): array => [...$item, 'open_amount' => $item['settlement_amount']])
             ->values();
         $items = [];
 
         foreach ($debtors as &$debtor) {
             foreach ($creditors as &$creditor) {
-                if ($debtor['open_amount'] <= 0 || $creditor['open_amount'] <= 0) {
+                if (Decimal::compare($debtor['open_amount'], 0) <= 0 || Decimal::compare($creditor['open_amount'], 0) <= 0) {
                     continue;
                 }
 
-                $amount = round(min($debtor['open_amount'], $creditor['open_amount']), 2);
+                $amount = Decimal::min($debtor['open_amount'], $creditor['open_amount']);
 
-                if ($amount <= 0) {
+                if (Decimal::compare($amount, 0) <= 0) {
                     continue;
                 }
 
@@ -165,8 +165,8 @@ class BuildAccountMemberSummary
                     ),
                 ];
 
-                $debtor['open_amount'] = round($debtor['open_amount'] - $amount, 2);
-                $creditor['open_amount'] = round($creditor['open_amount'] - $amount, 2);
+                $debtor['open_amount'] = Decimal::subtract($debtor['open_amount'], $amount);
+                $creditor['open_amount'] = Decimal::subtract($creditor['open_amount'], $amount);
             }
         }
 
@@ -188,7 +188,7 @@ class BuildAccountMemberSummary
         );
 
         $openAmounts = $account->memberLedgerEntries()
-            ->selectRaw('transaction_id, user_id, round(sum(amount), 2) as open_amount')
+            ->selectRaw('transaction_id, user_id, sum(amount) as open_amount')
             ->whereNotNull('transaction_id')
             ->whereNotIn('transaction_id', function ($query): void {
                 $query
@@ -207,7 +207,7 @@ class BuildAccountMemberSummary
                 AccountMemberLedgerEntryType::SettlementCorrection,
             ])
             ->groupBy('transaction_id', 'user_id')
-            ->havingRaw('abs(open_amount) > 0.001')
+            ->havingRaw('abs(open_amount) > 0')
             ->with('transaction')
             ->orderByDesc('transaction_id')
             ->get()
@@ -222,30 +222,30 @@ class BuildAccountMemberSummary
 
         foreach ($openAmounts as $transactionId => $transactionRows) {
             $debtors = $transactionRows
-                ->filter(fn (AccountMemberLedgerEntry $entry): bool => (float) $entry->open_amount < -0.001)
+                ->filter(fn (AccountMemberLedgerEntry $entry): bool => Decimal::compare((string) $entry->open_amount, 0) < 0)
                 ->map(fn (AccountMemberLedgerEntry $entry): array => [
                     'user_id'     => (int) $entry->user_id,
-                    'open_amount' => abs(round((float) $entry->open_amount, 2)),
+                    'open_amount' => Decimal::abs((string) $entry->open_amount),
                     'transaction' => $entry->transaction,
                 ])
                 ->values();
             $creditors = $transactionRows
-                ->filter(fn (AccountMemberLedgerEntry $entry): bool => (float) $entry->open_amount > 0.001)
+                ->filter(fn (AccountMemberLedgerEntry $entry): bool => Decimal::compare((string) $entry->open_amount, 0) > 0)
                 ->map(fn (AccountMemberLedgerEntry $entry): array => [
                     'user_id'     => (int) $entry->user_id,
-                    'open_amount' => round((float) $entry->open_amount, 2),
+                    'open_amount' => Decimal::normalize((string) $entry->open_amount),
                 ])
                 ->values();
 
             foreach ($debtors as &$debtor) {
                 foreach ($creditors as &$creditor) {
-                    if ($debtor['open_amount'] <= 0.0 || $creditor['open_amount'] <= 0.0) {
+                    if (Decimal::compare($debtor['open_amount'], 0) <= 0 || Decimal::compare($creditor['open_amount'], 0) <= 0) {
                         continue;
                     }
 
-                    $amount = round(min($debtor['open_amount'], $creditor['open_amount']), 2);
+                    $amount = Decimal::min($debtor['open_amount'], $creditor['open_amount']);
 
-                    if ($amount <= 0.0) {
+                    if (Decimal::compare($amount, 0) <= 0) {
                         continue;
                     }
 
@@ -260,8 +260,8 @@ class BuildAccountMemberSummary
                         actionType: 'user_to_user',
                     );
 
-                    $debtor['open_amount'] = round($debtor['open_amount'] - $amount, 2);
-                    $creditor['open_amount'] = round($creditor['open_amount'] - $amount, 2);
+                    $debtor['open_amount'] = Decimal::subtract($debtor['open_amount'], $amount);
+                    $creditor['open_amount'] = Decimal::subtract($creditor['open_amount'], $amount);
                 }
             }
         }
@@ -273,7 +273,7 @@ class BuildAccountMemberSummary
 
         $genericDebts = array_values(array_filter(
             $reimbursementsByPair,
-            fn (array $item): bool => (float) $item['amount'] > 0.0,
+            fn (array $item): bool => Decimal::compare($item['amount'], 0) > 0,
         ));
 
         return array_merge($typedDebts, $genericDebts);
@@ -286,7 +286,7 @@ class BuildAccountMemberSummary
         int $toUserId,
         int $transactionId,
         ?Transaction $transaction,
-        float $amount,
+        string $amount,
         string $actionType,
     ): void {
         $key = "{$actionType}:{$fromUserId}:{$toUserId}";
@@ -300,16 +300,13 @@ class BuildAccountMemberSummary
                 'from_user_name' => $fromUser?->name ?? 'Usuario no disponible',
                 'to_user_id'     => $toUserId,
                 'to_user_name'   => $toUser?->name ?? 'Usuario no disponible',
-                'amount'         => 0.0,
+                'amount'         => '0.00',
                 'action_type'    => $actionType,
                 'items'          => [],
             ];
         }
 
-        $reimbursementsByPair[$key]['amount'] = round(
-            (float) $reimbursementsByPair[$key]['amount'] + $amount,
-            2,
-        );
+        $reimbursementsByPair[$key]['amount'] = Decimal::add($reimbursementsByPair[$key]['amount'], $amount);
         $reimbursementsByPair[$key]['items'][] = [
             'transaction_id' => (string) $transactionId,
             'concept'        => $transaction?->concept ?? 'Movimiento no disponible',
@@ -331,7 +328,7 @@ class BuildAccountMemberSummary
     private function selfCustodyReimbursementDebts(Account $account): array
     {
         $openAmounts = $account->memberLedgerEntries()
-            ->selectRaw('transaction_id, user_id, round(sum(amount), 2) as open_amount')
+            ->selectRaw('transaction_id, user_id, sum(amount) as open_amount')
             ->whereNotNull('transaction_id')
             ->whereColumn('user_id', 'related_user_id')
             ->whereIn('type', [
@@ -341,7 +338,7 @@ class BuildAccountMemberSummary
                 AccountMemberLedgerEntryType::VirtualCustodySettlementTransfer,
             ])
             ->groupBy('transaction_id', 'user_id')
-            ->havingRaw('open_amount < -0.001')
+            ->havingRaw('open_amount < 0')
             ->with('transaction')
             ->orderByDesc('transaction_id')
             ->get();
@@ -362,7 +359,7 @@ class BuildAccountMemberSummary
                 toUserId: $userId,
                 transactionId: (int) $entry->transaction_id,
                 transaction: $entry->transaction,
-                amount: abs(round((float) $entry->open_amount, 2)),
+                amount: Decimal::abs((string) $entry->open_amount),
                 actionType: 'custody_to_user',
             );
         }
@@ -377,7 +374,7 @@ class BuildAccountMemberSummary
         ?AccountMemberLedgerEntryType $requiredType = null,
     ): array {
         $query = $account->memberLedgerEntries()
-            ->selectRaw('transaction_id, user_id, round(sum(amount), 2) as open_amount')
+            ->selectRaw('transaction_id, user_id, sum(amount) as open_amount')
             ->whereNotNull('transaction_id')
             ->whereIn('type', $types);
 
@@ -397,7 +394,7 @@ class BuildAccountMemberSummary
 
         $openAmounts = $query
             ->groupBy('transaction_id', 'user_id')
-            ->havingRaw('abs(open_amount) > 0.001')
+            ->havingRaw('abs(open_amount) > 0')
             ->with('transaction')
             ->orderByDesc('transaction_id')
             ->get()
@@ -412,30 +409,30 @@ class BuildAccountMemberSummary
 
         foreach ($openAmounts as $transactionId => $transactionRows) {
             $debtors = $transactionRows
-                ->filter(fn (AccountMemberLedgerEntry $entry): bool => (float) $entry->open_amount < -0.001)
+                ->filter(fn (AccountMemberLedgerEntry $entry): bool => Decimal::compare((string) $entry->open_amount, 0) < 0)
                 ->map(fn (AccountMemberLedgerEntry $entry): array => [
                     'user_id'     => (int) $entry->user_id,
-                    'open_amount' => abs(round((float) $entry->open_amount, 2)),
+                    'open_amount' => Decimal::abs((string) $entry->open_amount),
                     'transaction' => $entry->transaction,
                 ])
                 ->values();
             $creditors = $transactionRows
-                ->filter(fn (AccountMemberLedgerEntry $entry): bool => (float) $entry->open_amount > 0.001)
+                ->filter(fn (AccountMemberLedgerEntry $entry): bool => Decimal::compare((string) $entry->open_amount, 0) > 0)
                 ->map(fn (AccountMemberLedgerEntry $entry): array => [
                     'user_id'     => (int) $entry->user_id,
-                    'open_amount' => round((float) $entry->open_amount, 2),
+                    'open_amount' => Decimal::normalize((string) $entry->open_amount),
                 ])
                 ->values();
 
             foreach ($debtors as &$debtor) {
                 foreach ($creditors as &$creditor) {
-                    if ($debtor['open_amount'] <= 0.0 || $creditor['open_amount'] <= 0.0) {
+                    if (Decimal::compare($debtor['open_amount'], 0) <= 0 || Decimal::compare($creditor['open_amount'], 0) <= 0) {
                         continue;
                     }
 
-                    $amount = round(min($debtor['open_amount'], $creditor['open_amount']), 2);
+                    $amount = Decimal::min($debtor['open_amount'], $creditor['open_amount']);
 
-                    if ($amount <= 0.0) {
+                    if (Decimal::compare($amount, 0) <= 0) {
                         continue;
                     }
 
@@ -450,21 +447,22 @@ class BuildAccountMemberSummary
                         actionType: $actionType,
                     );
 
-                    $debtor['open_amount'] = round($debtor['open_amount'] - $amount, 2);
-                    $creditor['open_amount'] = round($creditor['open_amount'] - $amount, 2);
+                    $debtor['open_amount'] = Decimal::subtract($debtor['open_amount'], $amount);
+                    $creditor['open_amount'] = Decimal::subtract($creditor['open_amount'], $amount);
                 }
             }
         }
 
         return array_values(array_filter(
             $reimbursementsByPair,
-            fn (array $item): bool => (float) $item['amount'] > 0.0,
+            fn (array $item): bool => Decimal::compare($item['amount'], 0) > 0,
         ));
     }
 
     private function accountDeficitDebts(Account $account): array
     {
         $entries = DB::table('account_member_ledger_entries')
+            ->selectRaw('account_member_ledger_entries.*, CAST(amount AS CHAR) as amount')
             ->where('account_id', $account->id)
             ->whereNotNull('transaction_id')
             ->whereIn('type', [
@@ -489,11 +487,11 @@ class BuildAccountMemberSummary
                     'transaction_id'  => (int) $rows->first()->transaction_id,
                     'user_id'         => (int) $rows->first()->user_id,
                     'related_user_id' => (int) ($share?->related_user_id ?: $rows->first()->related_user_id ?: $rows->first()->user_id),
-                    'open_amount'     => round((float) $rows->sum('amount'), 2),
+                    'open_amount'     => Decimal::sum($rows, 'amount'),
                     'transaction'     => Transaction::withoutGlobalScopes()->find((int) $rows->first()->transaction_id),
                 ];
             })
-            ->filter(fn (array $row): bool => (float) $row['open_amount'] < -0.001)
+            ->filter(fn (array $row): bool => Decimal::compare((string) $row['open_amount'], 0) < 0)
             ->values();
 
         foreach ($openAmounts as $entry) {
@@ -507,7 +505,7 @@ class BuildAccountMemberSummary
                 toUserId: $toUserId,
                 transactionId: (int) $entry['transaction_id'],
                 transaction: $entry['transaction'],
-                amount: abs(round((float) $entry['open_amount'], 2)),
+                amount: Decimal::abs($entry['open_amount']),
                 actionType: 'user_to_account',
             );
         }
@@ -516,12 +514,12 @@ class BuildAccountMemberSummary
     }
 
     /**
-     * @return array<int, float>
+     * @return array<int, string>
      */
     private function nonTransactionSettlementCredits(Account $account): array
     {
         return $account->memberLedgerEntries()
-            ->selectRaw('user_id, round(sum(amount), 2) as amount')
+            ->selectRaw('user_id, sum(amount) as amount')
             ->whereNull('transaction_id')
             ->whereIn('type', [
                 AccountMemberLedgerEntryType::SettlementTransfer,
@@ -529,29 +527,29 @@ class BuildAccountMemberSummary
                 AccountMemberLedgerEntryType::LegacySettlement,
             ])
             ->groupBy('user_id')
-            ->havingRaw('amount > 0.001')
+            ->havingRaw('amount > 0')
             ->get()
             ->mapWithKeys(fn (AccountMemberLedgerEntry $entry): array => [
-                (int) $entry->user_id => round((float) $entry->amount, 2),
+                (int) $entry->user_id => Decimal::normalize($entry->amount),
             ])
             ->all();
     }
 
     /**
      * @param array<string, array<string, mixed>> $reimbursementsByPair
-     * @param array<int, float> $debtorCredits
+     * @param array<int, string> $debtorCredits
      */
     private function applyDebtorCredits(array &$reimbursementsByPair, array $debtorCredits): void
     {
         foreach ($debtorCredits as $debtorUserId => $creditAmount) {
-            $remainingCredit = round($creditAmount, 2);
+            $remainingCredit = Decimal::normalize($creditAmount);
 
-            if ($remainingCredit <= 0.0) {
+            if (Decimal::compare($remainingCredit, 0) <= 0) {
                 continue;
             }
 
             foreach ($reimbursementsByPair as &$reimbursement) {
-                if ((int) $reimbursement['from_user_id'] !== $debtorUserId || $remainingCredit <= 0.0) {
+                if ((int) $reimbursement['from_user_id'] !== $debtorUserId || Decimal::compare($remainingCredit, 0) <= 0) {
                     continue;
                 }
 
@@ -563,27 +561,27 @@ class BuildAccountMemberSummary
     /**
      * @param array<string, mixed> $reimbursement
      */
-    private function reduceReimbursementFromOldestItems(array &$reimbursement, float &$remainingCredit): void
+    private function reduceReimbursementFromOldestItems(array &$reimbursement, string &$remainingCredit): void
     {
         $items = array_reverse($reimbursement['items']);
         $keptItems = [];
 
         foreach ($items as $item) {
-            $itemAmount = round((float) $item['amount'], 2);
+            $itemAmount = Decimal::normalize($item['amount']);
 
-            if ($remainingCredit > 0.0) {
-                $reduction = round(min($itemAmount, $remainingCredit), 2);
-                $itemAmount = round($itemAmount - $reduction, 2);
-                $remainingCredit = round($remainingCredit - $reduction, 2);
+            if (Decimal::compare($remainingCredit, 0) > 0) {
+                $reduction = Decimal::min($itemAmount, $remainingCredit);
+                $itemAmount = Decimal::subtract($itemAmount, $reduction);
+                $remainingCredit = Decimal::subtract($remainingCredit, $reduction);
             }
 
-            if ($itemAmount > 0.0) {
+            if (Decimal::compare($itemAmount, 0) > 0) {
                 $keptItems[] = [...$item, 'amount' => $itemAmount];
             }
         }
 
         $reimbursement['items'] = array_reverse($keptItems);
-        $reimbursement['amount'] = round((float) collect($reimbursement['items'])->sum('amount'), 2);
+        $reimbursement['amount'] = Decimal::sum($reimbursement['items'], 'amount');
     }
 
     private function accountUsers(Account $account): Collection

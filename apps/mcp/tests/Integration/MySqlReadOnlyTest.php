@@ -26,9 +26,13 @@ class MySqlReadOnlyTest extends TestCase
         if (! getenv('MCP_TEST_MYSQL_PORT')) {
             self::markTestSkipped('Requires disposable MySQL fixtures and a SELECT-only finance_mcp account.');
         }
+        $database = getenv('MCP_TEST_MYSQL_DATABASE') ?: 'finance_mcp_readonly_test';
+        if (! str_ends_with($database, '_test')) {
+            throw new \RuntimeException('MCP integration requires a disposable *_test database.');
+        }
         config(['database.default' => 'mysql', 'database.connections.mysql' => [
             'driver'   => 'mysql', 'host' => '127.0.0.1', 'port' => getenv('MCP_TEST_MYSQL_PORT'),
-            'database' => 'finance', 'username' => 'finance_mcp', 'password' => 'read-only-test',
+            'database' => $database, 'username' => 'finance_mcp', 'password' => 'read-only-test',
             'charset'  => 'utf8mb4', 'collation' => 'utf8mb4_unicode_ci', 'prefix' => '', 'strict' => true,
         ]]);
         DB::purge('mysql');

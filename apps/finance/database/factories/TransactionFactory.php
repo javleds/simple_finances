@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use Carbon\Carbon;
 use FinSi\FinanceDomain\Enums\TransactionStatus;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\User;
-use Carbon\Carbon;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,20 +27,20 @@ class TransactionFactory extends Factory
         $user = User::factory();
         $account = Account::factory()->state(fn () => ['user_id' => $user]);
         $type = $this->faker->randomElement(TransactionType::cases());
-        $amount = $this->faker->randomFloat(2, 1.0, 10000.0);
+        $amount = Decimal::fromMinor($this->faker->numberBetween(100, 1000000));
         $scheduledAt = Carbon::now()->subDays($this->faker->numberBetween(0, 30));
 
         return [
-            'concept' => $this->faker->words(3, true),
-            'amount' => $amount,
-            'percentage' => $this->faker->randomFloat(2, 10.0, 100.0),
-            'type' => $type,
-            'status' => TransactionStatus::Completed,
-            'user_id' => $user,
-            'account_id' => $account,
-            'scheduled_at' => $scheduledAt,
+            'concept'               => $this->faker->words(3, true),
+            'amount'                => $amount,
+            'percentage'            => Decimal::fromMinor($this->faker->numberBetween(1000, 10000)),
+            'type'                  => $type,
+            'status'                => TransactionStatus::Completed,
+            'user_id'               => $user,
+            'account_id'            => $account,
+            'scheduled_at'          => $scheduledAt,
             'parent_transaction_id' => null,
-            'financial_goal_id' => null,
+            'financial_goal_id'     => null,
         ];
     }
 

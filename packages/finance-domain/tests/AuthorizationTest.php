@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace FinSi\FinanceDomain\Tests;
 
+use FinSi\FinanceDomain\Money\Decimal;
+
 use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
 use FinSi\FinanceDomain\Authorization\AuthorizeInviteAccess;
 use FinSi\FinanceDomain\Authorization\AuthorizeUserOwnedResource;
@@ -41,8 +43,8 @@ final class AuthorizationTest extends TestCase
         self::assertSame([$private->id], $accounts->query($stranger->id)->pluck('id')->all());
         self::assertSame([$shared->id], $accounts->query($owner->id)->pluck('id')->all());
         self::assertEqualsCanonicalizing([$shared->id, $archived->id], $accounts->queryIncludingDeleted($owner->id)->pluck('id')->all());
-        self::assertSame(25, $transactions->query($member->id)->sum('amount'));
-        self::assertSame(900, $transactions->query($stranger->id)->sum('amount'));
+        self::assertSame('25.00', Decimal::normalize((string) $transactions->query($member->id)->sum('amount')));
+        self::assertSame('900.00', Decimal::normalize((string) $transactions->query($stranger->id)->sum('amount')));
         self::assertSame(0, $accounts->query(999)->count());
     }
 

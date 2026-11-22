@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use Carbon\Carbon;
 use FinSi\FinanceDomain\Enums\FinancialGoalStatus;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\User;
-use Carbon\Carbon;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -22,18 +25,18 @@ class FinancialGoalFactory extends Factory
     {
         $user = User::factory();
         $account = Account::factory()->state(fn () => ['user_id' => $user]);
-        $amount = $this->faker->randomFloat(2, 100.0, 25000.0);
-        $progress = $this->faker->randomFloat(2, 0, 100);
+        $amount = Decimal::fromMinor($this->faker->numberBetween(10000, 2500000));
+        $progress = Decimal::fromMinor($this->faker->numberBetween(0, 10000));
 
         return [
-            'name' => $this->faker->words(3, true),
-            'amount' => $amount,
-            'achieved_amount' => 0.0,
-            'progress' => $progress,
+            'name'              => $this->faker->words(3, true),
+            'amount'            => $amount,
+            'achieved_amount'   => '0.00',
+            'progress'          => $progress,
             'must_completed_at' => $this->faker->boolean(60) ? Carbon::now()->addMonths($this->faker->numberBetween(1, 12)) : null,
-            'status' => $progress >= 100 ? FinancialGoalStatus::Completed : FinancialGoalStatus::InProgress,
-            'account_id' => $account,
-            'user_id' => $user,
+            'status'            => $progress >= 100 ? FinancialGoalStatus::Completed : FinancialGoalStatus::InProgress,
+            'account_id'        => $account,
+            'user_id'           => $user,
         ];
     }
 }

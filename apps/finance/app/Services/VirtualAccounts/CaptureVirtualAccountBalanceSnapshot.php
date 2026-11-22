@@ -1,35 +1,43 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\VirtualAccounts;
 
+use function abort_if;
+use function abort_unless;
+
+use App\Services\Accounts\RecalculateAccountBalance;
+use Carbon\CarbonInterface;
 use FinSi\FinanceDomain\Enums\TransactionStatus;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountBalanceSnapshot;
 use FinSi\FinanceDomain\Models\Transaction;
-use App\Services\Accounts\RecalculateAccountBalance;
-use Carbon\CarbonInterface;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CaptureVirtualAccountBalanceSnapshot
 {
     public function __construct(
         private readonly RecalculateAccountBalance $recalculateAccountBalance,
-    ) {}
+    ) {
+    }
 
     public function create(
         Account $account,
         int $userId,
-        float $observedBalance,
-        string|CarbonInterface $observedAt,
+        string $observedBalance,
+        string | CarbonInterface $observedAt,
         ?string $notes = null,
     ): AccountBalanceSnapshot {
-        $this->ensureSupportedVirtualAccount($account);
-
         return DB::transaction(function () use ($account, $userId, $observedBalance, $observedAt, $notes): AccountBalanceSnapshot {
-            $previousBalance = round((float) $account->balance, 2);
-            $delta = round($observedBalance - $previousBalance, 2);
+            $account = Account::withoutGlobalScopes()->whereKey($account->id)->lockForUpdate()->firstOrFail();
+            $this->ensureSupportedVirtualAccount($account);
+            $previousBalance = Decimal::normalize($account->balance);
+            $delta = Decimal::subtract($observedBalance, $previousBalance);
             $snapshot = $this->createSnapshot(
                 account: $account,
                 userId: $userId,
@@ -55,20 +63,22 @@ class CaptureVirtualAccountBalanceSnapshot
 
     public function update(
         AccountBalanceSnapshot $snapshot,
-        float $observedBalance,
-        string|CarbonInterface $observedAt,
+        string $observedBalance,
+        string | CarbonInterface $observedAt,
         ?string $notes = null,
     ): AccountBalanceSnapshot {
-        $account = $snapshot->account()->withoutGlobalScopes()->firstOrFail();
-        $this->ensureSupportedVirtualAccount($account);
-        $this->ensureLatestSnapshot($snapshot);
+        $accountId = AccountBalanceSnapshot::query()->whereKey($snapshot->id)->firstOrFail(['id', 'account_id'])->account_id;
 
-        return DB::transaction(function () use ($snapshot, $account, $observedBalance, $observedAt, $notes): AccountBalanceSnapshot {
+        return DB::transaction(function () use ($snapshot, $accountId, $observedBalance, $observedAt, $notes): AccountBalanceSnapshot {
+            $account = Account::withoutGlobalScopes()->whereKey($accountId)->lockForUpdate()->firstOrFail();
+            $snapshot = AccountBalanceSnapshot::query()->where('account_id', $accountId)->whereKey($snapshot->id)->lockForUpdate()->firstOrFail();
+            $this->ensureSupportedVirtualAccount($account);
+            $this->ensureLatestSnapshot($snapshot);
             $this->deleteAdjustmentTransaction($snapshot);
             $this->recalculateAccountBalance->execute($account);
 
-            $previousBalance = round((float) $account->fresh()->balance, 2);
-            $delta = round($observedBalance - $previousBalance, 2);
+            $previousBalance = Decimal::normalize($account->fresh()->balance);
+            $delta = Decimal::subtract($observedBalance, $previousBalance);
 
             $snapshot->observed_balance = $observedBalance;
             $snapshot->previous_balance = $previousBalance;
@@ -93,11 +103,13 @@ class CaptureVirtualAccountBalanceSnapshot
 
     public function delete(AccountBalanceSnapshot $snapshot): void
     {
-        $account = $snapshot->account()->withoutGlobalScopes()->firstOrFail();
-        $this->ensureSupportedVirtualAccount($account);
-        $this->ensureLatestSnapshot($snapshot);
+        $accountId = AccountBalanceSnapshot::query()->whereKey($snapshot->id)->firstOrFail(['id', 'account_id'])->account_id;
 
-        DB::transaction(function () use ($snapshot, $account): void {
+        DB::transaction(function () use ($snapshot, $accountId): void {
+            $account = Account::withoutGlobalScopes()->whereKey($accountId)->lockForUpdate()->firstOrFail();
+            $snapshot = AccountBalanceSnapshot::query()->where('account_id', $accountId)->whereKey($snapshot->id)->lockForUpdate()->firstOrFail();
+            $this->ensureSupportedVirtualAccount($account);
+            $this->ensureLatestSnapshot($snapshot);
             $this->deleteAdjustmentTransaction($snapshot);
             $snapshot->delete();
             $this->recalculateAccountBalance->execute($account);
@@ -107,41 +119,45 @@ class CaptureVirtualAccountBalanceSnapshot
     private function createSnapshot(
         Account $account,
         int $userId,
-        float $observedBalance,
-        float $previousBalance,
-        float $delta,
-        string|CarbonInterface $observedAt,
+        string $observedBalance,
+        string $previousBalance,
+        string $delta,
+        string | CarbonInterface $observedAt,
         ?string $notes,
     ): AccountBalanceSnapshot {
         return AccountBalanceSnapshot::query()->create([
-            'account_id' => $account->id,
-            'user_id' => $userId,
+            'account_id'       => $account->id,
+            'user_id'          => $userId,
             'observed_balance' => $observedBalance,
             'previous_balance' => $previousBalance,
-            'delta' => $delta,
-            'observed_at' => $this->parseDate($observedAt),
-            'notes' => $notes,
+            'delta'            => $delta,
+            'observed_at'      => $this->parseDate($observedAt),
+            'notes'            => $notes,
         ]);
     }
 
     private function createAdjustmentTransaction(AccountBalanceSnapshot $snapshot, int $userId): ?Transaction
     {
-        if (round((float) $snapshot->delta, 2) === 0.0) {
+        if (0 === Decimal::compare(Decimal::normalize($snapshot->delta), '0.00')) {
             return null;
         }
 
-        $transaction = new Transaction;
-        $transaction->type = $snapshot->delta > 0 ? TransactionType::Income : TransactionType::Outcome;
+        if (Decimal::compare(Decimal::abs($snapshot->delta), '99999999.99') > 0) {
+            throw ValidationException::withMessages(['observed_balance' => 'The resulting adjustment exceeds the supported transaction range.']);
+        }
+
+        $transaction = new Transaction();
+        $transaction->type = Decimal::compare($snapshot->delta, 0) > 0 ? TransactionType::Income : TransactionType::Outcome;
         $transaction->status = TransactionStatus::Completed;
-        $transaction->concept = $snapshot->delta > 0
+        $transaction->concept = Decimal::compare($snapshot->delta, 0) > 0
             ? 'Rendimiento observado'
             : 'Ajuste observado de saldo';
-        $transaction->amount = abs((float) $snapshot->delta);
-        $transaction->percentage = 100.0;
+        $transaction->amount = Decimal::abs(Decimal::normalize($snapshot->delta));
+        $transaction->percentage = '100.00';
         $transaction->account_id = $snapshot->account_id;
         $transaction->user_id = $userId;
-        $transaction->custodian_user_id = $snapshot->delta > 0 ? $userId : null;
-        $transaction->paid_by_user_id = $snapshot->delta < 0 ? $userId : null;
+        $transaction->custodian_user_id = Decimal::compare($snapshot->delta, 0) > 0 ? $userId : null;
+        $transaction->paid_by_user_id = Decimal::compare($snapshot->delta, 0) < 0 ? $userId : null;
         $transaction->payment_source = null;
         $transaction->scheduled_at = $snapshot->observed_at;
         $transaction->account_balance_snapshot_id = $snapshot->id;
@@ -175,6 +191,7 @@ class CaptureVirtualAccountBalanceSnapshot
             ->where('account_id', $snapshot->account_id)
             ->orderByDesc('observed_at')
             ->orderByDesc('id')
+            ->lockForUpdate()
             ->first();
 
         abort_unless(
@@ -184,7 +201,7 @@ class CaptureVirtualAccountBalanceSnapshot
         );
     }
 
-    private function parseDate(string|CarbonInterface $date): CarbonInterface
+    private function parseDate(string | CarbonInterface $date): CarbonInterface
     {
         if ($date instanceof CarbonInterface) {
             return $date;

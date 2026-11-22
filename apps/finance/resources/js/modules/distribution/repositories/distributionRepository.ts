@@ -1,3 +1,4 @@
+import { sumMoney } from '@/modules/shared/lib/money';
 import { z } from 'zod';
 
 import { createApiClient } from '@/lib/api/apiClient';
@@ -76,7 +77,7 @@ export function createDistributionRepository() {
           return {
             ...rule,
             outcomesCount: ruleRelations.length,
-            totalAmount: ruleRelations.reduce((sum, relation) => sum + relation.amount, 0),
+            totalAmount: sumMoney(ruleRelations.map((item) => item.amount)),
           };
         }),
       };
@@ -95,7 +96,7 @@ export function createDistributionRepository() {
       return {
         ...rule,
         outcomesCount: relations.length,
-        totalAmount: relations.reduce((sum, relation) => sum + relation.amount, 0),
+        totalAmount: sumMoney(relations.map((item) => item.amount)),
       };
     },
     async createRule(payload: DistributionRuleWritePayload): Promise<DistributionRule> {

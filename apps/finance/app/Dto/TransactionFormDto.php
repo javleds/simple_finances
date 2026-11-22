@@ -1,11 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Dto;
 
-use FinSi\FinanceDomain\Enums\TransactionStatus;
-use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
-use FinSi\FinanceDomain\Enums\TransactionType;
+use function array_key_exists;
+
 use Carbon\CarbonInterface;
+
+use function collect;
+
+use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
+use FinSi\FinanceDomain\Enums\TransactionStatus;
+use FinSi\FinanceDomain\Enums\TransactionType;
+use FinSi\FinanceDomain\Money\Decimal;
 
 class TransactionFormDto
 {
@@ -14,19 +22,21 @@ class TransactionFormDto
         public TransactionType $type,
         public TransactionStatus $status,
         public string $concept,
-        public float $amount,
+        public string $amount,
         public int $accountId,
         public ?int $paidByUserId,
         public ?int $custodianUserId,
         public TransactionPaymentSource $paymentSource,
         public bool $splitBetweenUsers,
         public array $userPayments,
-        public string|CarbonInterface $scheduledAt,
+        public string | CarbonInterface $scheduledAt,
         public ?int $financialGoalId,
         public ?int $categoryId = null,
         public bool $categoryProvided = false,
         public ?string $cashSource = null,
-    ) {}
+    ) {
+        $this->amount = Decimal::normalize($amount);
+    }
 
     public static function fromFormArray(array $data): self
     {
@@ -38,7 +48,7 @@ class TransactionFormDto
             type: $type instanceof TransactionType ? $type : TransactionType::from($type),
             status: $status instanceof TransactionStatus ? $status : TransactionStatus::from($status),
             concept: $data['concept'],
-            amount: (float) $data['amount'],
+            amount: Decimal::normalize($data['amount']),
             accountId: (int) $data['account_id'],
             paidByUserId: isset($data['paid_by_user_id']) ? (int) $data['paid_by_user_id'] : null,
             custodianUserId: isset($data['custodian_user_id']) ? (int) $data['custodian_user_id'] : null,

@@ -21,7 +21,7 @@ const props = withDefaults(
     accountId: string;
     accountUsers: AccountMember[];
     virtualCustodians?: ReadonlyArray<{ id: string; name: string }>;
-    accountBalance?: number | null;
+    accountBalance?: string | null;
     currentUserId?: string | null;
     createTransactionActions: ReadonlyArray<AppModalAction>;
     deleteError?: string | null;

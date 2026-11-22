@@ -13,6 +13,27 @@ afterEach(() => {
 });
 
 describe('integrated API transport', () => {
+    it('reports a contract revision conflict without replaying a financial write', async () => {
+        setStoredAuthToken('current-token');
+        const message =
+            'Actualiza la aplicación para continuar con el contrato financiero vigente.';
+        const fetchMock = vi
+            .fn<typeof fetch>()
+            .mockResolvedValue(
+                new Response(
+                    JSON.stringify({ code: 'financial_contract_update_required', message }),
+                    { status: 409, headers: { 'Content-Type': 'application/json' } },
+                ),
+            );
+        vi.stubGlobal('fetch', fetchMock);
+        await expect(
+            createApiClient().post('/transactions', { amount: '0.01' }),
+        ).rejects.toMatchObject({ status: 409, message });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(window.localStorage.getItem('finsi_20_auth_token')).toBe('current-token');
+        expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ 'X-Finance-Contract': '2' });
+    });
+
     it('preserves authentication and the destination when current legal acceptance is required', async () => {
         const assign = vi.fn();
         const localStorage = window.localStorage;
@@ -81,7 +102,7 @@ describe('integrated API transport', () => {
         expect(fetchMock).toHaveBeenCalledWith(
             '/api/profile',
             expect.objectContaining({
-                headers: { Accept: 'application/json' },
+                headers: { Accept: 'application/json', 'X-Finance-Contract': '2' },
             }),
         );
     });
@@ -101,7 +122,11 @@ describe('integrated API transport', () => {
         expect(fetchMock).toHaveBeenCalledWith(
             'https://api.example.com/api/profile',
             expect.objectContaining({
-                headers: { Accept: 'application/json', Authorization: 'Bearer test-token' },
+                headers: {
+                    Accept: 'application/json',
+                    'X-Finance-Contract': '2',
+                    Authorization: 'Bearer test-token',
+                },
             }),
         );
     });
@@ -145,6 +170,7 @@ describe('private attachment transport', () => {
         expect(options?.body).toBe(body);
         expect(options?.headers).toEqual({
             Accept: 'application/json',
+            'X-Finance-Contract': '2',
             Authorization: 'Bearer file-token',
         });
     });

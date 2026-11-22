@@ -1,21 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Transaction;
 
 use App\Dto\TransactionSummaryDto;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Database\Eloquent\Builder;
 
 class BuildTransactionSummary
 {
     public function execute(Builder $query): TransactionSummaryDto
     {
-        $incomeTotal = round((float) (clone $query)->income()->sum('amount'), 2);
-        $outcomeTotal = round((float) (clone $query)->outcome()->sum('amount'), 2);
+        $incomeTotal = Decimal::normalize((clone $query)->income()->sum('amount'));
+        $outcomeTotal = Decimal::normalize((clone $query)->outcome()->sum('amount'));
 
         return new TransactionSummaryDto(
             incomeTotal: $incomeTotal,
             outcomeTotal: $outcomeTotal,
-            balance: round($incomeTotal - $outcomeTotal, 2),
+            balance: Decimal::subtract($incomeTotal, $outcomeTotal),
         );
     }
 }

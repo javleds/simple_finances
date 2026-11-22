@@ -9,15 +9,15 @@ const input = defineComponent({
     template:
         '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 });
-function render(amount = 0) {
+function render(amount = '0.00') {
     return mount(AppPercentageSplitEditor, {
         props: {
             users: [],
             modelValue: {},
             monetary: {
-                total: 100000,
+                total: '100000.00',
                 amount,
-                maximum: 100000,
+                maximum: '100000.00',
                 source: 'Javi',
                 recipient: 'Mercadopago',
             },
@@ -27,29 +27,36 @@ function render(amount = 0) {
 }
 
 describe('monetary split editor', () => {
+    it('does not round an input with excess precision', async () => {
+        const wrapper = render();
+        await wrapper.get('input').setValue('0.015');
+        await wrapper.get('input').trigger('blur');
+        expect(wrapper.emitted('update:amount')).toBeUndefined();
+        expect(wrapper.get('input').element.value).toBe('0.015');
+    });
     it('preserves exact cents even when the percentage cannot represent them', async () => {
         const wrapper = render();
         await wrapper.get('input').setValue('123.45');
         await wrapper.get('input').trigger('blur');
-        expect(wrapper.emitted('update:amount')?.[0]).toEqual([123.45]);
+        expect(wrapper.emitted('update:amount')?.[0]).toEqual(['123.45']);
         expect(wrapper.emitted('update:modelValue')).toBeUndefined();
     });
     it('caps amounts to the available remainder and supports keyboard cents', async () => {
-        const wrapper = render(12.34);
+        const wrapper = render('12.34');
         await wrapper.setProps({
             monetary: {
-                total: 100000,
-                amount: 12.34,
-                maximum: 24.56,
+                total: '100000.00',
+                amount: '12.34',
+                maximum: '24.56',
                 source: 'Javi',
                 recipient: 'Mercadopago',
             },
         });
         await wrapper.get('[role="slider"]').trigger('keydown', { key: 'ArrowRight' });
-        expect(wrapper.emitted('update:amount')?.[0]).toEqual([12.35]);
+        expect(wrapper.emitted('update:amount')?.[0]).toEqual(['12.35']);
         await wrapper.get('input').setValue('90');
         await wrapper.get('input').trigger('blur');
-        expect(wrapper.emitted('update:amount')?.[1]).toEqual([24.56]);
+        expect(wrapper.emitted('update:amount')?.[1]).toEqual(['24.56']);
     });
     it('retains the existing percentage normalization', () => {
         const wrapper = mount(AppPercentageSplitEditor, {

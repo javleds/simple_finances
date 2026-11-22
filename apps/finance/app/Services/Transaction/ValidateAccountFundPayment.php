@@ -8,6 +8,7 @@ use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\Transaction;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Validation\ValidationException;
 
 class ValidateAccountFundPayment
@@ -27,7 +28,7 @@ class ValidateAccountFundPayment
             return;
         }
 
-        if ($account->balance <= 0) {
+        if (Decimal::compare($account->balance, 0) <= 0) {
             throw ValidationException::withMessages(['payment_source' => 'La cuenta no tiene saldo disponible. Registra el gasto como pagado de bolsillo.']);
         }
     }

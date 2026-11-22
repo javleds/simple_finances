@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { sumMoney, formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
 import { computed, ref } from 'vue';
 import { BanknotesIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/vue/24/outline';
 
@@ -76,13 +77,8 @@ const totalReimbursements = computed(() =>
 
 const showAllSettlementAction = computed(() => accountsWithCurrentUserDebts.value.length > 1);
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value);
+function formatCurrency(value: string): string {
+    return formatExactMoney(value);
 }
 
 function transferKey(accountId: string, reimbursement: AccountPendingReimbursement): string {
@@ -95,11 +91,8 @@ function currentUserDebts(
     return reimbursements.filter((item) => reimbursementRole(item) === 'debtor');
 }
 
-function accountDebtTotal(account: Account): number {
-    return currentUserDebts(account.pendingReimbursements).reduce(
-        (sum, item) => sum + item.amount,
-        0,
-    );
+function accountDebtTotal(account: Account): string {
+    return sumMoney(currentUserDebts(account.pendingReimbursements).map((item) => item.amount));
 }
 
 function shouldShowAccountSettlementAction(account: Account): boolean {
@@ -110,20 +103,14 @@ function pluralize(value: number, singular: string, plural: string): string {
     return value === 1 ? singular : plural;
 }
 
-function bulkActionTotal(action: PendingBulkAction | null): number {
-    if (!action) {
-        return 0;
-    }
-
-    if (action.kind === 'account') {
-        return action.reimbursements.reduce((sum, item) => sum + item.amount, 0);
-    }
-
-    return action.accounts.reduce(
-        (sum, account) =>
-            sum +
-            account.pendingReimbursements.reduce((accountSum, item) => accountSum + item.amount, 0),
-        0,
+function bulkActionTotal(action: PendingBulkAction | null): string {
+    if (!action) return '0.00';
+    if (action.kind === 'account')
+        return sumMoney(action.reimbursements.map((item) => item.amount));
+    return sumMoney(
+        action.accounts.flatMap((account) =>
+            account.pendingReimbursements.map((item) => item.amount),
+        ),
     );
 }
 

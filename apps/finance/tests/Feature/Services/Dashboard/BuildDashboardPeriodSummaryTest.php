@@ -1,10 +1,11 @@
 <?php
 
-use FinSi\FinanceDomain\Enums\TransactionStatus;
+declare(strict_types=1);
+
+use App\Services\Dashboard\BuildDashboardPeriodSummary;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\Transaction;
 use FinSi\FinanceDomain\Models\User;
-use App\Services\Dashboard\BuildDashboardPeriodSummary;
 
 it('summarizes completed transaction totals inside the selected period', function () {
     $user = User::factory()->create();
@@ -20,52 +21,52 @@ it('summarizes completed transaction totals inside the selected period', functio
     $otherAccount->users()->attach($otherUser->id);
 
     Transaction::factory()->income()->completed()->create([
-        'amount' => 50000,
-        'account_id' => $account->id,
-        'user_id' => $user->id,
+        'amount'       => 50000,
+        'account_id'   => $account->id,
+        'user_id'      => $user->id,
         'scheduled_at' => '2026-06-01',
     ]);
     $parentTransaction = Transaction::factory()->income()->completed()->create([
-        'amount' => 45000,
-        'account_id' => $account->id,
-        'user_id' => $user->id,
+        'amount'       => 45000,
+        'account_id'   => $account->id,
+        'user_id'      => $user->id,
         'scheduled_at' => '2026-06-05',
     ]);
     Transaction::factory()->income()->completed()->create([
-        'amount' => 700,
-        'account_id' => $account->id,
-        'user_id' => $user->id,
+        'amount'                => 700,
+        'account_id'            => $account->id,
+        'user_id'               => $user->id,
         'parent_transaction_id' => $parentTransaction->id,
-        'scheduled_at' => '2026-06-05',
+        'scheduled_at'          => '2026-06-05',
     ]);
     Transaction::factory()->outcome()->completed()->create([
-        'amount' => 1250.75,
-        'account_id' => $account->id,
-        'user_id' => $user->id,
+        'amount'       => '1250.75',
+        'account_id'   => $account->id,
+        'user_id'      => $user->id,
         'scheduled_at' => '2026-06-30 23:59:00',
     ]);
     Transaction::factory()->outcome()->pending()->create([
-        'amount' => 900,
-        'account_id' => $account->id,
-        'user_id' => $user->id,
+        'amount'       => 900,
+        'account_id'   => $account->id,
+        'user_id'      => $user->id,
         'scheduled_at' => '2026-06-10',
     ]);
     Transaction::factory()->income()->completed()->create([
-        'amount' => 5000,
-        'account_id' => $account->id,
-        'user_id' => $user->id,
+        'amount'       => 5000,
+        'account_id'   => $account->id,
+        'user_id'      => $user->id,
         'scheduled_at' => '2026-07-01',
     ]);
     Transaction::factory()->income()->completed()->create([
-        'amount' => 3000,
-        'account_id' => $otherAccount->id,
-        'user_id' => $otherUser->id,
+        'amount'       => 3000,
+        'account_id'   => $otherAccount->id,
+        'user_id'      => $otherUser->id,
         'scheduled_at' => '2026-06-15',
     ]);
     Transaction::factory()->income()->completed()->create([
-        'amount' => 90000,
-        'account_id' => $deletedAccount->id,
-        'user_id' => $user->id,
+        'amount'       => 90000,
+        'account_id'   => $deletedAccount->id,
+        'user_id'      => $user->id,
         'scheduled_at' => '2026-06-15',
     ]);
     $deletedAccount->delete();
@@ -73,13 +74,13 @@ it('summarizes completed transaction totals inside the selected period', functio
     $summary = app(BuildDashboardPeriodSummary::class)->execute('2026-06-05', '2026-06-30');
 
     expect($summary)->toBe([
-        'period' => [
+        'period'        => [
             'start_date' => '2026-06-05',
-            'end_date' => '2026-06-30',
+            'end_date'   => '2026-06-30',
         ],
-        'income_total' => 45000.0,
-        'outcome_total' => 1250.75,
-        'balance' => 43749.25,
+        'income_total'  => '45000.00',
+        'outcome_total' => '1250.75',
+        'balance'       => '43749.25',
     ]);
 });
 
@@ -91,21 +92,21 @@ it('returns a negative balance when outcomes are greater than incomes', function
     $account->users()->attach($user->id);
 
     Transaction::factory()->income()->completed()->create([
-        'amount' => 100,
-        'account_id' => $account->id,
-        'user_id' => $user->id,
+        'amount'       => 100,
+        'account_id'   => $account->id,
+        'user_id'      => $user->id,
         'scheduled_at' => '2026-06-05',
     ]);
     Transaction::factory()->outcome()->completed()->create([
-        'amount' => 150,
-        'account_id' => $account->id,
-        'user_id' => $user->id,
+        'amount'       => 150,
+        'account_id'   => $account->id,
+        'user_id'      => $user->id,
         'scheduled_at' => '2026-06-06',
     ]);
 
     $summary = app(BuildDashboardPeriodSummary::class)->execute('2026-06-01', '2026-06-30');
 
-    expect($summary['income_total'])->toBe(100.0)
-        ->and($summary['outcome_total'])->toBe(150.0)
-        ->and($summary['balance'])->toBe(-50.0);
+    expect($summary['income_total'])->toBe('100.00')
+        ->and($summary['outcome_total'])->toBe('150.00')
+        ->and($summary['balance'])->toBe('-50.00');
 });

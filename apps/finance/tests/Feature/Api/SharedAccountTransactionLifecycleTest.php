@@ -1,5 +1,6 @@
 <?php
 
+use FinSi\FinanceDomain\Money\Decimal;
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
@@ -21,17 +22,17 @@ function sharedAccountLifecycleAccount(User $custodian, User $member, string $na
     $account = Account::factory()->create([
         'name' => $name,
         'user_id' => $custodian->id,
-        'balance' => 0.0,
+        'balance' => '0.00',
     ]);
     $account->users()->sync([
-        $custodian->id => ['percentage' => 50],
-        $member->id => ['percentage' => 50],
+        $custodian->id => ['percentage' => '50.00'],
+        $member->id => ['percentage' => '50.00'],
     ]);
 
     return $account;
 }
 
-function sharedAccountLifecycleSeedIncome($test, Account $account, User $custodian, float $amount): int
+function sharedAccountLifecycleSeedIncome($test, Account $account, User $custodian, string|int $amount): int
 {
     return (int) $test
         ->withHeaders(sharedAccountLifecycleHeaders($custodian))
@@ -39,7 +40,7 @@ function sharedAccountLifecycleSeedIncome($test, Account $account, User $custodi
             'type' => 'income',
             'status' => 'completed',
             'concept' => 'Initial account funds',
-            'amount' => $amount,
+            'amount' => Decimal::normalize($amount),
             'custodian_user_id' => $custodian->id,
             'split_between_users' => false,
             'scheduled_at' => '2026-07-01',
@@ -55,7 +56,7 @@ function sharedAccountLifecycleCreateSharedExpense(
     User $custodian,
     User $member,
     string $concept,
-    float $amount,
+    string|int $amount,
     int $paidByUserId,
 ): int {
     return (int) $test
@@ -64,13 +65,13 @@ function sharedAccountLifecycleCreateSharedExpense(
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => $concept,
-            'amount' => $amount,
+            'amount' => Decimal::normalize($amount),
             'paid_by_user_id' => $paidByUserId,
             'payment_source' => 'member_out_of_pocket',
             'split_between_users' => true,
             'user_payments' => [
-                ['user_id' => $custodian->id, 'percentage' => 50],
-                ['user_id' => $member->id, 'percentage' => 50],
+                ['user_id' => $custodian->id, 'percentage' => '50.00'],
+                ['user_id' => $member->id, 'percentage' => '50.00'],
             ],
             'scheduled_at' => '2026-07-10',
         ])
@@ -85,7 +86,7 @@ function sharedAccountLifecycleCreateSharedExpenseResponse(
     User $custodian,
     User $member,
     string $concept,
-    float $amount,
+    string|int $amount,
     int $paidByUserId,
 ) {
     return $test
@@ -94,13 +95,13 @@ function sharedAccountLifecycleCreateSharedExpenseResponse(
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => $concept,
-            'amount' => $amount,
+            'amount' => Decimal::normalize($amount),
             'paid_by_user_id' => $paidByUserId,
             'payment_source' => 'member_out_of_pocket',
             'split_between_users' => true,
             'user_payments' => [
-                ['user_id' => $custodian->id, 'percentage' => 50],
-                ['user_id' => $member->id, 'percentage' => 50],
+                ['user_id' => $custodian->id, 'percentage' => '50.00'],
+                ['user_id' => $member->id, 'percentage' => '50.00'],
             ],
             'scheduled_at' => '2026-07-10',
         ]);
@@ -114,7 +115,7 @@ function sharedAccountLifecycleUpdateSharedExpense(
     User $custodian,
     User $member,
     string $concept,
-    float $amount,
+    string|int $amount,
     int $paidByUserId,
 ): void {
     $test
@@ -123,20 +124,20 @@ function sharedAccountLifecycleUpdateSharedExpense(
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => $concept,
-            'amount' => $amount,
+            'amount' => Decimal::normalize($amount),
             'paid_by_user_id' => $paidByUserId,
             'payment_source' => 'member_out_of_pocket',
             'split_between_users' => true,
             'user_payments' => [
-                ['user_id' => $custodian->id, 'percentage' => 50],
-                ['user_id' => $member->id, 'percentage' => 50],
+                ['user_id' => $custodian->id, 'percentage' => '50.00'],
+                ['user_id' => $member->id, 'percentage' => '50.00'],
             ],
             'scheduled_at' => '2026-07-11',
         ])
         ->assertOk()
         ->assertJsonPath('data.concept', $concept)
-        ->assertJsonPath('data.amount', $amount)
-        ->assertJsonPath('meta.account.balance', (float) $account->fresh()->balance);
+        ->assertJsonPath('data.amount', Decimal::normalize($amount))
+        ->assertJsonPath('meta.account.balance', $account->fresh()->balance);
 }
 
 function sharedAccountLifecycleDeleteTransaction($test, Account $account, User $creator, int $transactionId): void
@@ -145,7 +146,7 @@ function sharedAccountLifecycleDeleteTransaction($test, Account $account, User $
         ->withHeaders(sharedAccountLifecycleHeaders($creator))
         ->deleteJson("/api/accounts/{$account->id}/transactions/{$transactionId}")
         ->assertOk()
-        ->assertJsonPath('meta.account.balance', (float) $account->fresh()->balance);
+        ->assertJsonPath('meta.account.balance', $account->fresh()->balance);
 }
 
 function sharedAccountLifecycleSettle(
@@ -154,7 +155,7 @@ function sharedAccountLifecycleSettle(
     User $actor,
     User $fromUser,
     User $toUser,
-    float $amount,
+    string|int $amount,
     string $actionType = 'user_to_user',
 ): void {
     $test
@@ -163,7 +164,7 @@ function sharedAccountLifecycleSettle(
             'from_user_id' => $fromUser->id,
             'to_user_id' => $toUser->id,
             'action_type' => $actionType,
-            'amount' => $amount,
+            'amount' => Decimal::normalize($amount),
             'description' => "Reimbursement from {$fromUser->name} to {$toUser->name}",
             'occurred_at' => '2026-07-12',
         ])
@@ -175,8 +176,8 @@ function sharedAccountLifecycleAssertTransactionBadge(
     Account $account,
     User $viewer,
     string $concept,
-    float $pending,
-    float $receivable,
+    string|int $pending,
+    string|int $receivable,
 ): void {
     $test
         ->withHeaders(sharedAccountLifecycleHeaders($viewer))
@@ -184,8 +185,8 @@ function sharedAccountLifecycleAssertTransactionBadge(
         ->assertOk()
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.concept', $concept)
-        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', $pending)
-        ->assertJsonPath('data.0.current_user_receivable_reimbursement_amount', $receivable);
+        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', Decimal::normalize($pending))
+        ->assertJsonPath('data.0.current_user_receivable_reimbursement_amount', Decimal::normalize($receivable));
 }
 
 function sharedAccountLifecycleAssertTransactionMissing($test, Account $account, User $viewer, string $concept): void
@@ -197,7 +198,7 @@ function sharedAccountLifecycleAssertTransactionMissing($test, Account $account,
         ->assertJsonCount(0, 'data');
 }
 
-function sharedAccountLifecycleAssertLedgerRow($test, Account $account, User $viewer, string $concept, float $balanceAfter): void
+function sharedAccountLifecycleAssertLedgerRow($test, Account $account, User $viewer, string $concept, string|int $balanceAfter): void
 {
     $rows = $test
         ->withHeaders(sharedAccountLifecycleHeaders($viewer))
@@ -208,7 +209,7 @@ function sharedAccountLifecycleAssertLedgerRow($test, Account $account, User $vi
     $row = collect($rows)->firstWhere('label', $concept);
 
     expect($row)->not->toBeNull()
-        ->and((float) $row['balance_after'])->toBe($balanceAfter)
+        ->and($row['balance_after'])->toBe(Decimal::normalize($balanceAfter))
         ->and($row['allocations'])->not->toBeEmpty()
         ->and($row['custody_after_by_user'])->not->toBeEmpty()
         ->and($row['settlement_after_by_user'])->not->toBeEmpty();
@@ -218,9 +219,9 @@ function sharedAccountLifecycleAssertExpenseLedger(
     int $transactionId,
     User $payer,
     User $otherUser,
-    float $amount,
-    float $payerShare,
-    float $otherShare,
+    string|int $amount,
+    string|int $payerShare,
+    string|int $otherShare,
 ): void {
     $entries = AccountMemberLedgerEntry::query()
         ->where('transaction_id', $transactionId)
@@ -244,26 +245,23 @@ function sharedAccountLifecycleAssertExpenseLedger(
         return;
     }
 
-    expect($entries)->toHaveCount($payerShare > 0.0 ? 3 : 2)
-        ->and(round((float) $entries
+    expect($entries)->toHaveCount($payerShare > '0.00' ? 3 : 2)
+        ->and(Decimal::sum($entries
             ->where('user_id', $payer->id)
-            ->where('type', AccountMemberLedgerEntryType::ExpensePaid)
-            ->sum('amount'), 2))->toBe($amount)
-        ->and(round((float) $entries
+            ->where('type', AccountMemberLedgerEntryType::ExpensePaid), 'amount'))->toBe(Decimal::normalize($amount))
+        ->and(Decimal::sum($entries
             ->where('user_id', $payer->id)
-            ->where('type', AccountMemberLedgerEntryType::ExpenseShare)
-            ->sum('amount'), 2))->toBe($payerShare * -1)
-        ->and(round((float) $entries
+            ->where('type', AccountMemberLedgerEntryType::ExpenseShare), 'amount'))->toBe(Decimal::negate($payerShare))
+        ->and(Decimal::sum($entries
             ->where('user_id', $otherUser->id)
-            ->where('type', AccountMemberLedgerEntryType::ExpenseShare)
-            ->sum('amount'), 2))->toBe($otherShare * -1);
+            ->where('type', AccountMemberLedgerEntryType::ExpenseShare), 'amount'))->toBe(Decimal::negate($otherShare));
 }
 
 it('keeps a positive ordinary shared account readable while a non custodian expense is edited, deleted and reimbursed', function () {
     $custodian = User::factory()->create(['name' => 'Custodian']);
     $member = User::factory()->create(['name' => 'Member']);
     $account = sharedAccountLifecycleAccount($custodian, $member, 'Positive ordinary account');
-    sharedAccountLifecycleSeedIncome($this, $account, $custodian, 1000.0);
+    sharedAccountLifecycleSeedIncome($this, $account, $custodian, '1000.00');
 
     $transactionId = sharedAccountLifecycleCreateSharedExpense(
         $this,
@@ -272,14 +270,14 @@ it('keeps a positive ordinary shared account readable while a non custodian expe
         $custodian,
         $member,
         'Member pharmacy',
-        200.0,
+        '200.00',
         $member->id,
     );
 
-    expect((float) $account->fresh()->balance)->toBe(800.0);
-    sharedAccountLifecycleAssertExpenseLedger($transactionId, $member, $custodian, 200.0, 0.0, 200.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Member pharmacy', 200.0, 0.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Member pharmacy', 0.0, 100.0);
+    expect($account->fresh()->balance)->toBe('800.00');
+    sharedAccountLifecycleAssertExpenseLedger($transactionId, $member, $custodian, '200.00', '0.00', '200.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Member pharmacy', '200.00', '0.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Member pharmacy', '0.00', '100.00');
 
     sharedAccountLifecycleUpdateSharedExpense(
         $this,
@@ -289,18 +287,18 @@ it('keeps a positive ordinary shared account readable while a non custodian expe
         $custodian,
         $member,
         'Member pharmacy updated',
-        300.0,
+        '300.00',
         $member->id,
     );
 
-    expect((float) $account->fresh()->balance)->toBe(700.0);
-    sharedAccountLifecycleAssertExpenseLedger($transactionId, $member, $custodian, 300.0, 0.0, 300.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Member pharmacy updated', 300.0, 0.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Member pharmacy updated', 0.0, 150.0);
+    expect($account->fresh()->balance)->toBe('700.00');
+    sharedAccountLifecycleAssertExpenseLedger($transactionId, $member, $custodian, '300.00', '0.00', '300.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Member pharmacy updated', '300.00', '0.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Member pharmacy updated', '0.00', '150.00');
 
     sharedAccountLifecycleDeleteTransaction($this, $account, $member, $transactionId);
 
-    expect((float) $account->fresh()->balance)->toBe(1000.0)
+    expect($account->fresh()->balance)->toBe('1000.00')
         ->and(AccountMemberLedgerEntry::query()->where('transaction_id', $transactionId)->count())->toBe(0);
     sharedAccountLifecycleAssertTransactionMissing($this, $account, $custodian, 'Member pharmacy updated');
 
@@ -311,16 +309,16 @@ it('keeps a positive ordinary shared account readable while a non custodian expe
         $custodian,
         $member,
         'Member groceries',
-        300.0,
+        '300.00',
         $member->id,
     );
 
-    sharedAccountLifecycleSettle($this, $account, $custodian, $custodian, $member, 150.0, 'custody_to_user');
-    sharedAccountLifecycleSettle($this, $account, $custodian, $custodian, $custodian, 150.0, 'custody_to_user');
+    sharedAccountLifecycleSettle($this, $account, $custodian, $custodian, $member, '150.00', 'custody_to_user');
+    sharedAccountLifecycleSettle($this, $account, $custodian, $custodian, $custodian, '150.00', 'custody_to_user');
 
-    expect((float) $account->fresh()->balance)->toBe(700.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Member groceries', 0.0, 0.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Member groceries', 0.0, 0.0);
+    expect($account->fresh()->balance)->toBe('700.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Member groceries', '0.00', '0.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Member groceries', '0.00', '0.00');
     expect(AccountMemberLedgerEntry::query()
         ->where('transaction_id', $paidTransactionId)
         ->where('type', AccountMemberLedgerEntryType::SettlementTransfer)
@@ -339,14 +337,14 @@ it('keeps a receivable shared account consistent when expenses are edited, delet
         $payer,
         $member,
         'Trip dinner',
-        200.0,
+        '200.00',
         $payer->id,
     );
 
-    expect((float) $account->fresh()->balance)->toBe(-100.0);
-    sharedAccountLifecycleAssertExpenseLedger($transactionId, $payer, $member, 200.0, 100.0, 100.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Trip dinner', 0.0, 100.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Trip dinner', 100.0, 0.0);
+    expect($account->fresh()->balance)->toBe('-100.00');
+    sharedAccountLifecycleAssertExpenseLedger($transactionId, $payer, $member, '200.00', '100.00', '100.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Trip dinner', '0.00', '100.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Trip dinner', '100.00', '0.00');
 
     sharedAccountLifecycleUpdateSharedExpense(
         $this,
@@ -356,18 +354,18 @@ it('keeps a receivable shared account consistent when expenses are edited, delet
         $payer,
         $member,
         'Trip dinner updated',
-        300.0,
+        '300.00',
         $payer->id,
     );
 
-    expect((float) $account->fresh()->balance)->toBe(-150.0);
-    sharedAccountLifecycleAssertExpenseLedger($transactionId, $payer, $member, 300.0, 150.0, 150.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Trip dinner updated', 0.0, 150.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Trip dinner updated', 150.0, 0.0);
+    expect($account->fresh()->balance)->toBe('-150.00');
+    sharedAccountLifecycleAssertExpenseLedger($transactionId, $payer, $member, '300.00', '150.00', '150.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Trip dinner updated', '0.00', '150.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Trip dinner updated', '150.00', '0.00');
 
     sharedAccountLifecycleDeleteTransaction($this, $account, $payer, $transactionId);
 
-    expect((float) $account->fresh()->balance)->toBe(0.0)
+    expect($account->fresh()->balance)->toBe('0.00')
         ->and(AccountMemberLedgerEntry::query()->where('transaction_id', $transactionId)->count())->toBe(0);
     sharedAccountLifecycleAssertTransactionMissing($this, $account, $member, 'Trip dinner updated');
 
@@ -378,15 +376,15 @@ it('keeps a receivable shared account consistent when expenses are edited, delet
         $payer,
         $member,
         'Trip tickets',
-        200.0,
+        '200.00',
         $payer->id,
     );
 
-    sharedAccountLifecycleSettle($this, $account, $member, $member, $payer, 100.0);
+    sharedAccountLifecycleSettle($this, $account, $member, $member, $payer, '100.00');
 
-    expect((float) $account->fresh()->balance)->toBe(0.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Trip tickets', 0.0, 0.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Trip tickets', 0.0, 0.0);
+    expect($account->fresh()->balance)->toBe('0.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Trip tickets', '0.00', '0.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Trip tickets', '0.00', '0.00');
     expect(Transaction::query()
         ->where('account_id', $account->id)
         ->where('type', 'income')
@@ -407,20 +405,20 @@ it('keeps a receivable expense actionable when the creator records another membe
         $creator,
         $payer,
         'Dinner paid by payer',
-        200.0,
+        '200.00',
         $payer->id,
     );
     $response
         ->assertCreated()
         ->assertJsonPath('meta.pending_reimbursements.0.from_user_id', $creator->id)
         ->assertJsonPath('meta.pending_reimbursements.0.to_user_id', $payer->id)
-        ->assertJsonPath('meta.pending_reimbursements.0.amount', 100.0);
+        ->assertJsonPath('meta.pending_reimbursements.0.amount', '100.00');
     $transactionId = (int) $response->json('data.id');
 
-    expect((float) $account->fresh()->balance)->toBe(-100.0);
-    sharedAccountLifecycleAssertExpenseLedger($transactionId, $payer, $creator, 200.0, 100.0, 100.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $creator, 'Dinner paid by payer', 100.0, 0.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Dinner paid by payer', 0.0, 100.0);
+    expect($account->fresh()->balance)->toBe('-100.00');
+    sharedAccountLifecycleAssertExpenseLedger($transactionId, $payer, $creator, '200.00', '100.00', '100.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $creator, 'Dinner paid by payer', '100.00', '0.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Dinner paid by payer', '0.00', '100.00');
 
     $this
         ->withHeaders(sharedAccountLifecycleHeaders($creator))
@@ -428,21 +426,21 @@ it('keeps a receivable expense actionable when the creator records another membe
         ->assertOk()
         ->assertJsonPath('data.pending_reimbursements.0.from_user_id', $creator->id)
         ->assertJsonPath('data.pending_reimbursements.0.to_user_id', $payer->id)
-        ->assertJsonPath('data.pending_reimbursements.0.amount', 100.0)
+        ->assertJsonPath('data.pending_reimbursements.0.amount', '100.00')
         ->assertJsonPath('data.pending_reimbursements.0.items.0.transaction_id', (string) $transactionId);
 
-    sharedAccountLifecycleSettle($this, $account, $creator, $creator, $payer, 100.0);
+    sharedAccountLifecycleSettle($this, $account, $creator, $creator, $payer, '100.00');
 
-    expect((float) $account->fresh()->balance)->toBe(0.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $creator, 'Dinner paid by payer', 0.0, 0.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Dinner paid by payer', 0.0, 0.0);
+    expect($account->fresh()->balance)->toBe('0.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $creator, 'Dinner paid by payer', '0.00', '0.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $payer, 'Dinner paid by payer', '0.00', '0.00');
 });
 
 it('keeps a low balance ordinary account consistent when a member expense turns it negative', function () {
     $custodian = User::factory()->create(['name' => 'Low Balance Custodian']);
     $member = User::factory()->create(['name' => 'Low Balance Member']);
     $account = sharedAccountLifecycleAccount($custodian, $member, 'Low balance ordinary account');
-    sharedAccountLifecycleSeedIncome($this, $account, $custodian, 50.0);
+    sharedAccountLifecycleSeedIncome($this, $account, $custodian, '50.00');
 
     $transactionId = sharedAccountLifecycleCreateSharedExpense(
         $this,
@@ -451,15 +449,15 @@ it('keeps a low balance ordinary account consistent when a member expense turns 
         $custodian,
         $member,
         'Emergency medicine',
-        120.0,
+        '120.00',
         $member->id,
     );
 
-    expect((float) $account->fresh()->balance)->toBe(-70.0);
-    sharedAccountLifecycleAssertExpenseLedger($transactionId, $member, $custodian, 120.0, 35.0, 85.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Emergency medicine', 50.0, 0.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Emergency medicine', 0.0, 0.0);
-    sharedAccountLifecycleAssertLedgerRow($this, $account, $custodian, 'Emergency medicine', -70.0);
+    expect($account->fresh()->balance)->toBe('-70.00');
+    sharedAccountLifecycleAssertExpenseLedger($transactionId, $member, $custodian, '120.00', '35.00', '85.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Emergency medicine', '50.00', '0.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Emergency medicine', '0.00', '0.00');
+    sharedAccountLifecycleAssertLedgerRow($this, $account, $custodian, 'Emergency medicine', '-70.00');
 
     sharedAccountLifecycleUpdateSharedExpense(
         $this,
@@ -469,18 +467,18 @@ it('keeps a low balance ordinary account consistent when a member expense turns 
         $custodian,
         $member,
         'Emergency medicine updated',
-        80.0,
+        '80.00',
         $member->id,
     );
 
-    expect((float) $account->fresh()->balance)->toBe(-30.0);
-    sharedAccountLifecycleAssertExpenseLedger($transactionId, $member, $custodian, 80.0, 15.0, 65.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Emergency medicine updated', 50.0, 0.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Emergency medicine updated', 0.0, 10.0);
+    expect($account->fresh()->balance)->toBe('-30.00');
+    sharedAccountLifecycleAssertExpenseLedger($transactionId, $member, $custodian, '80.00', '15.00', '65.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Emergency medicine updated', '50.00', '0.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Emergency medicine updated', '0.00', '10.00');
 
     sharedAccountLifecycleDeleteTransaction($this, $account, $member, $transactionId);
 
-    expect((float) $account->fresh()->balance)->toBe(50.0);
+    expect($account->fresh()->balance)->toBe('50.00');
     sharedAccountLifecycleAssertTransactionMissing($this, $account, $custodian, 'Emergency medicine updated');
 
     sharedAccountLifecycleCreateSharedExpense(
@@ -490,22 +488,22 @@ it('keeps a low balance ordinary account consistent when a member expense turns 
         $custodian,
         $member,
         'Emergency hospital',
-        120.0,
+        '120.00',
         $member->id,
     );
 
-    sharedAccountLifecycleSettle($this, $account, $custodian, $custodian, $custodian, 50.0, 'custody_to_user');
+    sharedAccountLifecycleSettle($this, $account, $custodian, $custodian, $custodian, '50.00', 'custody_to_user');
 
-    expect((float) $account->fresh()->balance)->toBe(-70.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Emergency hospital', 0.0, 0.0);
-    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Emergency hospital', 0.0, 0.0);
+    expect($account->fresh()->balance)->toBe('-70.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $custodian, 'Emergency hospital', '0.00', '0.00');
+    sharedAccountLifecycleAssertTransactionBadge($this, $account, $member, 'Emergency hospital', '0.00', '0.00');
 });
 
 it('allows account fund expenses to move a shared account into deficit', function () {
     $owner = User::factory()->create(['name' => 'Owner']);
     $member = User::factory()->create(['name' => 'Member']);
     $account = sharedAccountLifecycleAccount($owner, $member, 'No funds account');
-    $account->update(['balance' => 0.0]);
+    $account->update(['balance' => '0.00']);
 
     $this
         ->withHeaders(sharedAccountLifecycleHeaders($owner))
@@ -513,18 +511,18 @@ it('allows account fund expenses to move a shared account into deficit', functio
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => 'Invalid funds expense',
-            'amount' => 50,
+            'amount' => '50.00',
             'paid_by_user_id' => $owner->id,
             'payment_source' => 'account_fund',
             'split_between_users' => true,
             'user_payments' => [
-                ['user_id' => $owner->id, 'percentage' => 50],
-                ['user_id' => $member->id, 'percentage' => 50],
+                ['user_id' => $owner->id, 'percentage' => '50.00'],
+                ['user_id' => $member->id, 'percentage' => '50.00'],
             ],
             'scheduled_at' => '2026-07-10',
         ])
         ->assertCreated()
-        ->assertJsonPath('meta.account.balance', -50.0)
-        ->assertJsonPath('meta.pending_reimbursements.0.amount', 25.0)
+        ->assertJsonPath('meta.account.balance', '-50.00')
+        ->assertJsonPath('meta.pending_reimbursements.0.amount', '25.00')
         ->assertJsonPath('meta.pending_reimbursements.0.action_type', 'user_to_account');
 });

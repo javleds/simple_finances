@@ -1,6 +1,7 @@
+import { moneySchema } from '@/modules/shared/lib/money';
 import { z } from 'zod';
 
-import { parseBooleanLike, parseNullableNumber } from '@/modules/shared/lib/apiParsing';
+import { parseBooleanLike } from '@/modules/shared/lib/apiParsing';
 import type {
   DashboardAccountsSummary,
   DashboardGraphAccount,
@@ -19,7 +20,7 @@ const dashboardGraphItemApiSchema = z
   .object({
     account_id: entityIdSchema,
     account_name: z.string(),
-    balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    balance: moneySchema,
     color: nullableColorSchema,
     is_virtual: z.unknown().optional().transform(parseBooleanLike),
   })
@@ -62,18 +63,18 @@ export const dashboardAccountsResponseSchema = z
 export const dashboardSubscriptionsResponseSchema = z
   .object({
     data: z.object({
-      annual_total: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-      savings_target_today: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-      upcoming_commitment: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+      annual_total: moneySchema,
+      savings_target_today: moneySchema,
+      upcoming_commitment: moneySchema,
       subscriptions_count: z.coerce.number().catch(0),
       nearest_payment: z
         .object({
           subscription_id: entityIdSchema,
           name: z.string(),
-          amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+          amount: moneySchema,
           next_payment_date: z.string(),
           cycle_start_date: z.string(),
-          target_today: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+          target_today: moneySchema,
         })
         .nullable()
         .optional()
@@ -104,9 +105,9 @@ export const dashboardPeriodSummaryResponseSchema = z
         start_date: z.string(),
         end_date: z.string(),
       }),
-      income_total: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-      outcome_total: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-      balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+      income_total: moneySchema,
+      outcome_total: moneySchema,
+      balance: moneySchema,
     }),
   })
   .transform<DashboardPeriodSummary>((payload) => ({

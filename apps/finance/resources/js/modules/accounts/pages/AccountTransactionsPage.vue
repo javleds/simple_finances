@@ -33,7 +33,7 @@ const { activeFilters, searchTerm, selectedTypes, toggleType, selectedCategories
     useAccountTransactionFilters();
 
 const account = computed(() => props.account);
-const accountBalance = ref(account.value?.balance ?? 0);
+const accountBalance = ref(account.value?.balance ?? '0.00');
 const custodyByUser = ref<AccountMemberAmount[]>(account.value?.custodyByUser ?? []);
 const settlementsByUser = ref<AccountMemberAmount[]>(account.value?.settlementsByUser ?? []);
 const pendingReimbursements = ref<AccountPendingReimbursement[]>(
@@ -181,7 +181,7 @@ watch(listMeta, (nextMeta) => {
 });
 
 function applyMutationMeta(meta: TransactionMutationMeta): void {
-    if (typeof meta.accountBalance === 'number') {
+    if (typeof meta.accountBalance === 'string') {
         accountBalance.value = meta.accountBalance;
     }
 
@@ -201,7 +201,7 @@ function applyMutationMeta(meta: TransactionMutationMeta): void {
 function applyTransferResults(results: AccountMemberTransferResult[]): void {
     const latestResult = results[results.length - 1];
 
-    if (typeof latestResult?.accountBalance === 'number') {
+    if (typeof latestResult?.accountBalance === 'string') {
         accountBalance.value = latestResult.accountBalance;
     }
 

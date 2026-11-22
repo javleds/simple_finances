@@ -52,7 +52,7 @@ class AccountMemberLedgerEntry extends Model
             'transaction_id'  => 'integer',
             'related_user_id' => 'integer',
             'type'            => AccountMemberLedgerEntryType::class,
-            'amount'          => 'float',
+            'amount'          => 'decimal:2',
             'occurred_at'     => 'immutable_datetime',
         ];
     }

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { compareMoney, formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
+
 import { computed } from 'vue';
 import { ArrowPathIcon } from '@heroicons/vue/24/outline';
 
@@ -6,21 +8,16 @@ import { AppCard, AppHeroMetric } from '@/modules/shared/components';
 import type { AccountMemberAmount } from '@/modules/accounts/types';
 
 const props = defineProps<{
-    balance: number;
+    balance: string;
     custodyByUser?: AccountMemberAmount[];
 }>();
 
 const visibleCustodyByUser = computed(() =>
-    (props.custodyByUser ?? []).filter((item) => item.amount > 0),
+    (props.custodyByUser ?? []).filter((item) => compareMoney(item.amount ?? '0.00', '0') > 0),
 );
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value);
+function formatCurrency(value: string): string {
+    return formatExactMoney(value);
 }
 </script>
 

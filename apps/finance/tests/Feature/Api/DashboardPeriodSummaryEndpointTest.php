@@ -20,13 +20,13 @@ it('returns the dashboard period summary through the API', function () {
     $account->users()->attach($user->id);
 
     Transaction::factory()->income()->completed()->create([
-        'amount' => 45000,
+        'amount' => '45000.00',
         'account_id' => $account->id,
         'user_id' => $user->id,
         'scheduled_at' => '2026-06-05',
     ]);
     Transaction::factory()->outcome()->completed()->create([
-        'amount' => 2500,
+        'amount' => '2500.00',
         'account_id' => $account->id,
         'user_id' => $user->id,
         'scheduled_at' => '2026-06-20',
@@ -38,9 +38,9 @@ it('returns the dashboard period summary through the API', function () {
         ->assertOk()
         ->assertJsonPath('data.period.start_date', '2026-06-01')
         ->assertJsonPath('data.period.end_date', '2026-06-30')
-        ->assertJsonPath('data.income_total', 45000.0)
-        ->assertJsonPath('data.outcome_total', 2500.0)
-        ->assertJsonPath('data.balance', 42500.0);
+        ->assertJsonPath('data.income_total', '45000.00')
+        ->assertJsonPath('data.outcome_total', '2500.00')
+        ->assertJsonPath('data.balance', '42500.00');
 });
 
 it('validates the dashboard period summary date range', function () {

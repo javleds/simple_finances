@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
 import type { TransactionFacilitySummary } from '@/modules/transactions/types';
 import { AppCard, AppText, AppTitle } from '@/modules/shared/components';
 
@@ -6,14 +7,9 @@ const props = defineProps<{
     summary: TransactionFacilitySummary;
 }>();
 
-const currencyFormatter = new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-});
+const currencyFormatter = { format: formatExactMoney };
 
-function formatCurrency(value: number): string {
+function formatCurrency(value: string): string {
     return currencyFormatter.format(value);
 }
 </script>

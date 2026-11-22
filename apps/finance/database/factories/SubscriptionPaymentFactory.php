@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use Carbon\Carbon;
 use FinSi\FinanceDomain\Enums\PaymentStatus;
 use FinSi\FinanceDomain\Models\Subscription;
 use FinSi\FinanceDomain\Models\User;
-use Carbon\Carbon;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -26,11 +29,11 @@ class SubscriptionPaymentFactory extends Factory
         $scheduledAt = Carbon::now()->addDays($this->faker->numberBetween(1, 60));
 
         return [
-            'scheduled_at' => $scheduledAt,
-            'amount' => $this->faker->randomFloat(2, 1.0, 1200.0),
-            'status' => $status,
+            'scheduled_at'    => $scheduledAt,
+            'amount'          => Decimal::fromMinor($this->faker->numberBetween(100, 120000)),
+            'status'          => $status,
             'subscription_id' => $subscription,
-            'user_id' => $user,
+            'user_id'         => $user,
         ];
     }
 

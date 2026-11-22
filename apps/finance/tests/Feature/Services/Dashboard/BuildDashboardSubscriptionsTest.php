@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Services\Dashboard\BuildDashboardSubscriptions;
+use Carbon\CarbonImmutable;
 use FinSi\FinanceDomain\Enums\Frequency;
 use FinSi\FinanceDomain\Models\Subscription;
 use FinSi\FinanceDomain\Models\User;
-use App\Services\Dashboard\BuildDashboardSubscriptions;
-use Carbon\CarbonImmutable;
 
 it('returns annual subscription totals for active subscriptions', function () {
     CarbonImmutable::setTestNow('2026-07-01');
@@ -15,68 +17,68 @@ it('returns annual subscription totals for active subscriptions', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
     $createSubscription([
-        'amount' => 1000,
-        'frequency_type' => Frequency::Year,
-        'frequency_unit' => 1,
-        'finished_at' => null,
+        'amount'            => 1000,
+        'frequency_type'    => Frequency::Year,
+        'frequency_unit'    => 1,
+        'finished_at'       => null,
         'next_payment_date' => '2027-01-01',
-        'started_at' => '2026-01-01',
-        'user_id' => $otherUser->id,
+        'started_at'        => '2026-01-01',
+        'user_id'           => $otherUser->id,
     ]);
 
     $this->actingAs($user);
 
     $createSubscription([
-        'amount' => 100,
-        'frequency_type' => Frequency::Month,
-        'frequency_unit' => 1,
-        'finished_at' => null,
+        'amount'            => 100,
+        'frequency_type'    => Frequency::Month,
+        'frequency_unit'    => 1,
+        'finished_at'       => null,
         'next_payment_date' => '2026-07-15',
-        'started_at' => '2026-06-15',
-        'user_id' => $user->id,
+        'started_at'        => '2026-06-15',
+        'user_id'           => $user->id,
     ]);
     $createSubscription([
-        'amount' => 1200,
-        'frequency_type' => Frequency::Year,
-        'frequency_unit' => 1,
-        'finished_at' => null,
+        'amount'            => 1200,
+        'frequency_type'    => Frequency::Year,
+        'frequency_unit'    => 1,
+        'finished_at'       => null,
         'next_payment_date' => '2027-01-01',
-        'started_at' => '2026-01-01',
-        'user_id' => $user->id,
+        'started_at'        => '2026-01-01',
+        'user_id'           => $user->id,
     ]);
     $createSubscription([
-        'amount' => 10,
-        'frequency_type' => Frequency::Day,
-        'frequency_unit' => 1,
-        'finished_at' => null,
+        'amount'            => 10,
+        'frequency_type'    => Frequency::Day,
+        'frequency_unit'    => 1,
+        'finished_at'       => null,
         'next_payment_date' => '2026-07-02',
-        'started_at' => '2026-07-01',
-        'user_id' => $user->id,
+        'started_at'        => '2026-07-01',
+        'user_id'           => $user->id,
     ]);
     $createSubscription([
-        'amount' => 1000,
-        'frequency_type' => Frequency::Year,
-        'frequency_unit' => 1,
-        'finished_at' => now(),
+        'amount'            => 1000,
+        'frequency_type'    => Frequency::Year,
+        'frequency_unit'    => 1,
+        'finished_at'       => now(),
         'next_payment_date' => '2027-01-01',
-        'started_at' => '2026-01-01',
-        'user_id' => $user->id,
+        'started_at'        => '2026-01-01',
+        'user_id'           => $user->id,
     ]);
 
     $data = app(BuildDashboardSubscriptions::class)->execute();
 
     expect($data)->toBe([
-        'annual_total' => 6050.0,
-        'subscriptions_count' => 3,
-        'savings_target_today' => 648.4,
-        'upcoming_commitment' => 1310.0,
-        'nearest_payment' => [
-            'subscription_id' => $data['nearest_payment']['subscription_id'],
-            'name' => $data['nearest_payment']['name'],
-            'amount' => 10.0,
+        'annual_total'         => '6050.00',
+        'subscriptions_count'  => 3,
+        'savings_target_today' => '648.40',
+        'upcoming_commitment'  => '1310.00',
+        'nearest_payment'      => [
+            'subscription_id'   => $data['nearest_payment']['subscription_id'],
+            'name'              => $data['nearest_payment']['name'],
+            'amount'            => '10.00',
             'next_payment_date' => '2026-07-02',
-            'cycle_start_date' => '2026-07-01',
-            'target_today' => 0.0,
+            'cycle_start_date'  => '2026-07-01',
+            'target_today'      => '0.00',
         ],
     ]);
 
@@ -93,43 +95,43 @@ it('calculates the healthy savings target for flexible subscription cycles', fun
     $this->actingAs($user);
 
     $createSubscription([
-        'name' => 'Annual service',
-        'amount' => 2400,
-        'frequency_type' => Frequency::Year,
-        'frequency_unit' => 1,
-        'finished_at' => null,
-        'started_at' => '2026-06-01',
+        'name'              => 'Annual service',
+        'amount'            => 2400,
+        'frequency_type'    => Frequency::Year,
+        'frequency_unit'    => 1,
+        'finished_at'       => null,
+        'started_at'        => '2026-06-01',
         'next_payment_date' => '2027-06-01',
-        'user_id' => $user->id,
+        'user_id'           => $user->id,
     ]);
     $createSubscription([
-        'name' => 'Four month service',
-        'amount' => 1200,
-        'frequency_type' => Frequency::Month,
-        'frequency_unit' => 4,
-        'finished_at' => null,
-        'started_at' => '2026-06-01',
+        'name'              => 'Four month service',
+        'amount'            => 1200,
+        'frequency_type'    => Frequency::Month,
+        'frequency_unit'    => 4,
+        'finished_at'       => null,
+        'started_at'        => '2026-06-01',
         'next_payment_date' => '2026-10-01',
-        'user_id' => $user->id,
+        'user_id'           => $user->id,
     ]);
     $createSubscription([
-        'name' => 'Finished service',
-        'amount' => 999,
-        'frequency_type' => Frequency::Month,
-        'frequency_unit' => 1,
-        'finished_at' => '2026-06-01',
-        'started_at' => '2026-06-01',
+        'name'              => 'Finished service',
+        'amount'            => 999,
+        'frequency_type'    => Frequency::Month,
+        'frequency_unit'    => 1,
+        'finished_at'       => '2026-06-01',
+        'started_at'        => '2026-06-01',
         'next_payment_date' => '2026-07-01',
-        'user_id' => $user->id,
+        'user_id'           => $user->id,
     ]);
 
     $data = app(BuildDashboardSubscriptions::class)->execute();
 
-    expect($data['savings_target_today'])->toBe(492.34)
-        ->and($data['upcoming_commitment'])->toBe(3600.0)
+    expect($data['savings_target_today'])->toBe('492.34')
+        ->and($data['upcoming_commitment'])->toBe('3600.00')
         ->and($data['subscriptions_count'])->toBe(2)
         ->and($data['nearest_payment']['name'])->toBe('Four month service')
-        ->and($data['nearest_payment']['target_today'])->toBe(295.08);
+        ->and($data['nearest_payment']['target_today'])->toBe('295.08');
 
     CarbonImmutable::setTestNow();
 });

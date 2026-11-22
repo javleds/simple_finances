@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Dto;
 
 use FinSi\FinanceDomain\Enums\InviteStatus;
@@ -13,18 +15,19 @@ readonly class AccountInviteDto
         public Account $account,
         public User $owner,
         public string $email,
-        public float $percentage,
+        public string $percentage,
         public InviteStatus $status = InviteStatus::Pending,
-    ) {}
+    ) {
+    }
 
     public function toModelAttributes(): array
     {
         return [
             'account_id' => $this->account->id,
-            'user_id' => $this->owner->id,
-            'email' => $this->email,
+            'user_id'    => $this->owner->id,
+            'email'      => $this->email,
             'percentage' => $this->percentage,
-            'status' => $this->status,
+            'status'     => $this->status,
         ];
     }
 

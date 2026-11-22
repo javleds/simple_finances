@@ -1,12 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Api\AccountBalanceSnapshotRequest;
+use App\Services\VirtualAccounts\CaptureVirtualAccountBalanceSnapshot;
+
+use function auth;
+
+use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountBalanceSnapshot;
-use FinSi\FinanceDomain\Authorization\AuthorizeAccountAccess;
-use App\Services\VirtualAccounts\CaptureVirtualAccountBalanceSnapshot;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,7 +21,8 @@ class AccountBalanceSnapshotController extends ApiController
     public function __construct(
         private readonly AuthorizeAccountAccess $authorizeAccountAccess,
         private readonly CaptureVirtualAccountBalanceSnapshot $captureSnapshot,
-    ) {}
+    ) {
+    }
 
     public function index(Account $account, Request $request): JsonResponse
     {
@@ -37,15 +44,15 @@ class AccountBalanceSnapshotController extends ApiController
         $snapshot = $this->captureSnapshot->create(
             account: $account,
             userId: $request->user()->id,
-            observedBalance: (float) $request->validated('observed_balance'),
+            observedBalance: Decimal::normalize($request->validated('observed_balance')),
             observedAt: $request->validated('observed_at'),
             notes: $request->input('notes'),
         );
 
         return $this->respondModel($snapshot, ['adjustmentTransaction'], 201, [
             'account' => [
-                'id' => $account->id,
-                'balance' => (float) $account->fresh()->balance,
+                'id'      => $account->id,
+                'balance' => $account->fresh()->balance,
             ],
         ]);
     }
@@ -59,15 +66,15 @@ class AccountBalanceSnapshotController extends ApiController
 
         $snapshot = $this->captureSnapshot->update(
             snapshot: $snapshot,
-            observedBalance: (float) $request->validated('observed_balance'),
+            observedBalance: Decimal::normalize($request->validated('observed_balance')),
             observedAt: $request->validated('observed_at'),
             notes: $request->input('notes'),
         );
 
         return $this->respondModel($snapshot, ['adjustmentTransaction'], meta: [
             'account' => [
-                'id' => $account->id,
-                'balance' => (float) $account->fresh()->balance,
+                'id'      => $account->id,
+                'balance' => $account->fresh()->balance,
             ],
         ]);
     }
@@ -80,8 +87,8 @@ class AccountBalanceSnapshotController extends ApiController
 
         return $this->respondDeleted('Account balance snapshot deleted successfully.', [
             'account' => [
-                'id' => $account->id,
-                'balance' => (float) $account->fresh()->balance,
+                'id'      => $account->id,
+                'balance' => $account->fresh()->balance,
             ],
         ]);
     }

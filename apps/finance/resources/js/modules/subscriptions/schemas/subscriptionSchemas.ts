@@ -1,3 +1,4 @@
+import { moneySchema, parseMoney, compareMoney, money } from '@/modules/shared/lib/money';
 import { z } from 'zod';
 
 import { parseNullableNumber } from '@/modules/shared/lib/apiParsing';
@@ -25,8 +26,8 @@ export const subscriptionFormSchema = z.object({
     .trim()
     .min(1, 'La cantidad es obligatoria.')
     .refine((value) => {
-      const amount = parseNullableNumber(value);
-      return amount !== null && amount >= 0;
+      const amount = parseMoney(value);
+      return amount !== null && compareMoney(amount, '0') >= 0;
     }, 'La cantidad debe ser mayor o igual a 0.'),
   startDate: z.string().trim().min(1, 'La fecha de contratación es obligatoria.'),
   frequencyUnit: z
@@ -45,7 +46,7 @@ export const subscriptionFormSchema = z.object({
 export const subscriptionApiSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((value) => String(value)),
   name: z.string(),
-  amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+  amount: moneySchema,
   started_at: z.string(),
   frequency_unit: z.unknown().transform((value) => parseNullableNumber(value) ?? 1),
   frequency_type: z.unknown().transform(parseFrequencyType),
@@ -120,7 +121,7 @@ export function mapSubscriptionFormToWritePayload(
 ): SubscriptionWritePayload {
   return {
     name: values.name.trim(),
-    amount: parseNullableNumber(values.amount) ?? 0,
+    amount: money(values.amount),
     startDate: values.startDate,
     frequencyUnit: parseNullableNumber(values.frequencyUnit) ?? 1,
     frequencyType: values.frequencyType,

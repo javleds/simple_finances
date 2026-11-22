@@ -14,6 +14,8 @@ class SharedTransactionNotificationItem extends Model
 {
     use HasFactory;
 
+    protected $hidden = ['amount_legacy', 'amount_exact'];
+
     public function batch(): BelongsTo
     {
         return $this->belongsTo(SharedTransactionNotificationBatch::class, 'batch_id');
@@ -42,7 +44,7 @@ class SharedTransactionNotificationItem extends Model
             'transaction_id' => 'integer',
             'modifier_id'    => 'integer',
             'action'         => SharedTransactionNotificationAction::class,
-            'amount'         => 'float',
+            'amount'         => 'decimal:2',
             'scheduled_at'   => 'immutable_datetime',
             'type'           => TransactionType::class,
         ];

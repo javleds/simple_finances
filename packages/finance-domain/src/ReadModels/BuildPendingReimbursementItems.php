@@ -4,26 +4,24 @@ declare(strict_types=1);
 
 namespace FinSi\FinanceDomain\ReadModels;
 
-use function abs;
+use FinSi\FinanceDomain\Money\Decimal;
 
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\Transaction;
 use Illuminate\Support\Collection;
 
-use function min;
 use function optional;
-use function round;
 
 class BuildPendingReimbursementItems
 {
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function execute(int $accountId, int $fromUserId, int $toUserId, float $totalAmount): array
+    public function execute(int $accountId, int $fromUserId, int $toUserId, string $totalAmount): array
     {
         $items = AccountMemberLedgerEntry::query()
-            ->selectRaw('transaction_id, round(sum(amount), 2) as open_amount')
+            ->selectRaw('transaction_id, sum(amount) as open_amount')
             ->where('account_id', $accountId)
             ->where('user_id', $fromUserId)
             ->whereNotNull('transaction_id')
@@ -34,15 +32,15 @@ class BuildPendingReimbursementItems
                 AccountMemberLedgerEntryType::SettlementCorrection,
             ])
             ->groupBy('transaction_id')
-            ->havingRaw('open_amount < -0.001')
+            ->havingRaw('open_amount < 0')
             ->orderByDesc('transaction_id')
             ->with('transaction')
             ->get()
             ->map(fn (AccountMemberLedgerEntry $entry): array => $this->item($entry))
-            ->filter(fn (array $item): bool => $item['amount'] > 0.0)
+            ->filter(fn (array $item): bool => Decimal::compare($item['amount'], 0) > 0)
             ->values();
 
-        return $this->fitItemsToTotal($items, round($totalAmount, 2));
+        return $this->fitItemsToTotal($items, Decimal::normalize($totalAmount));
     }
 
     private function item(AccountMemberLedgerEntry $entry): array
@@ -54,7 +52,7 @@ class BuildPendingReimbursementItems
             'transaction_id' => (string) $entry->transaction_id,
             'attribution'    => 'estimated',
             'concept'        => $transaction?->concept ?? 'Movimiento no disponible',
-            'amount'         => round(abs((float) $entry->open_amount), 2),
+            'amount'         => Decimal::abs((string) $entry->open_amount),
             'occurred_at'    => optional($transaction?->scheduled_at)->toDateString(),
         ];
     }
@@ -64,37 +62,37 @@ class BuildPendingReimbursementItems
      *
      * @return array<int, array<string, mixed>>
      */
-    private function fitItemsToTotal(Collection $items, float $totalAmount): array
+    private function fitItemsToTotal(Collection $items, string $totalAmount): array
     {
         if ($items->isEmpty()) {
             return [];
         }
 
-        $runningTotal = 0.0;
+        $runningTotal = '0.00';
         $fittedItems = $items
             ->map(function (array $item) use (&$runningTotal, $totalAmount): array {
-                $remaining = round($totalAmount - $runningTotal, 2);
+                $remaining = Decimal::subtract($totalAmount, $runningTotal);
 
-                if ($remaining <= 0.0) {
-                    return [...$item, 'amount' => 0.0];
+                if (Decimal::compare($remaining, 0) <= 0) {
+                    return [...$item, 'amount' => '0.00'];
                 }
 
-                $amount = round(min((float) $item['amount'], $remaining), 2);
-                $runningTotal = round($runningTotal + $amount, 2);
+                $amount = Decimal::min($item['amount'], $remaining);
+                $runningTotal = Decimal::add($runningTotal, $amount);
 
                 return [...$item, 'amount' => $amount];
             })
-            ->filter(fn (array $item): bool => $item['amount'] > 0.0)
+            ->filter(fn (array $item): bool => Decimal::compare($item['amount'], 0) > 0)
             ->values();
 
-        $delta = round($totalAmount - $fittedItems->sum('amount'), 2);
+        $delta = Decimal::subtract($totalAmount, Decimal::sum($fittedItems, 'amount'));
 
-        if (0.0 !== $delta && $fittedItems->isNotEmpty()) {
+        if (Decimal::compare($delta, 0) !== 0 && $fittedItems->isNotEmpty()) {
             $lastIndex = $fittedItems->keys()->last();
             $lastItem = $fittedItems[$lastIndex];
             $fittedItems[$lastIndex] = [
                 ...$lastItem,
-                'amount' => round((float) $lastItem['amount'] + $delta, 2),
+                'amount' => Decimal::add($lastItem['amount'], $delta),
             ];
         }
 

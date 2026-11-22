@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use FinSi\FinanceDomain\Enums\InviteStatus;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -23,11 +26,11 @@ class AccountInviteFactory extends Factory
         $account = Account::factory()->state(fn () => ['user_id' => $user]);
 
         return [
-            'email' => $this->faker->unique()->safeEmail(),
-            'status' => InviteStatus::Pending,
+            'email'      => $this->faker->unique()->safeEmail(),
+            'status'     => InviteStatus::Pending,
             'account_id' => $account,
-            'user_id' => $user,
-            'percentage' => $this->faker->randomFloat(2, 0, 100),
+            'user_id'    => $user,
+            'percentage' => Decimal::fromMinor($this->faker->numberBetween(0, 10000)),
         ];
     }
 

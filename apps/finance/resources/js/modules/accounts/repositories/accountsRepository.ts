@@ -1,3 +1,4 @@
+import { percentageSchema, percentageToString, moneySchema } from '@/modules/shared/lib/money';
 import { z } from 'zod';
 
 import { createApiClient } from '@/lib/api/apiClient';
@@ -5,7 +6,6 @@ import {
   createPaginatedCollectionSchema,
   type PaginatedCollection,
 } from '@/modules/shared/lib/pagination';
-import { parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import {
@@ -42,7 +42,7 @@ const accountMemberAmountApiSchema = z
   .object({
     user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
     user_name: z.string().catch('Usuario no disponible'),
-    amount: z.unknown().transform((value) => Number(value) || 0),
+    amount: moneySchema,
   })
   .transform((payload) => ({
     userId: payload.user_id,
@@ -54,7 +54,7 @@ const accountPendingReimbursementItemApiSchema = z
   .object({
     transaction_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
     concept: z.string().catch('Movimiento no disponible'),
-    amount: z.unknown().transform((value) => Number(value) || 0),
+    amount: moneySchema,
     occurred_at: z
       .string()
       .nullable()
@@ -74,7 +74,7 @@ const accountPendingReimbursementApiSchema = z
     from_user_name: z.string().catch('Usuario no disponible'),
     to_user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
     to_user_name: z.string().catch('Usuario no disponible'),
-    amount: z.unknown().transform((value) => Number(value) || 0),
+    amount: moneySchema,
     action_type: z
       .enum(['user_to_user', 'custody_to_user', 'user_to_account'])
       .optional()
@@ -96,13 +96,16 @@ const accountMemberTransferResponseSchema = z
     meta: z.object({
       account: z
         .object({
-          balance: z.unknown().transform(parseNullableNumber),
+          balance: moneySchema.nullable(),
         })
         .optional(),
       custody_by_user: z.array(accountMemberAmountApiSchema).default([]),
       settlements_by_user: z.array(accountMemberAmountApiSchema).default([]),
       pending_reimbursements: z.array(accountPendingReimbursementApiSchema).default([]),
-      ledger_rows: z.array(z.unknown()).optional().default([]),
+      ledger_rows: z
+        .array(z.lazy(() => accountLedgerRowApiSchema))
+        .optional()
+        .default([]),
     }),
   })
   .transform<AccountMemberTransferResult>((payload) => ({
@@ -110,15 +113,15 @@ const accountMemberTransferResponseSchema = z
     custodyByUser: payload.meta.custody_by_user,
     settlementsByUser: payload.meta.settlements_by_user,
     pendingReimbursements: payload.meta.pending_reimbursements,
-    ledgerRows: payload.meta.ledger_rows as AccountMemberTransferResult['ledgerRows'],
+    ledgerRows: payload.meta.ledger_rows,
   }));
 
 const accountLedgerAllocationApiSchema = z
   .object({
     user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
     user_name: z.string().nullable().optional().default(null),
-    amount: z.unknown().transform((value) => Number(value) || 0),
-    percentage: z.unknown().transform((value) => Number(value) || 0),
+    amount: moneySchema,
+    percentage: percentageSchema.default(0),
   })
   .transform((payload) => ({
     userId: payload.user_id,
@@ -139,8 +142,8 @@ const accountLedgerRowApiSchema = z
       .transform((value) => (value == null ? null : String(value))),
     label: z.string().catch('Movimiento'),
     description: z.string().catch(''),
-    amount: z.unknown().transform((value) => Number(value) || 0),
-    balance_after: z.unknown().transform((value) => Number(value) || 0),
+    amount: moneySchema,
+    balance_after: moneySchema,
     custody_after_by_user: z.array(accountMemberAmountApiSchema).default([]),
     settlement_after_by_user: z.array(accountMemberAmountApiSchema).default([]),
     allocations: z.array(accountLedgerAllocationApiSchema).default([]),
@@ -181,7 +184,7 @@ const accountLedgerRepairPreviewEntryApiSchema = z
       .optional()
       .transform((value) => (value == null ? null : String(value))),
     type: z.string().catch('ledger_correction'),
-    amount: z.unknown().transform((value) => Number(value) || 0),
+    amount: moneySchema,
     description: z.string().nullable().optional().default(null),
   })
   .transform((payload) => ({
@@ -231,7 +234,7 @@ const accountLedgerRepairPayloadApiSchema = z
       .nullable()
       .optional()
       .transform((value) => (value == null ? null : String(value))),
-    amount: z.unknown().transform((value) => Number(value) || 0),
+    amount: moneySchema,
     description: z.string().catch('Corrección del libro'),
   })
   .transform<AccountLedgerRepairPayload>((payload) => ({
@@ -305,7 +308,7 @@ const accountLedgerRepairApiSchema = z
       .transform((value) => (value == null ? null : String(value))),
     target_transaction_concept: z.string().nullable().optional().default(null),
     description: z.string().catch('Corrección del libro'),
-    amount: z.unknown().transform((value) => Number(value) || 0),
+    amount: moneySchema,
     created_at: z.string().nullable().optional().default(null),
     can_reverse: z.boolean().catch(false),
     preview: accountLedgerRepairPreviewApiSchema,
@@ -388,7 +391,7 @@ function mapRepairPreviewToApi(preview: AccountLedgerRepairPayload['preview']) {
       relatedUserName?: string | null;
       transactionId?: string | null;
       type?: string;
-      amount?: number;
+      amount?: string;
       description?: string | null;
     }>;
   };
@@ -524,7 +527,7 @@ export function createAccountsRepository() {
       const response = await apiClient.put<unknown>(`${accountsPath}/${accountId}/users`, {
         users: Object.entries(percentages).map(([userId, percentage]) => ({
           user_id: Number(userId),
-          percentage,
+          percentage: percentageToString(percentage),
         })),
       });
       const payload = z.object({ data: z.array(accountUserApiSchema) }).parse(response);
@@ -538,7 +541,7 @@ export function createAccountsRepository() {
       const response = await apiClient.put<unknown>(
         `${accountsPath}/${accountId}/users/${userId}`,
         {
-          percentage,
+          percentage: percentageToString(percentage),
         },
       );
       return mapAccountUserApiToDomain(singleAccountUserSchema.parse(response));
@@ -595,17 +598,17 @@ export function createAccountsRepository() {
       const response = await apiClient.post<unknown>(
         `${accountsPath}/${accountId}/ledger/repairs`,
         {
-        diagnostic_id: payload.diagnosticId,
-        issue_code: payload.issueCode,
-        repair_type: payload.repairType,
-        from_user_id: payload.fromUserId,
-        to_user_id: payload.toUserId,
-        user_id: payload.userId,
-        transaction_id: payload.transactionId,
-        amount: payload.amount,
-        description: payload.description,
-        evidence: payload.evidence,
-        preview: mapRepairPreviewToApi(payload.preview),
+          diagnostic_id: payload.diagnosticId,
+          issue_code: payload.issueCode,
+          repair_type: payload.repairType,
+          from_user_id: payload.fromUserId,
+          to_user_id: payload.toUserId,
+          user_id: payload.userId,
+          transaction_id: payload.transactionId,
+          amount: payload.amount,
+          description: payload.description,
+          evidence: payload.evidence,
+          preview: mapRepairPreviewToApi(payload.preview),
         },
       );
 

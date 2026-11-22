@@ -1,6 +1,6 @@
+import { moneySchema } from '@/modules/shared/lib/money';
 import { z } from 'zod';
 
-import { parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 import type {
   VirtualAccountItem,
   VirtualAccountsDashboard,
@@ -26,9 +26,9 @@ export const virtualAccountSnapshotApiSchema = z
   .object({
     id: entityIdSchema,
     account_id: entityIdSchema,
-    observed_balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    previous_balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    delta: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    observed_balance: moneySchema,
+    previous_balance: moneySchema,
+    delta: moneySchema,
     observed_at: z.string(),
     notes: nullableStringSchema,
     adjustment_transaction_id: nullableIdSchema,
@@ -51,12 +51,12 @@ const latestSnapshotSchema = virtualAccountSnapshotApiSchema
 
 const virtualAccountSummaryApiSchema = z
   .object({
-    current_balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    initial_balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    manual_contributions: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    manual_withdrawals: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    net_capital: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    observed_yield: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    current_balance: moneySchema,
+    initial_balance: moneySchema,
+    manual_contributions: moneySchema,
+    manual_withdrawals: moneySchema,
+    net_capital: moneySchema,
+    observed_yield: moneySchema,
     accounts_count: z.coerce.number().catch(0),
   })
   .transform<VirtualAccountSummary>((payload) => ({
@@ -74,12 +74,12 @@ const virtualAccountItemApiSchema = z
     account_id: entityIdSchema,
     account_name: z.string(),
     color: nullableStringSchema,
-    current_balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    initial_balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    manual_contributions: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    manual_withdrawals: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    net_capital: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    observed_yield: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    current_balance: moneySchema,
+    initial_balance: moneySchema,
+    manual_contributions: moneySchema,
+    manual_withdrawals: moneySchema,
+    net_capital: moneySchema,
+    observed_yield: moneySchema,
     latest_snapshot: latestSnapshotSchema,
   })
   .transform<VirtualAccountItem>((payload) => ({

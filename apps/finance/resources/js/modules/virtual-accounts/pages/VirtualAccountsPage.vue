@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+    parseMoney,
+    compareMoney,
+    formatMoney as formatExactMoney,
+} from '@/modules/shared/lib/money';
+
 import { Form, FormField, type FormSubmitEvent } from '@primevue/forms';
 import { zodResolver } from '@primevue/forms/resolvers/zod';
 import { z } from 'zod';
@@ -97,7 +103,7 @@ watch(
 
 function openCapture(account: VirtualAccountItem): void {
     selectedAccountId.value = account.accountId;
-    observedBalance.value = account.currentBalance.toFixed(2);
+    observedBalance.value = account.currentBalance;
     observedAt.value = today();
     notes.value = '';
     isCaptureOpen.value = true;
@@ -133,13 +139,8 @@ function selectAccount(account: VirtualAccountItem): void {
     selectedAccountId.value = account.accountId;
 }
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value);
+function formatCurrency(value: string): string {
+    return formatExactMoney(value);
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -154,14 +155,9 @@ function formatDate(value: string | null | undefined): string {
     }).format(new Date(value));
 }
 
-function parseAmount(value: string): number | null {
-    const amount = Number(value);
-
-    if (!Number.isFinite(amount) || amount < 0) {
-        return null;
-    }
-
-    return amount;
+function parseAmount(value: string): string | null {
+    const amount = parseMoney(value);
+    return amount !== null && compareMoney(amount, '0') >= 0 ? amount : null;
 }
 
 function today(): string {
@@ -283,7 +279,7 @@ function today(): string {
                                         <p
                                             class="text-sm font-semibold tabular-nums"
                                             :class="
-                                                snapshot.delta >= 0
+                                                compareMoney(snapshot.delta, '0') >= 0
                                                     ? 'text-emerald-700 dark:text-emerald-300'
                                                     : 'text-red-700 dark:text-red-300'
                                             "

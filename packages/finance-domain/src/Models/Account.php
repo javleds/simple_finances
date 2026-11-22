@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FinSi\FinanceDomain\Models;
 
-use function abs;
+use FinSi\FinanceDomain\Money\Decimal;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-use function number_format;
 use function sprintf;
 
 class Account extends Model
@@ -21,9 +20,11 @@ class Account extends Model
     use HasFactory;
     use SoftDeletes;
 
+    protected $hidden = ['spent_legacy', 'spent_exact'];
+
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)->withPivot(['percentage']);
+        return $this->belongsToMany(User::class)->using(AccountMember::class)->withPivot(['percentage']);
     }
 
     public function transactions(): HasMany
@@ -72,12 +73,12 @@ class Account extends Model
         return $this->hasMany(FinancialGoal::class);
     }
 
-    public function getBalanceUntilNow(): float
+    public function getBalanceUntilNow(): string
     {
-        return
-            $this->transactions()->untilNow()->completed()->income()->sum('amount')
-            - $this->transactions()->untilNow()->completed()->outcome()->sum('amount')
-            ?? 0.0;
+        return Decimal::subtract(
+            (string) $this->transactions()->untilNow()->completed()->income()->sum('amount'),
+            (string) $this->transactions()->untilNow()->completed()->outcome()->sum('amount'),
+        );
     }
 
     public function isCreditCard(): bool
@@ -92,8 +93,8 @@ class Account extends Model
         return sprintf(
             '%s [%s$ %s]',
             $this->name,
-            $balance >= 0 ? '' : '-',
-            number_format(abs($balance), 2)
+            Decimal::compare($balance ?? '0.00', 0) >= 0 ? '' : '-',
+            Decimal::format(Decimal::abs($balance ?? '0.00'))
         );
     }
 
@@ -101,13 +102,13 @@ class Account extends Model
     {
         return [
             'user_id'                => 'integer',
-            'balance'                => 'float',
+            'balance'                => 'decimal:2',
             'credit_card'            => 'bool',
-            'credit_line'            => 'float',
+            'credit_line'            => 'decimal:2',
             'cutoff_day'             => 'int',
             'next_cutoff_date'       => 'datetime',
-            'available_credit'       => 'float',
-            'spent'                  => 'float',
+            'available_credit'       => 'decimal:2',
+            'spent'                  => 'decimal:2',
             'feed_account_id'        => 'int',
             'virtual'                => 'bool',
             'uses_shared_categories' => 'bool',

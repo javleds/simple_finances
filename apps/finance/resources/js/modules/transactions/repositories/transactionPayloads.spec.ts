@@ -10,7 +10,7 @@ describe('transaction payload builders', () => {
         status: 'completed',
         concept: 'Renta',
         categoryId: '5',
-        amount: 1200,
+        amount: '1200.00',
         accountId: '10',
         paidByUserId: '7',
         custodianUserId: null,
@@ -28,7 +28,7 @@ describe('transaction payload builders', () => {
       status: 'completed',
       concept: 'Renta',
       category_id: '5',
-      amount: 1200,
+      amount: '1200.00',
       paid_by_user_id: 7,
       custodian_user_id: null,
       payment_source: 'member_out_of_pocket',
@@ -36,11 +36,11 @@ describe('transaction payload builders', () => {
       user_payments: [
         {
           user_id: 7,
-          percentage: 60,
+          percentage: '60.00',
         },
         {
           user_id: 8,
-          percentage: 40,
+          percentage: '40.00',
         },
       ],
       scheduled_at: '2026-06-15',

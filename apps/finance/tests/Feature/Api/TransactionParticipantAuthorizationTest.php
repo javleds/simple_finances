@@ -11,22 +11,22 @@ function participantScenario(): array
     $former = User::factory()->create();
     $outsider = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $owner->id]);
-    $account->users()->attach($owner->id, ['percentage' => 50]);
-    $account->users()->attach($former->id, ['percentage' => 50]);
+    $account->users()->attach($owner->id, ['percentage' => '50.00']);
+    $account->users()->attach($former->id, ['percentage' => '50.00']);
     $transaction = Transaction::factory()->outcome()->completed()->create([
         'account_id' => $account->id, 'user_id' => $owner->id, 'paid_by_user_id' => $former->id,
         'payment_source' => TransactionPaymentSource::MemberOutOfPocket,
     ]);
     foreach ([$owner, $former] as $member) {
-        $transaction->allocations()->create(['user_id' => $member->id, 'percentage' => 50, 'amount' => 50]);
+        $transaction->allocations()->create(['user_id' => $member->id, 'percentage' => '50.00', 'amount' => '50.00']);
     }
     $account->users()->detach($former->id);
     $payload = [
         'account_id' => $account->id, 'type' => 'outcome', 'status' => 'completed',
-        'concept' => 'Historical expense edited', 'amount' => 100, 'scheduled_at' => '2026-10-10',
+        'concept' => 'Historical expense edited', 'amount' => '100.00', 'scheduled_at' => '2026-10-10',
         'paid_by_user_id' => $former->id, 'payment_source' => 'member_out_of_pocket',
         'split_between_users' => true,
-        'user_payments' => [['user_id' => $owner->id, 'percentage' => 50], ['user_id' => $former->id, 'percentage' => 50]],
+        'user_payments' => [['user_id' => $owner->id, 'percentage' => '50.00'], ['user_id' => $former->id, 'percentage' => '50.00']],
     ];
     return [$owner, $former, $outsider, $account, $transaction, $payload];
 }
@@ -64,7 +64,7 @@ it('rejects new nonmember participants and changing a historical participant rol
 it('does not carry historical participant authorization to a different account', function () {
     [$owner, , , , $transaction, $payload] = participantScenario();
     $destination = Account::factory()->create(['user_id' => $owner->id]);
-    $destination->users()->attach($owner->id, ['percentage' => 100]);
+    $destination->users()->attach($owner->id, ['percentage' => '100.00']);
     $payload['account_id'] = $destination->id;
     $this->withHeaders(participantHeaders($owner))->putJson("/api/transactions/{$transaction->id}", $payload)->assertNotFound();
 });
@@ -77,7 +77,7 @@ it('does not let a departed author retain write access through historical partic
 
 it('rejects client supplied financial classification on both transaction APIs', function (bool $nested) {
     [$owner, , , $account, , ] = participantScenario();
-    $payload = ['account_id' => $account->id, 'type' => 'outcome', 'status' => 'completed', 'concept' => 'Forged mode', 'amount' => 10, 'scheduled_at' => '2026-10-10', 'uses_shared_account_rules' => true];
+    $payload = ['account_id' => $account->id, 'type' => 'outcome', 'status' => 'completed', 'concept' => 'Forged mode', 'amount' => '10.00', 'scheduled_at' => '2026-10-10', 'uses_shared_account_rules' => true];
     $path = $nested ? "/api/accounts/{$account->id}/transactions" : '/api/transactions';
     $this->withHeaders(participantHeaders($owner))->postJson($path, $payload)->assertUnprocessable()->assertJsonValidationErrors('uses_shared_account_rules');
 })->with([true, false]);

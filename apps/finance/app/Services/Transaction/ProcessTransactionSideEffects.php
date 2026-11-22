@@ -1,17 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Transaction;
 
 use App\Dto\SharedTransactionNotificationDto;
-use FinSi\FinanceDomain\Enums\Action;
-use FinSi\FinanceDomain\Models\NotificationType;
-use FinSi\FinanceDomain\Models\Transaction;
-use FinSi\FinanceDomain\Models\User;
 use App\Notifications\SharedTransactionChangedEmail;
 use App\Services\Accounts\RecalculateAccountBalance;
 use App\Services\FinancialGoals\RecalculateFinancialGoalProgress;
 use App\Services\SharedTransactions\RegisterSharedTransactionNotificationAction;
+
+use function auth;
+use function config;
+
+use FinSi\FinanceDomain\Enums\Action;
+use FinSi\FinanceDomain\Models\NotificationType;
+use FinSi\FinanceDomain\Models\Transaction;
+use FinSi\FinanceDomain\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+
+use function request;
 
 class ProcessTransactionSideEffects
 {
@@ -19,13 +28,14 @@ class ProcessTransactionSideEffects
         private readonly RecalculateAccountBalance $recalculateAccountBalance,
         private readonly RecalculateFinancialGoalProgress $recalculateFinancialGoalProgress,
         private readonly RegisterSharedTransactionNotificationAction $registerSharedTransactionNotificationAction,
-    ) {}
+    ) {
+    }
 
     public function execute(Transaction $transaction, Action $action): void
     {
         $account = $transaction->account()->withoutGlobalScopes()->first();
 
-        if ($account === null) {
+        if (null === $account) {
             return;
         }
 
@@ -33,7 +43,7 @@ class ProcessTransactionSideEffects
 
         $this->recalculateAccountBalance->execute($account);
         $this->recalculateFinancialGoals($transaction);
-        $this->notifySharedUsers($transaction, $action);
+        DB::afterCommit(fn () => $this->notifySharedUsers($transaction, $action));
     }
 
     private function recalculateFinancialGoals(Transaction $transaction): void
@@ -70,7 +80,7 @@ class ProcessTransactionSideEffects
                 continue;
             }
 
-            if (config('notifications.shared_transactions.mode') !== 'grouped') {
+            if ('grouped' !== config('notifications.shared_transactions.mode')) {
                 Notification::send(
                     $user,
                     new SharedTransactionChangedEmail(

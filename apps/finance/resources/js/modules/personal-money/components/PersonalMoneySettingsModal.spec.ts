@@ -17,9 +17,14 @@ beforeEach(() => {
     mocks.saveSettings.mockResolvedValue({});
     isSaving.value = false;
     state.value = {
-        settings: { account_id: 1, started_at: '2020-01-01', opening_balance: 100, enabled: true },
+        settings: {
+            account_id: 1,
+            started_at: '2020-01-01',
+            opening_balance: '100.00',
+            enabled: true,
+        },
         accounts: [{ id: 1, name: 'Personal' }],
-        available_balance: 100,
+        available_balance: '100.00',
         pending_count: 0,
         history: [],
         meta: { current_page: 1, last_page: 1, total: 0 },
@@ -60,7 +65,7 @@ describe('personal money settings modal', () => {
     it('loads current settings and saves an updated opening balance', async () => {
         const wrapper = await setup();
         const input = wrapper.findComponent({ name: 'AppInput' });
-        expect(input.props('modelValue')).toBe('100');
+        expect(input.props('modelValue')).toBe('100.00');
         input.vm.$emit('update:modelValue', '250.50');
         await flushPromises();
         await wrapper.find('form').trigger('submit');
@@ -68,7 +73,7 @@ describe('personal money settings modal', () => {
         expect(mocks.saveSettings).toHaveBeenCalledWith({
             account_id: 1,
             started_at: '2020-01-01',
-            opening_balance: 250.5,
+            opening_balance: '250.50',
             enabled: true,
         });
         expect(wrapper.emitted('close')).toHaveLength(1);
@@ -122,7 +127,7 @@ describe('personal money settings modal', () => {
         await flushPromises();
         expect(mocks.saveSettings).toHaveBeenCalledWith({
             account_id: 1,
-            opening_balance: 10000,
+            opening_balance: '10000.00',
             enabled: true,
             start_mode: 'now',
             started_at: expect.any(String),

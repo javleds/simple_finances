@@ -96,7 +96,7 @@ class Subscription extends Model
             'user_id'               => 'integer',
             'finished_at'           => 'date',
             'started_at'            => 'date',
-            'amount'                => 'float',
+            'amount'                => 'decimal:2',
             'feed_account_id'       => 'integer',
             'frequency_type'        => Frequency::class,
             'frequency_unit'        => 'integer',

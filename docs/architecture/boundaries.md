@@ -35,3 +35,12 @@ La API recibe archivos individuales, verifica permisos y reserva capacidad; los 
 `apps/mcp` consume el paquete compartido y tiene credenciales MySQL de solo lectura. No importa Actions de Finance ni recalcula datos al consultar. `apps/agents` conserva conversaciones en PostgreSQL y obtiene información exclusivamente mediante herramientas MCP autorizadas; no recibe credenciales MySQL.
 
 La SPA utiliza `/api/chat` de Finance. Finance deriva el actor de su autenticación y llama a FastAPI por Docker con una credencial de servicio. El actor no puede elegirse desde el navegador ni desde argumentos del modelo. La identidad explícita es un dato confiado entre servicios autenticados, no un mecanismo de autenticación por sí mismo. Ver [el contrato y plan](../specs/015-agente-financiero-chat-mcp.md) y [operación local](../operations/assistant.md).
+
+
+## Representación monetaria exacta
+
+El paquete compartido fija MXN y dos decimales mediante Brick Money. Eloquent y los contratos transportan cadenas canónicas; el cálculo usa Money y BigDecimal/BigRational mediante los helpers de `FinSi\FinanceDomain\Money`. Los helpers rechazan flotantes incluso desde callers PHP no estrictos. MySQL DECIMAL es la persistencia financiera soportada; SUM conserva el resultado decimal. Los límites de columnas existentes siguen aplicando.
+
+Finance valida tipo, escala y rango antes de escribir; Vue utiliza big.js para los cálculos necesarios y conserva cadenas en captura, transporte y formato. Los números de geometría y progreso visual no alimentan operaciones monetarias. MCP ya exponía cadenas y mantiene su contrato; el agente preserva ese tipo sin migración PostgreSQL.
+
+La creación, edición y eliminación incluyen recálculos contables dentro de la transacción de base de datos; las notificaciones se ejecutan después del commit. Los repartos mantienen orden y remanente al último participante; una sobreasignación negativa nueva se rechaza en lugar de inventar otra distribución. Las reparaciones históricas JSON preservan los lexemas monetarios mediante un cast explícito.

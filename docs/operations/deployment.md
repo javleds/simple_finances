@@ -138,3 +138,24 @@ Los checks no sustituyen un E2E con usuario verificado y aceptación legal vigen
 La parada muestra servicio, contenedor, plazo y duración al terminar. El orden conserva MCP disponible mientras termina el worker: API (30 s), worker (130 s), mantenimiento (10 s), Nginx MCP (10 s) y PHP MCP (10 s), solo para contenedores activos. El plazo corresponde a la parada gradual de cada contenedor, no al despliegue completo. El worker recibe TERM/INT, deja de reclamar trabajo y termina el actual; si excede el plazo, Docker fuerza su terminación. Los contenedores antiguos todavía pueden agotar los 130 s hasta que se reconstruyan con este manejador. No interrumpir únicamente por ver dos minutos de espera en ese paso.
 
 El preflight usa deliberadamente solo el Compose base y omite allí la detección de huérfanos; los contenedores del chat no están sobrando ni deben eliminarse con `--remove-orphans`. La validación con la configuración completa conserva sus avisos. `--timeout` sustituye al flag obsoleto `--time`. No se alteran PostgreSQL ni sus volúmenes durante la parada.
+
+
+## Activación del almacenamiento monetario exacto
+
+Esta versión cambia importes y porcentajes financieros JSON a cadenas decimales y exige `X-Finance-Contract: 2` en los endpoints financieros. Desplegar conjuntamente SPA, Finance y el paquete compartido en MCP; reiniciar procesos largos. Clientes anteriores reciben 409 sin ejecutar escrituras. Actualizar consumidores externos antes del corte.
+
+`app:post-deploy` ejecuta `money:storage --check` después de migrar y antes de cachear. Si existen columnas aproximadas pendientes, devuelve error y el despliegue conserva mantenimiento. La API financiera devuelve 503 mientras el almacenamiento no esté listo; también se protegen las escrituras de cuentas y notificaciones desde canales no HTTP. No desactivar este control para completar el despliegue.
+
+Las migraciones añaden columnas DECIMAL(19,2) sombra para `accounts.spent` y `shared_transaction_notification_items.amount`, y versionan el hash de activaciones personales. Las tablas vacías se activan directamente. Las tablas con datos necesitan una conversión revisada. Otra migración amplía `account_member_ledger_entries.type` a 64 caracteres: MySQL rechazaba el tipo existente `virtual_custody_settlement_transfer` porque excede los 32 originales; no se cambian sus valores ni reglas.
+
+Procedimiento, primero ensayado sobre una copia local protegida:
+
+1. Preparar respaldo recuperable y artefactos anteriores. Activar mantenimiento y detener todos los escritores, incluyendo Telegram, scheduler, colas e integraciones ajenas al navegador.
+2. Ejecutar las migraciones aditivas. `php artisan money:storage` produce un informe de solo lectura con filas, checksum, diferencias propuestas y un hash `approval`. No guardar informes con datos reales en Git.
+3. Revisar las diferencias y resolver valores fuera de rango. La extracción usa `CAST(... AS DECIMAL(65,30))`; convertir FLOAT a CHAR puede abreviar dígitos y no se utiliza. Los valores históricos aproximados no recuperan precisión perdida: el informe hace explícito el redondeo propuesto a centavos, mitad alejándose de cero.
+4. Con escritores detenidos, ejecutar `php artisan money:storage --activate --approve=HASH_DEL_INFORME`. El comando requiere mantenimiento y el informe vigente; carga las sombras por lotes, verifica cada valor y vuelve a comprobar el checksum antes del cambio. Si una fuente cambia, se rechaza el corte y se repite la auditoría. Un fallo intermedio permite repetir carga y verificación; las filas originales siguen intactas.
+5. `php artisan money:storage --check` debe aprobar. Las columnas activas conservan los nombres originales; las anteriores quedan con sufijo `_legacy`, ocultas en JSON. Repetir el despliegue sin volver a obtener código si procede, reiniciar consumidores y verificar contratos, balances, custodia y reembolsos antes de abrir tráfico.
+
+El comando no recalcula balances, repartos, ledger, decisiones personales ni obligaciones históricas. No convierte automáticamente otras columnas DECIMAL ni amplía sus límites. El hash de aprobación cambia si cambia el conjunto de valores fuente. El bloqueo de mantenimiento no detiene por sí mismo procesos externos: es obligatorio detener todos los escritores durante la carga y el corte.
+
+Después de nuevas escrituras, las columnas legacy están desactualizadas. No ejecutar un rollback de esquema ni restaurar un respaldo antiguo descartando movimientos recientes. Las migraciones rechazan revertir columnas activadas y hashes versión 2; detener escritores y reconciliar operaciones nuevas antes de una reversión, o corregir hacia adelante. Eliminar las columnas legacy será una migración posterior tras cerrar la ventana de reversión.

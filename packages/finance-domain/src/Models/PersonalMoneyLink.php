@@ -15,7 +15,7 @@ class PersonalMoneyLink extends Model
             'transaction_id'    => 'integer',
             'reimbursement_id'  => 'integer',
             'source_account_id' => 'integer',
-            'cash_effect'       => 'float',
+            'cash_effect'       => 'decimal:2',
             'occurred_at'       => 'immutable_datetime',
         ];
     }

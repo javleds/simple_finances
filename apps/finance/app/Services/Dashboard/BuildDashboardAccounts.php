@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Dashboard;
 
 use FinSi\FinanceDomain\Queries\VisibleAccountsForUser;
@@ -11,26 +13,27 @@ class BuildDashboardAccounts
     public function __construct(
         private readonly Guard $auth,
         private readonly VisibleAccountsForUser $visibleAccountsForUser,
-    ) {}
+    ) {
+    }
 
     public function execute(): array
     {
         $visibleAccounts = $this->visibleAccounts();
 
         return [
-            'summary' => [
-                'active_accounts' => (clone $visibleAccounts)
+            'summary'         => [
+                'active_accounts'  => (clone $visibleAccounts)
                     ->where('virtual', false)
                     ->count(),
                 'virtual_accounts' => (clone $visibleAccounts)
                     ->where('virtual', true)
                     ->count(),
-                'shared_accounts' => (clone $visibleAccounts)
+                'shared_accounts'  => (clone $visibleAccounts)
                     ->where(static fn (Builder $query): Builder => $query
                         ->has('users', '>', 1)
                         ->orWhereHas('virtualCustodians', static fn (Builder $custodians): Builder => $custodians->whereNull('virtual_retired_at')))
                     ->count(),
-                'pending_total' => 0.0,
+                'pending_total'    => '0.00',
             ],
             'pending_actions' => [],
         ];

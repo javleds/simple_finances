@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\OpenAI;
 
 use App\Contracts\OpenAIServiceInterface;
@@ -7,7 +9,17 @@ use App\Dto\MessageActionDetectionDto;
 use App\Dto\OpenAIResponseDto;
 use App\Dto\TransactionExtractionDto;
 use App\Enums\MessageAction;
+
+use function array_rand;
+use function array_slice;
+
 use Illuminate\Support\Facades\Log;
+
+use function preg_match;
+use function rand;
+use function sprintf;
+use function str_contains;
+use function strtolower;
 
 class DummyOpenAIService implements OpenAIServiceInterface
 {
@@ -48,20 +60,6 @@ class DummyOpenAIService implements OpenAIServiceInterface
         );
 
         return $dto->toArray();
-    }
-
-    private function extractKeywords(string $text): array
-    {
-        $keywords = ['balance', 'saldo', 'movimientos', 'transacciones', 'modificar', 'eliminar', 'gasté', 'deposité'];
-        $found = [];
-
-        foreach ($keywords as $keyword) {
-            if (str_contains(strtolower($text), $keyword)) {
-                $found[] = $keyword;
-            }
-        }
-
-        return $found;
     }
 
     public function processText(string $text): array
@@ -120,8 +118,8 @@ class DummyOpenAIService implements OpenAIServiceInterface
 
         return [
             'success' => true,
-            'text' => $dummyTranscription,
-            'error' => null,
+            'text'    => $dummyTranscription,
+            'error'   => null,
         ];
     }
 
@@ -146,6 +144,20 @@ class DummyOpenAIService implements OpenAIServiceInterface
         );
 
         return $response->toArray();
+    }
+
+    private function extractKeywords(string $text): array
+    {
+        $keywords = ['balance', 'saldo', 'movimientos', 'transacciones', 'modificar', 'eliminar', 'gasté', 'deposité'];
+        $found = [];
+
+        foreach ($keywords as $keyword) {
+            if (str_contains(strtolower($text), $keyword)) {
+                $found[] = $keyword;
+            }
+        }
+
+        return $found;
     }
 
     private function generateDummyData(string $input, string $mode): array
@@ -176,11 +188,11 @@ class DummyOpenAIService implements OpenAIServiceInterface
         }
 
         return [
-            'account' => $accounts[array_rand($accounts)],
-            'amount' => rand(50, 2000) + (rand(0, 99) / 100), // Random amount with decimals
-            'type' => $type,
-            'concept' => $concept,
-            'date' => null, // Dummy service no proporciona fecha
+            'account'        => $accounts[array_rand($accounts)],
+            'amount'         => sprintf('%d.%02d', rand(50, 2000), rand(0, 99)),
+            'type'           => $type,
+            'concept'        => $concept,
+            'date'           => null, // Dummy service no proporciona fecha
             'financial_goal' => null, // Dummy service no detecta metas
         ];
     }

@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use Carbon\Carbon;
 use FinSi\FinanceDomain\Enums\Frequency;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\User;
-use Carbon\Carbon;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -29,15 +32,15 @@ class SubscriptionFactory extends Factory
         $feedAccount = $this->faker->boolean() ? Account::factory()->state(fn () => ['user_id' => $user]) : null;
 
         return [
-            'name' => $this->faker->words(3, true),
-            'user_id' => $user,
-            'finished_at' => $this->faker->boolean(10) ? Carbon::now()->addMonths($this->faker->numberBetween(1, 6)) : null,
-            'started_at' => $startedAt,
-            'amount' => $this->faker->randomFloat(2, 0.1, 1500.0),
-            'feed_account_id' => $feedAccount,
-            'frequency_type' => $frequencyType,
-            'frequency_unit' => $frequencyUnit,
-            'next_payment_date' => $nextPaymentDate,
+            'name'                  => $this->faker->words(3, true),
+            'user_id'               => $user,
+            'finished_at'           => $this->faker->boolean(10) ? Carbon::now()->addMonths($this->faker->numberBetween(1, 6)) : null,
+            'started_at'            => $startedAt,
+            'amount'                => Decimal::fromMinor($this->faker->numberBetween(10, 150000)),
+            'feed_account_id'       => $feedAccount,
+            'frequency_type'        => $frequencyType,
+            'frequency_unit'        => $frequencyUnit,
+            'next_payment_date'     => $nextPaymentDate,
             'previous_payment_date' => $previousPaymentDate,
         ];
     }

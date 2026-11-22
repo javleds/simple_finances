@@ -32,9 +32,9 @@ class AccountBalanceSnapshot extends Model
         return [
             'account_id'                => 'integer',
             'user_id'                   => 'integer',
-            'observed_balance'          => 'float',
-            'previous_balance'          => 'float',
-            'delta'                     => 'float',
+            'observed_balance'          => 'decimal:2',
+            'previous_balance'          => 'decimal:2',
+            'delta'                     => 'decimal:2',
             'observed_at'               => 'date',
             'adjustment_transaction_id' => 'integer',
         ];

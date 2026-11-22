@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { compareMoney, formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
+
 import Button from 'primevue/button';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
@@ -57,17 +59,12 @@ const accountActions = computed(() => {
     return [];
 });
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value);
+function formatCurrency(value: string): string {
+    return formatExactMoney(value);
 }
 
 function balanceClasses(amount: Account['balance']): string {
-    if (amount < 0) {
+    if (compareMoney(amount, '0') < 0) {
         return 'text-(--app-color-danger)';
     }
 

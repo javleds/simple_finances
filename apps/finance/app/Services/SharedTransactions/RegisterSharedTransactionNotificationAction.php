@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\SharedTransactions;
 
 use App\Dto\SharedTransactionNotificationDto;
+use Carbon\CarbonInterface;
 use FinSi\FinanceDomain\Enums\SharedTransactionNotificationAction;
 use FinSi\FinanceDomain\Enums\SharedTransactionNotificationBatchStatus;
 use FinSi\FinanceDomain\Enums\TransactionType;
@@ -10,8 +13,10 @@ use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\SharedTransactionNotificationBatch;
 use FinSi\FinanceDomain\Models\SharedTransactionNotificationItem;
 use FinSi\FinanceDomain\Models\User;
-use Carbon\CarbonInterface;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Database\QueryException;
+
+use function now;
 
 class RegisterSharedTransactionNotificationAction
 {
@@ -23,15 +28,15 @@ class RegisterSharedTransactionNotificationAction
         );
 
         SharedTransactionNotificationItem::create([
-            'batch_id' => $batch->id,
-            'account_id' => $dto->transaction->account_id,
+            'batch_id'       => $batch->id,
+            'account_id'     => $dto->transaction->account_id,
             'transaction_id' => $dto->transaction->id,
-            'modifier_id' => $dto->modifier->id,
-            'action' => SharedTransactionNotificationAction::fromAction($dto->action),
-            'concept' => $dto->transaction->concept,
-            'type' => $dto->transaction->type,
-            'amount' => $dto->transaction->amount,
-            'scheduled_at' => $dto->transaction->scheduled_at,
+            'modifier_id'    => $dto->modifier->id,
+            'action'         => SharedTransactionNotificationAction::fromAction($dto->action),
+            'concept'        => $dto->transaction->concept,
+            'type'           => $dto->transaction->type,
+            'amount'         => $dto->transaction->amount,
+            'scheduled_at'   => $dto->transaction->scheduled_at,
         ]);
 
         return $batch;
@@ -41,7 +46,7 @@ class RegisterSharedTransactionNotificationAction
         User $recipient,
         User $modifier,
         Account $account,
-        float $amount,
+        string $amount,
         string $description,
         CarbonInterface $occurredAt,
     ): SharedTransactionNotificationBatch {
@@ -51,15 +56,15 @@ class RegisterSharedTransactionNotificationAction
         );
 
         SharedTransactionNotificationItem::create([
-            'batch_id' => $batch->id,
-            'account_id' => $account->id,
+            'batch_id'       => $batch->id,
+            'account_id'     => $account->id,
             'transaction_id' => null,
-            'modifier_id' => $modifier->id,
-            'action' => SharedTransactionNotificationAction::Settled,
-            'concept' => $description,
-            'type' => TransactionType::Income,
-            'amount' => round($amount, 2),
-            'scheduled_at' => $occurredAt,
+            'modifier_id'    => $modifier->id,
+            'action'         => SharedTransactionNotificationAction::Settled,
+            'concept'        => $description,
+            'type'           => TransactionType::Income,
+            'amount'         => Decimal::normalize($amount),
+            'scheduled_at'   => $occurredAt,
         ]);
 
         return $batch;
@@ -84,12 +89,12 @@ class RegisterSharedTransactionNotificationAction
 
         try {
             return SharedTransactionNotificationBatch::create([
-                'user_id' => $recipientId,
-                'account_id' => $accountId,
-                'group_key' => $groupKey,
-                'status' => SharedTransactionNotificationBatchStatus::Pending,
+                'user_id'           => $recipientId,
+                'account_id'        => $accountId,
+                'group_key'         => $groupKey,
+                'status'            => SharedTransactionNotificationBatchStatus::Pending,
                 'window_started_at' => $now,
-                'last_activity_at' => $now,
+                'last_activity_at'  => $now,
             ]);
         } catch (QueryException $exception) {
             $batch = SharedTransactionNotificationBatch::query()

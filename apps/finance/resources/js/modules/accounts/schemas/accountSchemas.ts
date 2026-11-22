@@ -1,3 +1,9 @@
+import {
+  percentageSchema,
+  moneySchema,
+  parseMoney,
+  compareMoney,
+} from '@/modules/shared/lib/money';
 import { z } from 'zod';
 
 import {
@@ -38,7 +44,7 @@ const accountMemberAmountApiSchema = z
   .object({
     user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
     user_name: z.string().catch('Usuario no disponible'),
-    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    amount: moneySchema,
   })
   .transform<AccountMemberAmount>((payload) => ({
     userId: payload.user_id,
@@ -50,7 +56,7 @@ const accountPendingReimbursementItemApiSchema = z
   .object({
     transaction_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
     concept: z.string().catch('Movimiento no disponible'),
-    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    amount: moneySchema,
     occurred_at: z
       .string()
       .nullable()
@@ -70,7 +76,7 @@ const accountPendingReimbursementApiSchema = z
     from_user_name: z.string().catch('Usuario no disponible'),
     to_user_id: z.union([z.string(), z.number()]).transform((value) => String(value)),
     to_user_name: z.string().catch('Usuario no disponible'),
-    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    amount: moneySchema,
     action_type: z
       .enum(['user_to_user', 'custody_to_user', 'user_to_account'])
       .optional()
@@ -108,7 +114,7 @@ export const accountFormSchema = z
       return;
     }
 
-    const creditLine = parseNullableNumber(values.creditLine);
+    const creditLine = parseMoney(values.creditLine);
     const closingDay = parseNullableNumber(values.closingDay);
 
     if (creditLine === null) {
@@ -117,7 +123,7 @@ export const accountFormSchema = z
         path: ['creditLine'],
         message: 'La línea de crédito es obligatoria.',
       });
-    } else if (creditLine < 0) {
+    } else if (compareMoney(creditLine, '0') < 0) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['creditLine'],
@@ -144,8 +150,8 @@ export const accountVirtualCustodianApiSchema = z
   .object({
     id: z.union([z.string(), z.number()]).transform(String),
     name: z.string(),
-    custody_amount: z.coerce.number().finite(),
-    settlement_amount: z.coerce.number().finite(),
+    custody_amount: moneySchema.default('0.00'),
+    settlement_amount: moneySchema.default('0.00'),
   })
   .transform((value) => ({
     id: value.id,
@@ -172,10 +178,10 @@ export const accountApiSchema = z.object({
     .transform((value) => value ?? null),
   virtual: z.unknown().transform(parseBooleanLike),
   credit_card: z.unknown().transform(parseBooleanLike),
-  balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-  spent: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-  available_credit: z.unknown().transform(parseNullableNumber),
-  credit_line: z.unknown().transform(parseNullableNumber),
+  balance: moneySchema,
+  spent: moneySchema.nullable(),
+  available_credit: moneySchema.nullable(),
+  credit_line: moneySchema.nullable(),
   cutoff_day: z.unknown().transform(parseNullableNumber),
   feed_account_id: z
     .union([z.string(), z.number(), z.null(), z.undefined()])
@@ -221,22 +227,10 @@ export const accountApiSchema = z.object({
                 .nullable(),
               name: z.string(),
               email: z.string().email().catch(''),
-              percentage: z
-                .unknown()
-                .optional()
-                .transform((value) => parseNullableNumber(value) ?? 0),
-              pending_expenses: z
-                .unknown()
-                .optional()
-                .transform((value) => parseNullableNumber(value) ?? 0),
-              custody_amount: z
-                .unknown()
-                .optional()
-                .transform((value) => parseNullableNumber(value) ?? 0),
-              settlement_amount: z
-                .unknown()
-                .optional()
-                .transform((value) => parseNullableNumber(value) ?? 0),
+              percentage: percentageSchema.default(0),
+              pending_expenses: moneySchema.default('0.00'),
+              custody_amount: moneySchema.default('0.00'),
+              settlement_amount: moneySchema.default('0.00'),
             })
             .transform((value) => ({
               id: resolveAccountUserId(value),
@@ -269,10 +263,7 @@ export const accountApiSchema = z.object({
               email: z.string().email().catch(''),
               pivot: z
                 .object({
-                  percentage: z
-                    .unknown()
-                    .optional()
-                    .transform((value) => parseNullableNumber(value) ?? 0),
+                  percentage: percentageSchema.default(0),
                   user_id: z
                     .union([z.string(), z.number(), z.null(), z.undefined()])
                     .optional()
@@ -280,18 +271,9 @@ export const accountApiSchema = z.object({
                 })
                 .optional()
                 .transform((value) => value ?? { percentage: 0, user_id: null }),
-              pending_expenses: z
-                .unknown()
-                .optional()
-                .transform((value) => parseNullableNumber(value) ?? 0),
-              custody_amount: z
-                .unknown()
-                .optional()
-                .transform((value) => parseNullableNumber(value) ?? 0),
-              settlement_amount: z
-                .unknown()
-                .optional()
-                .transform((value) => parseNullableNumber(value) ?? 0),
+              pending_expenses: moneySchema.default('0.00'),
+              custody_amount: moneySchema.default('0.00'),
+              settlement_amount: moneySchema.default('0.00'),
             })
             .transform((value) => ({
               id: resolveAccountUserId(value),
@@ -341,28 +323,13 @@ export const accountUserApiSchema = z
       .nullable(),
     name: z.string(),
     email: z.string().email().catch(''),
-    percentage: z
-      .unknown()
-      .optional()
-      .transform((value) => parseNullableNumber(value) ?? 0),
-    pending_expenses: z
-      .unknown()
-      .optional()
-      .transform((value) => parseNullableNumber(value) ?? 0),
-    custody_amount: z
-      .unknown()
-      .optional()
-      .transform((value) => parseNullableNumber(value) ?? 0),
-    settlement_amount: z
-      .unknown()
-      .optional()
-      .transform((value) => parseNullableNumber(value) ?? 0),
+    percentage: percentageSchema.default(0),
+    pending_expenses: moneySchema.default('0.00'),
+    custody_amount: moneySchema.default('0.00'),
+    settlement_amount: moneySchema.default('0.00'),
     pivot: z
       .object({
-        percentage: z
-          .unknown()
-          .optional()
-          .transform((value) => parseNullableNumber(value) ?? 0),
+        percentage: percentageSchema.default(0),
         user_id: z
           .union([z.string(), z.number(), z.null(), z.undefined()])
           .optional()
@@ -458,7 +425,7 @@ export function mapAccountFormToWritePayload(values: AccountFormValues): Account
     description: values.description.trim(),
     isVirtual: values.isVirtual === 'yes',
     isCredit: values.isCredit === 'yes',
-    creditLine: values.isCredit === 'yes' ? parseNullableNumber(values.creditLine) : null,
+    creditLine: values.isCredit === 'yes' ? parseMoney(values.creditLine) : null,
     closingDay: values.isCredit === 'yes' ? parseNullableNumber(values.closingDay) : null,
   };
 }

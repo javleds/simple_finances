@@ -26,8 +26,8 @@ it('queues grouped shared movement notifications when a member reimbursement is 
     $receiver = User::factory()->create(['name' => 'Javier']);
     $account = Account::factory()->create(['user_id' => $receiver->id]);
     $account->users()->sync([
-        $payer->id => ['percentage' => 50],
-        $receiver->id => ['percentage' => 50],
+        $payer->id => ['percentage' => '50.00'],
+        $receiver->id => ['percentage' => '50.00'],
     ]);
 
     $notificationType = NotificationType::factory()->create([
@@ -41,7 +41,7 @@ it('queues grouped shared movement notifications when a member reimbursement is 
         ->postJson("/api/accounts/{$account->id}/member-transfers", [
             'from_user_id' => $payer->id,
             'to_user_id' => $receiver->id,
-            'amount' => 250.0,
+            'amount' => '250.00',
             'description' => 'Pago de pendientes de Divanny a Javier',
             'occurred_at' => '2026-07-20 10:00:00',
         ])
@@ -57,5 +57,5 @@ it('queues grouped shared movement notifications when a member reimbursement is 
         ->and($item->modifier_id)->toBe($payer->id)
         ->and($item->action)->toBe(SharedTransactionNotificationAction::Settled)
         ->and($item->concept)->toBe('Pago de pendientes de Divanny a Javier')
-        ->and($item->amount)->toBe(250.0);
+        ->and($item->amount)->toBe('250.00');
 });

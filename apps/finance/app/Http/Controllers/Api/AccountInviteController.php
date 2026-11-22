@@ -1,19 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
-use FinSi\FinanceDomain\Authorization\AuthorizeInviteAccess;
-use FinSi\FinanceDomain\Queries\VisibleInvitesForUser;
-use FinSi\FinanceDomain\Authorization\AuthorizeUserOwnedResource;
 use App\Dto\AccountInviteDto;
-use FinSi\FinanceDomain\Enums\InviteStatus;
 use App\Http\Requests\Api\AccountInviteRequest;
-use FinSi\FinanceDomain\Models\Account;
-use FinSi\FinanceDomain\Models\AccountInvite;
-use FinSi\FinanceDomain\Models\User;
 use App\Services\AccountInvites\CreateAccountInvite;
 use App\Services\AccountInvites\Respond;
 use App\Services\AccountInvites\SendApiInvitationNotification;
+
+use function auth;
+
+use FinSi\FinanceDomain\Authorization\AuthorizeInviteAccess;
+use FinSi\FinanceDomain\Authorization\AuthorizeUserOwnedResource;
+use FinSi\FinanceDomain\Enums\InviteStatus;
+use FinSi\FinanceDomain\Models\Account;
+use FinSi\FinanceDomain\Models\AccountInvite;
+use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
+use FinSi\FinanceDomain\Queries\VisibleInvitesForUser;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +30,8 @@ class AccountInviteController extends ApiController
         private readonly AuthorizeInviteAccess $inviteAccess,
         private readonly VisibleInvitesForUser $visibleInvites,
         private readonly AuthorizeUserOwnedResource $authorizeUserOwnedResource,
-    ) {}
+    ) {
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -53,7 +60,7 @@ class AccountInviteController extends ApiController
             account: $account,
             owner: $request->user(),
             email: $request->string('email')->toString(),
-            percentage: $request->float('percentage'),
+            percentage: Decimal::normalize($request->validated('percentage') ?? '0.00'),
         ));
 
         return $this->respondModel($invite, ['account', 'user'], 201);
@@ -89,7 +96,7 @@ class AccountInviteController extends ApiController
         ]));
         $accountInvite->save();
 
-        if ($accountInvite->status === InviteStatus::Pending) {
+        if (InviteStatus::Pending === $accountInvite->status) {
             $sendApiInvitationNotification->execute($accountInvite);
         }
 

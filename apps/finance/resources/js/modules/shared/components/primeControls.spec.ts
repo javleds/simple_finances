@@ -44,9 +44,9 @@ describe('PrimeVue shared controls', () => {
         await input.trigger('focus');
         expect(input.element.value).toBe('1234.50');
         await input.setValue('0012,349');
-        expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['12.34']);
+        expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['12.349']);
         await input.trigger('blur');
-        expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['12.34']);
+        expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['12.349']);
         await input.trigger('focus');
         await input.setValue('');
         await input.trigger('blur');

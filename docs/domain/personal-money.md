@@ -99,3 +99,10 @@ La caché TanStack Query usa el prefijo `['personal-money']`. Invalidarla al cam
 Consultar `tests/Feature/Services/PersonalMoney/PersonalMoneyTest.php`, `PersonalMoneyActivationTest.php` y `tests/Feature/Api/PersonalMoneyEndpointTest.php`. En Vue, consultar los specs de `TransactionsForm`, `PersonalMoneySettingsModal`, `PersonalMoneyPage` y `usePersonalMoney`.
 
 Cubrir especialmente: activación exacta con historial previo, cortes en el mismo segundo, reintentos y reinicios, historial registrado tarde, defaults frente a edición, pagador distinto del autor, signos de aportaciones e ingresos, reembolsos persistidos después de regenerar el libro, ausencia de doble conteo, pérdida de elegibilidad y aislamiento entre usuarios. Ejecutar las comprobaciones indicadas en `AGENTS.md` según el alcance del cambio.
+
+
+## Contrato decimal e idempotencia
+
+`opening_balance`, `available_balance`, importes y efectos se transmiten como cadenas con dos decimales; la indisponibilidad sigue siendo `null`. La configuración exige cadenas decimales en escritura. Se conservan cortes de activación, firmas de contexto y decisiones históricas.
+
+`personal_money_baseline_operations.payload_hash_version` distingue el hash antiguo (1) del canónico (2). Las operaciones nuevas canonizan el importe antes de calcular el hash; `"100"` y `"100.00"` son equivalentes. Un replay antiguo verifica exclusivamente su serialización histórica y la vuelta exacta a centavos; admite las representaciones históricas de cero positivo/negativo. La conversión flotante aislada de ese comparador no participa en cálculos ni escrituras monetarias. No se reescriben hashes antiguos ni se reconstruyen desde el saldo vigente.

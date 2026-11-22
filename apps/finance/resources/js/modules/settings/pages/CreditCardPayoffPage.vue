@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import {
+    parseMoney,
+    sumMoney,
+    subtractMoney,
+    compareMoney,
+    absMoney,
+    formatMoney,
+} from '@/modules/shared/lib/money';
 import Button from 'primevue/button';
 import { computed, ref } from 'vue';
 import { ArrowLeftIcon, ArrowPathIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
@@ -16,29 +24,22 @@ type CreditCardDraft = {
 const cards = ref<CreditCardDraft[]>([createDraft(1)]);
 let nextCardId = 2;
 
-const currencyFormatter = new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-});
-
-const totalDebt = computed(() =>
-    cards.value.reduce((sum, card) => sum + parseAmount(card.total), 0),
+const totalDebt = computed(() => sumMoney(cards.value.map((card) => parseAmount(card.total))));
+const totalCovered = computed(() => sumMoney(cards.value.map((card) => parseAmount(card.covered))));
+const totalDifference = computed(() => subtractMoney(totalDebt.value, totalCovered.value));
+const hasTotals = computed(() =>
+    cards.value.some((card) => compareMoney(parseAmount(card.total), '0') > 0),
 );
-const totalCovered = computed(() =>
-    cards.value.reduce((sum, card) => sum + parseAmount(card.covered), 0),
-);
-const totalDifference = computed(() => totalDebt.value - totalCovered.value);
-const hasTotals = computed(() => cards.value.some((card) => parseAmount(card.total) > 0));
 const totalStatusLabel = computed(() => {
     if (!hasTotals.value) {
         return 'Agrega una deuda para ver el total pendiente';
     }
 
-    if (totalDifference.value > 0) {
+    if (compareMoney(totalDifference.value, '0') > 0) {
         return 'por cubrir entre todas tus tarjetas';
     }
 
-    if (totalDifference.value === 0) {
+    if (compareMoney(totalDifference.value, '0') === 0) {
         return 'deuda cubierta entre todas tus tarjetas';
     }
 
@@ -49,32 +50,31 @@ function createDraft(id: number): CreditCardDraft {
     return { id, description: '', total: '', covered: '' };
 }
 
-function parseAmount(value: string): number {
-    const amount = Number.parseFloat(value.replace(',', '.'));
-
-    return Number.isFinite(amount) && amount >= 0 ? amount : 0;
+function parseAmount(value: string): string {
+    const amount = parseMoney(value.replace(',', '.'));
+    return amount !== null && compareMoney(amount, '0') >= 0 ? amount : '0.00';
 }
 
-function formatCurrency(value: number): string {
-    return currencyFormatter.format(value);
+function formatCurrency(value: string): string {
+    return formatMoney(value);
 }
 
-function differenceFor(card: CreditCardDraft): number {
-    return parseAmount(card.total) - parseAmount(card.covered);
+function differenceFor(card: CreditCardDraft): string {
+    return subtractMoney(parseAmount(card.total), parseAmount(card.covered));
 }
 
 function statusFor(card: CreditCardDraft): 'empty' | 'pending' | 'covered' | 'surplus' {
-    if (parseAmount(card.total) === 0) {
+    if (compareMoney(parseAmount(card.total), '0') === 0) {
         return 'empty';
     }
 
     const difference = differenceFor(card);
 
-    if (difference > 0) {
+    if (compareMoney(difference, '0') > 0) {
         return 'pending';
     }
 
-    return difference === 0 ? 'covered' : 'surplus';
+    return compareMoney(difference, '0') === 0 ? 'covered' : 'surplus';
 }
 
 function statusLabel(card: CreditCardDraft): string {
@@ -84,7 +84,7 @@ function statusLabel(card: CreditCardDraft): string {
     if (status === 'pending') return `Faltan ${formatCurrency(differenceFor(card))}`;
     if (status === 'covered') return 'Deuda cubierta';
 
-    return `Excedente ${formatCurrency(Math.abs(differenceFor(card)))}`;
+    return `Excedente ${formatCurrency(absMoney(differenceFor(card)))}`;
 }
 
 function addCard(): void {
@@ -256,7 +256,7 @@ function resetCards(): void {
                 <div>
                     <p class="text-sm opacity-80">Panorama general</p>
                     <p class="mt-1 text-3xl font-semibold tracking-tight">
-                        {{ hasTotals ? formatCurrency(Math.abs(totalDifference)) : '$ 0.00' }}
+                        {{ hasTotals ? formatCurrency(absMoney(totalDifference)) : '$ 0.00' }}
                     </p>
                     <p class="mt-1 text-sm opacity-80">{{ totalStatusLabel }}</p>
                 </div>

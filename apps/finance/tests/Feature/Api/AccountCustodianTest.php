@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use FinSi\FinanceDomain\Money\Decimal;
 use App\Services\Accounts\BuildAccountMemberSummary;
 use App\Services\Transaction\SyncAccountMemberLedger;
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
@@ -18,13 +19,13 @@ function custodianAccount(): array
 {
     $owner = User::factory()->create();
     $member = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 10000, 'credit_card' => false, 'virtual' => false]);
-    $account->users()->sync([$owner->id => ['percentage' => 50], $member->id => ['percentage' => 50]]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => '10000.00', 'credit_card' => false, 'virtual' => false]);
+    $account->users()->sync([$owner->id => ['percentage' => '50.00'], $member->id => ['percentage' => '50.00']]);
     $income = Transaction::factory()->income()->completed()->create([
         'account_id'                => $account->id,
         'user_id'                   => $owner->id,
         'custodian_user_id'         => $owner->id,
-        'amount'                    => 10000,
+        'amount'                    => '10000.00',
         'scheduled_at'              => now(),
         'uses_shared_account_rules' => true,
     ]);
@@ -37,9 +38,9 @@ it('creates a scoped financial custodian and only adds the new opening balance',
     [$account, $owner] = custodianAccount();
     $response = $this->withHeaders(custodianHeaders($owner))->postJson("/api/accounts/{$account->id}/custodians", [
         'name'            => 'Mercadopago',
-        'opening_balance' => 125.25,
-        'transfers'       => [['user_id' => $owner->id, 'amount' => 2300.01]],
-    ])->assertCreated()->assertJsonPath('data.name', 'Mercadopago')->assertJsonPath('data.custody_amount', 2425.26);
+        'opening_balance' => '125.25',
+        'transfers'       => [['user_id' => $owner->id, 'amount' => '2300.01']],
+    ])->assertCreated()->assertJsonPath('data.name', 'Mercadopago')->assertJsonPath('data.custody_amount', '2425.26');
 
     $custodian = User::findOrFail($response->json('data.id'));
     $opening = Transaction::query()->where('custodian_user_id', $custodian->id)->sole();
@@ -48,17 +49,17 @@ it('creates a scoped financial custodian and only adds the new opening balance',
     expect($custodian->virtual_account_id)->toBe($account->id)
         ->and($custodian->email)->toEndWith('@custodians.invalid')
         ->and($account->users()->whereKey($custodian->id)->exists())->toBeFalse()
-        ->and($account->fresh()->balance)->toBe(10125.25);
+        ->and($account->fresh()->balance)->toBe('10125.25');
     $summary = app(BuildAccountMemberSummary::class)->execute($account);
-    expect(collect($summary['custody_by_user'])->firstWhere('user_id', $owner->id)['amount'])->toBe(7699.99);
+    expect(collect($summary['custody_by_user'])->firstWhere('user_id', $owner->id)['amount'])->toBe('7699.99');
     $this->assertDatabaseCount('account_member_ledger_entries', 4);
 });
 
 it('creates an empty custodian without changing balance or ledger', function () {
     [$account, $owner] = custodianAccount();
     $this->withHeaders(custodianHeaders($owner))->postJson("/api/accounts/{$account->id}/custodians", ['name' => 'Nu'])
-        ->assertCreated()->assertJsonPath('data.custody_amount', 0.0);
-    expect($account->fresh()->balance)->toBe(10000.0);
+        ->assertCreated()->assertJsonPath('data.custody_amount', '0.00');
+    expect($account->fresh()->balance)->toBe('10000.00');
     $this->assertDatabaseCount('account_member_ledger_entries', 1);
 });
 
@@ -66,44 +67,44 @@ it('keeps all custody in the account when retiring a custodian and preserves its
     [$account, $owner, $member] = custodianAccount();
     $headers = custodianHeaders($owner);
     $id = $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", [
-        'name' => 'Mercadopago', 'transfers' => [['user_id' => $owner->id, 'amount' => 10000]],
+        'name' => 'Mercadopago', 'transfers' => [['user_id' => $owner->id, 'amount' => '10000.00']],
     ])->assertCreated()->json('data.id');
 
     $this->withHeaders($headers)->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", [
-        'distributions' => [['user_id' => $owner->id, 'amount' => 3333.33], ['user_id' => $member->id, 'amount' => 6666.67]],
+        'distributions' => [['user_id' => $owner->id, 'amount' => '3333.33'], ['user_id' => $member->id, 'amount' => '6666.67']],
     ])->assertOk();
 
     expect(User::findOrFail($id)->virtual_retired_at)->not->toBeNull()
-        ->and($account->fresh()->balance)->toBe(10000.0);
+        ->and($account->fresh()->balance)->toBe('10000.00');
     $summary = app(BuildAccountMemberSummary::class)->execute($account);
     $custody = collect($summary['custody_by_user'])->keyBy('user_id');
-    expect($custody[$id]['amount'])->toBe(0.0)
-        ->and($custody[$owner->id]['amount'])->toBe(3333.33)
-        ->and($custody[$member->id]['amount'])->toBe(6666.67)
+    expect($custody[$id]['amount'])->toBe('0.00')
+        ->and($custody[$owner->id]['amount'])->toBe('3333.33')
+        ->and($custody[$member->id]['amount'])->toBe('6666.67')
         ->and($account->memberLedgerEntries()->where('user_id', $id)->count())->toBe(3);
     $this->withHeaders($headers)->getJson("/api/accounts/{$account->id}/custodians")->assertOk()->assertJsonCount(0, 'data');
     $this->withHeaders($headers)->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", ['distributions' => []])->assertNotFound();
 });
 
-it('requires exactly all custody before retiring without partial writes', function (float $amount) {
+it('requires exactly all custody before retiring without partial writes', function (string|int $amount) {
     [$account, $owner] = custodianAccount();
     $headers = custodianHeaders($owner);
     $id = $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", [
-        'name' => 'Mercadopago', 'transfers' => [['user_id' => $owner->id, 'amount' => 100]],
+        'name' => 'Mercadopago', 'transfers' => [['user_id' => $owner->id, 'amount' => '100.00']],
     ])->json('data.id');
     $this->withHeaders($headers)->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", [
-        'distributions' => [['user_id' => $owner->id, 'amount' => $amount]],
+        'distributions' => [['user_id' => $owner->id, 'amount' => Decimal::normalize($amount)]],
     ])->assertUnprocessable()->assertJsonValidationErrors('distributions');
     expect(User::findOrFail($id)->virtual_retired_at)->toBeNull();
     $this->assertDatabaseCount('account_member_ledger_entries', 3);
-})->with([99.99, 100.01]);
+})->with(['99.99', '100.01']);
 
 it('rejects excess custody and participants from other accounts atomically', function () {
     [$account, $owner] = custodianAccount();
     $outsider = User::factory()->create();
-    foreach ([[$owner->id, 10000.01], [$outsider->id, 1]] as [$id, $amount]) {
+    foreach ([[$owner->id, '10000.01'], [$outsider->id, 1]] as [$id, $amount]) {
         $this->withHeaders(custodianHeaders($owner))->postJson("/api/accounts/{$account->id}/custodians", [
-            'name' => 'Nu', 'opening_balance' => 50, 'transfers' => [['user_id' => $id, 'amount' => $amount]],
+            'name' => 'Nu', 'opening_balance' => '50.00', 'transfers' => [['user_id' => $id, 'amount' => Decimal::normalize($amount)]],
         ])->assertUnprocessable()->assertJsonValidationErrors('transfers');
     }
     expect($account->virtualCustodians()->count())->toBe(0);
@@ -115,7 +116,7 @@ it('allows members to manage custodians while rejecting outsiders', function () 
     [$account, $owner, $member] = custodianAccount();
     $headers = custodianHeaders($member);
     $id = $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", [
-        'name' => 'Nu', 'transfers' => [['user_id' => $owner->id, 'amount' => 100]],
+        'name' => 'Nu', 'transfers' => [['user_id' => $owner->id, 'amount' => '100.00']],
     ])->assertCreated()->json('data.id');
     $this->withHeaders($headers)->getJson("/api/accounts/{$account->id}/custodians")->assertOk()->assertJsonCount(1, 'data');
 
@@ -125,20 +126,20 @@ it('allows members to manage custodians while rejecting outsiders', function () 
     $this->withHeaders($outsiderHeaders)->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", ['distributions' => []])->assertForbidden();
 
     $this->withHeaders($headers)->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", [
-        'distributions' => [['user_id' => $member->id, 'amount' => 100]],
+        'distributions' => [['user_id' => $member->id, 'amount' => '100.00']],
     ])->assertOk();
-    expect((float) $account->fresh()->balance)->toBe(10000.0);
+    expect($account->fresh()->balance)->toBe('10000.00');
     $summary = app(BuildAccountMemberSummary::class)->execute($account->fresh());
-    expect(collect($summary['custody_by_user'])->firstWhere('user_id', $member->id)['amount'])->toBe(100.0);
+    expect(collect($summary['custody_by_user'])->firstWhere('user_id', $member->id)['amount'])->toBe('100.00');
 });
 
 it('rejects foreign custodian retirement and nonmember distribution destinations', function () {
     [$account, $owner] = custodianAccount();
     [$otherAccount, $otherOwner] = custodianAccount();
-    $id = $this->withHeaders(custodianHeaders($otherOwner))->postJson("/api/accounts/{$otherAccount->id}/custodians", ['name' => 'Nu', 'opening_balance' => 100])->json('data.id');
+    $id = $this->withHeaders(custodianHeaders($otherOwner))->postJson("/api/accounts/{$otherAccount->id}/custodians", ['name' => 'Nu', 'opening_balance' => '100.00'])->json('data.id');
     $this->withHeaders(custodianHeaders($owner))->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", ['distributions' => []])->assertNotFound();
     $this->withHeaders(custodianHeaders($otherOwner))->deleteJson("/api/accounts/{$otherAccount->id}/custodians/{$id}", [
-        'distributions' => [['user_id' => $owner->id, 'amount' => 100]],
+        'distributions' => [['user_id' => $owner->id, 'amount' => '100.00']],
     ])->assertUnprocessable()->assertJsonValidationErrors('distributions');
 });
 
@@ -150,7 +151,7 @@ it('does not retire a custodian while reimbursement obligations remain', functio
         $account->memberLedgerEntries()->create([
             'user_id' => $userId, 'related_user_id' => $relatedId,
             'type'    => AccountMemberLedgerEntryType::SettlementCorrection,
-            'amount'  => $amount, 'description' => 'Pending reimbursement', 'occurred_at' => now(),
+            'amount'  => Decimal::normalize($amount), 'description' => 'Pending reimbursement', 'occurred_at' => now(),
         ]);
     }
     $this->withHeaders($headers)->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", ['distributions' => []])
@@ -162,25 +163,25 @@ it('validates precision and duplicate source identifiers', function (array $payl
     $this->withHeaders(custodianHeaders($owner))->postJson("/api/accounts/{$account->id}/custodians", ['name' => 'Nu', ...$payload])->assertUnprocessable();
     expect($account->virtualCustodians()->count())->toBe(0);
 })->with([
-    [['opening_balance' => -0.01]],
-    [['opening_balance' => 1.001]],
-    [['transfers' => [['user_id' => 1, 'amount' => 1], ['user_id' => 1, 'amount' => 1]]]],
+    [['opening_balance' => '-0.01']],
+    [['opening_balance' => '1.001']],
+    [['transfers' => [['user_id' => 1, 'amount' => '1.00'], ['user_id' => 1, 'amount' => '1.00']]]],
 ]);
 
 it('moves existing virtual custody to a new custodian without increasing the balance', function () {
     [$account, $owner] = custodianAccount();
     $headers = custodianHeaders($owner);
     $id = $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", [
-        'name' => 'Mercadopago', 'transfers' => [['user_id' => $owner->id, 'amount' => 100]],
+        'name' => 'Mercadopago', 'transfers' => [['user_id' => $owner->id, 'amount' => '100.00']],
     ])->assertCreated()->json('data.id');
     $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", [
-        'name' => 'Nu', 'transfers' => [['user_id' => $id, 'amount' => 100]],
-    ])->assertCreated()->assertJsonPath('data.custody_amount', 100.0);
+        'name' => 'Nu', 'transfers' => [['user_id' => $id, 'amount' => '100.00']],
+    ])->assertCreated()->assertJsonPath('data.custody_amount', '100.00');
     $this->withHeaders($headers)->deleteJson("/api/accounts/{$account->id}/custodians/{$id}", ['distributions' => []])->assertOk();
     $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", [
-        'name' => 'Otra', 'transfers' => [['user_id' => $id, 'amount' => 0]],
+        'name' => 'Otra', 'transfers' => [['user_id' => $id, 'amount' => '0.00']],
     ])->assertUnprocessable();
-    expect($account->fresh()->balance)->toBe(10000.0);
+    expect($account->fresh()->balance)->toBe('10000.00');
 });
 
 it('rejects creation in credit and virtual accounts', function (string $kind) {
@@ -201,7 +202,7 @@ it('reserves outgoing custody reimbursements even when net settlements cancel', 
         $transaction = Transaction::factory()->outcome()->completed()->create([
             'account_id'   => $account->id,
             'user_id'      => $owner->id,
-            'amount'       => 1000,
+            'amount'       => '1000.00',
             'scheduled_at' => now(),
         ]);
         foreach ([[$debtor->id, $creditor->id, -1000], [$creditor->id, $debtor->id, 1000]] as [$userId, $relatedId, $amount]) {
@@ -210,39 +211,39 @@ it('reserves outgoing custody reimbursements even when net settlements cancel', 
                 'user_id'         => $userId,
                 'related_user_id' => $relatedId,
                 'type'            => AccountMemberLedgerEntryType::CustodyReimbursementDue,
-                'amount'          => $amount,
+                'amount'          => Decimal::normalize($amount),
                 'description'     => 'Pending custody reimbursement',
                 'occurred_at'     => now(),
             ]);
         }
     }
     $summary = app(BuildAccountMemberSummary::class)->execute($account);
-    expect(collect($summary['settlements_by_user'])->firstWhere('user_id', $owner->id)['amount'])->toBe(0.0);
+    expect(collect($summary['settlements_by_user'])->firstWhere('user_id', $owner->id)['amount'])->toBe('0.00');
     $headers = custodianHeaders($owner);
     $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", [
-        'name' => 'Nu', 'transfers' => [['user_id' => $owner->id, 'amount' => 9000.01]],
+        'name' => 'Nu', 'transfers' => [['user_id' => $owner->id, 'amount' => '9000.01']],
     ])->assertUnprocessable()->assertJsonValidationErrors('transfers');
     expect($account->virtualCustodians()->count())->toBe(0);
     $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", [
-        'name' => 'Nu', 'transfers' => [['user_id' => $owner->id, 'amount' => 9000]],
-    ])->assertCreated()->assertJsonPath('data.custody_amount', 9000.0);
+        'name' => 'Nu', 'transfers' => [['user_id' => $owner->id, 'amount' => '9000.00']],
+    ])->assertCreated()->assertJsonPath('data.custody_amount', '9000.00');
 });
 
 it('allows a member to rename custody without changing financial data or identity', function () {
     [$account, $owner, $member] = custodianAccount();
     $headers = custodianHeaders($member);
     $id = $this->withHeaders($headers)->postJson("/api/accounts/{$account->id}/custodians", [
-        'name' => 'Nu', 'transfers' => [['user_id' => $owner->id, 'amount' => 100]],
+        'name' => 'Nu', 'transfers' => [['user_id' => $owner->id, 'amount' => '100.00']],
     ])->json('data.id');
     $identity = User::findOrFail($id);
     $ledger = $account->memberLedgerEntries()->get()->toArray();
     $this->withHeaders($headers)->putJson("/api/accounts/{$account->id}/custodians/{$id}", [
-        'name' => '  Mercado Pago  ', 'virtual_account_id' => null, 'balance' => 0,
+        'name' => '  Mercado Pago  ', 'virtual_account_id' => null, 'balance' => '0.00',
     ])->assertOk()->assertJsonPath('data.name', 'Mercado Pago')->assertJsonPath('data.id', $id);
     expect(User::findOrFail($id)->name)->toBe('Mercado Pago')
         ->and(User::findOrFail($id)->virtual_account_id)->toBe($account->id)
         ->and(User::findOrFail($id)->email)->toBe($identity->email)
-        ->and((float) $account->fresh()->balance)->toBe(10000.0)
+        ->and($account->fresh()->balance)->toBe('10000.00')
         ->and($account->memberLedgerEntries()->get()->toArray())->toBe($ledger);
 });
 

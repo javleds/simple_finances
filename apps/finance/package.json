@@ -30,6 +30,7 @@
         "@primevue/forms": "^5.0.2",
         "@tailwindcss/vite": "^4.2.4",
         "@tanstack/vue-query": "^5.101.2",
+        "big.js": "^7.0.1",
         "pinia": "^3.0.4",
         "primevue": "^5.0.2",
         "tailwindcss": "^4.2.4",
@@ -40,6 +41,7 @@
     },
     "devDependencies": {
         "@tsconfig/node24": "^24.0.4",
+        "@types/big.js": "^7.0.0",
         "@types/jsdom": "^28.0.1",
         "@types/node": "^24.12.2",
         "@vitejs/plugin-vue": "^6.0.6",

@@ -4,18 +4,31 @@ import type { AccountMember } from '@/modules/accounts/types';
 import { useAccountUsersSplitDraft } from './useAccountUsersSplitDraft';
 
 function member(id: string, allocationPercentage: number): AccountMember {
-  return { id, name: id, email: `${id}@example.com`, allocationPercentage, pendingExpenses: 0, custodyAmount: 0, settlementAmount: 0 };
+  return {
+    id,
+    name: id,
+    email: `${id}@example.com`,
+    allocationPercentage,
+    pendingExpenses: '0.00',
+    custodyAmount: '0.00',
+    settlementAmount: '0.00',
+  };
 }
 
 function setup() {
   const users = ref([member('1', 60), member('2', 40)]);
   const hasMoreUsers = ref(false);
   const savePercentages = vi.fn(async (percentages: Record<string, number>) => {
-    users.value = users.value.map(user => ({ ...user, allocationPercentage: percentages[user.id]! }));
+    users.value = users.value.map((user) => ({
+      ...user,
+      allocationPercentage: percentages[user.id]!,
+    }));
     return true;
   });
   const scope = effectScope();
-  const draft = scope.run(() => useAccountUsersSplitDraft({ users, hasMoreUsers, savePercentages, onUsersChange: vi.fn() }))!;
+  const draft = scope.run(() =>
+    useAccountUsersSplitDraft({ users, hasMoreUsers, savePercentages, onUsersChange: vi.fn() }),
+  )!;
   return { ...draft, users, hasMoreUsers, savePercentages, scope };
 }
 

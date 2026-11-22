@@ -1,8 +1,8 @@
+import { percentageSchema, moneySchema } from '@/modules/shared/lib/money';
 import { z } from 'zod';
 
 import { createApiClient } from '@/lib/api/apiClient';
 import { createPaginatedCollectionSchema } from '@/modules/shared/lib/pagination';
-import { parseNullableNumber } from '@/modules/shared/lib/apiParsing';
 import { buildQueryParams } from '@/modules/shared/lib/queryParams';
 
 import { mapTransactionApiToDomain, transactionApiSchema } from '../schemas/transactionSchemas';
@@ -38,25 +38,6 @@ const transactionResponseDataSchema = z.union([
     .transform((payload) => payload.transaction),
 ]);
 
-const transactionMutationDataSchema = z.union([
-  transactionResponseDataSchema,
-  z
-    .array(transactionResponseDataSchema)
-    .transform<z.infer<typeof transactionApiSchema>>((transactions, context) => {
-      const transaction = transactions[0];
-
-      if (!transaction) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'La respuesta no incluyó una transacción creada.',
-        });
-        return z.NEVER;
-      }
-
-      return transaction;
-    }),
-]);
-
 const transactionMutationCollectionDataSchema = z.union([
   transactionResponseDataSchema.transform((transaction) => [transaction]),
   z.array(transactionResponseDataSchema),
@@ -64,20 +45,11 @@ const transactionMutationCollectionDataSchema = z.union([
 
 const transactionIdSchema = z.union([z.string(), z.number()]).transform((value) => String(value));
 
-const singleTransactionSchema = z.union([
-  transactionMutationDataSchema,
-  z
-    .object({
-      data: transactionMutationDataSchema,
-    })
-    .transform((payload) => payload.data),
-]);
-
 const memberAmountApiSchema = z
   .object({
     user_id: transactionIdSchema,
     user_name: z.string().catch('Usuario no disponible'),
-    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    amount: moneySchema,
   })
   .transform<TransactionMemberAmount>((payload) => ({
     userId: payload.user_id,
@@ -89,7 +61,7 @@ const pendingReimbursementItemApiSchema = z
   .object({
     transaction_id: transactionIdSchema,
     concept: z.string().catch('Movimiento no disponible'),
-    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    amount: moneySchema,
     occurred_at: z
       .string()
       .nullable()
@@ -109,7 +81,7 @@ const pendingReimbursementApiSchema = z
     from_user_name: z.string().catch('Usuario no disponible'),
     to_user_id: transactionIdSchema,
     to_user_name: z.string().catch('Usuario no disponible'),
-    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    amount: moneySchema,
     action_type: z
       .enum(['user_to_user', 'custody_to_user', 'user_to_account'])
       .optional()
@@ -130,8 +102,8 @@ const ledgerAllocationApiSchema = z
   .object({
     user_id: transactionIdSchema,
     user_name: z.string().nullable().optional().default(null),
-    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    percentage: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    amount: moneySchema,
+    percentage: percentageSchema.default(0),
   })
   .transform((payload) => ({
     userId: payload.user_id,
@@ -148,8 +120,8 @@ const ledgerRowApiSchema = z
     transaction_id: transactionIdSchema.nullable().optional().default(null),
     label: z.string().catch('Movimiento'),
     description: z.string().catch(''),
-    amount: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    balance_after: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    amount: moneySchema,
+    balance_after: moneySchema,
     custody_after_by_user: z.array(memberAmountApiSchema).default([]),
     settlement_after_by_user: z.array(memberAmountApiSchema).default([]),
     allocations: z.array(ledgerAllocationApiSchema).default([]),
@@ -172,12 +144,12 @@ const transactionMutationMetaPayloadSchema = z
   .object({
     account: z
       .object({
-        balance: z.unknown().transform(parseNullableNumber),
+        balance: moneySchema.nullable(),
       })
       .optional(),
     previous_account: z
       .object({
-        balance: z.unknown().transform(parseNullableNumber),
+        balance: moneySchema.nullable(),
       })
       .optional(),
     custody_by_user: z.array(memberAmountApiSchema).optional(),
@@ -207,24 +179,13 @@ export const transactionListMetaSchema = z
   .object({
     meta: transactionMutationMetaPayloadSchema,
   })
-  .catch({
-    meta: {
-      accountBalance: null,
-      previousAccountBalance: null,
-      custodyByUser: null,
-      settlementsByUser: null,
-      pendingReimbursements: null,
-      ledgerRows: null,
-      subtransactionIds: [],
-    },
-  })
   .transform<TransactionMutationMeta>((payload) => payload.meta);
 
 const transactionFacilitySummarySchema = z
   .object({
-    income_total: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    outcome_total: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
-    balance: z.unknown().transform((value) => parseNullableNumber(value) ?? 0),
+    income_total: moneySchema,
+    outcome_total: moneySchema,
+    balance: moneySchema,
   })
   .transform<TransactionFacilitySummary>((payload) => ({
     incomeTotal: payload.income_total,
@@ -279,24 +240,10 @@ function sortTransactionsByCreatedAt(transactions: Transaction[]): Transaction[]
 }
 
 export const createdTransactionResponseSchema = z
-  .union([
-    z.object({
-      data: transactionMutationCollectionDataSchema,
-      meta: transactionMutationMetaPayloadSchema,
-    }),
-    singleTransactionSchema.transform((data) => ({
-      data: [data],
-      meta: {
-        accountBalance: null,
-        previousAccountBalance: null,
-        custodyByUser: null,
-        settlementsByUser: null,
-        pendingReimbursements: null,
-        ledgerRows: null,
-        subtransactionIds: [],
-      },
-    })),
-  ])
+  .object({
+    data: transactionMutationCollectionDataSchema,
+    meta: transactionMutationMetaPayloadSchema,
+  })
   .transform<CreatedTransactionResult>((payload, context) => {
     const mappedTransactions = payload.data.map(mapTransactionApiToDomain);
     const transaction = mappedTransactions[0];
@@ -320,9 +267,28 @@ export const createdTransactionResponseSchema = z
 export function createTransactionsRepository() {
   return {
     async filterOptions(accountId?: string): Promise<TransactionFilterCategory[]> {
-      const path = accountId ? `/accounts/${encodeURIComponent(accountId)}/transactions/filter-options` : '/transactions/filter-options';
+      const path = accountId
+        ? `/accounts/${encodeURIComponent(accountId)}/transactions/filter-options`
+        : '/transactions/filter-options';
       const response = await apiClient.get<unknown>(path);
-      return z.object({ data: z.object({ categories: z.array(z.object({ id: transactionIdSchema, name: z.string(), account_name: z.string().nullable() })) }) }).parse(response).data.categories.map((category) => ({ id: category.id, name: category.name, accountName: category.account_name }));
+      return z
+        .object({
+          data: z.object({
+            categories: z.array(
+              z.object({
+                id: transactionIdSchema,
+                name: z.string(),
+                account_name: z.string().nullable(),
+              }),
+            ),
+          }),
+        })
+        .parse(response)
+        .data.categories.map((category) => ({
+          id: category.id,
+          name: category.name,
+          accountName: category.account_name,
+        }));
     },
     async list(
       accountId?: string,
@@ -334,8 +300,14 @@ export function createTransactionsRepository() {
         search: options?.filters?.search,
         type: mapTransactionTypesToApi(options?.filters?.type),
         category_ids: options?.filters?.categoryIds,
-        uncategorized: options?.filters?.uncategorized === undefined ? undefined : Number(options.filters.uncategorized),
-        has_attachments: options?.filters?.hasAttachments === undefined ? undefined : Number(options.filters.hasAttachments),
+        uncategorized:
+          options?.filters?.uncategorized === undefined
+            ? undefined
+            : Number(options.filters.uncategorized),
+        has_attachments:
+          options?.filters?.hasAttachments === undefined
+            ? undefined
+            : Number(options.filters.hasAttachments),
       });
       const query = searchParams.toString();
       const path = accountId ? `${accountsPath}/${accountId}/transactions` : transactionsPath;
@@ -360,8 +332,14 @@ export function createTransactionsRepository() {
         start_date: options.filters.startDate,
         end_date: options.filters.endDate,
         category_ids: options.filters.categoryIds,
-        uncategorized: options.filters.uncategorized === undefined ? undefined : Number(options.filters.uncategorized),
-        has_attachments: options.filters.hasAttachments === undefined ? undefined : Number(options.filters.hasAttachments),
+        uncategorized:
+          options.filters.uncategorized === undefined
+            ? undefined
+            : Number(options.filters.uncategorized),
+        has_attachments:
+          options.filters.hasAttachments === undefined
+            ? undefined
+            : Number(options.filters.hasAttachments),
       });
       const query = searchParams.toString();
       const response = await apiClient.get<unknown>(

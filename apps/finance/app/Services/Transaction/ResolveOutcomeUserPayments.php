@@ -1,25 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Transaction;
 
 use App\Dto\UserPaymentDto;
 use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
 use FinSi\FinanceDomain\Models\Account;
+use FinSi\FinanceDomain\Money\Decimal;
 
 class ResolveOutcomeUserPayments
 {
     /**
      * @param array<int, UserPaymentDto> $requestedUserPayments
+     *
      * @return array<int, UserPaymentDto>
      */
     public function execute(
         Account $account,
-        float $amount,
+        string $amount,
         int $paidByUserId,
         TransactionPaymentSource $paymentSource,
         array $requestedUserPayments,
     ): array {
-        if ($requestedUserPayments !== []) {
+        if ([] !== $requestedUserPayments) {
             return $requestedUserPayments;
         }
 
@@ -35,14 +39,14 @@ class ResolveOutcomeUserPayments
 
         if ($users->isEmpty()) {
             return [
-                new UserPaymentDto((int) $account->user_id, 100.0),
+                new UserPaymentDto((int) $account->user_id, '100.00'),
             ];
         }
 
         return $users
             ->map(fn ($user): UserPaymentDto => new UserPaymentDto(
                 userId: (int) $user->id,
-                percentage: (float) ($user->pivot->percentage ?? 0.0),
+                percentage: Decimal::normalize($user->pivot->percentage ?? '0.00'),
             ))
             ->all();
     }

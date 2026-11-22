@@ -1,7 +1,7 @@
 export type DashboardGraphAccount = {
   accountId: string;
   accountName: string;
-  balance: number;
+  balance: string;
   color: string | null;
   isVirtual: boolean;
 };
@@ -13,18 +13,18 @@ export type DashboardAccountsSummary = {
 };
 
 export type DashboardSubscriptionsSummary = {
-  annualTotal: number;
+  annualTotal: string;
   nearestPayment: {
-    amount: number;
+    amount: string;
     cycleStartDate: string;
     name: string;
     nextPaymentDate: string;
     subscriptionId: string;
-    targetToday: number;
+    targetToday: string;
   } | null;
-  savingsTargetToday: number;
+  savingsTargetToday: string;
   subscriptionsCount: number;
-  upcomingCommitment: number;
+  upcomingCommitment: string;
 };
 
 export type DashboardPeriodSummary = {
@@ -32,9 +32,9 @@ export type DashboardPeriodSummary = {
     startDate: string;
     endDate: string;
   };
-  incomeTotal: number;
-  outcomeTotal: number;
-  balance: number;
+  incomeTotal: string;
+  outcomeTotal: string;
+  balance: string;
 };
 
 export type DashboardPeriodSummaryParams = {

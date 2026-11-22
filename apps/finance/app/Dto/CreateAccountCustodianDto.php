@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Dto;
 
 use function array_map;
-use function round;
+
+use FinSi\FinanceDomain\Money\Decimal;
+
 use function trim;
 
 final readonly class CreateAccountCustodianDto
@@ -21,10 +23,10 @@ final readonly class CreateAccountCustodianDto
     {
         return new self(
             name: trim($payload['name']),
-            openingBalanceCents: (int) round((float) ($payload['opening_balance'] ?? 0) * 100),
+            openingBalanceCents: Decimal::minor($payload['opening_balance'] ?? '0.00'),
             transfers: array_map(static fn (array $transfer): array => [
                 'user_id'      => (int) $transfer['user_id'],
-                'amount_cents' => (int) round((float) $transfer['amount'] * 100),
+                'amount_cents' => Decimal::minor($transfer['amount']),
             ], $payload['transfers'] ?? []),
         );
     }

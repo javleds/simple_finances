@@ -2,7 +2,7 @@
 
 ## Preparación
 
-El repositorio es un monorepo. Ejecuta comandos Laravel, Composer, npm y Vite desde `apps/finance`; Compose y `deploy.sh` permanecen en la raíz Git. Requiere PHP 8.4 (requerido por las dependencias del lockfile), Composer, Node 24 y npm. Habilita las extensiones requeridas por Composer y el driver de la base elegida; las pruebas necesitan SQLite/PDO SQLite.
+El repositorio es un monorepo. Ejecuta comandos Laravel, Composer, npm y Vite desde `apps/finance`; Compose y `deploy.sh` permanecen en la raíz Git. Requiere PHP 8.4 (requerido por las dependencias del lockfile), Composer, Node 24 y npm. Habilita las extensiones requeridas por Composer y PDO MySQL. La operación financiera y las pruebas de persistencia utilizan MySQL; SQLite queda limitado a pruebas sin aritmética SQL monetaria.
 
 ```bash
 cd apps/finance
@@ -12,7 +12,7 @@ npm ci
 php artisan key:generate
 ```
 
-Configura `DB_*` para una base local y crea la base antes de `php artisan migrate`. Para SQLite configura `DB_CONNECTION=sqlite`, crea `database/database.sqlite` y usa su ruta absoluta en `DB_DATABASE`. No ejecutes migraciones sobre una base compartida de producción.
+Configura `DB_CONNECTION=mysql` y el resto de `DB_*` para una base local; créala antes de `php artisan migrate`. No ejecutes migraciones sobre una base compartida de producción. Una base nueva activa automáticamente sus columnas monetarias exactas. Una base existente requiere la auditoría y activación descritas en [despliegue](deployment.md#activación-del-almacenamiento-monetario-exacto).
 
 `.npmrc` conserva `legacy-peer-deps=true` por incompatibilidades de peer dependencies heredadas de la SPA. Usa el lockfile con `npm ci`; esta integración no corrige ni actualiza esas dependencias.
 
@@ -187,3 +187,29 @@ El input manual de Studio usa el estado del grafo:
 Mantén `LANGSMITH_TRACING=false` si solo quieres visualizar. Para registrar trazas, configura `LANGSMITH_API_KEY`, `LANGSMITH_PROJECT` y habilita tracing explícitamente en el entorno del proceso que deseas observar; sus mensajes y resultados pueden enviarse a LangSmith. Studio local no muestra automáticamente ejecuciones del worker Docker.
 
 Referencia: [CLI oficial de LangGraph](https://reference.langchain.com/python/langgraph-cli).
+
+
+## Pruebas de dinero exacto
+
+Las suites PHP financieras usan bases MySQL desechables cuyo nombre debe terminar en `_test`. Finance y MCP comprueban ese requisito antes de preparar fixtures. Nunca apuntarlas a una base con datos de trabajo. `phpunit.xml` de Finance y `phpunit.mysql.xml` de MCP tienen defaults locales `127.0.0.1:33679`, usuario root sin contraseña, y bases `finance_money_test` y `finance_mcp_money_test`. Son valores para un servidor temporal; pueden reemplazarse con variables de entorno.
+
+Ejemplo de servidor exclusivo de pruebas, sin montar volúmenes existentes:
+
+```bash
+docker run --detach --name fin-si-money-tests --publish 127.0.0.1:33679:3306 --env MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:8.4
+docker exec fin-si-money-tests mysqladmin -uroot ping
+docker exec fin-si-money-tests mysql -uroot -e 'CREATE DATABASE finance_money_test; CREATE DATABASE finance_domain_money_test; CREATE DATABASE finance_mcp_money_test;'
+```
+
+Esperar a que `mysqladmin ping` confirme disponibilidad antes de crear las bases. Ejecutar desde cada directorio:
+
+- `packages/finance-domain`: `FINANCE_DOMAIN_MYSQL_PORT=33679 composer test`.
+- `apps/finance`: `composer run domain:sync`, `php artisan test`, `npm run type-check`, `npm run test:unit -- --run`, `npm run build`.
+- `apps/mcp`: `composer run domain:sync`, `php artisan test -c phpunit.mysql.xml`.
+- `apps/agents`: `uv run pytest`, `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src`.
+
+La prueba adicional MCP `MySqlReadOnlyTest` necesita fixtures y una credencial SELECT-only separada, habilitados con `MCP_TEST_MYSQL_PORT` y `MCP_TEST_MYSQL_DATABASE` (también `_test`); no concede privilegios por sí misma. Las pruebas PostgreSQL del agente requieren su DSN desechable independiente.
+
+`phpunit.sqlite.xml` en Finance y el paquete limita la ejecución a pruebas sin persistencia financiera. No sustituye la suite MySQL. Las suites completas tienen un límite de memoria de pruebas de 512 MB; no cambia el límite de la aplicación.
+
+Al terminar, eliminar solamente el contenedor temporal creado para estas pruebas: `docker rm --force --volumes fin-si-money-tests`. No eliminar contenedores o volúmenes operativos. Después de añadir dependencias al paquete, actualizar los locks de ambos consumidores antes de `domain:sync`.

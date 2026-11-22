@@ -20,7 +20,7 @@ const split = defineComponent({
     props: ['monetary'],
     emits: ['update:amount'],
     template:
-        '<input class="split" :value="monetary.amount" :max="monetary.maximum" @input="$emit(\'update:amount\', Number($event.target.value))" />',
+        '<input class="split" :value="monetary.amount" :max="monetary.maximum" @input="$emit(\'update:amount\', $event.target.value)" />',
 });
 const account: Account = {
     id: '1',
@@ -31,8 +31,8 @@ const account: Account = {
     isVirtual: false,
     isCredit: false,
     status: 'Activo',
-    balance: 100,
-    totalSpent: 0,
+    balance: '100.00',
+    totalSpent: '0.00',
     availableCredit: null,
     creditLine: null,
     closingDay: null,
@@ -42,12 +42,14 @@ const account: Account = {
         name,
         email: '',
         allocationPercentage: 50,
-        pendingExpenses: 0,
-        custodyAmount: 0,
-        settlementAmount: 0,
+        pendingExpenses: '0.00',
+        custodyAmount: '0.00',
+        settlementAmount: '0.00',
     })),
-    virtualCustodians: [{ id: '3', name: 'Mercadopago', custodyAmount: 100, settlementAmount: 0 }],
-    custodyByUser: [{ userId: '3', userName: 'Mercadopago', amount: 100 }],
+    virtualCustodians: [
+        { id: '3', name: 'Mercadopago', custodyAmount: '100.00', settlementAmount: '0.00' },
+    ],
+    custodyByUser: [{ userId: '3', userName: 'Mercadopago', amount: '100.00' }],
     settlementsByUser: [],
     pendingReimbursements: [],
 };
@@ -84,8 +86,8 @@ describe('virtual custodian form', () => {
         await wrapper.get('[data-submit]').trigger('click');
         await flushPromises();
         expect(wrapper.emitted('save')?.[0]?.[0]).toEqual([
-            { userId: '1', amount: 23.01 },
-            { userId: '2', amount: 76.99 },
+            { userId: '1', amount: '23.01' },
+            { userId: '2', amount: '76.99' },
         ]);
         expect(wrapper.text()).toContain('Por repartir: $0.00');
     });
@@ -99,8 +101,8 @@ describe('virtual custodian form', () => {
         await flushPromises();
         expect(wrapper.emitted('save')?.[0]?.[0]).toEqual({
             name: 'Nu',
-            openingBalance: 15.25,
-            transfers: [{ userId: '3', amount: 40.01 }],
+            openingBalance: '15.25',
+            transfers: [{ userId: '3', amount: '40.01' }],
         });
         expect(wrapper.text()).toContain('$115.25');
     });
@@ -116,7 +118,7 @@ describe('virtual custodian form', () => {
                         fromUserName: 'Mercadopago',
                         toUserId: '1',
                         toUserName: 'Javi',
-                        amount: 25.01,
+                        amount: '25.01',
                         actionType: 'custody_to_user',
                         items: [],
                     },
@@ -130,8 +132,8 @@ describe('virtual custodian form', () => {
         await flushPromises();
         expect(wrapper.emitted('save')?.[0]?.[0]).toEqual({
             name: 'Nu',
-            openingBalance: 0,
-            transfers: [{ userId: '3', amount: 74.99 }],
+            openingBalance: '0.00',
+            transfers: [{ userId: '3', amount: '74.99' }],
         });
     });
 
@@ -146,7 +148,7 @@ describe('virtual custodian form', () => {
                         fromUserName: 'Mercadopago',
                         toUserId: '1',
                         toUserName: 'Javi',
-                        amount: 10,
+                        amount: '10.00',
                         actionType: 'custody_to_user',
                         items: [],
                     },

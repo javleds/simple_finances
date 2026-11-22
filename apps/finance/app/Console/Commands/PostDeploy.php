@@ -1,35 +1,42 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 
 class PostDeploy extends Command
 {
-    protected $signature = 'app:post-deploy {--migrate : Run database migrations without asking for confirmation}';
-
-    protected $description = 'Command description';
-
     public function handle(): int
     {
         if ($this->shouldRunMigrations()) {
             $status = $this->call('migrate', ['--force' => true]);
 
-            if ($status !== self::SUCCESS) {
+            if (self::SUCCESS !== $status) {
                 return $status;
             }
+        }
+
+        $status = $this->call('money:storage', ['--check' => true]);
+        if (self::SUCCESS !== $status) {
+            return $status;
         }
 
         foreach (['view:clear', 'config:cache', 'route:cache', 'event:cache'] as $command) {
             $status = $this->call($command);
 
-            if ($status !== self::SUCCESS) {
+            if (self::SUCCESS !== $status) {
                 return $status;
             }
         }
 
         return self::SUCCESS;
     }
+
+    protected $signature = 'app:post-deploy {--migrate : Run database migrations without asking for confirmation}';
+
+    protected $description = 'Command description';
 
     private function shouldRunMigrations(): bool
     {

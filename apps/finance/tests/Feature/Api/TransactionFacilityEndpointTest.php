@@ -24,21 +24,21 @@ it('lists completed transactions created by the signed in user with summary meta
 
     $parentTransaction = Transaction::factory()->income()->completed()->create([
         'concept' => 'Monthly salary',
-        'amount' => 45000,
+        'amount' => '45000.00',
         'account_id' => $account->id,
         'user_id' => $user->id,
         'scheduled_at' => '2026-06-05',
     ]);
     Transaction::factory()->outcome()->completed()->create([
         'concept' => 'Groceries',
-        'amount' => 1200,
+        'amount' => '1200.00',
         'account_id' => $account->id,
         'user_id' => $user->id,
         'scheduled_at' => '2026-06-10',
     ]);
     Transaction::factory()->income()->completed()->create([
         'concept' => 'Child reimbursement',
-        'amount' => 400,
+        'amount' => '400.00',
         'account_id' => $account->id,
         'user_id' => $user->id,
         'parent_transaction_id' => $parentTransaction->id,
@@ -46,14 +46,14 @@ it('lists completed transactions created by the signed in user with summary meta
     ]);
     Transaction::factory()->income()->completed()->create([
         'concept' => 'Partner salary',
-        'amount' => 30000,
+        'amount' => '30000.00',
         'account_id' => $account->id,
         'user_id' => $sharedUser->id,
         'scheduled_at' => '2026-06-05',
     ]);
     Transaction::factory()->income()->completed()->create([
         'concept' => 'Deleted account salary',
-        'amount' => 90000,
+        'amount' => '90000.00',
         'account_id' => $deletedAccount->id,
         'user_id' => $user->id,
         'scheduled_at' => '2026-06-05',
@@ -66,9 +66,9 @@ it('lists completed transactions created by the signed in user with summary meta
         ->assertOk()
         ->assertJsonCount(2, 'data')
         ->assertJsonPath('data.0.account.name', 'Nomina')
-        ->assertJsonPath('meta.summary.income_total', 45000.0)
-        ->assertJsonPath('meta.summary.outcome_total', 1200.0)
-        ->assertJsonPath('meta.summary.balance', 43800.0);
+        ->assertJsonPath('meta.summary.income_total', '45000.00')
+        ->assertJsonPath('meta.summary.outcome_total', '1200.00')
+        ->assertJsonPath('meta.summary.balance', '43800.00');
 });
 
 it('filters the transaction facility list by concept', function () {

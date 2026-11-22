@@ -17,7 +17,7 @@ class PersonalMoneySetting extends Model
             'transaction_cutoff_id' => 'integer',
             'ledger_cutoff_id'      => 'integer',
             'started_at'            => 'immutable_date',
-            'opening_balance'       => 'float',
+            'opening_balance'       => 'decimal:2',
             'enabled'               => 'boolean',
         ];
     }

@@ -1,27 +1,27 @@
 export type VirtualAccountSnapshot = {
   id: string;
   accountId: string;
-  observedBalance: number;
-  previousBalance: number;
-  delta: number;
+  observedBalance: string;
+  previousBalance: string;
+  delta: string;
   observedAt: string;
   notes: string | null;
   adjustmentTransactionId: string | null;
 };
 
 export type VirtualAccountSnapshotWritePayload = {
-  observedBalance: number;
+  observedBalance: string;
   observedAt: string;
   notes: string | null;
 };
 
 export type VirtualAccountSummary = {
-  currentBalance: number;
-  initialBalance: number;
-  manualContributions: number;
-  manualWithdrawals: number;
-  netCapital: number;
-  observedYield: number;
+  currentBalance: string;
+  initialBalance: string;
+  manualContributions: string;
+  manualWithdrawals: string;
+  netCapital: string;
+  observedYield: string;
   accountsCount: number;
 };
 
@@ -29,12 +29,12 @@ export type VirtualAccountItem = {
   accountId: string;
   accountName: string;
   color: string | null;
-  currentBalance: number;
-  initialBalance: number;
-  manualContributions: number;
-  manualWithdrawals: number;
-  netCapital: number;
-  observedYield: number;
+  currentBalance: string;
+  initialBalance: string;
+  manualContributions: string;
+  manualWithdrawals: string;
+  netCapital: string;
+  observedYield: string;
   latestSnapshot: VirtualAccountSnapshot | null;
 };
 

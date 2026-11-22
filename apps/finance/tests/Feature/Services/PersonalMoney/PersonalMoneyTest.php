@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 use App\Dto\PersonalMoneySettingsDto;
 use App\Dto\TransactionFormDto;
+use App\Services\Accounts\RegisterAccountMemberTransfer;
+use App\Services\PersonalMoney\BuildPersonalMoneySources;
+use App\Services\PersonalMoney\BuildPersonalMoneySummary;
+use App\Services\PersonalMoney\ResolvePersonalMoneySource;
+use App\Services\PersonalMoney\UpdatePersonalMoneySettings;
+use App\Services\Transaction\TransactionCreator;
+use App\Services\Transaction\TransactionRemover;
+use App\Services\Transaction\TransactionUpdater;
 use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
@@ -12,15 +20,7 @@ use FinSi\FinanceDomain\Models\PersonalMoneyReimbursement;
 use FinSi\FinanceDomain\Models\PersonalMoneySetting;
 use FinSi\FinanceDomain\Models\Transaction;
 use FinSi\FinanceDomain\Models\User;
-use App\Services\Accounts\RegisterAccountMemberTransfer;
-use App\Services\PersonalMoney\BuildPersonalMoneySources;
-use App\Services\PersonalMoney\BuildPersonalMoneySummary;
 use FinSi\FinanceDomain\Queries\EligiblePersonalMoneyAccounts;
-use App\Services\PersonalMoney\ResolvePersonalMoneySource;
-use App\Services\PersonalMoney\UpdatePersonalMoneySettings;
-use App\Services\Transaction\TransactionCreator;
-use App\Services\Transaction\TransactionRemover;
-use App\Services\Transaction\TransactionUpdater;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
@@ -39,10 +39,10 @@ beforeEach(function (): void {
     ]);
     $this->actingAs($this->user);
     $this->setting = app(UpdatePersonalMoneySettings::class)->execute($this->user->id,
-        new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', 1000, true));
+        new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', '1000.00', true));
 });
 
-function personalMoneyTransaction(Account $account, User $creator, string $type, float $amount, array $attributes = []): Transaction
+function personalMoneyTransaction(Account $account, User $creator, string $type, string | int $amount, array $attributes = []): Transaction
 {
     return Transaction::factory()->create(array_merge([
         'account_id'                => $account->id, 'user_id' => $creator->id, 'type' => $type,
@@ -56,7 +56,7 @@ function personalMoneyResolve(User $user, Transaction $transaction, string $reso
     app(ResolvePersonalMoneySource::class)->execute($user->id, 'transaction', $transaction->id, $resolution);
 }
 
-function personalMoneyAvailable(User $user): ?float
+function personalMoneyAvailable(User $user): ?string
 {
     return app(BuildPersonalMoneySummary::class)->execute($user->id)['available_balance'];
 }
@@ -66,7 +66,7 @@ it('only offers exclusively owned individual non investment accounts', function 
     $this->personal->update(['virtual' => true]);
     expect(app(EligiblePersonalMoneyAccounts::class)->execute($this->user->id)->count())->toBe(0);
     expect(fn () => app(UpdatePersonalMoneySettings::class)->execute($this->user->id,
-        new PersonalMoneySettingsDto($this->shared->id, '2026-10-01', 0, true)))->toThrow(ValidationException::class);
+        new PersonalMoneySettingsDto($this->shared->id, '2026-10-01', '0.00', true)))->toThrow(ValidationException::class);
 });
 
 it('counts personal salary and expenses once while excluding history future and technical incomes', function (): void {
@@ -77,8 +77,8 @@ it('counts personal salary and expenses once while excluding history future and 
     personalMoneyTransaction($this->personal, $this->user, 'income', 10000, ['legacy_migrated_at' => now()]);
     $parent = personalMoneyTransaction($this->personal, $this->user, 'outcome', 10);
     personalMoneyTransaction($this->personal, $this->user, 'income', 10, ['parent_transaction_id' => $parent->id]);
-    expect(personalMoneyAvailable($this->user))->toBe(20490.0);
-    expect($this->personal->fresh()->balance)->toBe(0.0);
+    expect(personalMoneyAvailable($this->user))->toBe('20490.00');
+    expect($this->personal->fresh()->balance)->toBe('0.00');
 });
 
 it('subtracts contributions without subtracting the later account fund purchase again', function (): void {
@@ -87,12 +87,12 @@ it('subtracts contributions without subtracting the later account fund purchase 
         'payment_source' => TransactionPaymentSource::AccountFund, 'paid_by_user_id' => $this->partner->id,
     ]);
     $summary = app(BuildPersonalMoneySummary::class)->execute($this->user->id);
-    expect($summary['pending_count'])->toBe(1)->and($summary['available_balance'])->toBe(1000.0);
+    expect($summary['pending_count'])->toBe(1)->and($summary['available_balance'])->toBe('1000.00');
     personalMoneyResolve($this->user, $contribution);
     personalMoneyResolve($this->user, $contribution);
-    expect(personalMoneyAvailable($this->user))->toBe(800.0)->and(PersonalMoneyLink::query()->count())->toBe(1);
+    expect(personalMoneyAvailable($this->user))->toBe('800.00')->and(PersonalMoneyLink::query()->count())->toBe(1);
     personalMoneyResolve($this->user, $contribution, 'external');
-    expect(personalMoneyAvailable($this->user))->toBe(1000.0);
+    expect(personalMoneyAvailable($this->user))->toBe('1000.00');
     personalMoneyResolve($this->user, $contribution, 'pending');
     expect(PersonalMoneyLink::query()->sole()->resolution)->toBe('pending');
 });
@@ -102,11 +102,11 @@ it('requires the actual payer to resolve an out of pocket payment recorded by an
         'paid_by_user_id' => $this->user->id, 'payment_source' => TransactionPaymentSource::MemberOutOfPocket,
     ]);
     personalMoneyResolve($this->user, $expense);
-    expect(personalMoneyAvailable($this->user))->toBe(600.0);
+    expect(personalMoneyAvailable($this->user))->toBe('600.00');
     $partnerPersonal = Account::factory()->create(['user_id' => $this->partner->id, 'virtual' => false, 'credit_card' => false]);
     $partnerPersonal->users()->attach($this->partner->id);
     app(UpdatePersonalMoneySettings::class)->execute($this->partner->id,
-        new PersonalMoneySettingsDto($partnerPersonal->id, '2026-10-01', 500, true));
+        new PersonalMoneySettingsDto($partnerPersonal->id, '2026-10-01', '500.00', true));
     expect(app(BuildPersonalMoneySources::class)->execute($this->partner->id,
         PersonalMoneySetting::query()->where('user_id', $this->partner->id)->first())->count())->toBe(0);
     expect(fn () => personalMoneyResolve($this->partner, $expense))->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
@@ -131,7 +131,7 @@ it('includes partial outgoing and incoming reimbursements without counting self 
             'type'       => $type, 'amount' => 999, 'occurred_at' => '2026-10-07',
         ]);
     }
-    expect(personalMoneyAvailable($this->user))->toBe(1100.0);
+    expect(personalMoneyAvailable($this->user))->toBe('1100.00');
     expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['history'])->toHaveCount(2);
 });
 
@@ -141,15 +141,15 @@ it('recalculates edited amounts and removes effects when the transaction is dele
         'concept'           => 'Contribution', 'amount' => 200, 'scheduled_at' => '2026-10-05',
         'custodian_user_id' => $this->user->id, 'cash_source' => 'personal',
     ]));
-    expect(personalMoneyAvailable($this->user))->toBe(800.0);
+    expect(personalMoneyAvailable($this->user))->toBe('800.00');
     app(TransactionUpdater::class)->execute($transaction, TransactionFormDto::fromFormArray([
         'account_id'        => $this->shared->id, 'type' => 'income', 'status' => 'completed',
         'concept'           => 'Corrected contribution', 'amount' => 300, 'scheduled_at' => '2026-10-05',
         'custodian_user_id' => $this->user->id,
     ]));
-    expect(personalMoneyAvailable($this->user))->toBe(700.0);
+    expect(personalMoneyAvailable($this->user))->toBe('700.00');
     app(TransactionRemover::class)->execute($transaction->fresh());
-    expect(personalMoneyAvailable($this->user))->toBe(1000.0)->and(PersonalMoneyLink::query()->count())->toBe(0);
+    expect(personalMoneyAvailable($this->user))->toBe('1000.00')->and(PersonalMoneyLink::query()->count())->toBe(0);
 });
 
 it('retires incompatible links when a payment changes payer even if it later changes back', function (): void {
@@ -158,7 +158,7 @@ it('retires incompatible links when a payment changes payer even if it later cha
         'concept'         => 'Purchase', 'amount' => 200, 'scheduled_at' => '2026-10-05',
         'paid_by_user_id' => $this->user->id, 'payment_source' => 'member_out_of_pocket', 'cash_source' => 'personal',
     ]));
-    expect(personalMoneyAvailable($this->user))->toBe(800.0);
+    expect(personalMoneyAvailable($this->user))->toBe('800.00');
     foreach ([$this->partner->id, $this->user->id] as $payerId) {
         $transaction = app(TransactionUpdater::class)->execute($transaction, TransactionFormDto::fromFormArray([
             'account_id'      => $this->shared->id, 'type' => 'outcome', 'status' => 'completed',
@@ -166,7 +166,7 @@ it('retires incompatible links when a payment changes payer even if it later cha
             'paid_by_user_id' => $payerId, 'payment_source' => 'member_out_of_pocket',
         ]));
     }
-    expect(personalMoneyAvailable($this->user))->toBe(1000.0)
+    expect(personalMoneyAvailable($this->user))->toBe('1000.00')
         ->and(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['pending_count'])->toBe(1)
         ->and(PersonalMoneyLink::query()->count())->toBe(0);
 });
@@ -175,7 +175,7 @@ it('suspends calculation when the selected personal account becomes shared and p
     $this->personal->users()->attach($this->partner->id);
     expect(personalMoneyAvailable($this->user))->toBeNull();
     app(UpdatePersonalMoneySettings::class)->execute($this->user->id,
-        new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', 1000, false));
+        new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', '1000.00', false));
     expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['settings']['enabled'])->toBeFalse();
 });
 
@@ -185,17 +185,17 @@ it('paginates history while calculating totals and pending counts over every sou
         personalMoneyTransaction($this->shared, $this->partner, 'income', 20);
     }
     $summary = app(BuildPersonalMoneySummary::class)->execute($this->user->id, 2, 3);
-    expect($summary['available_balance'])->toBe(1050.0)->and($summary['pending_count'])->toBe(5)
+    expect($summary['available_balance'])->toBe('1050.00')->and($summary['pending_count'])->toBe(5)
         ->and($summary['history'])->toHaveCount(3)->and($summary['meta']['total'])->toBe(10);
     $pending = app(BuildPersonalMoneySummary::class)->execute($this->user->id, 1, 3, 'pending');
-    expect($pending['meta']['total'])->toBe(5)->and($pending['available_balance'])->toBe(1050.0);
+    expect($pending['meta']['total'])->toBe(5)->and($pending['available_balance'])->toBe('1050.00');
 });
 
 it('preserves data when disabled without applying private effects', function (): void {
     $transaction = personalMoneyTransaction($this->shared, $this->user, 'income', 200);
     personalMoneyResolve($this->user, $transaction);
     app(UpdatePersonalMoneySettings::class)->execute($this->user->id,
-        new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', 1000, false));
+        new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', '1000.00', false));
     $summary = app(BuildPersonalMoneySummary::class)->execute($this->user->id);
     expect($summary['available_balance'])->toBeNull()->and($summary['history'])->toBe([])
         ->and(PersonalMoneyLink::query()->count())->toBe(1);
@@ -216,16 +216,16 @@ it('keeps actual reimbursement cash after the original shared expense is edited 
     ]);
     $cash = PersonalMoneyReimbursement::query()->where('user_id', $this->user->id)->where('cash_effect', 100)->firstOrFail();
     app(ResolvePersonalMoneySource::class)->execute($this->user->id, 'reimbursement', $cash->id, 'personal');
-    expect(personalMoneyAvailable($this->user))->toBe(900.0);
+    expect(personalMoneyAvailable($this->user))->toBe('900.00');
     $transaction = app(TransactionUpdater::class)->execute($transaction, TransactionFormDto::fromFormArray([
         'account_id'      => $this->shared->id, 'type' => 'outcome', 'status' => 'completed',
         'concept'         => 'Corrected shared purchase', 'amount' => 150, 'scheduled_at' => '2026-10-05',
         'paid_by_user_id' => $this->user->id, 'payment_source' => 'member_out_of_pocket',
     ]));
     expect(AccountMemberLedgerEntry::query()->whereKey($cash->ledger_entry_key)->exists())->toBeFalse()
-        ->and(personalMoneyAvailable($this->user))->toBe(950.0);
+        ->and(personalMoneyAvailable($this->user))->toBe('950.00');
     app(TransactionRemover::class)->execute($transaction);
-    expect(personalMoneyAvailable($this->user))->toBe(1100.0);
+    expect(personalMoneyAvailable($this->user))->toBe('1100.00');
 });
 
 it('returns reserved money to available cash on a self custody reimbursement', function (): void {
@@ -240,14 +240,14 @@ it('returns reserved money to available cash on a self custody reimbursement', f
         'paid_by_user_id' => $this->user->id, 'payment_source' => 'member_out_of_pocket',
         'cash_source'     => 'personal',
     ]));
-    expect(personalMoneyAvailable($this->user))->toBe(750.0);
+    expect(personalMoneyAvailable($this->user))->toBe('750.00');
     app(RegisterAccountMemberTransfer::class)->execute($this->shared, [
         'from_user_id' => $this->user->id, 'to_user_id' => $this->user->id,
         'action_type'  => 'custody_to_user', 'amount' => 50, 'occurred_at' => '2026-10-06',
     ]);
     $cash = PersonalMoneyReimbursement::query()->where('user_id', $this->user->id)->where('cash_effect', 50)->firstOrFail();
     app(ResolvePersonalMoneySource::class)->execute($this->user->id, 'reimbursement', $cash->id, 'personal');
-    expect(personalMoneyAvailable($this->user))->toBe(800.0);
+    expect(personalMoneyAvailable($this->user))->toBe('800.00');
 });
 
 it('does not deduct reserved custody payments from the custodians free money twice', function (): void {
@@ -265,9 +265,9 @@ it('does not deduct reserved custody payments from the custodians free money twi
         'from_user_id' => $this->user->id, 'to_user_id' => $this->partner->id,
         'action_type'  => 'custody_to_user', 'amount' => 50, 'occurred_at' => '2026-10-06',
     ]);
-    expect(personalMoneyAvailable($this->user))->toBe(800.0)
+    expect(personalMoneyAvailable($this->user))->toBe('800.00')
         ->and(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['pending_count'])->toBe(0)
-        ->and(PersonalMoneyReimbursement::query()->where('user_id', $this->partner->id)->sum('cash_effect'))->toBe(50);
+        ->and(PersonalMoneyReimbursement::query()->where('user_id', $this->partner->id)->sum('cash_effect'))->toBe('50.00');
 });
 
 it('preserves and captures existing reimbursement entries on activation without inferring a personal source', function (): void {
@@ -281,15 +281,15 @@ it('preserves and captures existing reimbursement entries on activation without 
         'type'       => 'settlement_transfer', 'amount' => -20, 'occurred_at' => '2026-10-06', 'description' => 'Existing receipt',
     ]);
     app(UpdatePersonalMoneySettings::class)->execute($this->user->id,
-        new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', 1000, true));
+        new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', '1000.00', true));
     expect(app(BuildPersonalMoneySummary::class)->execute($this->user->id)['pending_count'])->toBe(2)
-        ->and(personalMoneyAvailable($this->user))->toBe(1000.0);
+        ->and(personalMoneyAvailable($this->user))->toBe('1000.00');
     $cash = PersonalMoneyReimbursement::query()->where('ledger_entry_key', $sent->id)->firstOrFail();
     app(ResolvePersonalMoneySource::class)->execute($this->user->id, 'reimbursement', $cash->id, 'personal');
     $sent->delete();
-    expect(personalMoneyAvailable($this->user))->toBe(940.0);
+    expect(personalMoneyAvailable($this->user))->toBe('940.00');
     app(UpdatePersonalMoneySettings::class)->execute($this->user->id,
-        new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', 1000, true));
+        new PersonalMoneySettingsDto($this->personal->id, '2026-10-01', '1000.00', true));
     expect(PersonalMoneyReimbursement::query()->count())->toBe(2);
 });
 
@@ -297,9 +297,9 @@ it('never turns historical shared contributions into salary when selecting a for
     $income = personalMoneyTransaction($this->shared, $this->user, 'income', 300);
     $this->shared->users()->detach($this->partner->id);
     app(UpdatePersonalMoneySettings::class)->execute($this->user->id,
-        new PersonalMoneySettingsDto($this->shared->id, '2026-10-01', 1000, true));
+        new PersonalMoneySettingsDto($this->shared->id, '2026-10-01', '1000.00', true));
     $summary = app(BuildPersonalMoneySummary::class)->execute($this->user->id);
-    expect($summary['available_balance'])->toBe(1000.0)
+    expect($summary['available_balance'])->toBe('1000.00')
         ->and($summary['history'][0]['kind'])->toBe('contribution')
         ->and($summary['history'][0]['resolution'])->toBe('pending');
 });
@@ -310,11 +310,11 @@ it('rejects assigning a full contribution to two personal funds', function (): v
     $otherFund = Account::factory()->create(['user_id' => $this->partner->id, 'virtual' => false, 'credit_card' => false]);
     $otherFund->users()->attach($this->partner->id);
     app(UpdatePersonalMoneySettings::class)->execute($this->partner->id,
-        new PersonalMoneySettingsDto($otherFund->id, '2026-10-01', 1000, true));
+        new PersonalMoneySettingsDto($otherFund->id, '2026-10-01', '1000.00', true));
     expect(fn () => personalMoneyResolve($this->partner, $income))->toThrow(ValidationException::class);
-    expect(personalMoneyAvailable($this->partner))->toBe(1000.0);
+    expect(personalMoneyAvailable($this->partner))->toBe('1000.00');
     personalMoneyResolve($this->partner, $income, 'external');
-    expect(personalMoneyAvailable($this->user))->toBe(800.0);
+    expect(personalMoneyAvailable($this->user))->toBe('800.00');
 });
 
 it('retains only the private historical snapshot after leaving a shared account', function (): void {
@@ -329,7 +329,7 @@ it('retains only the private historical snapshot after leaving a shared account'
     ]);
     $cash = PersonalMoneyReimbursement::query()->where('user_id', $this->user->id)->where('cash_effect', 50)->firstOrFail();
     app(ResolvePersonalMoneySource::class)->execute($this->user->id, 'reimbursement', $cash->id, 'personal');
-    expect(personalMoneyAvailable($this->user))->toBe(850.0);
+    expect(personalMoneyAvailable($this->user))->toBe('850.00');
     $this->shared->users()->detach($this->user->id);
     $this->shared->update(['name' => 'New private name']);
     $this->actingAs($this->partner);
@@ -339,7 +339,7 @@ it('retains only the private historical snapshot after leaving a shared account'
         'paid_by_user_id' => $this->user->id, 'payment_source' => 'member_out_of_pocket',
     ]));
     $summary = app(BuildPersonalMoneySummary::class)->execute($this->user->id);
-    expect($summary['available_balance'])->toBe(850.0)
+    expect($summary['available_balance'])->toBe('850.00')
         ->and(collect($summary['history'])->where('source_type', 'transaction')->first()['concept'])->toBe('Previously paid purchase')
         ->and(collect($summary['history'])->pluck('account_name')->unique()->all())->toBe(['Mini US']);
     app(TransactionUpdater::class)->execute($transaction->fresh(), TransactionFormDto::fromFormArray([
@@ -347,28 +347,28 @@ it('retains only the private historical snapshot after leaving a shared account'
         'concept'         => 'Different payer after removal', 'amount' => 400, 'scheduled_at' => '2026-10-05',
         'paid_by_user_id' => $this->partner->id, 'payment_source' => 'member_out_of_pocket',
     ]));
-    expect(personalMoneyAvailable($this->user))->toBe(850.0);
+    expect(personalMoneyAvailable($this->user))->toBe('850.00');
     personalMoneyResolve($this->user, $transaction, 'pending');
     $pending = app(BuildPersonalMoneySummary::class)->execute($this->user->id);
-    expect($pending['pending_count'])->toBe(1)->and($pending['available_balance'])->toBe(1050.0);
+    expect($pending['pending_count'])->toBe(1)->and($pending['available_balance'])->toBe('1050.00');
 });
 
 it('preserves previously linked cash when a shared account is archived', function (): void {
     $income = personalMoneyTransaction($this->shared, $this->user, 'income', 200);
     personalMoneyResolve($this->user, $income);
     $this->shared->delete();
-    expect(personalMoneyAvailable($this->user))->toBe(800.0);
+    expect(personalMoneyAvailable($this->user))->toBe('800.00');
 });
 
 it('suspends the personal account while a virtual custodian is active and resumes after retirement', function (): void {
     $before = personalMoneyAvailable($this->user);
-    $custodian = app(\App\Services\Accounts\CreateAccountCustodian::class)->execute(
-        $this->personal, new \App\Dto\CreateAccountCustodianDto('Wallet', 0, []), $this->user->id,
+    $custodian = app(App\Services\Accounts\CreateAccountCustodian::class)->execute(
+        $this->personal, new App\Dto\CreateAccountCustodianDto('Wallet', 0, []), $this->user->id,
     );
     expect(personalMoneyAvailable($this->user))->toBeNull()
         ->and(app(EligiblePersonalMoneyAccounts::class)->execute($this->user->id)->exists())->toBeFalse();
-    app(\App\Services\Accounts\RetireAccountCustodian::class)->execute(
-        $this->personal, $custodian, new \App\Dto\RetireAccountCustodianDto([]),
+    app(App\Services\Accounts\RetireAccountCustodian::class)->execute(
+        $this->personal, $custodian, new App\Dto\RetireAccountCustodianDto([]),
     );
     expect(personalMoneyAvailable($this->user))->toBe($before)
         ->and($this->setting->fresh()->enabled)->toBeTrue();

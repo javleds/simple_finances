@@ -32,7 +32,7 @@ function endpointAuthorizationHeaders(User $user): array
 function endpointAuthorizationAccountFor(User $user): Account
 {
     $account = Account::factory()->create(['user_id' => $user->id]);
-    $account->users()->attach($user->id, ['percentage' => 100]);
+    $account->users()->attach($user->id, ['percentage' => '100.00']);
 
     return $account;
 }
@@ -82,7 +82,7 @@ it('forbids reading resources owned by another user without relying on global sc
         'action' => SharedTransactionNotificationAction::Created,
         'concept' => 'Foreign notification item',
         'type' => TransactionType::Income,
-        'amount' => 100,
+        'amount' => '100.00',
         'scheduled_at' => now(),
     ]);
 
@@ -113,7 +113,7 @@ it('forbids creating records linked to inaccessible accounts or parent resources
         'type' => TransactionType::Income->value,
         'status' => TransactionStatus::Completed->value,
         'concept' => 'Foreign account income',
-        'amount' => 100,
+        'amount' => '100.00',
         'account_id' => $account->id,
         'scheduled_at' => now()->toDateString(),
     ])->assertForbidden();
@@ -121,12 +121,12 @@ it('forbids creating records linked to inaccessible accounts or parent resources
     $this->withHeaders($headers)->postJson('/api/financial-goals', [
         'account_id' => $account->id,
         'name' => 'Foreign account goal',
-        'amount' => 1000,
+        'amount' => '1000.00',
     ])->assertForbidden();
 
     $this->withHeaders($headers)->postJson('/api/subscriptions', [
         'name' => 'Foreign feed subscription',
-        'amount' => 100,
+        'amount' => '100.00',
         'started_at' => now()->toDateString(),
         'frequency_unit' => 1,
         'frequency_type' => 'months',
@@ -136,20 +136,20 @@ it('forbids creating records linked to inaccessible accounts or parent resources
     $this->withHeaders($headers)->postJson('/api/subscription-payments', [
         'subscription_id' => $subscription->id,
         'scheduled_at' => now()->toDateString(),
-        'amount' => 100,
+        'amount' => '100.00',
     ])->assertForbidden();
 
     $this->withHeaders($headers)->postJson('/api/fixed-outcomes', [
         'fixed_income_id' => $fixedIncome->id,
         'name' => 'Foreign fixed outcome',
-        'amount' => 100,
+        'amount' => '100.00',
         'type' => 'savings',
     ])->assertForbidden();
 
     $this->withHeaders($headers)->postJson('/api/partial-fixed-incomes', [
         'fixed_income_id' => $fixedIncome->id,
         'name' => 'Foreign partial income',
-        'amount' => 100,
+        'amount' => '100.00',
     ])->assertForbidden();
 });
 

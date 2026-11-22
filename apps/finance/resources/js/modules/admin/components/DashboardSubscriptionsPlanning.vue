@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
 import type { DashboardSubscriptionsSummary } from '@/modules/admin/types/dashboard';
 import { AppCard, AppText, AppToggleButton, AppTitle } from '@/modules/shared/components';
 
@@ -7,8 +8,8 @@ type SavingsCadence = 'monthly' | 'biweekly';
 const savingsCadence = defineModel<SavingsCadence>('savingsCadence', { required: true });
 
 const props = defineProps<{
-    annualSpend: number;
-    recommendedSavings: number;
+    annualSpend: string;
+    recommendedSavings: string;
     summary: DashboardSubscriptionsSummary;
 }>();
 
@@ -17,13 +18,8 @@ const cadenceOptions = [
     { value: 'biweekly', label: 'Quincenal' },
 ] as const;
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value);
+function formatCurrency(value: string): string {
+    return formatExactMoney(value);
 }
 
 function formatDateLabel(value: string): string {

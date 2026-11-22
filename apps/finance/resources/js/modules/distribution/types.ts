@@ -10,7 +10,7 @@ export type DistributionRule = {
   name: string;
   frequency: DistributionFrequency;
   outcomesCount: number;
-  totalAmount: number;
+  totalAmount: string;
 };
 
 export type DistributionRuleFormValues = {
@@ -27,7 +27,7 @@ export type DistributionRelation = {
   id: string;
   fixedIncomeId: string;
   name: string;
-  amount: number;
+  amount: string;
   type: DistributionRelationType;
 };
 
@@ -40,7 +40,7 @@ export type DistributionRelationFormValues = {
 export type DistributionRelationWritePayload = {
   fixedIncomeId: string;
   name: string;
-  amount: number;
+  amount: string;
   type: DistributionRelationType;
 };
 

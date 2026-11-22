@@ -36,7 +36,7 @@ class SyncTransactionAllocations
         return [
             new UserPaymentDto(
                 userId: $transaction->user_id,
-                percentage: 100.0,
+                percentage: '100.00',
             ),
         ];
     }

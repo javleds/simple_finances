@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Services\Dashboard\BuildDashboardGraph;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\User;
-use App\Services\Dashboard\BuildDashboardGraph;
 
 it('returns visible accounts ordered for the dashboard graph', function () {
     $user = User::factory()->create();
@@ -10,25 +12,25 @@ it('returns visible accounts ordered for the dashboard graph', function () {
     $this->actingAs($user);
 
     $secondAccount = Account::factory()->create([
-        'name' => 'Savings',
-        'balance' => 1200.5,
-        'color' => '#00ffaa',
+        'name'    => 'Savings',
+        'balance' => '1200.50',
+        'color'   => '#00ffaa',
         'user_id' => $user->id,
         'virtual' => false,
     ]);
     $firstAccount = Account::factory()->create([
-        'name' => 'Checking',
+        'name'    => 'Checking',
         'balance' => -25,
-        'color' => '#6a4d4d',
+        'color'   => '#6a4d4d',
         'user_id' => $user->id,
         'virtual' => false,
     ]);
     $hiddenAccount = Account::factory()->create([
-        'name' => 'Hidden',
+        'name'    => 'Hidden',
         'user_id' => $secondaryUser->id,
     ]);
     $deletedAccount = Account::factory()->create([
-        'name' => 'Deleted',
+        'name'    => 'Deleted',
         'user_id' => $user->id,
     ]);
 
@@ -42,18 +44,18 @@ it('returns visible accounts ordered for the dashboard graph', function () {
 
     expect($data)->toBe([
         [
-            'account_id' => $firstAccount->id,
+            'account_id'   => $firstAccount->id,
             'account_name' => 'Checking',
-            'balance' => -25.0,
-            'color' => '#6a4d4d',
-            'is_virtual' => false,
+            'balance'      => '-25.00',
+            'color'        => '#6a4d4d',
+            'is_virtual'   => false,
         ],
         [
-            'account_id' => $secondAccount->id,
+            'account_id'   => $secondAccount->id,
             'account_name' => 'Savings',
-            'balance' => 1200.5,
-            'color' => '#00ffaa',
-            'is_virtual' => false,
+            'balance'      => '1200.50',
+            'color'        => '#00ffaa',
+            'is_virtual'   => false,
         ],
     ]);
 });

@@ -11,7 +11,7 @@ const personalMoney = ref<
               transaction_cutoff_id?: number;
           };
           account_available: boolean;
-          available_balance?: number | null;
+          available_balance?: string | null;
       }
     | undefined
 >();
@@ -25,18 +25,18 @@ const members = [
         id: '1',
         name: 'Ana',
         email: 'ana@example.com',
-        pendingExpenses: 0,
-        custodyAmount: 0,
-        settlementAmount: 0,
+        pendingExpenses: '0.00',
+        custodyAmount: '0.00',
+        settlementAmount: '0.00',
         allocationPercentage: 50,
     },
     {
         id: '2',
         name: 'Luis',
         email: 'luis@example.com',
-        pendingExpenses: 0,
-        custodyAmount: 0,
-        settlementAmount: 0,
+        pendingExpenses: '0.00',
+        custodyAmount: '0.00',
+        settlementAmount: '0.00',
         allocationPercentage: 50,
     },
 ];
@@ -48,14 +48,14 @@ function render(props: Partial<InstanceType<typeof TransactionsForm>['$props']> 
             lockedAccountId: '10',
             accountUsers: members,
             currentUserId: '2',
-            accountBalance: 100,
+            accountBalance: '100.00',
             ...props,
             initialValues:
                 props.initialValues === null
                     ? null
                     : {
                           date: '2026-10-10',
-                          ...(props.initialValues ?? { concept: 'Compra', amount: 20 }),
+                          ...(props.initialValues ?? { concept: 'Compra', amount: '20.00' }),
                       },
         },
     });
@@ -73,7 +73,7 @@ describe('transaction account context', () => {
             accountUsers: members.slice(0, 1),
             initialValues: {
                 concept: 'Compra',
-                amount: 20,
+                amount: '20.00',
                 paidByUserId: '2',
                 paymentSource: 'member_out_of_pocket',
                 userPayments: { '1': 50, '2': 50 },
@@ -92,7 +92,7 @@ describe('transaction account context', () => {
     it('hides custody and submits the sole member for individual income', async () => {
         const wrapper = render({
             accountUsers: members.slice(0, 1),
-            initialValues: { type: 'income', concept: 'Ingreso', amount: 20 },
+            initialValues: { type: 'income', concept: 'Ingreso', amount: '20.00' },
         });
         expect(wrapper.find('#transaction-custodian').exists()).toBe(false);
         expect(wrapper.find('#transaction-financial-goal').exists()).toBe(true);
@@ -106,7 +106,7 @@ describe('transaction account context', () => {
         expect(wrapper.getComponent({ name: 'AppSearchSelect' }).props('modelValue')).toBe('2');
     });
 
-    it.each([0, -50])(
+    it.each(['0.00', '-50.00'])(
         'uses personal money for new shared expenses with balance %s',
         async (balance) => {
             const wrapper = render({ accountBalance: balance });
@@ -117,11 +117,11 @@ describe('transaction account context', () => {
 
     it('preserves the payment source when editing an existing shared expense', async () => {
         const wrapper = render({
-            accountBalance: 0,
+            accountBalance: '0.00',
             initialValues: {
                 id: '5',
                 concept: 'Compra',
-                amount: 20,
+                amount: '20.00',
                 paymentSource: 'account_fund',
             },
         });
@@ -131,7 +131,7 @@ describe('transaction account context', () => {
 
 it('keeps pending files and their saved transaction when the selected row is replaced', async () => {
     const wrapper = render({
-        initialValues: { id: '123', concept: 'Compra', amount: 20, date: '2026-10-10' },
+        initialValues: { id: '123', concept: 'Compra', amount: '20.00', date: '2026-10-10' },
     });
     const receipts = wrapper.getComponent({ name: 'TransactionAttachments' });
     const draft = receipts.props('draft');
@@ -142,13 +142,18 @@ it('keeps pending files and their saved transaction when the selected row is rep
     });
     draft.transactionId = '123';
     await wrapper.setProps({
-        initialValues: { id: '123', concept: 'Compra editada', amount: 30, date: '2026-10-10' },
+        initialValues: {
+            id: '123',
+            concept: 'Compra editada',
+            amount: '30.00',
+            date: '2026-10-10',
+        },
     });
     expect(receipts.props('draft')).toBe(draft);
     expect(draft.transactionId).toBe('123');
     expect(draft.files).toHaveLength(1);
     await wrapper.setProps({
-        initialValues: { id: '456', concept: 'Otro', amount: 10, date: '2026-10-10' },
+        initialValues: { id: '456', concept: 'Otro', amount: '10.00', date: '2026-10-10' },
     });
     expect(draft.files).toHaveLength(0);
     expect(draft.transactionId).toBeNull();
@@ -159,7 +164,7 @@ describe('saved transaction financial rules', () => {
     it('uses personal controls for a new sole-member expense without sending a snapshot', async () => {
         const wrapper = render({
             accountUsers: members.slice(0, 1),
-            initialValues: { concept: 'Compra', amount: 20, usesSharedAccountRules: false },
+            initialValues: { concept: 'Compra', amount: '20.00', usesSharedAccountRules: false },
         });
         const payload = await submit(wrapper);
         expect(payload).toMatchObject({
@@ -181,7 +186,7 @@ describe('saved transaction financial rules', () => {
                     id: '8',
                     accountId: '10',
                     concept: 'Compra compartida',
-                    amount: 20,
+                    amount: '20.00',
                     usesSharedAccountRules: snapshot,
                     paymentSource: 'member_out_of_pocket',
                     paidByUserId: '2',
@@ -204,7 +209,7 @@ describe('saved transaction financial rules', () => {
                 id: '8',
                 accountId: '10',
                 concept: 'Compra personal',
-                amount: 20,
+                amount: '20.00',
                 usesSharedAccountRules: false,
                 paymentSource: 'account_fund',
                 paidByUserId: '1',
@@ -230,7 +235,7 @@ it('preserves the historical custodian when a shared income account has one rema
             accountId: '10',
             type: 'income',
             concept: 'Depósito',
-            amount: 20,
+            amount: '20.00',
             usesSharedAccountRules: true,
             custodianUserId: '2',
             custodianUserName: 'Luis',
@@ -254,7 +259,7 @@ it('uses destination members instead of the source snapshot when the locked acco
             id: '8',
             accountId: '10',
             concept: 'Compra',
-            amount: 20,
+            amount: '20.00',
             usesSharedAccountRules: false,
             paidByUserId: '1',
         },
@@ -273,7 +278,7 @@ it('keeps historical allocations through the real split editor and excludes unre
             id: '8',
             accountId: '10',
             concept: 'Compra',
-            amount: 20,
+            amount: '20.00',
             usesSharedAccountRules: true,
             paidByUserId: '2',
             paidByUserName: 'Luis',
@@ -315,7 +320,7 @@ describe('private cash source choice', () => {
             initialValues: {
                 id: '4',
                 concept: 'Compra',
-                amount: 20,
+                amount: '20.00',
                 accountId: '10',
                 paymentSource: 'member_out_of_pocket',
                 paidByUserId: '2',
@@ -342,7 +347,7 @@ describe('private cash source choice', () => {
         const wrapper = render({
             initialValues: {
                 concept: 'Compra',
-                amount: 20,
+                amount: '20.00',
                 paymentSource: 'member_out_of_pocket',
                 paidByUserId: '1',
             },
@@ -361,7 +366,7 @@ describe('private cash source choice', () => {
         const wrapper = render({
             initialValues: {
                 concept: 'Compra',
-                amount: 20,
+                amount: '20.00',
                 paymentSource: 'member_out_of_pocket',
                 paidByUserId: '2',
             },
@@ -374,10 +379,10 @@ describe('private cash source choice', () => {
         personalMoney.value = {
             settings: { enabled: true, started_at: '2026-01-01' },
             account_available: true,
-            available_balance: 100,
+            available_balance: '100.00',
         };
         const wrapper = render({
-            initialValues: { type: 'income', concept: 'Aportación', amount: 20 },
+            initialValues: { type: 'income', concept: 'Aportación', amount: '20.00' },
         });
         expect(wrapper.find('#transaction-cash-source').exists()).toBe(true);
         const source = wrapper
@@ -411,7 +416,7 @@ describe('activation-based private money', () => {
                 transaction_cutoff_id: 5,
             },
             account_available: true,
-            available_balance: 10000,
+            available_balance: '10000.00',
         };
     }
     it('defaults new current shared out of pocket expenses to personal money', async () => {
@@ -419,7 +424,7 @@ describe('activation-based private money', () => {
         const wrapper = render({
             initialValues: {
                 concept: 'Today',
-                amount: 100,
+                amount: '100.00',
                 date: '2026-10-11',
                 paymentSource: 'member_out_of_pocket',
                 paidByUserId: '2',
@@ -437,7 +442,7 @@ describe('activation-based private money', () => {
             initialValues: {
                 type: 'income',
                 concept: 'Old salary',
-                amount: 100,
+                amount: '100.00',
                 date: '2026-10-01',
             },
         });
@@ -462,7 +467,7 @@ describe('activation-based private money', () => {
         const wrapper = render({
             initialValues: {
                 concept: 'Old expense',
-                amount: 100,
+                amount: '100.00',
                 date: '2026-10-01',
                 paymentSource: 'member_out_of_pocket',
                 paidByUserId: '2',
@@ -487,7 +492,7 @@ describe('activation-based private money', () => {
                 accountId: '10',
                 usesSharedAccountRules: true,
                 concept: 'Earlier expense',
-                amount: 100,
+                amount: '100.00',
                 date: '2026-10-11',
                 paymentSource: 'member_out_of_pocket',
                 paidByUserId: '2',
@@ -503,7 +508,7 @@ describe('activation-based private money', () => {
         const wrapper = render({
             initialValues: {
                 concept: 'Future expense',
-                amount: 100,
+                amount: '100.00',
                 date: '2099-10-11',
                 paymentSource: 'member_out_of_pocket',
                 paidByUserId: '2',
@@ -520,10 +525,10 @@ describe('activation-based private money', () => {
 it('offers virtual custodians as payers without adding them to the expense split', async () => {
     const wrapper = render({
         virtualCustodians: [{ id: '9', name: 'Mercadopago' }],
-        accountBalance: 0,
+        accountBalance: '0.00',
         initialValues: {
             concept: 'Compra',
-            amount: 2000,
+            amount: '2000.00',
             paidByUserId: '9',
             paymentSource: 'member_out_of_pocket',
             userPayments: { '1': 50, '2': 50 },
@@ -548,7 +553,12 @@ it('offers virtual custodians as payers without adding them to the expense split
 it('offers virtual custodians for shared income', async () => {
     const wrapper = render({
         virtualCustodians: [{ id: '9', name: 'Mercadopago' }],
-        initialValues: { type: 'income', concept: 'Ingreso', amount: 20, custodianUserId: '9' },
+        initialValues: {
+            type: 'income',
+            concept: 'Ingreso',
+            amount: '20.00',
+            custodianUserId: '9',
+        },
     });
     expect(
         wrapper
@@ -569,7 +579,7 @@ describe('single member accounts with virtual custodians', () => {
             virtualCustodians: [{ id: '3', name: 'Wallet' }],
             initialValues: {
                 concept: 'Purchase',
-                amount: 20,
+                amount: '20.00',
                 paidByUserId: '3',
                 paymentSource: 'member_out_of_pocket',
             },
@@ -590,20 +600,25 @@ describe('single member accounts with virtual custodians', () => {
         const wrapper = render({
             accountUsers: members.slice(0, 1),
             virtualCustodians: [{ id: '3', name: 'Wallet' }],
-            initialValues: { type: 'income', concept: 'Deposit', amount: 20, custodianUserId: '3' },
+            initialValues: {
+                type: 'income',
+                concept: 'Deposit',
+                amount: '20.00',
+                custodianUserId: '3',
+            },
         });
         expect(wrapper.find('#transaction-custodian').exists()).toBe(true);
         expect(await submit(wrapper)).toMatchObject({ custodianUserId: '3' });
     });
 
-    it.each([0, -50])(
+    it.each(['0.00', '-50.00'])(
         'disables account funds with balance %s while custodians are active',
         async (accountBalance) => {
             personalMoney.value = undefined;
             const wrapper = render({
                 accountUsers: members.slice(0, 1),
                 currentUserId: '1',
-                accountBalance,
+                accountBalance: String(accountBalance),
                 virtualCustodians: [{ id: '3', name: 'Wallet' }],
             });
             expect(wrapper.text()).toContain('La cuenta no tiene saldo disponible');
@@ -621,7 +636,7 @@ describe('single member accounts with virtual custodians', () => {
                 accountId: '10',
                 usesSharedAccountRules: false,
                 concept: 'Old purchase',
-                amount: 20,
+                amount: '20.00',
                 paidByUserId: '1',
                 paymentSource: 'account_fund',
             },

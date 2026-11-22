@@ -1,3 +1,4 @@
+import { percentageToString } from '@/modules/shared/lib/money';
 import type { TransactionListFilters, TransactionWritePayload } from '../types';
 
 export function buildTransactionWritePayload(payload: TransactionWritePayload) {
@@ -14,7 +15,7 @@ export function buildTransactionWritePayload(payload: TransactionWritePayload) {
     split_between_users: payload.splitBetweenUsers,
     user_payments: Object.entries(payload.userPayments).map(([userId, percentage]) => ({
       user_id: Number(userId),
-      percentage,
+      percentage: percentageToString(percentage),
     })),
     scheduled_at: payload.date,
     financial_goal_id: payload.financialGoalId,

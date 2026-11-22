@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { compareMoney } from '@/modules/shared/lib/money';
 import Message from 'primevue/message';
 import { usePersonalMoney } from '@/modules/personal-money/composables/usePersonalMoney';
 import type { PersonalMoneyResolution } from '@/modules/personal-money/types';
@@ -40,7 +41,7 @@ const props = withDefaults(
         saving?: boolean;
         accountUsers?: ReadonlyArray<AccountMember>;
         virtualCustodians?: ReadonlyArray<{ id: string; name: string }>;
-        accountBalance?: number | null;
+        accountBalance?: string | null;
         financialGoals?: ReadonlyArray<{
             id: string;
             name: string;
@@ -173,7 +174,10 @@ const splitUsers = computed(() => {
     return users;
 });
 const hasNoAccountFunds = computed(
-    () => hasSharedAccount.value && props.accountBalance !== null && props.accountBalance <= 0,
+    () =>
+        hasSharedAccount.value &&
+        props.accountBalance !== null &&
+        compareMoney(props.accountBalance ?? '0.00', '0') <= 0,
 );
 const requiresPersonalPayment = computed(() => hasNoAccountFunds.value && !props.initialValues?.id);
 const paymentSourceOptions = computed(() => [

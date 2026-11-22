@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Accounts;
 
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Support\Facades\DB;
+
+use function now;
 
 class RemoveAccountUser
 {
@@ -15,7 +20,7 @@ class RemoveAccountUser
 
             $account->users()->detach($user->id);
 
-            if ($deletedPercentage <= 0.0) {
+            if (Decimal::compare($deletedPercentage, '0.00') <= 0) {
                 return;
             }
 
@@ -32,13 +37,13 @@ class RemoveAccountUser
             DB::table('account_user')
                 ->where('id', $oldestRemainingUser->id)
                 ->update([
-                    'percentage' => round((float) $oldestRemainingUser->percentage + $deletedPercentage, 2),
+                    'percentage' => Decimal::add(Decimal::normalize($oldestRemainingUser->percentage), $deletedPercentage),
                     'updated_at' => now(),
                 ]);
         });
     }
 
-    private function accountUserPercentage(Account $account, User $user): float
+    private function accountUserPercentage(Account $account, User $user): string
     {
         $accountUser = DB::table('account_user')
             ->where('account_id', $account->id)
@@ -46,9 +51,9 @@ class RemoveAccountUser
             ->first(['percentage']);
 
         if (! $accountUser) {
-            return 0.0;
+            return '0.00';
         }
 
-        return round((float) $accountUser->percentage, 2);
+        return Decimal::normalize($accountUser->percentage);
     }
 }

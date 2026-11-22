@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinSi\FinanceDomain\Models;
 
+use FinSi\FinanceDomain\Casts\ExactRepairPayload;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -61,10 +62,10 @@ class AccountLedgerRepair extends Model
             'target_transaction_id' => 'integer',
             'reverses_repair_id'    => 'integer',
             'reversed_by_repair_id' => 'integer',
-            'input_payload'         => 'array',
-            'evidence_payload'      => 'array',
-            'preview_payload'       => 'array',
-            'result_payload'        => 'array',
+            'input_payload'         => ExactRepairPayload::class,
+            'evidence_payload'      => ExactRepairPayload::class,
+            'preview_payload'       => ExactRepairPayload::class,
+            'result_payload'        => ExactRepairPayload::class,
         ];
     }
 }

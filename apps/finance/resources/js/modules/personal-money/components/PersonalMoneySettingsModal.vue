@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { money } from '@/modules/shared/lib/money';
+
 import { computed, ref, watch } from 'vue';
 import { createPersonalMoneySettingsSchema } from '../schemas';
 import {
@@ -51,14 +53,14 @@ function openSettings(): void {
 const submit = form.handleSubmit(async (values) => {
     if (isSaving.value) return;
     try {
-        const fingerprint = JSON.stringify([values.accountId, Number(values.openingBalance)]);
+        const fingerprint = JSON.stringify([values.accountId, money(values.openingBalance)]);
         if (startingNow.value && operationPayload.value !== fingerprint) {
             operationKey.value = crypto.randomUUID();
             operationPayload.value = fingerprint;
         }
         const payload: PersonalMoneySettingsPayload = {
             account_id: Number(values.accountId),
-            opening_balance: Number(values.openingBalance),
+            opening_balance: money(values.openingBalance),
             enabled: true,
             ...(startingNow.value
                 ? {

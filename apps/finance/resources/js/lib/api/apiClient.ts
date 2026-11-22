@@ -134,6 +134,7 @@ async function request<T>(path: string, options: ApiRequestOptions = {}): Promis
         credentials: options.credentials,
         headers: {
             Accept: 'application/json',
+            'X-Finance-Contract': '2',
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
             ...(options.body && !(options.body instanceof FormData)
                 ? { 'Content-Type': 'application/json' }

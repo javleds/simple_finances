@@ -1,21 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Transaction;
 
-use FinSi\FinanceDomain\Queries\UserOwnedResources;
 use App\Dto\TransactionExtractionDto;
+use App\Services\Account\AccountFinderService;
+use Exception;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\FinancialGoal;
 use FinSi\FinanceDomain\Models\User;
-use App\Services\Account\AccountFinderService;
+use FinSi\FinanceDomain\Money\Decimal;
+use FinSi\FinanceDomain\Queries\UserOwnedResources;
 use Illuminate\Support\Facades\Log;
+
+use function levenshtein;
+use function max;
+use function mb_strlen;
+use function mb_strtolower;
+use function trim;
 
 class TransactionDataValidator
 {
     public function __construct(
         private readonly UserOwnedResources $userOwnedResources,
         private readonly AccountFinderService $accountFinderService,
-    ) {}
+    ) {
+    }
 
     public function validateTransactionData(TransactionExtractionDto $dto, User $user): array
     {
@@ -41,7 +52,7 @@ class TransactionDataValidator
         }
 
         // Validar monto
-        if ($dto->amount <= 0) {
+        if (Decimal::compare($dto->amount, 0) <= 0) {
             return [
                 'valid' => false,
                 'error' => 'El monto debe ser mayor a cero. Por favor, proporciona un monto válido.',
@@ -57,8 +68,8 @@ class TransactionDataValidator
         }
 
         return [
-            'valid' => true,
-            'account' => $account,
+            'valid'          => true,
+            'account'        => $account,
             'financial_goal' => $financialGoal,
         ];
     }
@@ -93,10 +104,10 @@ class TransactionDataValidator
         }
 
         Log::info('Financial goal search result', [
-            'searched' => $goalName,
-            'found' => $bestMatch?->name,
+            'searched'   => $goalName,
+            'found'      => $bestMatch?->name,
             'similarity' => $highestSimilarity,
-            'account' => $account->name,
+            'account'    => $account->name,
         ]);
 
         return $bestMatch;
@@ -113,7 +124,7 @@ class TransactionDataValidator
 
         // Levenshtein distance para similitud
         $maxLen = max(mb_strlen($str1), mb_strlen($str2));
-        if ($maxLen == 0) {
+        if (0 == $maxLen) {
             return 1.0;
         }
 
@@ -128,7 +139,7 @@ class TransactionDataValidator
             $parsedDate = \Carbon\Carbon::parse($date);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }

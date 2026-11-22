@@ -1,19 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Transaction;
 
+use App\Services\Accounts\BuildAccountCustodySummary;
 use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
 use FinSi\FinanceDomain\Enums\TransactionStatus;
 use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\Transaction;
-use App\Services\Accounts\BuildAccountCustodySummary;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Support\Carbon;
 
 class SyncCoveredPayerRecoveryTransaction
 {
-    private const CONCEPT_PREFIX = 'Parte cubierta por ';
-
     public function __construct(private readonly BuildAccountCustodySummary $buildAccountCustodySummary)
     {
     }
@@ -26,11 +27,10 @@ class SyncCoveredPayerRecoveryTransaction
             return;
         }
 
-        $payerShare = round((float) $transaction->allocations
-            ->where('user_id', $transaction->paid_by_user_id)
-            ->sum('amount'), 2);
+        $payerShare = Decimal::sum($transaction->allocations
+            ->where('user_id', $transaction->paid_by_user_id), 'amount');
 
-        if ($payerShare <= 0.0) {
+        if (Decimal::compare($payerShare, 0) <= 0) {
             return;
         }
 
@@ -41,9 +41,9 @@ class SyncCoveredPayerRecoveryTransaction
         $recovery->parent_transaction_id = $transaction->id;
         $recovery->type = TransactionType::Income;
         $recovery->status = TransactionStatus::Completed;
-        $recovery->concept = self::CONCEPT_PREFIX.$payerName.': '.$transaction->concept;
+        $recovery->concept = self::CONCEPT_PREFIX . $payerName . ': ' . $transaction->concept;
         $recovery->amount = $payerShare;
-        $recovery->percentage = 100.0;
+        $recovery->percentage = '100.00';
         $recovery->account_id = $transaction->account_id;
         $recovery->user_id = $transaction->paid_by_user_id;
         $recovery->paid_by_user_id = null;
@@ -58,16 +58,17 @@ class SyncCoveredPayerRecoveryTransaction
     public function deleteExisting(Transaction $transaction): void
     {
         $transaction->subTransactions()
-            ->where('concept', 'like', self::CONCEPT_PREFIX.'%')
+            ->where('concept', 'like', self::CONCEPT_PREFIX . '%')
             ->delete();
     }
+    private const CONCEPT_PREFIX = 'Parte cubierta por ';
 
     private function shouldCreateRecovery(Transaction $transaction): bool
     {
-        if ($transaction->uses_shared_account_rules === false || $transaction->type !== TransactionType::Outcome
-            || $transaction->status !== TransactionStatus::Completed
-            || $transaction->payment_source !== TransactionPaymentSource::MemberOutOfPocket
-            || $transaction->paid_by_user_id === null
+        if (false === $transaction->uses_shared_account_rules || TransactionType::Outcome !== $transaction->type
+            || TransactionStatus::Completed !== $transaction->status
+            || TransactionPaymentSource::MemberOutOfPocket !== $transaction->payment_source
+            || null === $transaction->paid_by_user_id
         ) {
             return false;
         }
@@ -78,10 +79,10 @@ class SyncCoveredPayerRecoveryTransaction
             return false;
         }
 
-        if (round((float) $account->balance, 2) > 0.0) {
+        if (Decimal::compare(Decimal::normalize($account->balance), '0.00') > 0) {
             return false;
         }
 
-        return $this->buildAccountCustodySummary->positiveTotal($account) <= 0.0;
+        return Decimal::compare($this->buildAccountCustodySummary->positiveTotal($account), '0.00') <= 0;
     }
 }

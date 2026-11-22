@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use function app;
+
 use App\Events\AccountInviteCreated;
 use App\Events\AccountInviteCreatingRequested;
 use App\Events\SubscriptionSaved;
@@ -34,6 +36,9 @@ class FinanceModelServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        foreach ([\FinSi\FinanceDomain\Models\Account::class, \FinSi\FinanceDomain\Models\SharedTransactionNotificationItem::class] as $model) {
+            $model::saving(static fn (): mixed => app(\App\Services\Money\RequireExactMoneyStorage::class)->execute());
+        }
         Event::listen(NotificationSending::class, static fn (NotificationSending $event): ?bool => $event->notifiable instanceof User && $event->notifiable->isVirtualCustodian() ? false : null);
 
         Factory::guessFactoryNamesUsing(static fn (string $model): string => 'Database\\Factories\\' . class_basename($model) . 'Factory');

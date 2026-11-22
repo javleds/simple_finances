@@ -20,7 +20,7 @@ class PersonalMoneyReimbursement extends Model
             'user_id'          => 'integer',
             'account_id'       => 'integer',
             'ledger_entry_key' => 'integer',
-            'cash_effect'      => 'float',
+            'cash_effect'      => 'decimal:2',
             'occurred_at'      => 'immutable_datetime',
         ];
     }

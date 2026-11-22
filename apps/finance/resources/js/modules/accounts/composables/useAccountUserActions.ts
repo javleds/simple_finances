@@ -1,3 +1,4 @@
+import { percentageSchema } from '@/modules/shared/lib/money';
 import type { ComputedRef, Ref } from 'vue';
 
 import type { AccountMember } from '@/modules/accounts/types';
@@ -26,13 +27,8 @@ export function useAccountUserActions(options: UseAccountUserActionsOptions) {
       return null;
     }
 
-    const parsedValue = Number(normalizedValue);
-
-    if (!Number.isFinite(parsedValue)) {
-      return null;
-    }
-
-    return parsedValue;
+    const parsed = percentageSchema.safeParse(normalizedValue);
+    return parsed.success ? parsed.data : null;
   }
 
   function canSubmitPercentage(): boolean {

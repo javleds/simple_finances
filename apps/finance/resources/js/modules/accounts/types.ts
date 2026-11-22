@@ -7,13 +7,13 @@ export type AccountSurfaceFilter = 'virtual' | 'physical';
 export type AccountMemberAmount = {
   userId: string;
   userName: string;
-  amount: number;
+  amount: string;
 };
 
 export type AccountPendingReimbursementItem = {
   transactionId: string;
   concept: string;
-  amount: number;
+  amount: string;
   occurredAt: string | null;
 };
 
@@ -22,7 +22,7 @@ export type AccountPendingReimbursement = {
   fromUserName: string;
   toUserId: string;
   toUserName: string;
-  amount: number;
+  amount: string;
   actionType: 'user_to_user' | 'custody_to_user' | 'user_to_account';
   items: AccountPendingReimbursementItem[];
 };
@@ -31,13 +31,13 @@ export type AccountMemberTransferPayload = {
   fromUserId: string;
   toUserId: string;
   actionType?: AccountPendingReimbursement['actionType'];
-  amount: number;
+  amount: string;
   description?: string;
   occurredAt?: string;
 };
 
 export type AccountMemberTransferResult = {
-  accountBalance: number | null;
+  accountBalance: string | null;
   custodyByUser: AccountMemberAmount[];
   settlementsByUser: AccountMemberAmount[];
   pendingReimbursements: AccountPendingReimbursement[];
@@ -47,7 +47,7 @@ export type AccountMemberTransferResult = {
 export type AccountLedgerAllocation = {
   userId: string;
   userName: string | null;
-  amount: number;
+  amount: string;
   percentage: number;
 };
 
@@ -58,8 +58,8 @@ export type AccountLedgerRow = {
   transactionId: string | null;
   label: string;
   description: string;
-  amount: number;
-  balanceAfter: number;
+  amount: string;
+  balanceAfter: string;
   custodyAfterByUser: AccountMemberAmount[];
   settlementAfterByUser: AccountMemberAmount[];
   allocations: AccountLedgerAllocation[];
@@ -76,7 +76,7 @@ export type AccountLedgerRepairPreviewEntry = {
   relatedUserName: string | null;
   transactionId: string | null;
   type: string;
-  amount: number;
+  amount: string;
   description: string | null;
 };
 
@@ -93,7 +93,7 @@ export type AccountLedgerRepairPayload = {
   toUserId?: string;
   userId?: string;
   transactionId?: string | null;
-  amount: number;
+  amount: string;
   description: string;
   evidence?: Record<string, unknown>;
   preview?: Record<string, unknown>;
@@ -126,7 +126,7 @@ export type AccountLedgerRepair = {
   targetTransactionId: string | null;
   targetTransactionConcept: string | null;
   description: string;
-  amount: number;
+  amount: string;
   createdAt: string | null;
   canReverse: boolean;
   preview: AccountLedgerRepairPreview;
@@ -143,23 +143,23 @@ export type AccountMember = {
   name: string;
   email: string;
   allocationPercentage: number;
-  pendingExpenses: number;
-  custodyAmount: number;
-  settlementAmount: number;
+  pendingExpenses: string;
+  custodyAmount: string;
+  settlementAmount: string;
 };
 
 export type AccountVirtualCustodian = {
   id: string;
   name: string;
-  custodyAmount: number;
-  settlementAmount: number;
+  custodyAmount: string;
+  settlementAmount: string;
 };
 
-export type AccountCustodyTransfer = { userId: string; amount: number };
+export type AccountCustodyTransfer = { userId: string; amount: string };
 
 export type AccountCustodianPayload = {
   name: string;
-  openingBalance: number;
+  openingBalance: string;
   transfers: AccountCustodyTransfer[];
 };
 
@@ -174,10 +174,10 @@ export type Account = {
   isVirtual: boolean;
   isCredit: boolean;
   status: AccountStatus;
-  balance: number;
-  totalSpent: number;
-  availableCredit: number | null;
-  creditLine: number | null;
+  balance: string;
+  totalSpent: string | null;
+  availableCredit: string | null;
+  creditLine: string | null;
   closingDay: number | null;
   fundingAccountId: string | null;
   users: AccountMember[];
@@ -202,7 +202,7 @@ export type AccountWritePayload = {
   description: string;
   isVirtual: boolean;
   isCredit: boolean;
-  creditLine: number | null;
+  creditLine: string | null;
   closingDay: number | null;
 };
 

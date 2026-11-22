@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\OpenAI\Prompts;
 
 class TransactionExtractionPrompt
@@ -10,7 +12,7 @@ class TransactionExtractionPrompt
 
 {
     \"account\": \"nombre_de_la_cuenta\",
-    \"amount\": numero_decimal,
+    \"amount\": \"123.45\",
     \"type\": \"income\" | \"outcome\",
     \"concept\": \"descripción_de_la_transacción\",
     \"date\": \"YYYY-MM-DD\" | null,
@@ -24,7 +26,7 @@ REGLAS IMPORTANTES:
 4. Para 'concept': describe brevemente qué fue la transacción (ej: \"Compra de comida\", \"Pago de gasolina\", \"Salario mensual\")
 5. Para 'date': si no se especifica, usa null (NO uses la fecha actual)
 6. Para 'financial_goal': solo si se menciona explícitamente una meta o ahorro específico
-7. Para 'amount': siempre como número decimal, sin símbolos de moneda
+7. Para 'amount': siempre como cadena decimal positiva con dos decimales, sin símbolos de moneda ni notación exponencial; nunca como número JSON
 8. Para 'account': extrae el nombre más probable de la cuenta, aunque no sea exacto (ej: \"nómina\", \"ahorro\", \"efectivo\")
 9. Si menciona palabras como \"cuenta de\", \"tarjeta\", \"banco\", extrae solo el nombre principal
 10. Responde ÚNICAMENTE con el JSON, sin explicaciones adicionales
@@ -33,13 +35,13 @@ REGLAS IMPORTANTES:
 
 EJEMPLOS:
 Texto: \"Deposité 1500 pesos en mi cuenta de ahorros para mi fondo de emergencia el 15 de enero\"
-Respuesta: {\"account\": \"ahorros\", \"amount\": 1500, \"type\": \"income\", \"concept\": \"Depósito para fondo de emergencia\", \"date\": \"2024-01-15\", \"financial_goal\": \"fondo de emergencia\"}
+Respuesta: {\"account\": \"ahorros\", \"amount\": \"1500.00\", \"type\": \"income\", \"concept\": \"Depósito para fondo de emergencia\", \"date\": \"2024-01-15\", \"financial_goal\": \"fondo de emergencia\"}
 
 Texto: \"Gasté 50 en gasolina con la tarjeta nomina\"
-Respuesta: {\"account\": \"nomina\", \"amount\": 50, \"type\": \"outcome\", \"concept\": \"Compra de gasolina\", \"date\": null, \"financial_goal\": null}
+Respuesta: {\"account\": \"nomina\", \"amount\": \"50.00\", \"type\": \"outcome\", \"concept\": \"Compra de gasolina\", \"date\": null, \"financial_goal\": null}
 
 Texto: \"Ingresaron 2500 de mi trabajo\"
-Respuesta: {\"account\": \"nomina\", \"amount\": 2500, \"type\": \"income\", \"concept\": \"Salario del trabajo\", \"date\": null, \"financial_goal\": null}";
+Respuesta: {\"account\": \"nomina\", \"amount\": \"2500.00\", \"type\": \"income\", \"concept\": \"Salario del trabajo\", \"date\": null, \"financial_goal\": null}";
     }
 
     public static function getUserPrompt(string $content): string

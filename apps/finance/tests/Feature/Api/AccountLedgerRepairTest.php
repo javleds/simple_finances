@@ -1,5 +1,6 @@
 <?php
 
+use FinSi\FinanceDomain\Money\Decimal;
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\AccountLedgerRepair;
@@ -17,15 +18,15 @@ function accountLedgerRepairHeaders(User $user): array
     ];
 }
 
-function accountLedgerRepairSharedAccount(User $owner, User $member, float $balance = 0.0): Account
+function accountLedgerRepairSharedAccount(User $owner, User $member, string|int $balance = '0.00'): Account
 {
     $account = Account::factory()->create([
-        'balance' => $balance,
+        'balance' => Decimal::normalize($balance),
         'user_id' => $owner->id,
     ]);
     $account->users()->sync([
-        $owner->id => ['percentage' => 50],
-        $member->id => ['percentage' => 50],
+        $owner->id => ['percentage' => '50.00'],
+        $member->id => ['percentage' => '50.00'],
     ]);
 
     return $account;
@@ -37,8 +38,8 @@ function accountLedgerRepairTransaction(Account $account, User $creator, string 
         'account_id' => $account->id,
         'user_id' => $creator->id,
         'concept' => $concept,
-        'amount' => 200.0,
-        'percentage' => 100.0,
+        'amount' => '200.00',
+        'percentage' => '100.00',
         'scheduled_at' => '2026-07-23',
     ]);
 }
@@ -50,7 +51,7 @@ function accountLedgerRepairSeedDebt(Account $account, Transaction $transaction,
         'user_id' => $payer->id,
         'transaction_id' => $transaction->id,
         'type' => AccountMemberLedgerEntryType::ExpensePaid,
-        'amount' => 200.0,
+        'amount' => '200.00',
         'description' => $transaction->concept,
         'occurred_at' => $transaction->scheduled_at,
     ]);
@@ -60,7 +61,7 @@ function accountLedgerRepairSeedDebt(Account $account, Transaction $transaction,
         'transaction_id' => $transaction->id,
         'related_user_id' => $payer->id,
         'type' => AccountMemberLedgerEntryType::ExpenseShare,
-        'amount' => -100.0,
+        'amount' => '-100.00',
         'description' => $transaction->concept,
         'occurred_at' => $transaction->scheduled_at,
     ]);
@@ -70,7 +71,7 @@ function accountLedgerRepairSeedDebt(Account $account, Transaction $transaction,
         'transaction_id' => $transaction->id,
         'related_user_id' => $payer->id,
         'type' => AccountMemberLedgerEntryType::ExpenseShare,
-        'amount' => -100.0,
+        'amount' => '-100.00',
         'description' => $transaction->concept,
         'occurred_at' => $transaction->scheduled_at,
     ]);
@@ -79,7 +80,7 @@ function accountLedgerRepairSeedDebt(Account $account, Transaction $transaction,
 it('lets any account member apply an audited settlement correction that clears transaction badges', function () {
     $payer = User::factory()->create(['name' => 'Divanny']);
     $debtor = User::factory()->create(['name' => 'Javier']);
-    $account = accountLedgerRepairSharedAccount($payer, $debtor, -100.0);
+    $account = accountLedgerRepairSharedAccount($payer, $debtor, '-100.00');
     $transaction = accountLedgerRepairTransaction($account, $debtor, 'Filos');
     accountLedgerRepairSeedDebt($account, $transaction, $payer, $debtor);
 
@@ -87,14 +88,14 @@ it('lets any account member apply an audited settlement correction that clears t
         ->withHeaders(accountLedgerRepairHeaders($debtor))
         ->getJson("/api/accounts/{$account->id}/transactions?search=Filos")
         ->assertOk()
-        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', 100.0);
+        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', '100.00');
 
     $diagnostics = $this
         ->withHeaders(accountLedgerRepairHeaders($debtor))
         ->getJson("/api/accounts/{$account->id}/ledger/diagnostics")
         ->assertOk()
         ->assertJsonPath('data.diagnostics.0.code', 'transaction_open_debt')
-        ->assertJsonPath('data.diagnostics.0.suggested_payload.amount', 100.0)
+        ->assertJsonPath('data.diagnostics.0.suggested_payload.amount', '100.00')
         ->json('data.diagnostics.0.suggested_payload');
 
     $this
@@ -119,14 +120,14 @@ it('lets any account member apply an audited settlement correction that clears t
         ->withHeaders(accountLedgerRepairHeaders($debtor))
         ->getJson("/api/accounts/{$account->id}/transactions?search=Filos")
         ->assertOk()
-        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', 0.0)
-        ->assertJsonPath('data.0.current_user_receivable_reimbursement_amount', 0.0);
+        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', '0.00')
+        ->assertJsonPath('data.0.current_user_receivable_reimbursement_amount', '0.00');
 });
 
 it('reverses a settlement correction with inverse auditable ledger entries', function () {
     $payer = User::factory()->create(['name' => 'Divanny']);
     $debtor = User::factory()->create(['name' => 'Javier']);
-    $account = accountLedgerRepairSharedAccount($payer, $debtor, -100.0);
+    $account = accountLedgerRepairSharedAccount($payer, $debtor, '-100.00');
     $transaction = accountLedgerRepairTransaction($account, $debtor, 'Filos');
     accountLedgerRepairSeedDebt($account, $transaction, $payer, $debtor);
 
@@ -138,7 +139,7 @@ it('reverses a settlement correction with inverse auditable ledger entries', fun
             'from_user_id' => $debtor->id,
             'to_user_id' => $payer->id,
             'transaction_id' => $transaction->id,
-            'amount' => 100.0,
+            'amount' => '100.00',
             'description' => 'Filos ya fue pagado fuera de la app',
         ])
         ->assertCreated()
@@ -162,13 +163,13 @@ it('reverses a settlement correction with inverse auditable ledger entries', fun
         ->withHeaders(accountLedgerRepairHeaders($debtor))
         ->getJson("/api/accounts/{$account->id}/transactions?search=Filos")
         ->assertOk()
-        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', 100.0);
+        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', '100.00');
 });
 
 it('reports positive balances that do not have explicit custody as user-input corrections', function () {
     $owner = User::factory()->create(['name' => 'Divanny']);
     $member = User::factory()->create(['name' => 'Javier']);
-    $account = accountLedgerRepairSharedAccount($owner, $member, 500.0);
+    $account = accountLedgerRepairSharedAccount($owner, $member, '500.00');
 
     $this
         ->withHeaders(accountLedgerRepairHeaders($member))
@@ -176,7 +177,7 @@ it('reports positive balances that do not have explicit custody as user-input co
         ->assertOk()
         ->assertJsonPath('data.diagnostics.0.code', 'positive_balance_custody_gap')
         ->assertJsonPath('data.diagnostics.0.mode', 'needs_user_input')
-        ->assertJsonPath('data.diagnostics.0.evidence.gap_amount', 500.0);
+        ->assertJsonPath('data.diagnostics.0.evidence.gap_amount', '500.00');
 
     $this
         ->withHeaders(accountLedgerRepairHeaders($member))
@@ -184,15 +185,15 @@ it('reports positive balances that do not have explicit custody as user-input co
             'issue_code' => 'positive_balance_custody_gap',
             'repair_type' => 'custody_correction',
             'user_id' => $owner->id,
-            'amount' => 500.0,
+            'amount' => '500.00',
             'description' => 'Divanny custodia el saldo inicial',
         ])
         ->assertCreated()
         ->assertJsonPath('data.repair_type', 'custody_correction');
 
-    expect((float) AccountMemberLedgerEntry::query()
+    expect(AccountMemberLedgerEntry::query()
         ->where('account_id', $account->id)
         ->where('type', AccountMemberLedgerEntryType::CustodyCorrection)
-        ->sum('amount'))->toBe(500.0)
-        ->and((float) $account->fresh()->balance)->toBe(500.0);
+        ->sum('amount'))->toBe('500.00')
+        ->and($account->fresh()->balance)->toBe('500.00');
 });

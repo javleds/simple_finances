@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\OpenAI\Prompts;
 
 class MessageActionDetectionPrompt
@@ -22,13 +24,14 @@ REGLAS DE CLASIFICACIÓN:
 - Si quiere cambiar, modificar, corregir la última transacción, usa 'modify_last_transaction'
 - Si quiere eliminar, borrar, quitar la última transacción, usa 'delete_last_transaction'
 - Extrae información relevante del contexto (nombre de cuenta, montos, etc.)
+- amount debe ser una cadena decimal positiva con dos decimales, nunca un número JSON.
 
 FORMATO DE RESPUESTA JSON:
 {
     \"action\": \"nombre_de_la_accion\",
     \"context\": {
         \"account_name\": \"nombre_cuenta_si_se_menciona\",
-        \"amount\": numero_si_se_menciona,
+        \"amount\": \"123.45\",
         \"additional_info\": \"información_adicional_relevante\"
     },
     \"confidence\": 0.95
@@ -42,7 +45,7 @@ Texto: \"Muéstrame mis últimos movimientos de la tarjeta\"
 Respuesta: {\"action\": \"query_recent_transactions\", \"context\": {\"account_name\": \"tarjeta\"}, \"confidence\": 0.95}
 
 Texto: \"Gasté 500 pesos en el supermercado\"
-Respuesta: {\"action\": \"create_transaction\", \"context\": {\"amount\": 500, \"concept\": \"supermercado\"}, \"confidence\": 0.90}
+Respuesta: {\"action\": \"create_transaction\", \"context\": {\"amount\": \"500.00\", \"concept\": \"supermercado\"}, \"confidence\": 0.90}
 
 Texto: \"Quiero cambiar el monto de mi última transacción\"
 Respuesta: {\"action\": \"modify_last_transaction\", \"context\": {\"field_to_modify\": \"amount\"}, \"confidence\": 0.92}

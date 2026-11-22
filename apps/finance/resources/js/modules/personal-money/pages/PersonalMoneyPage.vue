@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { compareMoney, formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
+
 import { computed, ref, watch, type Component } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ArrowPathIcon, ClockIcon, WalletIcon } from '@heroicons/vue/24/outline';
@@ -51,8 +53,7 @@ function selectResolution(value: string): void {
         query: { ...route.query, resolution: value === 'pending' ? 'pending' : undefined },
     });
 }
-const money = (value: number): string =>
-    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
+const money = (value: string): string => formatExactMoney(value);
 const kinds: Record<PersonalMoneyEntry['kind'], string> = {
     personal_income: 'Ingreso personal',
     personal_expense: 'Gasto personal',
@@ -220,10 +221,12 @@ async function resolve(entry: PersonalMoneyEntry, value: string): Promise<void> 
                                                 entry.raw_effect !== undefined
                                             "
                                             >{{
-                                                entry.raw_effect > 0 ? 'Recibido' : 'Pagado'
+                                                compareMoney(entry.raw_effect, '0') > 0
+                                                    ? 'Recibido'
+                                                    : 'Pagado'
                                             }}</AppText
                                         >
-                                        <AppText v-if="entry.effect === 0"
+                                        <AppText v-if="compareMoney(entry.effect, '0') === 0"
                                             >Importe: {{ money(entry.amount) }}</AppText
                                         >
                                     </div>

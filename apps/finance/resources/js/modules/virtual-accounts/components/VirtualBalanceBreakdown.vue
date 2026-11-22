@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import {
+    subtractMoney,
+    compareMoney,
+    formatMoney as formatExactMoney,
+} from '@/modules/shared/lib/money';
 import { computed } from 'vue';
 import { AppText } from '@/modules/shared/components';
 import type { VirtualAccountSummary } from '@/modules/virtual-accounts/types';
@@ -7,27 +12,21 @@ const props = defineProps<{
     balance: Pick<VirtualAccountSummary, 'currentBalance' | 'netCapital' | 'observedYield'>;
 }>();
 
-const currencyFormatter = new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-});
-const unclassifiedBalance = computed(
-    () =>
-        (Math.round(props.balance.currentBalance * 100) -
-            Math.round(props.balance.netCapital * 100) -
-            Math.round(props.balance.observedYield * 100)) /
-        100,
+const currencyFormatter = { format: formatExactMoney };
+const unclassifiedBalance = computed(() =>
+    subtractMoney(
+        subtractMoney(props.balance.currentBalance, props.balance.netCapital),
+        props.balance.observedYield,
+    ),
 );
 const yieldClass = computed(() => {
-    if (props.balance.observedYield > 0) return 'text-(--app-color-success)';
-    if (props.balance.observedYield < 0) return 'text-(--app-color-danger)';
+    if (compareMoney(props.balance.observedYield, '0') > 0) return 'text-(--app-color-success)';
+    if (compareMoney(props.balance.observedYield, '0') < 0) return 'text-(--app-color-danger)';
     return 'text-(--app-color-text-muted)';
 });
 const yieldLabel = computed(() => {
     const amount = currencyFormatter.format(props.balance.observedYield);
-    return props.balance.observedYield > 0 ? `+${amount}` : amount;
+    return compareMoney(props.balance.observedYield, '0') > 0 ? `+${amount}` : amount;
 });
 </script>
 
@@ -52,7 +51,7 @@ const yieldLabel = computed(() => {
                 </dd>
             </div>
         </dl>
-        <AppText v-if="unclassifiedBalance !== 0" size="sm" tone="subtle">
+        <AppText v-if="compareMoney(unclassifiedBalance, '0') !== 0" size="sm" tone="subtle">
             Saldo sin desglose: {{ currencyFormatter.format(unclassifiedBalance) }}. Esta diferencia
             del total aún no está clasificada como ahorro o rendimiento.
         </AppText>

@@ -72,13 +72,18 @@ describe('PrimeVue Forms integration', () => {
     });
 
     it('clears hidden credit fields and resets values and touched errors when editing another account', async () => {
-        const initial = ref({ name: 'Credit', isCredit: true, creditLine: 3000, closingDay: 10 });
+        const initial = ref({
+            name: 'Credit',
+            isCredit: true,
+            creditLine: '3000.00',
+            closingDay: 10,
+        });
         const { form, nameError } = mountForm(() => ({
             form: useAccountForm({ initialValues: () => initial.value }),
             nameError: useFormFieldInteraction('name'),
         }));
         await flushPromises();
-        expect(form.creditLine.value).toBe('3000');
+        expect(form.creditLine.value).toBe('3000.00');
         form.isCredit.value = 'no';
         await flushPromises();
         expect(form.creditLine.value).toBe('');
@@ -88,7 +93,7 @@ describe('PrimeVue Forms integration', () => {
         await flushPromises();
         expect(nameError.error.value).toBeTruthy();
 
-        initial.value = { name: 'Replacement', isCredit: false, creditLine: 0, closingDay: 0 };
+        initial.value = { name: 'Replacement', isCredit: false, creditLine: '0.00', closingDay: 0 };
         await flushPromises();
         expect(form.name.value).toBe('Replacement');
         expect(nameError.error.value).toBeUndefined();
@@ -97,7 +102,7 @@ describe('PrimeVue Forms integration', () => {
     it('preserves expense allocations, conditional payer/custodian checks, exact money and dates', async () => {
         const initial: Ref<Partial<Transaction>> = ref({
             concept: 'Dinner',
-            amount: 123.45,
+            amount: '123.45',
             date: '2026-10-09',
             type: 'expense',
             accountId: '10',
@@ -107,7 +112,7 @@ describe('PrimeVue Forms integration', () => {
         const form = mountForm(() => useTransactionForm({ initialValues: () => initial.value }));
         await flushPromises();
         expect(await form.submitForm()).toMatchObject({
-            amount: 123.45,
+            amount: '123.45',
             date: '2026-10-09',
             userPayments: { '1': 50, '2': 50 },
         });
@@ -126,19 +131,15 @@ describe('PrimeVue Forms integration', () => {
         expect(form.financialGoalId.value).toBeNull();
         initial.value = {
             concept: 'New',
-            amount: 0,
+            amount: '0.00',
             date: '2026-11-01',
             accountId: '11',
             paidByUserId: '2',
         };
         await flushPromises();
-        expect(form.amount.value).toBe('0');
+        expect(form.amount.value).toBe('0.00');
         expect(form.date.value).toBe('2026-11-01');
-        expect(await form.submitForm()).toMatchObject({
-            amount: 0,
-            accountId: '11',
-            userPayments: {},
-        });
+        expect(form.isSubmitDisabled.value).toBe(true);
     });
 
     it('submits through an external footer button and prevents concurrent submission', async () => {

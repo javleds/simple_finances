@@ -15,6 +15,7 @@ use FinSi\FinanceDomain\Enums\TransactionType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\Transaction;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -22,7 +23,6 @@ use Illuminate\Validation\ValidationException;
 use function in_array;
 use function max;
 use function now;
-use function round;
 use function trim;
 
 class CreateAccountCustodian
@@ -52,10 +52,9 @@ class CreateAccountCustodian
 
             foreach ($dto->transfers as $transfer) {
                 $userId = $transfer['user_id'];
-                $available = (int) round((float) ($custody->get($userId)['amount'] ?? 0) * 100);
-                $reserved = (int) round((float) $pendingReimbursements
-                    ->filter(static fn (array $item): bool => (int) $item['from_user_id'] === $userId && ($item['action_type'] ?? null) === 'custody_to_user')
-                    ->sum('amount') * 100);
+                $available = Decimal::minor($custody->get($userId)['amount'] ?? '0.00');
+                $reserved = Decimal::minor(Decimal::sum($pendingReimbursements
+                    ->filter(static fn (array $item): bool => (int) $item['from_user_id'] === $userId && ($item['action_type'] ?? null) === 'custody_to_user'), 'amount'));
                 $available -= $reserved;
                 if (! in_array($userId, $allowedIds, true) || isset($seen[$userId]) || $transfer['amount_cents'] < 0 || $transfer['amount_cents'] > max(0, $available)) {
                     throw ValidationException::withMessages(['transfers' => 'Selecciona custodios de esta cuenta y montos que no superen su custodia disponible después de reservar los reembolsos pendientes.']);
@@ -79,8 +78,8 @@ class CreateAccountCustodian
                     continue;
                 }
 
-                $amount = $transfer['amount_cents'] / 100;
-                foreach ([[$transfer['user_id'], $custodian->id, -$amount], [$custodian->id, $transfer['user_id'], $amount]] as [$userId, $relatedUserId, $entryAmount]) {
+                $amount = Decimal::fromMinor($transfer['amount_cents']);
+                foreach ([[$transfer['user_id'], $custodian->id, Decimal::negate($amount)], [$custodian->id, $transfer['user_id'], $amount]] as [$userId, $relatedUserId, $entryAmount]) {
                     $account->memberLedgerEntries()->create([
                         'user_id'         => $userId,
                         'related_user_id' => $relatedUserId,
@@ -103,8 +102,8 @@ class CreateAccountCustodian
                 $income->virtual_custodian_opening = true;
                 $income->uses_virtual_custodian_rules = true;
                 $income->concept = 'Saldo inicial de ' . $custodian->name;
-                $income->amount = $dto->openingBalanceCents / 100;
-                $income->percentage = 100.0;
+                $income->amount = Decimal::fromMinor($dto->openingBalanceCents);
+                $income->percentage = '100.00';
                 $income->scheduled_at = now();
                 $income->save();
                 $this->syncAccountMemberLedger->execute($income);

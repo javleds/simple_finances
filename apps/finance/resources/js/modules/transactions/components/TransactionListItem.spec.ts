@@ -8,7 +8,7 @@ it('restores the receipts button when a parent count changes after deleting the 
             itemId: '1',
             attachmentsCount: 1,
             concept: 'Compra',
-            amount: 20,
+            amount: '20.00',
             type: 'expense',
             dateLabel: 'Hoy',
             creatorName: 'Ana',

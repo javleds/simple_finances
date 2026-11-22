@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\Api;
 
+use App\Rules\DecimalAmount;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AccountFinancialGoalRequest extends FormRequest
@@ -14,10 +17,10 @@ class AccountFinancialGoalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'amount' => ['required', 'numeric', 'min:0'],
+            'name'              => ['required', 'string', 'max:255'],
+            'amount'            => ['bail', 'required', new DecimalAmount(minimum: '0', maximum: '99999999.99')],
             'must_completed_at' => ['nullable', 'date'],
-            'status' => ['sometimes', 'in:in progress,completed'],
+            'status'            => ['sometimes', 'in:in progress,completed'],
         ];
     }
 }

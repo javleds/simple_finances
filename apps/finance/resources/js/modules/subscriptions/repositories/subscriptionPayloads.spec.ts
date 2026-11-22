@@ -10,7 +10,7 @@ describe('subscription payload builders', () => {
     expect(
       buildSubscriptionWritePayload({
         name: 'Cloud storage',
-        amount: 199,
+        amount: '199.00',
         startDate: '2026-06-01',
         frequencyUnit: 1,
         frequencyType: 'months',
@@ -19,7 +19,7 @@ describe('subscription payload builders', () => {
       }),
     ).toEqual({
       name: 'Cloud storage',
-      amount: 199,
+      amount: '199.00',
       started_at: '2026-06-01',
       frequency_unit: 1,
       frequency_type: 'months',

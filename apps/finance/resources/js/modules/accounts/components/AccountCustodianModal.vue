@@ -1,4 +1,15 @@
 <script setup lang="ts">
+import {
+    money,
+    parseMoney,
+    addMoney,
+    subtractMoney,
+    sumMoney,
+    minMoney,
+    maxMoney,
+    compareMoney,
+    formatMoney as formatExactMoney,
+} from '@/modules/shared/lib/money';
 import { computed, ref, watch } from 'vue';
 import Message from 'primevue/message';
 import { z } from 'zod';
@@ -31,7 +42,7 @@ const emit = defineEmits<{
     save: [payload: AccountCustodianPayload | AccountCustodyTransfer[] | string];
 }>();
 const removing = computed(() => props.custodian !== null && !props.renaming);
-const draft = ref<Record<string, number>>({});
+const draft = ref<Record<string, string>>({});
 const { values, errors, setFieldValue, resetForm, handleSubmit } = usePrimeForm({
     initialValues: { name: '', openingBalance: '0.00' },
     schema: z.object({
@@ -44,9 +55,7 @@ const { values, errors, setFieldValue, resetForm, handleSubmit } = usePrimeForm(
             .string()
             .regex(/^\d+(\.\d{1,2})?$/, 'Ingresa un importe válido con hasta dos decimales.')
             .refine(
-                (value) =>
-                    Number.isSafeInteger(Math.round(Number(value) * 100)) &&
-                    Number(value) <= 999999999.99,
+                (value) => parseMoney(value) !== null && compareMoney(value, '999999999.99') <= 0,
                 'El importe es demasiado grande.',
             ),
     }),
@@ -66,28 +75,27 @@ const sources = computed(() => {
         }))
         .map((user) => ({
             ...user,
-            available: Math.max(
-                0,
-                Math.round(
-                    (user.amount -
+            available: maxMoney(
+                '0.00',
+                subtractMoney(
+                    user.amount,
+                    sumMoney(
                         (props.account?.pendingReimbursements ?? [])
                             .filter(
                                 (item) =>
                                     item.actionType === 'custody_to_user' &&
                                     item.fromUserId === user.id,
                             )
-                            .reduce((sum, item) => sum + item.amount, 0)) *
-                        100,
-                ) / 100,
+                            .map((item) => item.amount),
+                    ),
+                ),
             ),
         }))
-        .filter((user) => removing.value || user.amount > 0);
+        .filter((user) => removing.value || compareMoney(user.amount, '0') > 0);
 });
-const totalCents = computed(() => Math.round((props.custodian?.custodyAmount ?? 0) * 100));
-const allocatedCents = computed(() =>
-    Object.values(draft.value).reduce((sum, amount) => sum + Math.round(amount * 100), 0),
-);
-const remainingCents = computed(() => totalCents.value - allocatedCents.value);
+const totalAmount = computed(() => props.custodian?.custodyAmount ?? '0.00');
+const allocatedAmount = computed(() => sumMoney(Object.values(draft.value)));
+const remainingAmount = computed(() => subtractMoney(totalAmount.value, allocatedAmount.value));
 const hasPending = computed(() =>
     Boolean(
         props.custodian &&
@@ -101,7 +109,9 @@ const canSubmit = computed(
     () =>
         !props.isSaving &&
         (!removing.value ||
-            (remainingCents.value === 0 && !hasPending.value && totalCents.value >= 0)),
+            (compareMoney(remainingAmount.value, '0') === 0 &&
+                !hasPending.value &&
+                compareMoney(totalAmount.value, '0') >= 0)),
 );
 const actions = computed<AppModalAction[]>(() => [
     { key: 'close', label: 'Cancelar', tone: 'neutral', disabled: props.isSaving },
@@ -131,23 +141,19 @@ watch(
     { immediate: true },
 );
 
-function maximum(userId: string, amount: number): number {
+function maximum(userId: string, amount: string): string {
     if (!removing.value) return amount;
-    return Math.max(0, remainingCents.value + Math.round((draft.value[userId] ?? 0) * 100)) / 100;
+    return maxMoney('0.00', addMoney(remainingAmount.value, draft.value[userId] ?? '0.00'));
 }
-function updateAmount(userId: string, amount: number, available: number): void {
+function updateAmount(userId: string, amount: string, available: string): void {
     if (props.isSaving) return;
     draft.value = {
         ...draft.value,
-        [userId]:
-            Math.max(
-                0,
-                Math.min(Math.round(maximum(userId, available) * 100), Math.round(amount * 100)),
-            ) / 100,
+        [userId]: maxMoney('0.00', minMoney(maximum(userId, available), amount)),
     };
 }
-function formatMoney(amount: number): string {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
+function formatMoney(amount: string): string {
+    return formatExactMoney(amount);
 }
 const submit = handleSubmit((submitted) => {
     if (!canSubmit.value) return;
@@ -156,15 +162,15 @@ const submit = handleSubmit((submitted) => {
         return;
     }
     const transfers = sources.value
-        .map((source) => ({ userId: source.id, amount: draft.value[source.id] ?? 0 }))
-        .filter((item) => item.amount > 0);
+        .map((source) => ({ userId: source.id, amount: draft.value[source.id] ?? '0.00' }))
+        .filter((item) => compareMoney(item.amount, '0') > 0);
     if (removing.value) {
         emit('save', transfers);
         return;
     }
     emit('save', {
         name: submitted.name.trim(),
-        openingBalance: Number(submitted.openingBalance),
+        openingBalance: money(submitted.openingBalance),
         transfers,
     });
 });
@@ -235,7 +241,9 @@ function action(key: string): void {
                 >
                 <div v-for="source in sources" :key="source.id" class="space-y-3">
                     <AppText>{{ removing ? 'Para' : 'Desde' }} {{ source.name }}</AppText>
-                    <AppText v-if="!removing && source.available < source.amount" size="sm"
+                    <AppText
+                        v-if="!removing && compareMoney(source.available, source.amount) < 0"
+                        size="sm"
                         >Disponible para mover: {{ formatMoney(source.available) }}. El resto está
                         reservado para reembolsos.</AppText
                     >
@@ -244,11 +252,11 @@ function action(key: string): void {
                         :model-value="{}"
                         :disabled="props.isSaving"
                         :monetary="{
-                            total: removing ? totalCents / 100 : source.amount,
-                            amount: draft[source.id] ?? 0,
+                            total: removing ? totalAmount : source.amount,
+                            amount: draft[source.id] ?? '0.00',
                             maximum: maximum(source.id, source.available),
                             source: removing ? 'Por repartir' : source.name,
-                            sourceRemaining: removing ? remainingCents / 100 : undefined,
+                            sourceRemaining: removing ? remainingAmount : undefined,
                             recipient: removing ? source.name : values.name || 'Nuevo custodio',
                         }"
                         @update:amount="updateAmount(source.id, $event, source.available)"
@@ -256,21 +264,29 @@ function action(key: string): void {
                 </div>
                 <div class="space-y-2 border-t border-(--app-color-border) pt-4" aria-live="polite">
                     <AppText v-if="removing"
-                        >Por repartir:
-                        <strong>{{ formatMoney(remainingCents / 100) }}</strong></AppText
+                        >Por repartir: <strong>{{ formatMoney(remainingAmount) }}</strong></AppText
                     >
                     <AppText v-else
                         >Custodia inicial:
                         <strong>{{
-                            formatMoney(allocatedCents / 100 + (Number(values.openingBalance) || 0))
+                            formatMoney(
+                                addMoney(
+                                    allocatedAmount,
+                                    parseMoney(values.openingBalance) ?? '0.00',
+                                ),
+                            )
                         }}</strong></AppText
                     >
                     <AppText size="sm"
-                        >Balance: {{ formatMoney(props.account?.balance ?? 0) }} →
+                        >Balance: {{ formatMoney(props.account?.balance ?? '0.00') }} →
                         {{
                             formatMoney(
-                                (props.account?.balance ?? 0) +
-                                    (removing ? 0 : Number(values.openingBalance) || 0),
+                                addMoney(
+                                    props.account?.balance ?? '0.00',
+                                    removing
+                                        ? '0.00'
+                                        : (parseMoney(values.openingBalance) ?? '0.00'),
+                                ),
                             )
                         }}</AppText
                     >

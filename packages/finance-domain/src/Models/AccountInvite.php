@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace FinSi\FinanceDomain\Models;
 
+use FinSi\FinanceDomain\Money\Decimal;
+
 use FinSi\FinanceDomain\Enums\InviteStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -55,7 +57,7 @@ class AccountInvite extends Model
 
     public function hasPercentageAssigned(): bool
     {
-        return $this->percentage > 0.0;
+        return Decimal::compare($this->percentage, 0) > 0;
     }
 
     protected function casts(): array
@@ -63,7 +65,7 @@ class AccountInvite extends Model
         return [
             'account_id' => 'integer',
             'status'     => InviteStatus::class,
-            'percentage' => 'float',
+            'percentage' => 'decimal:2',
         ];
     }
 }

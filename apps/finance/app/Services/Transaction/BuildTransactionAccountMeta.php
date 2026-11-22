@@ -1,26 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Transaction;
 
 use App\Dto\AccountBalanceMetaDto;
-use FinSi\FinanceDomain\Models\Account;
 use App\Services\Accounts\BuildAccountLedgerTimeline;
 use App\Services\Accounts\BuildAccountMemberSummary;
+
+use function array_merge;
+
+use FinSi\FinanceDomain\Models\Account;
+use FinSi\FinanceDomain\Money\Decimal;
 
 class BuildTransactionAccountMeta
 {
     public function __construct(
         private readonly BuildAccountMemberSummary $buildAccountMemberSummary,
         private readonly BuildAccountLedgerTimeline $buildAccountLedgerTimeline,
-    ) {}
+    ) {
+    }
 
     public function execute(
         int $accountId,
         ?int $previousAccountId = null,
-    ): array
-    {
+    ): array {
         $meta = [
-            'account' => $this->accountMeta($accountId)->toArray(),
+            'account'     => $this->accountMeta($accountId)->toArray(),
             'ledger_rows' => $this->ledgerRows($accountId),
         ];
 
@@ -39,7 +45,7 @@ class BuildTransactionAccountMeta
 
         return new AccountBalanceMetaDto(
             id: $account->id,
-            balance: (float) $account->balance,
+            balance: Decimal::normalize($account->balance),
         );
     }
 

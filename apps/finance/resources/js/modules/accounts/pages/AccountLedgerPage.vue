@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+    money,
+    parseMoney,
+    compareMoney,
+    formatMoney as formatExactMoney,
+} from '@/modules/shared/lib/money';
+
 import { Form, FormField, type FormSubmitEvent } from '@primevue/forms';
 import { zodResolver } from '@primevue/forms/resolvers/zod';
 import { z } from 'zod';
@@ -51,7 +58,7 @@ const custodyResolver = zodResolver(
         custodyAmount: z
             .string()
             .refine(
-                (value) => Number.isFinite(Number(value)) && Number(value) !== 0,
+                (value) => parseMoney(value) !== null && compareMoney(value, '0') !== 0,
                 'Ingresa un monto distinto de cero.',
             ),
         custodyDescription: z.string().trim().min(1, 'Ingresa una descripción.'),
@@ -127,7 +134,10 @@ const canApplySelectedDiagnostic = computed(() => {
     }
 
     return Boolean(
-        custodyUserId.value && Number(custodyAmount.value) !== 0 && custodyDescription.value.trim(),
+        custodyUserId.value &&
+        parseMoney(custodyAmount.value) !== null &&
+        compareMoney(custodyAmount.value, '0') !== 0 &&
+        custodyDescription.value.trim(),
     );
 });
 
@@ -158,13 +168,8 @@ onBeforeUnmount(() => {
     window.removeEventListener('account-ledger-rows-updated', handleLedgerRowsUpdated);
 });
 
-function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value);
+function formatCurrency(value: string): string {
+    return formatExactMoney(value);
 }
 
 function formatDate(value: string | null): string {
@@ -180,7 +185,7 @@ function formatDate(value: string | null): string {
 }
 
 function visibleAmounts(amounts: AccountMemberAmount[]): AccountMemberAmount[] {
-    return amounts.filter((item) => Math.abs(item.amount) > 0.004);
+    return amounts.filter((item) => compareMoney(item.amount, '0') !== 0);
 }
 
 async function loadLedger(nextPage = 1): Promise<void> {
@@ -356,7 +361,7 @@ function buildRepairPayload(diagnostic: AccountLedgerDiagnostic): AccountLedgerR
     return {
         ...diagnostic.suggestedPayload,
         userId: custodyUserId.value,
-        amount: Number(custodyAmount.value),
+        amount: money(custodyAmount.value),
         description: custodyDescription.value.trim(),
     };
 }
@@ -391,7 +396,10 @@ watch(
             </AppText>
         </header>
 
-        <AppCard v-if="loadError" class="rounded-(--app-radius-control) border-(--app-color-danger)">
+        <AppCard
+            v-if="loadError"
+            class="rounded-(--app-radius-control) border-(--app-color-danger)"
+        >
             <div class="space-y-3">
                 <Message severity="error">{{ loadError }}</Message>
                 <AppButton variant="outline" @click="loadLedger()">Reintentar</AppButton>
@@ -410,7 +418,10 @@ watch(
             <AppText>No hay movimientos en el libro de esta cuenta.</AppText>
         </AppCard>
 
-        <div v-else class="overflow-hidden rounded-(--app-radius-control) border border-(--app-color-border)">
+        <div
+            v-else
+            class="overflow-hidden rounded-(--app-radius-control) border border-(--app-color-border)"
+        >
             <article
                 v-for="row in rows"
                 :key="row.id"
@@ -429,7 +440,8 @@ watch(
                         <p
                             class="text-sm font-bold"
                             :class="
-                                row.sourceType === 'transaction' && row.amount > 0
+                                row.sourceType === 'transaction' &&
+                                compareMoney(row.amount ?? '0.00', '0') > 0
                                     ? 'text-(--app-color-text)'
                                     : 'text-(--app-color-text)'
                             "
@@ -515,7 +527,10 @@ watch(
                 class="h-20 animate-pulse rounded-(--app-radius-control) bg-(--app-color-surface-muted)"
             />
 
-            <div v-else class="overflow-hidden rounded-(--app-radius-control) border border-(--app-color-border)">
+            <div
+                v-else
+                class="overflow-hidden rounded-(--app-radius-control) border border-(--app-color-border)"
+            >
                 <article
                     v-if="openDiagnostics.length === 0"
                     class="bg-(--app-color-surface) px-4 py-4"

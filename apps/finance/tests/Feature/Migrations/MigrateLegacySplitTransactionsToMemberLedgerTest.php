@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Enums\TransactionPaymentSource;
 use FinSi\FinanceDomain\Models\Account;
@@ -7,6 +9,7 @@ use FinSi\FinanceDomain\Models\AccountMemberLedgerEntry;
 use FinSi\FinanceDomain\Models\Transaction;
 use FinSi\FinanceDomain\Models\TransactionAllocation;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Money\Decimal;
 
 function runMigrateLegacySplitTransactionsToMemberLedger(): void
 {
@@ -24,18 +27,18 @@ it('normalizes legacy split allocations when child amounts do not match the pare
     $account->users()->attach($owner->id);
 
     $parentTransaction = Transaction::factory()->outcome()->completed()->create([
-        'account_id' => $account->id,
-        'user_id' => $owner->id,
-        'amount' => 599.0,
+        'account_id'      => $account->id,
+        'user_id'         => $owner->id,
+        'amount'          => '599.00',
         'paid_by_user_id' => null,
-        'payment_source' => null,
+        'payment_source'  => null,
     ]);
     $childTransaction = Transaction::factory()->income()->completed()->create([
-        'account_id' => $account->id,
-        'user_id' => $owner->id,
+        'account_id'            => $account->id,
+        'user_id'               => $owner->id,
         'parent_transaction_id' => $parentTransaction->id,
-        'amount' => 0.0,
-        'percentage' => 100.0,
+        'amount'                => '0.00',
+        'percentage'            => '100.00',
     ]);
 
     runMigrateLegacySplitTransactionsToMemberLedger();
@@ -50,16 +53,16 @@ it('normalizes legacy split allocations when child amounts do not match the pare
 
     expect($parentTransaction->fresh()->payment_source)->toBe(TransactionPaymentSource::MemberOutOfPocket)
         ->and($childTransaction->fresh()->legacy_migrated_at)->not->toBeNull()
-        ->and((float) $allocation->amount)->toBe(599.0)
-        ->and((float) $allocation->percentage)->toBe(100.0)
+        ->and($allocation->amount)->toBe('599.00')
+        ->and($allocation->percentage)->toBe('100.00')
         ->and($ledgerEntries->pluck('type')->all())->toBe([
             AccountMemberLedgerEntryType::ExpensePaid,
             AccountMemberLedgerEntryType::ExpenseShare,
             AccountMemberLedgerEntryType::SettlementTransfer,
             AccountMemberLedgerEntryType::SettlementTransfer,
         ])
-        ->and($ledgerEntries->pluck('amount')->all())->toBe([599.0, -599.0, 599.0, -599.0])
-        ->and(round(TransactionAllocation::query()->where('transaction_id', $parentTransaction->id)->sum('amount'), 2))->toBe(599.0);
+        ->and($ledgerEntries->pluck('amount')->all())->toBe(['599.00', '-599.00', '599.00', '-599.00'])
+        ->and(Decimal::normalize(TransactionAllocation::query()->where('transaction_id', $parentTransaction->id)->sum('amount')))->toBe('599.00');
 });
 
 it('preserves account balance contribution from completed legacy child incomes', function () {
@@ -70,32 +73,32 @@ it('preserves account balance contribution from completed legacy child incomes',
         'user_id' => $owner->id,
     ]);
     $account->users()->sync([
-        $owner->id => ['percentage' => 50],
+        $owner->id   => ['percentage' => 50],
         $partner->id => ['percentage' => 50],
     ]);
 
     $parentTransaction = Transaction::factory()->outcome()->completed()->create([
-        'account_id' => $account->id,
-        'user_id' => $owner->id,
-        'amount' => 1000.0,
+        'account_id'     => $account->id,
+        'user_id'        => $owner->id,
+        'amount'         => '1000.00',
         'payment_source' => null,
     ]);
     Transaction::factory()->income()->completed()->create([
-        'account_id' => $account->id,
-        'user_id' => $owner->id,
+        'account_id'            => $account->id,
+        'user_id'               => $owner->id,
         'parent_transaction_id' => $parentTransaction->id,
-        'amount' => 500.0,
-        'percentage' => 50.0,
+        'amount'                => '500.00',
+        'percentage'            => '50.00',
     ]);
     Transaction::factory()->income()->pending()->create([
-        'account_id' => $account->id,
-        'user_id' => $partner->id,
+        'account_id'            => $account->id,
+        'user_id'               => $partner->id,
         'parent_transaction_id' => $parentTransaction->id,
-        'amount' => 500.0,
-        'percentage' => 50.0,
+        'amount'                => '500.00',
+        'percentage'            => '50.00',
     ]);
 
     runMigrateLegacySplitTransactionsToMemberLedger();
 
-    expect((float) $account->fresh()->balance)->toBe(-500.0);
+    expect($account->fresh()->balance)->toBe('-500.00');
 });

@@ -25,7 +25,7 @@ it('captures and lists observed balance snapshots for a virtual account', functi
     Transaction::factory()->income()->create([
         'account_id' => $account->id,
         'user_id' => $user->id,
-        'amount' => 10000.0,
+        'amount' => '10000.00',
         'scheduled_at' => '2026-08-01',
     ]);
     app(\App\Services\Accounts\RecalculateAccountBalance::class)->execute($account)->balance;
@@ -33,22 +33,22 @@ it('captures and lists observed balance snapshots for a virtual account', functi
     $this
         ->withHeaders(virtualAccountApiHeaders($user))
         ->postJson("/api/accounts/{$account->id}/balance-snapshots", [
-            'observed_balance' => 10300.0,
+            'observed_balance' => '10300.00',
             'observed_at' => '2026-08-02',
             'notes' => 'Monthly statement',
         ])
         ->assertCreated()
-        ->assertJsonPath('data.observed_balance', 10300.0)
-        ->assertJsonPath('data.previous_balance', 10000.0)
-        ->assertJsonPath('data.delta', 300.0)
-        ->assertJsonPath('meta.account.balance', 10300.0);
+        ->assertJsonPath('data.observed_balance', '10300.00')
+        ->assertJsonPath('data.previous_balance', '10000.00')
+        ->assertJsonPath('data.delta', '300.00')
+        ->assertJsonPath('meta.account.balance', '10300.00');
 
     $this
         ->withHeaders(virtualAccountApiHeaders($user))
         ->getJson("/api/accounts/{$account->id}/balance-snapshots")
         ->assertOk()
         ->assertJsonCount(1, 'data')
-        ->assertJsonPath('data.0.delta', 300.0);
+        ->assertJsonPath('data.0.delta', '300.00');
 });
 
 it('returns virtual account summaries with observed yield separated from capital movement', function () {
@@ -63,7 +63,7 @@ it('returns virtual account summaries with observed yield separated from capital
     Transaction::factory()->income()->create([
         'account_id' => $account->id,
         'user_id' => $user->id,
-        'amount' => 10000.0,
+        'amount' => '10000.00',
         'scheduled_at' => '2026-08-01',
     ]);
     app(\App\Services\Accounts\RecalculateAccountBalance::class)->execute($account)->balance;
@@ -71,7 +71,7 @@ it('returns virtual account summaries with observed yield separated from capital
     $this
         ->withHeaders(virtualAccountApiHeaders($user))
         ->postJson("/api/accounts/{$account->id}/balance-snapshots", [
-            'observed_balance' => 10300.0,
+            'observed_balance' => '10300.00',
             'observed_at' => '2026-08-02',
         ])
         ->assertCreated();
@@ -80,8 +80,8 @@ it('returns virtual account summaries with observed yield separated from capital
         ->withHeaders(virtualAccountApiHeaders($user))
         ->getJson('/api/virtual-accounts')
         ->assertOk()
-        ->assertJsonPath('data.summary.current_balance', 10300.0)
-        ->assertJsonPath('data.summary.observed_yield', 300.0)
+        ->assertJsonPath('data.summary.current_balance', '10300.00')
+        ->assertJsonPath('data.summary.observed_yield', '300.00')
         ->assertJsonPath('data.accounts.0.account_name', 'Investment pocket')
-        ->assertJsonPath('data.accounts.0.observed_yield', 300.0);
+        ->assertJsonPath('data.accounts.0.observed_yield', '300.00');
 });

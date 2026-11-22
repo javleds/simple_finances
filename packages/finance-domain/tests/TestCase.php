@@ -8,6 +8,7 @@ use FinSi\FinanceDomain\FinanceDomainServiceProvider;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
+use RuntimeException;
 
 abstract class TestCase extends OrchestraTestCase
 {
@@ -19,11 +20,39 @@ abstract class TestCase extends OrchestraTestCase
     protected function defineEnvironment($app): void
     {
         $app['config']->set('database.default', 'testing');
+        if (getenv('FINANCE_DOMAIN_MYSQL_TESTS') === '1') {
+            $database = getenv('FINANCE_DOMAIN_MYSQL_DATABASE');
+
+            if (! is_string($database) || ! preg_match('/^[a-zA-Z0-9_]+_test$/D', $database)) {
+                throw new RuntimeException('Set FINANCE_DOMAIN_MYSQL_DATABASE to a dedicated database ending in _test.');
+            }
+
+            $app['config']->set('database.connections.testing', [
+                'driver' => 'mysql',
+                'host' => getenv('FINANCE_DOMAIN_MYSQL_HOST') ?: '127.0.0.1',
+                'port' => getenv('FINANCE_DOMAIN_MYSQL_PORT') ?: '3306',
+                'database' => $database,
+                'username' => getenv('FINANCE_DOMAIN_MYSQL_USER') ?: 'root',
+                'password' => getenv('FINANCE_DOMAIN_MYSQL_PASSWORD') ?: '',
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'prefix' => '',
+                'strict' => true,
+            ]);
+
+            return;
+        }
+
         $app['config']->set('database.connections.testing', ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '']);
     }
 
     protected function defineDatabaseMigrations(): void
     {
+        if (getenv('FINANCE_DOMAIN_MYSQL_TESTS') === '1') {
+            Schema::dropAllTables();
+            $this->beforeApplicationDestroyed(static fn () => Schema::dropAllTables());
+        }
+
         Schema::create('users', static function (Blueprint $table): void {
             $table->id();
             $table->string('name');

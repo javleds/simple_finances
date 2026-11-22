@@ -13,9 +13,9 @@ import { createTransactionFacilityRepository } from '../repositories/transaction
 
 const transactionFacilityRepository = createTransactionFacilityRepository();
 const defaultSummary: TransactionFacilitySummary = {
-  incomeTotal: 0,
-  outcomeTotal: 0,
-  balance: 0,
+  incomeTotal: '0.00',
+  outcomeTotal: '0.00',
+  balance: '0.00',
 };
 
 export function useTransactionFacility() {
@@ -57,9 +57,7 @@ export function useTransactionFacility() {
   const hasTransactions = computed(() => transactions.value.length > 0);
   const hasMoreTransactions = computed(() => query.hasNextPage.value);
   const isLoading = computed(() => isManualLoading.value || query.isLoading.value);
-  const isLoadingMore = computed(
-    () => isManualLoadingMore.value || query.isFetchingNextPage.value,
-  );
+  const isLoadingMore = computed(() => isManualLoadingMore.value || query.isFetchingNextPage.value);
   const hasReachedEnd = computed(
     () => hasTransactions.value && !hasMoreTransactions.value && !isLoadingMore.value,
   );
@@ -97,7 +95,12 @@ export function useTransactionFacility() {
   }
 
   async function loadMoreTransactions(): Promise<void> {
-    if (isLoading.value || isLoadingMore.value || !hasMoreTransactions.value || !lastFilters.value) {
+    if (
+      isLoading.value ||
+      isLoadingMore.value ||
+      !hasMoreTransactions.value ||
+      !lastFilters.value
+    ) {
       return;
     }
 

@@ -155,8 +155,8 @@ it('rejects already linked numbers both before sending and during confirmation',
 it('disconnects only the current user and invalidates pending codes idempotently', function (): void {
     $other = User::factory()->create();
     foreach ([$this->user, $other] as $user) {
-        WhatsAppConnection::query()->create(['user_id' => $user->id, 'phone_number' => '+52550000000'.$user->id, 'verified_at' => now()]);
-        pendingWhatsappCode($user, '+52551111111'.$user->id);
+        WhatsAppConnection::query()->create(['user_id' => $user->id, 'phone_number' => sprintf('+5255%08d', $user->id), 'verified_at' => now()]);
+        pendingWhatsappCode($user, sprintf('+5256%08d', $user->id));
     }
     $this->deleteJson('/api/whatsapp-connection', [], $this->headers)->assertOk()->assertJsonPath('data.status', 'unlinked');
     $this->deleteJson('/api/whatsapp-connection', [], $this->headers)->assertOk();

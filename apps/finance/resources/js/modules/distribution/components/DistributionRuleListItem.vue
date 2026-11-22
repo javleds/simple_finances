@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatMoney as formatExactMoney } from '@/modules/shared/lib/money';
 import { useRouter } from 'vue-router';
 
 import type { DistributionFrequency } from '@/modules/distribution/types';
@@ -9,7 +10,7 @@ const props = defineProps<{
   name: string;
   frequency: DistributionFrequency;
   outcomesCount: number;
-  totalAmount: number;
+  totalAmount: string;
 }>();
 
 const emit = defineEmits<{
@@ -19,12 +20,7 @@ const emit = defineEmits<{
 
 const router = useRouter();
 
-const currencyFormatter = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+const currencyFormatter = { format: formatExactMoney };
 
 function frequencyLabel(frequency: DistributionFrequency): string {
   return frequency === 'semi_monthly' ? 'Quincenal' : 'Mensual';
@@ -38,7 +34,7 @@ function frequencyClasses(frequency: DistributionFrequency): string {
   return 'bg-[color-mix(in_srgb,var(--app-color-success)_10%,transparent)] text-(--app-color-success)';
 }
 
-function formattedAmount(amount: number): string {
+function formattedAmount(amount: string): string {
   return currencyFormatter.format(amount);
 }
 
@@ -83,9 +79,7 @@ function openRuleDetails(): void {
         <div
           class="col-start-1 row-start-2 space-y-1 sm:col-start-auto sm:row-start-auto sm:text-right"
         >
-          <p
-            class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums"
-          >
+          <p class="text-sm font-semibold tracking-tight text-(--app-color-text) tabular-nums">
             {{ formattedAmount(props.totalAmount) }}
           </p>
           <p

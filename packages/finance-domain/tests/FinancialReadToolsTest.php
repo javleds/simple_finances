@@ -35,7 +35,7 @@ final class FinancialReadToolsTest extends TestCase
         self::assertFalse($result['complete']);
         self::assertSame('1', $result['next_cursor']);
         $summary = app(BuildDashboardPeriodSummary::class)->execute($this->actor, '2026-01-01', '2026-01-31');
-        self::assertSame(30.35, $summary['outcome_total']);
+        self::assertSame('30.35', $summary['outcome_total']);
         self::assertSame('30.35', $this->tool('summarize_expenses', $this->period())['data']['total']);
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+use FinSi\FinanceDomain\Money\Decimal;
+
 use FinSi\FinanceDomain\Enums\Frequency;
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Enums\InviteStatus;
@@ -377,14 +379,14 @@ it('creates and updates accounts and transactions through the api', function () 
 
     $accountId = $accountResponse->json('data.id');
 
-    expect((float) Account::withoutGlobalScopes()->findOrFail($accountId)->users()->findOrFail($user->id)->pivot->percentage)->toBe(100.0);
+    expect(Account::withoutGlobalScopes()->findOrFail($accountId)->users()->findOrFail($user->id)->pivot->percentage)->toBe('100.00');
 
     $this->withHeaders(apiHeaders($user))
         ->postJson('/api/transactions', [
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => 'Groceries',
-            'amount' => 250,
+            'amount' => '250.00',
             'account_id' => $accountId,
             'split_between_users' => false,
             'scheduled_at' => now()->toDateString(),
@@ -393,9 +395,9 @@ it('creates and updates accounts and transactions through the api', function () 
         ->assertCreated()
         ->assertJsonPath('data.concept', 'Groceries')
         ->assertJsonPath('meta.account.id', $accountId)
-        ->assertJsonPath('meta.account.balance', -250.0);
+        ->assertJsonPath('meta.account.balance', '-250.00');
 
-    expect(Account::findOrFail($accountId)->fresh()->balance)->toBe(-250.0);
+    expect(Account::findOrFail($accountId)->fresh()->balance)->toBe('-250.00');
 
     $transaction = Transaction::query()->where('concept', 'Groceries')->firstOrFail();
 
@@ -404,7 +406,7 @@ it('creates and updates accounts and transactions through the api', function () 
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => 'Groceries and fuel',
-            'amount' => 300,
+            'amount' => '300.00',
             'account_id' => $accountId,
             'split_between_users' => false,
             'scheduled_at' => now()->toDateString(),
@@ -413,16 +415,16 @@ it('creates and updates accounts and transactions through the api', function () 
         ->assertOk()
         ->assertJsonPath('data.concept', 'Groceries and fuel')
         ->assertJsonPath('meta.account.id', $accountId)
-        ->assertJsonPath('meta.account.balance', -300.0);
+        ->assertJsonPath('meta.account.balance', '-300.00');
 
     $this->withHeaders(apiHeaders($user))
         ->deleteJson("/api/transactions/{$transaction->id}")
         ->assertOk()
         ->assertJsonPath('meta.account.id', $accountId)
-        ->assertJsonPath('meta.account.balance', 0.0)
+        ->assertJsonPath('meta.account.balance', '0.00')
         ->assertJsonPath('meta.subtransactions', []);
 
-    expect(Account::findOrFail($accountId)->fresh()->balance)->toBe(0.0);
+    expect(Account::findOrFail($accountId)->fresh()->balance)->toBe('0.00');
 });
 
 it('rejects pending transaction writes', function () {
@@ -435,7 +437,7 @@ it('rejects pending transaction writes', function () {
             'type' => 'outcome',
             'status' => 'pending',
             'concept' => 'Unsupported pending expense',
-            'amount' => 100,
+            'amount' => '100.00',
             'split_between_users' => false,
             'scheduled_at' => now()->toDateString(),
         ])
@@ -570,16 +572,16 @@ it('filters soft deleted accounts by deleted at state', function () {
 it('returns member summaries for shared accounts', function () {
     $owner = User::factory()->create(['name' => 'Account Owner']);
     $sharedUser = User::factory()->create(['name' => 'Shared User']);
-    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => '0.00']);
     $account->users()->attach([
-        $owner->id => ['percentage' => 0],
-        $sharedUser->id => ['percentage' => 50],
+        $owner->id => ['percentage' => '0.00'],
+        $sharedUser->id => ['percentage' => '50.00'],
     ]);
 
     Transaction::factory()->income()->completed()->create([
         'account_id' => $account->id,
         'user_id' => $owner->id,
-        'amount' => 300,
+        'amount' => '300.00',
         'custodian_user_id' => $owner->id,
     ]);
 
@@ -598,10 +600,10 @@ it('returns member summaries for shared accounts', function () {
 it('lists shared account reimbursements and settles them through the api', function () {
     $owner = User::factory()->create(['name' => 'Account Owner']);
     $sharedUser = User::factory()->create(['name' => 'Shared User']);
-    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => '0.00']);
     $account->users()->sync([
-        $owner->id => ['percentage' => 50],
-        $sharedUser->id => ['percentage' => 50],
+        $owner->id => ['percentage' => '50.00'],
+        $sharedUser->id => ['percentage' => '50.00'],
     ]);
 
     $this->actingAs($sharedUser);
@@ -609,14 +611,14 @@ it('lists shared account reimbursements and settles them through the api', funct
         'type' => \FinSi\FinanceDomain\Enums\TransactionType::Outcome,
         'status' => \FinSi\FinanceDomain\Enums\TransactionStatus::Completed,
         'concept' => 'Shared dinner',
-        'amount' => 1000,
+        'amount' => '1000.00',
         'account_id' => $account->id,
         'paid_by_user_id' => $sharedUser->id,
         'payment_source' => \FinSi\FinanceDomain\Enums\TransactionPaymentSource::MemberOutOfPocket,
         'split_between_users' => true,
         'user_payments' => [
-            ['user_id' => $owner->id, 'percentage' => 50],
-            ['user_id' => $sharedUser->id, 'percentage' => 50],
+            ['user_id' => $owner->id, 'percentage' => '50.00'],
+            ['user_id' => $sharedUser->id, 'percentage' => '50.00'],
         ],
         'scheduled_at' => now(),
         'financial_goal_id' => null,
@@ -627,35 +629,35 @@ it('lists shared account reimbursements and settles them through the api', funct
         ->assertOk()
         ->assertJsonPath('data.0.pending_reimbursements.0.from_user_id', $owner->id)
         ->assertJsonPath('data.0.pending_reimbursements.0.to_user_id', $sharedUser->id)
-        ->assertJsonPath('data.0.pending_reimbursements.0.amount', 500.0)
+        ->assertJsonPath('data.0.pending_reimbursements.0.amount', '500.00')
         ->assertJsonPath('data.0.pending_reimbursements.0.items.0.transaction_id', (string) $transaction->id)
         ->assertJsonPath('data.0.pending_reimbursements.0.items.0.concept', 'Shared dinner')
-        ->assertJsonPath('data.0.pending_reimbursements.0.items.0.amount', 500.0);
+        ->assertJsonPath('data.0.pending_reimbursements.0.items.0.amount', '500.00');
 
     $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/member-transfers", [
             'from_user_id' => $owner->id,
             'to_user_id' => $sharedUser->id,
-            'amount' => 500,
+            'amount' => '500.00',
             'description' => 'Dinner reimbursement',
         ])
         ->assertCreated()
-        ->assertJsonPath('meta.account.balance', 0.0)
+        ->assertJsonPath('meta.account.balance', '0.00')
         ->assertJsonPath('meta.pending_reimbursements', [])
-        ->assertJsonPath('meta.settlements_by_user.0.amount', 0.0)
-        ->assertJsonPath('meta.settlements_by_user.1.amount', 0.0);
+        ->assertJsonPath('meta.settlements_by_user.0.amount', '0.00')
+        ->assertJsonPath('meta.settlements_by_user.1.amount', '0.00');
 
     expect(Transaction::query()
         ->where('account_id', $account->id)
         ->where('parent_transaction_id', $transaction->id)
         ->where('concept', 'Dinner reimbursement: Shared dinner')
         ->whereNotNull('legacy_migrated_at')
-        ->sum('amount'))->toBe(500);
+        ->sum('amount'))->toBe('500.00');
 });
 
 it('returns member summaries for accounts without shared users', function () {
     $owner = User::factory()->create(['name' => 'Single Owner']);
-    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => '0.00']);
     $account->users()->attach($owner->id);
 
     $this->withHeaders(apiHeaders($owner))
@@ -663,7 +665,7 @@ it('returns member summaries for accounts without shared users', function () {
         ->assertOk()
         ->assertJsonPath('data.custody_by_user.0.user_id', $owner->id)
         ->assertJsonPath('data.custody_by_user.0.user_name', 'Single Owner')
-        ->assertJsonPath('data.custody_by_user.0.amount', 0.0)
+        ->assertJsonPath('data.custody_by_user.0.amount', '0.00')
         ->assertJsonCount(1, 'data.custody_by_user')
         ->assertJsonPath('data.pending_reimbursements', []);
 });
@@ -684,7 +686,7 @@ it('creates account invites and lets the invited user accept them', function () 
         ->postJson('/api/account-invites', [
             'account_id' => $account->id,
             'email' => $invitee->email,
-            'percentage' => 50,
+            'percentage' => '50.00',
         ])
         ->assertCreated();
 
@@ -753,7 +755,7 @@ it('sends the invitation email before persisting account invites from the nested
     $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/invites", [
             'email' => 'external@example.com',
-            'percentage' => 20,
+            'percentage' => '20.00',
         ])
         ->assertCreated();
 
@@ -874,32 +876,32 @@ it('manages nested account users, invites, transactions and financial goals', fu
     $owner = User::factory()->create();
     $member = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $owner->id]);
-    $account->users()->attach($owner->id, ['percentage' => 100]);
+    $account->users()->attach($owner->id, ['percentage' => '100.00']);
 
     $userResponse = $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/users", [
             'user_id' => $member->id,
-            'percentage' => 40,
+            'percentage' => '40.00',
         ])
         ->assertCreated();
 
     $users = $account->fresh()->users()->get();
 
-    expect((float) $users->firstWhere('id', $member->id)->pivot->percentage)->toBe(40.0)
-        ->and((float) $users->firstWhere('id', $owner->id)->pivot->percentage)->toBe(60.0)
-        ->and(round($users->sum(fn (User $user): float => (float) $user->pivot->percentage), 2))->toBe(100.0);
+    expect($users->firstWhere('id', $member->id)->pivot->percentage)->toBe('40.00')
+        ->and($users->firstWhere('id', $owner->id)->pivot->percentage)->toBe('60.00')
+        ->and(Decimal::sum($users->map(fn (User $user): string => $user->pivot->percentage)))->toBe('100.00');
 
     $this->withHeaders(apiHeaders($owner))
         ->putJson("/api/accounts/{$account->id}/users/{$member->id}", [
-            'percentage' => 55,
+            'percentage' => '55.00',
         ])
         ->assertOk();
 
     $users = $account->fresh()->users()->get();
 
-    expect((float) $users->firstWhere('id', $owner->id)->pivot->percentage)->toBe(45.0)
-        ->and((float) $users->firstWhere('id', $member->id)->pivot->percentage)->toBe(55.0)
-        ->and(round($users->sum(fn (User $user): float => (float) $user->pivot->percentage), 2))->toBe(100.0);
+    expect($users->firstWhere('id', $owner->id)->pivot->percentage)->toBe('45.00')
+        ->and($users->firstWhere('id', $member->id)->pivot->percentage)->toBe('55.00')
+        ->and(Decimal::sum($users->map(fn (User $user): string => $user->pivot->percentage)))->toBe('100.00');
 
     $this->withHeaders(apiHeaders($owner))
         ->getJson("/api/accounts/{$account->id}/users?percentage=55")
@@ -914,12 +916,12 @@ it('manages nested account users, invites, transactions and financial goals', fu
 
     expect($users)->toHaveCount(1)
         ->and($users->first()->id)->toBe($owner->id)
-        ->and((float) $users->first()->pivot->percentage)->toBe(100.0);
+        ->and($users->first()->pivot->percentage)->toBe('100.00');
 
     $goalResponse = $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/financial-goals", [
             'name' => 'Emergency Fund',
-            'amount' => 5000,
+            'amount' => '5000.00',
             'must_completed_at' => now()->addMonth()->toDateString(),
         ])
         ->assertCreated();
@@ -931,7 +933,7 @@ it('manages nested account users, invites, transactions and financial goals', fu
             'type' => 'income',
             'status' => 'completed',
             'concept' => 'Salary',
-            'amount' => 5000,
+            'amount' => '5000.00',
             'split_between_users' => false,
             'scheduled_at' => now()->toDateString(),
             'financial_goal_id' => $goalId,
@@ -939,7 +941,7 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ->assertCreated()
         ->assertJsonPath('data.financial_goal_id', $goalId)
         ->assertJsonPath('meta.account.id', $account->id)
-        ->assertJsonPath('meta.account.balance', 5000.0);
+        ->assertJsonPath('meta.account.balance', '5000.00');
 
     $transactionId = $transactionResponse->json('data.id');
 
@@ -951,11 +953,11 @@ it('manages nested account users, invites, transactions and financial goals', fu
     $goalsResponse = $this->withHeaders(apiHeaders($owner))
         ->getJson("/api/accounts/{$account->id}/financial-goals")
         ->assertOk()
-        ->assertJsonPath('data.0.achieved_amount', 5000.0)
-        ->assertJsonPath('data.0.progress', 100.0);
+        ->assertJsonPath('data.0.achieved_amount', '5000.00')
+        ->assertJsonPath('data.0.progress', 100.00);
 
-    expect($goalsResponse->json('data.0.amount'))->toBeFloat()
-        ->and($goalsResponse->json('data.0.achieved_amount'))->toBeFloat()
+    expect($goalsResponse->json('data.0.amount'))->toBeString()
+        ->and($goalsResponse->json('data.0.achieved_amount'))->toBeString()
         ->and($goalsResponse->json('data.0.progress'))->toBeFloat();
 
     $this->withHeaders(apiHeaders($owner))
@@ -963,7 +965,7 @@ it('manages nested account users, invites, transactions and financial goals', fu
             'type' => 'income',
             'status' => 'completed',
             'concept' => 'Salary Updated',
-            'amount' => 4500,
+            'amount' => '4500.00',
             'split_between_users' => false,
             'scheduled_at' => now()->toDateString(),
             'financial_goal_id' => $goalId,
@@ -974,24 +976,24 @@ it('manages nested account users, invites, transactions and financial goals', fu
     $this->withHeaders(apiHeaders($owner))
         ->getJson("/api/accounts/{$account->id}/financial-goals")
         ->assertOk()
-        ->assertJsonPath('data.0.achieved_amount', 4500.0)
-        ->assertJsonPath('data.0.progress', 90.0);
+        ->assertJsonPath('data.0.achieved_amount', '4500.00')
+        ->assertJsonPath('data.0.progress', 90.00);
 
     $this->withHeaders(apiHeaders($owner))
         ->putJson("/api/accounts/{$account->id}/financial-goals/{$goalId}", [
             'name' => 'Emergency Fund',
-            'amount' => 9000,
+            'amount' => '9000.00',
             'must_completed_at' => now()->addMonth()->toDateString(),
         ])
         ->assertOk()
-        ->assertJsonPath('data.amount', 9000.0)
-        ->assertJsonPath('data.achieved_amount', 4500.0)
-        ->assertJsonPath('data.progress', 50.0);
+        ->assertJsonPath('data.amount', '9000.00')
+        ->assertJsonPath('data.achieved_amount', '4500.00')
+        ->assertJsonPath('data.progress', 50.00);
 
     $inviteResponse = $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/invites", [
             'email' => 'invitee@example.com',
-            'percentage' => 20,
+            'percentage' => '20.00',
         ])
         ->assertCreated();
 
@@ -1010,13 +1012,13 @@ it('manages nested account users, invites, transactions and financial goals', fu
         ->deleteJson("/api/accounts/{$account->id}/transactions/{$transactionId}")
         ->assertOk()
         ->assertJsonPath('meta.account.id', $account->id)
-        ->assertJsonPath('meta.account.balance', 0.0);
+        ->assertJsonPath('meta.account.balance', '0.00');
 
     $this->withHeaders(apiHeaders($owner))
         ->getJson("/api/accounts/{$account->id}/financial-goals")
         ->assertOk()
-        ->assertJsonPath('data.0.achieved_amount', 0.0)
-        ->assertJsonPath('data.0.progress', 0.0);
+        ->assertJsonPath('data.0.achieved_amount', '0.00')
+        ->assertJsonPath('data.0.progress', 0.00);
 
     $this->withHeaders(apiHeaders($owner))
         ->deleteJson("/api/accounts/{$account->id}/financial-goals/{$goalId}")
@@ -1028,8 +1030,8 @@ it('lets a non owner leave a shared account only when they have no assigned amou
     $member = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $owner->id]);
     $account->users()->attach([
-        $owner->id => ['percentage' => 100],
-        $member->id => ['percentage' => 0],
+        $owner->id => ['percentage' => '100.00'],
+        $member->id => ['percentage' => '0.00'],
     ]);
 
     $this->withHeaders(apiHeaders($member))
@@ -1044,20 +1046,20 @@ it('blocks leaving a shared account while the member has percentage custody or p
     $member = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $owner->id]);
     $account->users()->attach([
-        $owner->id => ['percentage' => 100],
-        $member->id => ['percentage' => 10],
+        $owner->id => ['percentage' => '100.00'],
+        $member->id => ['percentage' => '10.00'],
     ]);
 
     $this->withHeaders(apiHeaders($member))
         ->deleteJson("/api/accounts/{$account->id}/users/{$member->id}")
         ->assertStatus(422);
 
-    $account->users()->updateExistingPivot($member->id, ['percentage' => 0]);
+    $account->users()->updateExistingPivot($member->id, ['percentage' => '0.00']);
     AccountMemberLedgerEntry::query()->create([
         'account_id' => $account->id,
         'user_id' => $member->id,
         'type' => AccountMemberLedgerEntryType::IncomeCustody,
-        'amount' => 25.0,
+        'amount' => '25.00',
         'description' => 'Member custody',
         'occurred_at' => now(),
     ]);
@@ -1072,7 +1074,7 @@ it('blocks leaving a shared account while the member has percentage custody or p
         'user_id' => $member->id,
         'related_user_id' => $owner->id,
         'type' => AccountMemberLedgerEntryType::ExpenseShare,
-        'amount' => -30.0,
+        'amount' => '-30.00',
         'description' => 'Pending share',
         'occurred_at' => now(),
     ]);
@@ -1093,17 +1095,17 @@ it('bulk updates account user percentages with an exact normalized total', funct
     $account = Account::factory()->create(['user_id' => $owner->id]);
 
     $account->users()->sync([
-        $owner->id => ['percentage' => 100],
-        $memberOne->id => ['percentage' => 0],
-        $memberTwo->id => ['percentage' => 0],
+        $owner->id => ['percentage' => '100.00'],
+        $memberOne->id => ['percentage' => '0.00'],
+        $memberTwo->id => ['percentage' => '0.00'],
     ]);
 
     $response = $this->withHeaders(apiHeaders($owner))
         ->putJson("/api/accounts/{$account->id}/users", [
             'users' => [
-                ['user_id' => $owner->id, 'percentage' => 33.334],
-                ['user_id' => $memberOne->id, 'percentage' => 33.331],
-                ['user_id' => $memberTwo->id, 'percentage' => 33.335],
+                ['user_id' => $owner->id, 'percentage' => '33.33'],
+                ['user_id' => $memberOne->id, 'percentage' => '33.33'],
+                ['user_id' => $memberTwo->id, 'percentage' => '33.34'],
             ],
         ])
         ->assertOk()
@@ -1133,10 +1135,10 @@ it('bulk updates account user percentages with an exact normalized total', funct
             'percentage' => '33.34',
         ],
     ])
-        ->and((float) $response->json('meta.total_percentage'))->toBe(100.0)
-        ->and((float) $account->fresh()->users()->findOrFail($owner->id)->pivot->percentage)->toBe(33.33)
-        ->and((float) $account->fresh()->users()->findOrFail($memberOne->id)->pivot->percentage)->toBe(33.33)
-        ->and((float) $account->fresh()->users()->findOrFail($memberTwo->id)->pivot->percentage)->toBe(33.34);
+        ->and($response->json('meta.total_percentage'))->toBe('100.00')
+        ->and($account->fresh()->users()->findOrFail($owner->id)->pivot->percentage)->toBe('33.33')
+        ->and($account->fresh()->users()->findOrFail($memberOne->id)->pivot->percentage)->toBe('33.33')
+        ->and($account->fresh()->users()->findOrFail($memberTwo->id)->pivot->percentage)->toBe('33.34');
 });
 
 it('rejects bulk account user percentage updates when the total is not exactly one hundred', function () {
@@ -1145,15 +1147,15 @@ it('rejects bulk account user percentage updates when the total is not exactly o
     $account = Account::factory()->create(['user_id' => $owner->id]);
 
     $account->users()->sync([
-        $owner->id => ['percentage' => 50],
-        $member->id => ['percentage' => 50],
+        $owner->id => ['percentage' => '50.00'],
+        $member->id => ['percentage' => '50.00'],
     ]);
 
     $this->withHeaders(apiHeaders($owner))
         ->putJson("/api/accounts/{$account->id}/users", [
             'users' => [
-                ['user_id' => $owner->id, 'percentage' => 60],
-                ['user_id' => $member->id, 'percentage' => 39.99],
+                ['user_id' => $owner->id, 'percentage' => '60.00'],
+                ['user_id' => $member->id, 'percentage' => '39.99'],
             ],
         ])
         ->assertStatus(422)
@@ -1167,15 +1169,15 @@ it('rejects bulk account user percentage updates when the request users do not m
     $account = Account::factory()->create(['user_id' => $owner->id]);
 
     $account->users()->sync([
-        $owner->id => ['percentage' => 50],
-        $member->id => ['percentage' => 50],
+        $owner->id => ['percentage' => '50.00'],
+        $member->id => ['percentage' => '50.00'],
     ]);
 
     $this->withHeaders(apiHeaders($owner))
         ->putJson("/api/accounts/{$account->id}/users", [
             'users' => [
-                ['user_id' => $owner->id, 'percentage' => 50],
-                ['user_id' => $outsider->id, 'percentage' => 50],
+                ['user_id' => $owner->id, 'percentage' => '50.00'],
+                ['user_id' => $outsider->id, 'percentage' => '50.00'],
             ],
         ])
         ->assertStatus(422)
@@ -1187,19 +1189,19 @@ it('returns the created transaction with allocations when storing a split accoun
     $memberOne = User::factory()->create();
     $memberTwo = User::factory()->create();
     $memberThree = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => '1000.00']);
 
-    $account->users()->attach($owner->id, ['percentage' => 100]);
-    $account->users()->attach($memberOne->id, ['percentage' => 33.0]);
-    $account->users()->attach($memberTwo->id, ['percentage' => 33.33]);
-    $account->users()->attach($memberThree->id, ['percentage' => 33.67]);
+    $account->users()->attach($owner->id, ['percentage' => '100.00']);
+    $account->users()->attach($memberOne->id, ['percentage' => '33.00']);
+    $account->users()->attach($memberTwo->id, ['percentage' => '33.33']);
+    $account->users()->attach($memberThree->id, ['percentage' => '33.67']);
     Transaction::factory()
         ->income()
         ->completed()
         ->create([
             'account_id' => $account->id,
             'user_id' => $owner->id,
-            'amount' => 1000.0,
+            'amount' => '1000.00',
         ]);
 
     $response = $this->withHeaders(apiHeaders($owner))
@@ -1207,20 +1209,20 @@ it('returns the created transaction with allocations when storing a split accoun
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => 'Shared dinner',
-            'amount' => 300,
+            'amount' => '300.00',
             'split_between_users' => true,
             'user_payments' => [
                 [
                     'user_id' => $memberOne->id,
-                    'percentage' => 33.0,
+                    'percentage' => '33.00',
                 ],
                 [
                     'user_id' => $memberTwo->id,
-                    'percentage' => 33.33,
+                    'percentage' => '33.33',
                 ],
                 [
                     'user_id' => $memberThree->id,
-                    'percentage' => 33.67,
+                    'percentage' => '33.67',
                 ],
             ],
             'scheduled_at' => now()->toDateString(),
@@ -1233,7 +1235,7 @@ it('returns the created transaction with allocations when storing a split accoun
         ->assertJsonCount(3, 'data.allocations')
         ->assertJsonPath('meta.account.id', $account->id)
         ->assertJsonPath('meta.settlements_by_user.0.user_id', $owner->id)
-        ->assertJsonPath('meta.settlements_by_user.0.amount', 0.0)
+        ->assertJsonPath('meta.settlements_by_user.0.amount', '0.00')
         ->assertJsonPath('meta.pending_reimbursements', []);
 
     $transaction = $response->json('data');
@@ -1241,11 +1243,11 @@ it('returns the created transaction with allocations when storing a split accoun
 
     expect(Transaction::query()->whereKey($transaction['id'])->exists())->toBeTrue()
         ->and(Transaction::query()->where('parent_transaction_id', $transaction['id'])->count())->toBe(0)
-        ->and((float) $transaction['amount'])->toBe(300.0)
+        ->and($transaction['amount'])->toBe('300.00')
         ->and($allocations->pluck('user_id')->all())->toBe([$memberOne->id, $memberTwo->id, $memberThree->id])
-        ->and($allocations->pluck('percentage')->all())->toBe([33.0, 33.33, 33.67])
-        ->and($allocations->pluck('amount')->all())->toBe([99.0, 99.99, 101.01])
-        ->and((float) $response->json('meta.account.balance'))->toBe(700.0);
+        ->and($allocations->pluck('percentage')->all())->toBe(['33.00', '33.33', '33.67'])
+        ->and($allocations->pluck('amount')->all())->toBe(['99.00', '99.99', '101.01'])
+        ->and($response->json('meta.account.balance'))->toBe('700.00');
 
     $this->withHeaders(apiHeaders($owner))
         ->deleteJson("/api/accounts/{$account->id}/transactions/{$transaction['id']}")
@@ -1262,30 +1264,30 @@ it('lists split transactions as single movements with allocations', function () 
     $memberThree = User::factory()->create();
     $account = Account::factory()->create(['user_id' => $owner->id]);
 
-    $account->users()->attach($owner->id, ['percentage' => 100]);
-    $account->users()->attach($memberOne->id, ['percentage' => 33.33]);
-    $account->users()->attach($memberTwo->id, ['percentage' => 33.33]);
-    $account->users()->attach($memberThree->id, ['percentage' => 33.34]);
+    $account->users()->attach($owner->id, ['percentage' => '100.00']);
+    $account->users()->attach($memberOne->id, ['percentage' => '33.33']);
+    $account->users()->attach($memberTwo->id, ['percentage' => '33.33']);
+    $account->users()->attach($memberThree->id, ['percentage' => '33.34']);
     $this->withHeaders(apiHeaders($owner))
         ->postJson("/api/accounts/{$account->id}/transactions", [
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => 'Split order',
-            'amount' => 100,
+            'amount' => '100.00',
             'payment_source' => 'member_out_of_pocket',
             'split_between_users' => true,
             'user_payments' => [
                 [
                     'user_id' => $memberOne->id,
-                    'percentage' => 33.33,
+                    'percentage' => '33.33',
                 ],
                 [
                     'user_id' => $memberTwo->id,
-                    'percentage' => 33.33,
+                    'percentage' => '33.33',
                 ],
                 [
                     'user_id' => $memberThree->id,
-                    'percentage' => 33.34,
+                    'percentage' => '33.34',
                 ],
             ],
             'scheduled_at' => now()->toDateString(),
@@ -1308,10 +1310,10 @@ it('lists split transactions as single movements with allocations', function () 
 it('marks account transactions that the current user still needs to reimburse', function () {
     $owner = User::factory()->create();
     $sharedUser = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 0.0]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => '0.00']);
     $account->users()->sync([
-        $owner->id => ['percentage' => 50],
-        $sharedUser->id => ['percentage' => 50],
+        $owner->id => ['percentage' => '50.00'],
+        $sharedUser->id => ['percentage' => '50.00'],
     ]);
 
     $this->actingAs($sharedUser);
@@ -1319,14 +1321,14 @@ it('marks account transactions that the current user still needs to reimburse', 
         'type' => \FinSi\FinanceDomain\Enums\TransactionType::Outcome,
         'status' => \FinSi\FinanceDomain\Enums\TransactionStatus::Completed,
         'concept' => 'Shared supplies',
-        'amount' => 800,
+        'amount' => '800.00',
         'account_id' => $account->id,
         'paid_by_user_id' => $sharedUser->id,
         'payment_source' => \FinSi\FinanceDomain\Enums\TransactionPaymentSource::MemberOutOfPocket,
         'split_between_users' => true,
         'user_payments' => [
-            ['user_id' => $owner->id, 'percentage' => 50],
-            ['user_id' => $sharedUser->id, 'percentage' => 50],
+            ['user_id' => $owner->id, 'percentage' => '50.00'],
+            ['user_id' => $sharedUser->id, 'percentage' => '50.00'],
         ],
         'scheduled_at' => now(),
         'financial_goal_id' => null,
@@ -1337,25 +1339,25 @@ it('marks account transactions that the current user still needs to reimburse', 
         ->getJson("/api/accounts/{$account->id}/transactions")
         ->assertOk()
         ->assertJsonPath('data.0.concept', 'Shared supplies')
-        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', 400.0)
-        ->assertJsonPath('data.0.current_user_receivable_reimbursement_amount', 0.0);
+        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', '400.00')
+        ->assertJsonPath('data.0.current_user_receivable_reimbursement_amount', '0.00');
 
     $this->actingAs($sharedUser)
         ->withHeaders(apiHeaders($sharedUser))
         ->getJson("/api/accounts/{$account->id}/transactions")
         ->assertOk()
-        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', 0.0)
-        ->assertJsonPath('data.0.current_user_receivable_reimbursement_amount', 400.0);
+        ->assertJsonPath('data.0.current_user_pending_reimbursement_amount', '0.00')
+        ->assertJsonPath('data.0.current_user_receivable_reimbursement_amount', '400.00');
 });
 
 it('updates split allocations when editing a shared transaction through the api', function () {
     $owner = User::factory()->create();
     $member = User::factory()->create();
-    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => 1000.0]);
+    $account = Account::factory()->create(['user_id' => $owner->id, 'balance' => '1000.00']);
 
     $account->users()->sync([
-        $owner->id => ['percentage' => 50],
-        $member->id => ['percentage' => 50],
+        $owner->id => ['percentage' => '50.00'],
+        $member->id => ['percentage' => '50.00'],
     ]);
     Transaction::factory()
         ->income()
@@ -1363,7 +1365,7 @@ it('updates split allocations when editing a shared transaction through the api'
         ->create([
             'account_id' => $account->id,
             'user_id' => $owner->id,
-            'amount' => 1000.0,
+            'amount' => '1000.00',
         ]);
 
     $createResponse = $this->withHeaders(apiHeaders($owner))
@@ -1371,16 +1373,16 @@ it('updates split allocations when editing a shared transaction through the api'
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => 'Original dinner',
-            'amount' => 200,
+            'amount' => '200.00',
             'split_between_users' => true,
             'user_payments' => [
                 [
                     'user_id' => $owner->id,
-                    'percentage' => 50,
+                    'percentage' => '50.00',
                 ],
                 [
                     'user_id' => $member->id,
-                    'percentage' => 50,
+                    'percentage' => '50.00',
                 ],
             ],
             'scheduled_at' => '2026-01-10',
@@ -1394,16 +1396,16 @@ it('updates split allocations when editing a shared transaction through the api'
             'type' => 'outcome',
             'status' => 'completed',
             'concept' => 'Updated dinner',
-            'amount' => 200,
+            'amount' => '200.00',
             'split_between_users' => true,
             'user_payments' => [
                 [
                     'user_id' => $owner->id,
-                    'percentage' => 25,
+                    'percentage' => '25.00',
                 ],
                 [
                     'user_id' => $member->id,
-                    'percentage' => 75,
+                    'percentage' => '75.00',
                 ],
             ],
             'scheduled_at' => '2026-01-20',
@@ -1413,8 +1415,8 @@ it('updates split allocations when editing a shared transaction through the api'
         ->assertJsonCount(2, 'data.allocations')
         ->assertJsonPath('meta.pending_reimbursements', []);
 
-    expect(collect($updateResponse->json('data.allocations'))->pluck('amount')->all())->toBe([50.0, 150.0])
-        ->and(collect($updateResponse->json('data.allocations'))->pluck('percentage')->all())->toBe([25.0, 75.0])
+    expect(collect($updateResponse->json('data.allocations'))->pluck('amount')->all())->toBe(['50.00', '150.00'])
+        ->and(collect($updateResponse->json('data.allocations'))->pluck('percentage')->all())->toBe(['25.00', '75.00'])
         ->and(str_starts_with($updateResponse->json('data.scheduled_at'), '2026-01-20'))->toBeTrue();
 });
 
@@ -1434,7 +1436,7 @@ it('creates subscription payments and registers a transaction when paid', functi
         ->postJson('/api/subscription-payments', [
             'subscription_id' => $subscription->id,
             'scheduled_at' => now()->toDateString(),
-            'amount' => 199.99,
+            'amount' => '199.99',
             'status' => 'paid',
             'account_id' => $account->id,
         ])
@@ -1553,7 +1555,7 @@ it('manages fixed incomes, partials and outcomes', function () {
         ->postJson('/api/partial-fixed-incomes', [
             'fixed_income_id' => $fixedIncomeId,
             'name' => 'Bonus',
-            'amount' => 1000,
+            'amount' => '1000.00',
         ])
         ->assertCreated();
 
@@ -1561,7 +1563,7 @@ it('manages fixed incomes, partials and outcomes', function () {
         ->postJson('/api/fixed-outcomes', [
             'fixed_income_id' => $fixedIncomeId,
             'name' => 'Savings',
-            'amount' => 200,
+            'amount' => '200.00',
             'type' => 'savings',
         ])
         ->assertCreated();

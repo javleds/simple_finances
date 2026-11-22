@@ -6,10 +6,8 @@ namespace App\Services\PersonalMoney;
 
 use FinSi\FinanceDomain\Models\PersonalMoneyLink;
 use FinSi\FinanceDomain\Models\Transaction;
+use FinSi\FinanceDomain\Money\Decimal;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Facades\DB;
-
-use function round;
 
 class SyncPersonalMoneyTransactionLinks
 {
@@ -27,10 +25,15 @@ class SyncPersonalMoneyTransactionLinks
             return;
         }
 
-        $links->update([
-            'cash_effect' => DB::raw('CASE WHEN kind = \'personal_income\' THEN ' . round($transaction->amount, 2) . ' ELSE ' . -round($transaction->amount, 2) . ' END'),
+        $values = [
             'concept'     => $transaction->concept,
             'occurred_at' => $transaction->scheduled_at,
+        ];
+        (clone $links)->where('kind', 'personal_income')->update([
+            ...$values, 'cash_effect' => Decimal::normalize($transaction->amount),
+        ]);
+        (clone $links)->where('kind', '!=', 'personal_income')->update([
+            ...$values, 'cash_effect' => Decimal::negate($transaction->amount),
         ]);
     }
     private const SOURCE_CONTEXT_FIELDS = [

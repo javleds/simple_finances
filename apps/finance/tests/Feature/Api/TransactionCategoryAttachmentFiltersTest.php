@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use FinSi\FinanceDomain\Money\Decimal;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\Category;
 use FinSi\FinanceDomain\Models\Transaction;
@@ -19,9 +20,9 @@ beforeEach(function (): void {
     $this->withHeaders(['Authorization' => 'Bearer '.\Tests\Support\AcceptedUserToken::generate($this->owner)['token']]);
 });
 
-function categoryFilterTransaction(\Tests\TestCase $context, ?Category $category, float $amount = 10, array $attributes = []): Transaction
+function categoryFilterTransaction(\Tests\TestCase $context, ?Category $category, string|int $amount = 10, array $attributes = []): Transaction
 {
-    return Transaction::factory()->outcome()->completed()->create(array_replace(['account_id' => $context->account->id, 'user_id' => $context->owner->id, 'category_id' => $category?->id, 'amount' => $amount, 'scheduled_at' => '2026-10-10', 'concept' => 'Receipt'], $attributes));
+    return Transaction::factory()->outcome()->completed()->create(array_replace(['account_id' => $context->account->id, 'user_id' => $context->owner->id, 'category_id' => $category?->id, 'amount' => Decimal::normalize($amount), 'scheduled_at' => '2026-10-10', 'concept' => 'Receipt'], $attributes));
 }
 
 function categoryFilterAttachment(Transaction $transaction, string $status, bool $deleted = false): void
@@ -42,7 +43,7 @@ it('groups selected categories and uncategorized while combining attachments and
     $base = $nested ? '/api/accounts/'.$this->account->id.'/transactions' : '/api/transactions';
     $response = $this->getJson($base.'?'.http_build_query(['category_ids' => [$this->personal->id], 'uncategorized' => 1, 'has_attachments' => 1, 'search' => 'Receipt', 'per_page' => 1]))->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.total', 2);
     if (! $nested) {
-        $response->assertJsonPath('meta.summary.outcome_total', 40.0);
+        $response->assertJsonPath('meta.summary.outcome_total', '40.00');
     }
     $this->getJson($base.'?category_ids='.$this->personal->id.','.$this->shared->id)->assertOk()->assertJsonCount(2, 'data');
 })->with([false, true]);
@@ -68,7 +69,7 @@ it('rejects malformed filters consistently in both list endpoints', function (st
 it('limits category selections and returns empty for unrelated categories without leaking options', function (): void {
     $this->getJson('/api/transactions?'.http_build_query(['category_ids' => range(1, 101)]))->assertUnprocessable();
     categoryFilterTransaction($this, $this->personal);
-    $this->getJson('/api/transactions?category_ids=999999')->assertOk()->assertJsonCount(0, 'data')->assertJsonPath('meta.summary.outcome_total', 0.0);
+    $this->getJson('/api/transactions?category_ids=999999')->assertOk()->assertJsonCount(0, 'data')->assertJsonPath('meta.summary.outcome_total', '0.00');
 });
 
 it('returns only used categories in the visible scope independently of dates and disambiguates account names', function (): void {
