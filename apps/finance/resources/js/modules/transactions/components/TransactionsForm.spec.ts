@@ -545,7 +545,7 @@ it('offers virtual custodians as payers without adding them to the expense split
     wrapper.unmount();
 });
 
-it('offers virtual custodians for shared income without converting individual accounts to shared', async () => {
+it('offers virtual custodians for shared income', async () => {
     const wrapper = render({
         virtualCustodians: [{ id: '9', name: 'Mercadopago' }],
         initialValues: { type: 'income', concept: 'Ingreso', amount: 20, custodianUserId: '9' },
@@ -558,15 +558,78 @@ it('offers virtual custodians for shared income without converting individual ac
     ).toContain('9');
     expect(await submit(wrapper)).toMatchObject({ custodianUserId: '9' });
     wrapper.unmount();
-    const individual = render({
-        accountUsers: members.slice(0, 1),
-        virtualCustodians: [{ id: '9', name: 'Mercadopago' }],
+});
+
+describe('single member accounts with virtual custodians', () => {
+    it('shows payment choices while a custodian is active and hides them after retirement', async () => {
+        personalMoney.value = undefined;
+        const wrapper = render({
+            accountUsers: members.slice(0, 1),
+            currentUserId: '1',
+            virtualCustodians: [{ id: '3', name: 'Wallet' }],
+            initialValues: {
+                concept: 'Purchase',
+                amount: 20,
+                paidByUserId: '3',
+                paymentSource: 'member_out_of_pocket',
+            },
+        });
+        expect(wrapper.find('#transaction-paid-by').exists()).toBe(true);
+        expect(wrapper.find('#transaction-payment-source').exists()).toBe(true);
+        expect(await submit(wrapper)).toMatchObject({
+            paidByUserId: '3',
+            paymentSource: 'member_out_of_pocket',
+        });
+        await wrapper.setProps({ virtualCustodians: [] });
+        expect(wrapper.find('#transaction-paid-by').exists()).toBe(false);
+        expect(wrapper.find('#transaction-payment-source').exists()).toBe(false);
     });
-    expect(individual.find('#transaction-paid-by').exists()).toBe(false);
-    expect(await submit(individual)).toMatchObject({
-        paidByUserId: '1',
-        paymentSource: 'account_fund',
-        splitBetweenUsers: false,
+
+    it('allows choosing an income custodian without adding a real member', async () => {
+        personalMoney.value = undefined;
+        const wrapper = render({
+            accountUsers: members.slice(0, 1),
+            virtualCustodians: [{ id: '3', name: 'Wallet' }],
+            initialValues: { type: 'income', concept: 'Deposit', amount: 20, custodianUserId: '3' },
+        });
+        expect(wrapper.find('#transaction-custodian').exists()).toBe(true);
+        expect(await submit(wrapper)).toMatchObject({ custodianUserId: '3' });
     });
-    individual.unmount();
+
+    it.each([0, -50])(
+        'disables account funds with balance %s while custodians are active',
+        async (accountBalance) => {
+            personalMoney.value = undefined;
+            const wrapper = render({
+                accountUsers: members.slice(0, 1),
+                currentUserId: '1',
+                accountBalance,
+                virtualCustodians: [{ id: '3', name: 'Wallet' }],
+            });
+            expect(wrapper.text()).toContain('La cuenta no tiene saldo disponible');
+            expect(await submit(wrapper)).toMatchObject({ paymentSource: 'member_out_of_pocket' });
+        },
+    );
+
+    it('preserves personal choices when editing a transaction from before the first custodian', async () => {
+        personalMoney.value = undefined;
+        const wrapper = render({
+            accountUsers: members.slice(0, 1),
+            virtualCustodians: [{ id: '3', name: 'Wallet' }],
+            initialValues: {
+                id: '5',
+                accountId: '10',
+                usesSharedAccountRules: false,
+                concept: 'Old purchase',
+                amount: 20,
+                paidByUserId: '1',
+                paymentSource: 'account_fund',
+            },
+        });
+        expect(wrapper.find('#transaction-paid-by').exists()).toBe(false);
+        expect(await submit(wrapper)).toMatchObject({
+            paidByUserId: '1',
+            paymentSource: 'account_fund',
+        });
+    });
 });

@@ -8,7 +8,6 @@ use App\Dto\CreateAccountCustodianDto;
 use App\Services\Transaction\SyncAccountMemberLedger;
 
 use function collect;
-use function count;
 
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Enums\TransactionStatus;
@@ -42,8 +41,8 @@ class CreateAccountCustodian
             $account = Account::query()->whereKey($account->id)->lockForUpdate()->firstOrFail();
             $members = $account->users()->pluck('users.id')->map(static fn ($id): int => (int) $id)->all();
 
-            if ($account->credit_card || $account->virtual || count($members) < 2) {
-                throw ValidationException::withMessages(['account' => 'Los custodios virtuales requieren una cuenta corriente compartida.']);
+            if ($account->credit_card || $account->virtual) {
+                throw ValidationException::withMessages(['account' => 'Los custodios virtuales requieren una cuenta corriente no virtual.']);
             }
 
             $allowedIds = [...$members, ...$account->virtualCustodians()->whereNull('virtual_retired_at')->pluck('id')->map(static fn ($id): int => (int) $id)->all()];

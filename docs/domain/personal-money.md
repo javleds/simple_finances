@@ -10,7 +10,7 @@ Una persona organiza sus gastos en cuentas separadas —casa, hijo, mascota— y
 
 El disponible es un cálculo privado por usuario, independiente del balance contable de cada cuenta y de la custodia compartida. Elegir un origen personal o externo no transfiere dinero, no crea otra transacción y no modifica repartos ni deudas. «Mis gastos» puede ser la cuenta personal elegida; su balance no tiene por qué coincidir con el disponible consolidado.
 
-La cuenta personal debe pertenecer al usuario, tenerlo como único miembro, estar activa y no ser virtual ni tarjeta de crédito. Si deja de cumplir estas condiciones, se suspende el cálculo: `available_balance` es `null`, no cero. Deshabilitar conserva configuración y vínculos.
+La cuenta personal debe pertenecer al usuario, tenerlo como único miembro, no tener custodios virtuales activos, estar activa y no ser virtual ni tarjeta de crédito. Si deja de cumplir estas condiciones, se suspende el cálculo: `available_balance` es `null`, no cero. Deshabilitar conserva configuración y vínculos. Retirar el último custodio devuelve la elegibilidad si la cuenta sigue cumpliendo las demás condiciones, sin reiniciar el corte ni las decisiones históricas.
 
 ## Inicio y saldo actual
 

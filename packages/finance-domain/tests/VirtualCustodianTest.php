@@ -9,6 +9,7 @@ use function collect;
 use FinSi\FinanceDomain\Enums\AccountMemberLedgerEntryType;
 use FinSi\FinanceDomain\Models\Account;
 use FinSi\FinanceDomain\Models\User;
+use FinSi\FinanceDomain\Queries\EligiblePersonalMoneyAccounts;
 use FinSi\FinanceDomain\Queries\VisibleAccountsForUser;
 use FinSi\FinanceDomain\ReadModels\BuildAccountMemberSummary;
 
@@ -23,8 +24,12 @@ final class VirtualCustodianTest extends TestCase
         $account = new Account();
         $account->forceFill(['name' => 'Shared', 'user_id' => $owner->id])->save();
         $account->users()->attach($owner);
+        self::assertFalse($account->usesSharedAccountRules());
+        self::assertTrue($this->app->make(EligiblePersonalMoneyAccounts::class)->execute($owner->id)->whereKey($account->id)->exists());
         $custodian = new User();
         $custodian->forceFill(['name' => 'Deposit', 'email' => 'deposit@custodians.invalid', 'virtual_account_id' => $account->id])->save();
+        self::assertTrue($account->usesSharedAccountRules());
+        self::assertFalse($this->app->make(EligiblePersonalMoneyAccounts::class)->execute($owner->id)->whereKey($account->id)->exists());
         $account->memberLedgerEntries()->create([
             'user_id' => $custodian->id,
             'type'    => AccountMemberLedgerEntryType::IncomeCustody,
@@ -39,8 +44,14 @@ final class VirtualCustodianTest extends TestCase
 
         $custodian->virtual_retired_at = now();
         $custodian->save();
+        self::assertFalse($account->usesSharedAccountRules());
+        self::assertTrue($this->app->make(EligiblePersonalMoneyAccounts::class)->execute($owner->id)->whereKey($account->id)->exists());
         $retired = $this->app->make(BuildAccountMemberSummary::class)->execute($account);
         self::assertSame([], $retired['virtual_custodians']);
         self::assertSame(1000.0, collect($retired['custody_by_user'])->firstWhere('user_id', $custodian->id)['amount']);
+        $member = new User();
+        $member->forceFill(['name' => 'Member', 'email' => 'member@example.com'])->save();
+        $account->users()->attach($member);
+        self::assertTrue($account->usesSharedAccountRules());
     }
 }

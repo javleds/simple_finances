@@ -31,6 +31,7 @@ class TransactionCreator
         private ProcessTransactionSideEffects $processTransactionSideEffects,
         private ApplyPersonalMoneyTransactionSource $applyPersonalMoneyTransactionSource,
         private \App\Services\Accounts\ReopenVirtualCustodians $reopenVirtualCustodians,
+        private ValidateAccountFundPayment $validateAccountFundPayment,
     ) {
     }
 
@@ -65,7 +66,7 @@ class TransactionCreator
     {
         $account = Account::withoutGlobalScopes()->whereKey($dto->accountId)->lockForUpdate()->firstOrFail();
         $members = $account->users()->withoutGlobalScopes()->pluck('users.id');
-        $shared = $members->count() > 1;
+        $shared = $account->usesSharedAccountRules();
         if ($shared) {
             app(AuthorizeTransactionParticipants::class)->execute($account, [
                 'paid_by_user_id'   => $dto->paidByUserId,
@@ -89,6 +90,7 @@ class TransactionCreator
         $transaction->financial_goal_id = $dto->financialGoalId ?: null;
         $transaction->user_id = $this->auth->id();
         $transaction->category_id = app(\App\Services\Categories\ResolveTransactionCategory::class)->execute($dto->accountId, $dto->categoryId, $this->auth->id(), $dto->type);
+        $this->validateAccountFundPayment->execute($account, $transaction);
         $transaction->save();
 
         return $transaction;

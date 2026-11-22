@@ -26,7 +26,9 @@ class BuildDashboardAccounts
                     ->where('virtual', true)
                     ->count(),
                 'shared_accounts' => (clone $visibleAccounts)
-                    ->has('users', '>', 1)
+                    ->where(static fn (Builder $query): Builder => $query
+                        ->has('users', '>', 1)
+                        ->orWhereHas('virtualCustodians', static fn (Builder $custodians): Builder => $custodians->whereNull('virtual_retired_at')))
                     ->count(),
                 'pending_total' => 0.0,
             ],

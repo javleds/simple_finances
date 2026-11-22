@@ -36,6 +36,12 @@ class Account extends Model
         return $this->hasMany(User::class, 'virtual_account_id');
     }
 
+    public function usesSharedAccountRules(): bool
+    {
+        return $this->users()->count() > 1
+            || $this->virtualCustodians()->whereNull('virtual_retired_at')->exists();
+    }
+
     public function memberLedgerEntries(): HasMany
     {
         return $this->hasMany(AccountMemberLedgerEntry::class);

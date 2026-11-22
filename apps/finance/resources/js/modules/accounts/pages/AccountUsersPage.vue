@@ -187,7 +187,6 @@ function reloadUsers(): void {
                 Boolean(
                     canManageCustodians &&
                     props.account &&
-                    props.account.users.length > 1 &&
                     !props.account.isCredit &&
                     !props.account.isVirtual,
                 )

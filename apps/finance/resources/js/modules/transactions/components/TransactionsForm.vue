@@ -115,7 +115,7 @@ const preservesLegacyFinancialChoices = computed(
 const hasSharedAccount = computed(() => {
     const snapshot = props.initialValues?.usesSharedAccountRules;
     if (isEditingOriginalAccount.value && typeof snapshot === 'boolean') return snapshot;
-    return props.accountUsers.length > 1;
+    return props.accountUsers.length > 1 || props.virtualCustodians.length > 0;
 });
 const showUserSplitToggle = computed(() => isExpense.value && hasSharedAccount.value);
 const showUserSplitInputs = computed(() => showUserSplitToggle.value && splitBetweenUsers.value);
@@ -435,7 +435,8 @@ async function handleSubmit(): Promise<void> {
             v-if="
                 isEditingOriginalAccount &&
                 props.initialValues?.usesSharedAccountRules === true &&
-                props.accountUsers.length <= 1
+                props.accountUsers.length <= 1 &&
+                props.virtualCustodians.length === 0
             "
             size="sm"
             tone="subtle"

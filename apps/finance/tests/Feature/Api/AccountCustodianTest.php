@@ -183,11 +183,8 @@ it('moves existing virtual custody to a new custodian without increasing the bal
     expect($account->fresh()->balance)->toBe(10000.0);
 });
 
-it('rejects creation in personal credit and virtual accounts', function (string $kind) {
+it('rejects creation in credit and virtual accounts', function (string $kind) {
     [$account, $owner] = custodianAccount();
-    if ('personal' === $kind) {
-        $account->users()->sync([$owner->id => ['percentage' => 100]]);
-    }
     if ('credit' === $kind) {
         $account->update(['credit_card' => true]);
     }
@@ -196,7 +193,7 @@ it('rejects creation in personal credit and virtual accounts', function (string 
     }
     $this->withHeaders(custodianHeaders($owner))->postJson("/api/accounts/{$account->id}/custodians", ['name' => 'Nu'])->assertUnprocessable();
     expect($account->virtualCustodians()->count())->toBe(0);
-})->with(['personal', 'credit', 'virtual']);
+})->with(['credit', 'virtual']);
 
 it('reserves outgoing custody reimbursements even when net settlements cancel', function () {
     [$account, $owner, $member] = custodianAccount();

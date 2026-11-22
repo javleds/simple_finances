@@ -16,6 +16,7 @@ class EligiblePersonalMoneyAccounts
             ->where('user_id', $userId)
             ->where('virtual', false)
             ->where('credit_card', false)
+            ->whereDoesntHave('virtualCustodians', static fn (Builder $query): Builder => $query->whereNull('virtual_retired_at'))
             ->whereHas('users', static fn (Builder $query): Builder => $query->where('users.id', $userId))
             ->has('users', '=', 1);
     }

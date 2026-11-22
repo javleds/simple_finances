@@ -19,9 +19,9 @@ Confianza: Observado en `docs/shared-account-model.md`, modelos, migraciones y s
 
 ### Los movimientos personales no generan aportaciones pendientes
 
-Cada movimiento nuevo conserva `uses_shared_account_rules`: `false` si la cuenta tiene un solo miembro y `true` si tiene varios al crearlo. En modo personal, el gasto usa `account_fund`, pertenece al único miembro y registra el importe completo como `account_fund_expense`, aunque el saldo sea cero o negativo. No genera asignaciones, deuda, aportaciones pendientes ni ingresos técnicos de recuperación. Los ingresos mantienen su registro de custodia.
+Cada movimiento nuevo conserva `uses_shared_account_rules`: `false` si la cuenta tiene un solo miembro y ningún custodio virtual activo; `true` si tiene varios miembros o al menos un custodio virtual activo al crearlo. En modo personal, el gasto usa `account_fund`, pertenece al único miembro y registra el importe completo como `account_fund_expense`, aunque el saldo sea cero o negativo. No genera asignaciones, deuda, aportaciones pendientes ni ingresos técnicos de recuperación. Los ingresos mantienen su registro de custodia.
 
-Agregar o retirar miembros no cambia esa clasificación. Editar dentro de la misma cuenta conserva las reglas del movimiento; moverlo a otra cuenta aplica las reglas del destino. Si una cuenta vuelve a tener un miembro, los nuevos movimientos son personales y las obligaciones compartidas anteriores permanecen. Al editar movimientos anteriores pueden conservarse pagadores y asignaciones de antiguos miembros, sin permitir asignar nuevos participantes ajenos.
+Agregar o retirar miembros o custodios no cambia la clasificación de los movimientos anteriores. Editar dentro de la misma cuenta conserva las reglas del movimiento; moverlo a otra cuenta aplica las reglas del destino. Si una cuenta vuelve a tener un miembro sin custodios activos, los nuevos movimientos son personales y las obligaciones compartidas anteriores permanecen. Al editar movimientos anteriores pueden conservarse pagadores y asignaciones de antiguos miembros, sin permitir asignar nuevos participantes ajenos.
 
 Los movimientos existentes conservan `null` y su comportamiento histórico. No se reparan ni reclasifican datos anteriores. Este indicador financiero es independiente del catálogo compartido de categorías.
 
@@ -103,9 +103,13 @@ Confianza: Observado.
 
 ## Custodios virtuales
 
-Las cuentas corrientes compartidas pueden tener custodios virtuales propios. Son identidades financieras con `users.virtual_account_id`, sin membresía en `account_user`, autenticación, invitaciones, notificaciones ni porcentaje de reparto. Todos los miembros vigentes pueden crear, renombrar y eliminar custodios virtuales, consultar la custodia y registrar pagos y reembolsos. La vista Usuarios los presenta junto a los miembros, con acciones para renombrarlos o eliminarlos. Renombrar solo actualiza el nombre del custodio activo, sin modificar saldos, ledger ni descripciones históricas.
+Las cuentas corrientes, individuales o compartidas, pueden tener custodios virtuales propios. Se excluyen cuentas virtuales y de crédito. Una cuenta individual usa reglas financieras compartidas desde el primer custodio activo y vuelve a reglas individuales al retirar el último, siempre que conserve un único miembro real. El saldo y el historial permanecen; la custodia retirada se devuelve al miembro vigente. La reactivación de un custodio por cambios históricos vuelve a activar las reglas compartidas para movimientos nuevos. Esta clasificación no agrega miembros ni convierte por sí sola el catálogo personal de categorías.
+
+Los custodios son identidades financieras con `users.virtual_account_id`, sin membresía en `account_user`, autenticación, invitaciones, notificaciones ni porcentaje de reparto. Todos los miembros vigentes pueden crear, renombrar y eliminar custodios virtuales, consultar la custodia y registrar pagos y reembolsos. La vista Usuarios los presenta junto a los miembros, con acciones para renombrarlos o eliminarlos. Renombrar solo actualiza el nombre del custodio activo, sin modificar saldos, ledger ni descripciones históricas.
 
 Crear permite añadir saldo mediante un ingreso marcado `virtual_custodian_opening`, excluido del disponible personal, y trasladar custodia existente con pares `internal_transfer`. Las aportaciones ordinarias posteriores conservan las reglas de dinero personal. Los traslados no aumentan el balance y solo disponen de custodia libre de reembolsos comprometidos.
+
+En el flujo con custodios virtuales, crear o mover un egreso con `account_fund` exige saldo positivo. Con saldo cero o negativo se debe elegir pago de bolsillo; las ediciones que conservan cuenta y fuente de pago histórica siguen disponibles.
 
 Los movimientos nuevos conservan `uses_virtual_custodian_rules`; editar dentro de la misma cuenta mantiene ese modo histórico. En este flujo, la cobertura de gastos de bolsillo se debe al pagador efectivo, descontando compromisos de custodia anteriores. La parte sin cobertura se reparte entre personas; un pagador virtual puede adelantar más que su custodia. `virtual_custody_reimbursement_due` y `virtual_custody_settlement_transfer` separan estas obligaciones de las deudas entre miembros, también cuando ambas existen en un movimiento.
 

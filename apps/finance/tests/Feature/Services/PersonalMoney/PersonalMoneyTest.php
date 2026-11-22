@@ -359,3 +359,17 @@ it('preserves previously linked cash when a shared account is archived', functio
     $this->shared->delete();
     expect(personalMoneyAvailable($this->user))->toBe(800.0);
 });
+
+it('suspends the personal account while a virtual custodian is active and resumes after retirement', function (): void {
+    $before = personalMoneyAvailable($this->user);
+    $custodian = app(\App\Services\Accounts\CreateAccountCustodian::class)->execute(
+        $this->personal, new \App\Dto\CreateAccountCustodianDto('Wallet', 0, []), $this->user->id,
+    );
+    expect(personalMoneyAvailable($this->user))->toBeNull()
+        ->and(app(EligiblePersonalMoneyAccounts::class)->execute($this->user->id)->exists())->toBeFalse();
+    app(\App\Services\Accounts\RetireAccountCustodian::class)->execute(
+        $this->personal, $custodian, new \App\Dto\RetireAccountCustodianDto([]),
+    );
+    expect(personalMoneyAvailable($this->user))->toBe($before)
+        ->and($this->setting->fresh()->enabled)->toBeTrue();
+});

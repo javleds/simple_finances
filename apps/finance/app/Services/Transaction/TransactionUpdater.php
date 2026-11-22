@@ -38,6 +38,7 @@ class TransactionUpdater
         private SyncPersonalMoneyTransactionLinks $syncPersonalMoneyTransactionLinks,
         private RecalculateAccountBalance $recalculateAccountBalance,
         private \App\Services\Accounts\ReopenVirtualCustodians $reopenVirtualCustodians,
+        private ValidateAccountFundPayment $validateAccountFundPayment,
     ) {
     }
 
@@ -61,6 +62,7 @@ class TransactionUpdater
             $this->syncCoveredPayerRecoveryTransaction->deleteExisting($transaction);
             $transaction->ledgerEntries()->delete();
             $this->applyBaseData($transaction, $dto);
+            $this->validateAccountFundPayment->execute(Account::query()->findOrFail($dto->accountId), $transaction, $previousCashTransaction);
             $transaction->save();
             $this->syncPersonalMoneyTransactionLinks->execute($transaction, $previousCashTransaction);
             $this->syncTransactionAllocations->execute($transaction, $this->userPayments($transaction, $dto));
@@ -108,8 +110,8 @@ class TransactionUpdater
         $account = Account::withoutGlobalScopes()->findOrFail($dto->accountId);
         $members = $account->users()->withoutGlobalScopes()->pluck('users.id');
         if (! $sameAccount) {
-            $transaction->uses_shared_account_rules = $members->count() > 1;
-            $transaction->uses_virtual_custodian_rules = $members->count() > 1 && $account->virtualCustodians()->exists();
+            $transaction->uses_shared_account_rules = $account->usesSharedAccountRules();
+            $transaction->uses_virtual_custodian_rules = $transaction->uses_shared_account_rules && $account->virtualCustodians()->exists();
         }
         $personalUserId = (int) ($members->first() ?? $account->user_id);
         $transaction->account_id = $dto->accountId;
