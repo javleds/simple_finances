@@ -63,3 +63,53 @@ async def test_tool_identity_cannot_be_overridden() -> None:
     ]:
         with pytest.raises(ToolDenied):
             await tools.call(name, args)
+
+
+async def test_idle_worker_exits_when_shutdown_is_requested(store: Store) -> None:
+    from typing import cast
+
+    from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+
+    from finance_agent.worker import consume
+
+    shutdown = asyncio.Event()
+    task = asyncio.create_task(consume(store, Settings(), cast(AsyncPostgresSaver, None), shutdown))
+    await asyncio.sleep(0)
+    shutdown.set()
+    await asyncio.wait_for(task, timeout=1)
+
+
+async def test_shutdown_finishes_current_run_without_claiming_another(
+    store: Store, monkeypatch: Any
+) -> None:
+    from typing import cast
+
+    from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+
+    from finance_agent import worker
+
+    shutdown = asyncio.Event()
+    tid = store.create_thread(CreateThread(actor_user_id=1, client_request_id=uuid4()))["id"]
+    rid = store.create_run(
+        tid, CreateRun(actor_user_id=1, client_request_id=uuid4(), message="Saldo")
+    )["run_id"]
+    claims = 0
+    claim = store.claim
+
+    def tracked_claim(lease: int) -> Any:
+        nonlocal claims
+        claims += 1
+        return claim(lease)
+
+    async def operation(*_: Any) -> None:
+        shutdown.set()
+        await asyncio.sleep(0)
+        store.finish(rid, "Completed before shutdown")
+
+    monkeypatch.setattr(store, "claim", tracked_claim)
+    monkeypatch.setattr(worker, "execute", operation)
+    await asyncio.wait_for(
+        worker.consume(store, Settings(), cast(AsyncPostgresSaver, None), shutdown), timeout=1
+    )
+    assert claims == 1
+    assert store.get_run(tid, rid, Actor(actor_user_id=1))["status"] == "completed"

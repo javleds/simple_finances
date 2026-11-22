@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import signal
 from contextlib import suppress
 from typing import Any
 
@@ -138,19 +139,42 @@ async def supervise(store: Store, settings: Settings, run: Run, operation: Any) 
             await task
 
 
+async def consume(
+    store: Store,
+    settings: Settings,
+    checkpointer: AsyncPostgresSaver,
+    shutdown: asyncio.Event,
+) -> None:
+    while not shutdown.is_set():
+        claimed = store.claim(settings.agent_lease_seconds)
+        if claimed is None:
+            try:
+                await asyncio.wait_for(shutdown.wait(), timeout=1)
+            except TimeoutError:
+                pass
+            continue
+        run, actor = claimed
+        await supervise(store, settings, run, execute(store, settings, run, actor, checkpointer))
+
+
 async def main() -> None:
-    settings = get_settings()
-    store = Store(make_engine(settings.database_url))
-    async with AsyncPostgresSaver.from_conn_string(settings.checkpoint_url) as checkpointer:
-        while True:
-            claimed = store.claim(settings.agent_lease_seconds)
-            if claimed is None:
-                await asyncio.sleep(1)
-                continue
-            run, actor = claimed
-            await supervise(
-                store, settings, run, execute(store, settings, run, actor, checkpointer)
-            )
+    shutdown = asyncio.Event()
+    loop = asyncio.get_running_loop()
+
+    def request_shutdown() -> None:
+        logger.warning("worker_shutdown_requested: finishing current run before exit")
+        shutdown.set()
+
+    for shutdown_signal in (signal.SIGTERM, signal.SIGINT):
+        loop.add_signal_handler(shutdown_signal, request_shutdown)
+    try:
+        settings = get_settings()
+        store = Store(make_engine(settings.database_url))
+        async with AsyncPostgresSaver.from_conn_string(settings.checkpoint_url) as checkpointer:
+            await consume(store, settings, checkpointer, shutdown)
+    finally:
+        for shutdown_signal in (signal.SIGTERM, signal.SIGINT):
+            loop.remove_signal_handler(shutdown_signal)
 
 
 if __name__ == "__main__":

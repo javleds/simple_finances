@@ -21,7 +21,7 @@ async function deploy({ first = false, fail = '', mismatchedIdentity = false, ch
             env: { ...process.env, PATH: `${join(directory, 'bin')}:${process.env.PATH}`, TRACE: trace, UPDATED: join(directory, 'updated'), FIRST: first ? '1' : '0', MISMATCH: mismatchedIdentity ? '1' : '0', FAIL: fail, CHAT: chat ? '1' : '0', EXISTING_CHAT: existingChat ? '1' : '0', CHANGED_ENTRYPOINT: changedEntrypoint ? '1' : '0', DEPLOY_LOG_DIR: join(directory, 'logs') },
             encoding: 'utf8',
         });
-        return { status: result.status, trace: await readFile(trace, 'utf8') };
+        return { status: result.status, trace: await readFile(trace, 'utf8'), output: result.stderr };
     } finally {
         await rm(directory, { recursive: true, force: true });
     }
@@ -141,7 +141,7 @@ test('deployment refreshes the mirrored domain package before starting consumers
 test('enabled chat builds and migrates before restarting all consumers', async () => {
     const { status, trace } = await deploy({ chat: true, existingChat: true });
     assert.equal(status, 0);
-    assert.ok(trace.indexOf('docker stop --time 130 chat-container') < trace.indexOf('git pull'));
+    assert.ok(trace.indexOf('docker stop --timeout 130 chat-container') < trace.indexOf('git pull'));
     assert.ok(trace.indexOf('stop --timeout 90 nginx php') < trace.indexOf('git pull'));
     assert.ok(trace.includes('-f docker-compose.prod.yml -f docker-compose.chat.yml --profile chat'));
     assert.equal(trace.includes('docker-compose.chat.local.yml'), false);
@@ -161,14 +161,14 @@ for (const fail of ['php scripts/check-agent.php --legal-hashes', 'run --rm --no
         assert.notEqual(status, 0);
         assert.equal(trace.includes('php artisan up\n'), false);
         assert.equal(trace.includes('up -d --force-recreate --wait agent-worker agent-maintenance'), false);
-        assert.ok(trace.indexOf('docker stop --time 130 chat-container', trace.indexOf(fail)) > trace.indexOf(fail));
+        assert.ok(trace.indexOf('docker stop --timeout 130 chat-container', trace.indexOf(fail)) > trace.indexOf(fail));
     });
 }
 
 test('disabled chat stops existing consumers without requiring or starting its stack', async () => {
     const { status, trace } = await deploy({ existingChat: true });
     assert.equal(status, 0);
-    assert.ok(trace.includes('docker stop --time 130 chat-container'));
+    assert.ok(trace.includes('docker stop --timeout 130 chat-container'));
     assert.equal(trace.includes('-f docker-compose.chat.yml'), false);
     assert.equal(trace.includes('build --pull agent-api'), false);
 });
@@ -187,4 +187,19 @@ test('entrypoint changed by pull requires rerun without reopening traffic', asyn
     assert.ok(trace.includes('git pull'));
     assert.equal(trace.includes('build --pull php'), false);
     assert.equal(trace.includes('php artisan up\n'), false);
+});
+
+
+test('shutdown reports named services with appropriate grace periods and running-only selection', async () => {
+    const { status, trace, output } = await deploy({ existingChat: true });
+    assert.equal(status, 0);
+    assert.ok(trace.includes('docker ps -q --filter label=com.docker.compose.project=test'));
+    assert.equal(trace.includes('docker ps -aq'), false);
+    assert.equal(trace.includes('docker stop --time '), false);
+    assert.ok(trace.includes('docker stop --timeout 30 chat-container'));
+    assert.ok(trace.includes('docker stop --timeout 130 chat-container'));
+    assert.ok(trace.includes('docker stop --timeout 10 chat-container'));
+    assert.match(output, /Stopping agent-worker .*130s/);
+    assert.match(output, /Stopped agent-worker .*after \d+s/);
+    assert.match(output, /RUN: docker stop --timeout 130 chat-container/);
 });

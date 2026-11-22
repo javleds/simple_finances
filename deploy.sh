@@ -15,7 +15,7 @@ flock -n 9 || { printf 'Another fin-si deployment is running.\n' >&2; exit 1; }
 cd "$PROJECT_DIR"
 
 log() { printf '[%s] %s\n' "$(date +'%F %T')" "$*" | tee -a "$LOG_FILE" >&2; }
-run() { log "RUN: $*"; "$@" 2>&1 | tee -a "$LOG_FILE"; }
+run() { local IFS=' '; log "RUN: $*"; "$@" 2>&1 | tee -a "$LOG_FILE"; }
 deployment_mode=finance
 compose_command() {
   env -u AGENT_DATABASE_OWNER_PASSWORD -u AGENT_DATABASE_PASSWORD -u DB_DATABASE -u DB_PASSWORD \
@@ -32,17 +32,23 @@ compose() {
   base_compose "$@"
 }
 validate_configuration() {
-  deployment_mode="$(base_compose --profile build run --rm --no-deps assets node ../../scripts/validate-production.mjs)"
+  deployment_mode="$(COMPOSE_IGNORE_ORPHANS=true base_compose --profile build run --rm --no-deps assets node ../../scripts/validate-production.mjs)"
   [[ "$deployment_mode" == finance || "$deployment_mode" == chat ]] || { log 'Invalid production preflight result.'; return 1; }
   run compose config --quiet
 }
 stop_chat_consumers() {
-  local service ids
+  local service ids timeout started
   for service in agent-api agent-worker agent-maintenance agent-mcp mcp-php; do
-    ids="$(docker ps -aq --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" --filter "label=com.docker.compose.service=$service")" || return
+    ids="$(docker ps -q --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" --filter "label=com.docker.compose.service=$service")" || return
     if [[ -n "$ids" ]]; then
       while IFS= read -r id; do
-        run docker stop --time 130 "$id" || return
+        timeout=10
+        [[ "$service" != agent-api ]] || timeout=30
+        [[ "$service" != agent-worker ]] || timeout=130
+        started=$SECONDS
+        log "Stopping $service ($id): allowing up to ${timeout}s for graceful shutdown; waiting here is expected."
+        run docker stop --timeout "$timeout" "$id" || return
+        log "Stopped $service ($id) after $((SECONDS - started))s."
       done <<< "$ids"
     fi
   done

@@ -131,3 +131,10 @@ Si el chat está deshabilitado, el script no exige sus env ni lo inicia; sí det
 Para la primera adopción desde un `deploy.sh` antiguo, no confiar en que ese script cambie de comportamiento tras su propio pull. Durante una ventana de mantenimiento, detener HTTP y consumidores con la configuración vigente, actualizar la revisión por el procedimiento operativo y ejecutar el nuevo `bash deploy.sh --no-pull`. Mantener respaldos y la identidad de los volúmenes. Esta tarea no realiza ese procedimiento en el servidor.
 
 Los checks no sustituyen un E2E con usuario verificado y aceptación legal vigente, ni prueban disponibilidad de OpenRouter. Si se modifica un documento legal, actualizar explícitamente los hashes MCP antes de reintentar. Ante un fallo, mantener mantenimiento y consumidores detenidos, corregir y reejecutar; no hacer rollback automático de migraciones ni usar `down -v`. Al revertir código, revisar compatibilidad de MySQL y PostgreSQL y reconstruir todas las aplicaciones de la misma revisión.
+
+
+### Espera al detener el chat
+
+La parada muestra servicio, contenedor, plazo y duración al terminar. El orden conserva MCP disponible mientras termina el worker: API (30 s), worker (130 s), mantenimiento (10 s), Nginx MCP (10 s) y PHP MCP (10 s), solo para contenedores activos. El plazo corresponde a la parada gradual de cada contenedor, no al despliegue completo. El worker recibe TERM/INT, deja de reclamar trabajo y termina el actual; si excede el plazo, Docker fuerza su terminación. Los contenedores antiguos todavía pueden agotar los 130 s hasta que se reconstruyan con este manejador. No interrumpir únicamente por ver dos minutos de espera en ese paso.
+
+El preflight usa deliberadamente solo el Compose base y omite allí la detección de huérfanos; los contenedores del chat no están sobrando ni deben eliminarse con `--remove-orphans`. La validación con la configuración completa conserva sus avisos. `--timeout` sustituye al flag obsoleto `--time`. No se alteran PostgreSQL ni sus volúmenes durante la parada.
